@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -14,148 +13,91 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/home.css?v=1"
+        href="/static/css/home.css?v=3"
     >
-
 </head>
-
 
 <body>
 
-<div class="app">
-
+<div class="app-shell">
 
     <!-- =====================================================
-         HEADER
+         FIXED TOP HEADER
     ====================================================== -->
 
     <header class="top-header">
 
         <button
             type="button"
-            class="header-icon menu-button"
+            class="menu-button"
             id="menuButton"
             aria-label="Open menu"
         >
-
             <span></span>
             <span></span>
             <span></span>
-
         </button>
 
-
-        <div class="home-logo">
-            <span class="logo-blue">Usa</span><span class="logo-white">nex</span>
+        <div class="brand">
+            <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
         </div>
-
-
-        <button
-            type="button"
-            class="header-icon notification-button"
-            id="notificationButton"
-            aria-label="Notifications"
-        >
-
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
-
-                <path
-                    d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-                ></path>
-
-                <path
-                    d="M10 21h4"
-                ></path>
-
-            </svg>
-
-
-            <span
-                class="notification-dot"
-                id="notificationDot"
-                hidden
-            ></span>
-
-        </button>
 
     </header>
 
 
     <!-- =====================================================
-         SEARCH
+         MAIN APP AREA
     ====================================================== -->
 
-    <section class="search-section">
+    <main class="main-area">
 
-        <div class="search-box">
+        <!-- =================================================
+             SEARCH
+        ================================================== -->
 
-            <svg
-                class="search-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
+        <section class="search-section">
 
-                <circle
-                    cx="11"
-                    cy="11"
-                    r="7"
-                ></circle>
+            <div class="search-box">
 
-                <path
-                    d="m20 20-4-4"
-                ></path>
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="11"
+                        cy="11"
+                        r="7"
+                    ></circle>
 
-            </svg>
+                    <path
+                        d="M20 20l-4-4"
+                    ></path>
+                </svg>
 
+                <input
+                    type="search"
+                    id="homeSearch"
+                    placeholder="Search people..."
+                    autocomplete="off"
+                >
 
-            <input
-                type="search"
-                id="homeSearch"
-                placeholder="Search on Usanex"
-                autocomplete="off"
-            >
+            </div>
 
-
-            <button
-                type="button"
-                id="clearSearch"
-                class="clear-search"
-                aria-label="Clear search"
-                hidden
-            >
-                ×
-            </button>
-
-        </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         MAIN
-    ====================================================== -->
-
-    <main class="main-content">
+        </section>
 
 
         <!-- =================================================
-             NEX MOMENT
+             FIXED / STICKY STATUS AREA
         ================================================== -->
 
-        <section class="section-block">
+        <section class="status-section">
 
-            <div class="section-heading">
+            <div class="section-header">
 
-                <h2>
-                    Nex Moment
-                </h2>
+                <h2>Nex Moment</h2>
 
                 <button
                     type="button"
@@ -168,139 +110,115 @@
             </div>
 
 
-            <div
-                class="moment-list"
-                id="momentList"
-            >
+            <div class="moments">
 
-                <!-- YOUR MOMENT -->
+                <!-- YOU -->
 
-                <button
-                    type="button"
-                    class="moment-item add-moment"
-                    id="addMomentButton"
-                >
+                <div class="moment-item">
 
-                    <div class="moment-photo-wrapper">
+                    <div class="moment-avatar your-moment">
 
-                        <div class="moment-photo placeholder-photo">
+                        <div class="moment-plus">
                             +
                         </div>
 
-                        <span class="add-badge">
-                            +
-                        </span>
-
                     </div>
 
-
-                    <span class="moment-name">
-                        Add Nex
+                    <span>
+                        You
                     </span>
 
-                </button>
+                </div>
 
 
-                <!-- SAMPLE MOMENTS -->
+                <!-- USER -->
 
-                <button
-                    type="button"
-                    class="moment-item"
-                >
+                <div class="moment-item">
 
-                    <div class="moment-photo-wrapper">
-
-                        <div class="moment-photo">
-                            A
-                        </div>
-
+                    <div class="moment-avatar">
+                        U
                     </div>
 
-                    <span class="moment-name">
+                    <span>
+                        Uttam
+                    </span>
+
+                </div>
+
+
+                <!-- USER -->
+
+                <div class="moment-item">
+
+                    <div class="moment-avatar avatar-two">
+                        A
+                    </div>
+
+                    <span>
                         Aman
                     </span>
 
-                </button>
+                </div>
 
 
-                <button
-                    type="button"
-                    class="moment-item"
-                >
+                <!-- USER -->
 
-                    <div class="moment-photo-wrapper">
+                <div class="moment-item">
 
-                        <div class="moment-photo">
-                            R
-                        </div>
-
+                    <div class="moment-avatar avatar-three">
+                        R
                     </div>
 
-                    <span class="moment-name">
+                    <span>
                         Rahul
                     </span>
 
-                </button>
+                </div>
 
 
-                <button
-                    type="button"
-                    class="moment-item"
-                >
+                <!-- USER -->
 
-                    <div class="moment-photo-wrapper">
+                <div class="moment-item">
 
-                        <div class="moment-photo">
-                            P
-                        </div>
-
+                    <div class="moment-avatar avatar-four">
+                        P
                     </div>
 
-                    <span class="moment-name">
+                    <span>
                         Priya
                     </span>
 
-                </button>
+                </div>
 
 
-                <button
-                    type="button"
-                    class="moment-item"
-                >
+                <!-- USER -->
 
-                    <div class="moment-photo-wrapper">
+                <div class="moment-item">
 
-                        <div class="moment-photo">
-                            N
-                        </div>
-
+                    <div class="moment-avatar avatar-five">
+                        S
                     </div>
 
-                    <span class="moment-name">
-                        Neha
+                    <span>
+                        Shiv
                     </span>
 
-                </button>
+                </div>
 
 
-                <button
-                    type="button"
-                    class="moment-item"
-                >
+                <!-- USER -->
 
-                    <div class="moment-photo-wrapper">
+                <div class="moment-item">
 
-                        <div class="moment-photo">
-                            V
-                        </div>
-
+                    <div class="moment-avatar avatar-six">
+                        K
                     </div>
 
-                    <span class="moment-name">
-                        Vikash
+                    <span>
+                        Karan
                     </span>
 
-                </button>
+                </div>
 
             </div>
 
@@ -308,16 +226,24 @@
 
 
         <!-- =================================================
-             PEOPLE
+             ONLY THIS AREA WILL SCROLL
         ================================================== -->
 
-        <section class="section-block people-section">
+        <section class="people-scroll-area">
 
-            <div class="section-heading">
+            <div class="people-header">
 
                 <h2>
                     People
                 </h2>
+
+                <button
+                    type="button"
+                    class="see-all"
+                    id="peopleSeeAll"
+                >
+                    See all
+                </button>
 
             </div>
 
@@ -327,40 +253,31 @@
                 id="peopleList"
             >
 
+                <!-- =========================================
+                     USER CARD 1
+                ========================================== -->
 
-                <!-- USER CARD 1 -->
+                <article class="person-card">
 
-                <article
-                    class="user-card"
-                    data-name="Aman Kumar"
-                    data-username="Aman48217@usa"
-                >
-
-                    <div class="user-main">
-
-                        <div class="profile-photo">
-                            A
-                        </div>
-
-
-                        <div class="user-info">
-
-                            <h3>
-                                Aman Kumar
-                            </h3>
-
-                            <p class="username">
-                                Aman48217@usa
-                            </p>
-
-                            <p class="user-id">
-                                u_aman4821
-                            </p>
-
-                        </div>
-
+                    <div class="person-avatar">
+                        U
                     </div>
 
+                    <div class="person-info">
+
+                        <h3>
+                            Uttam Vishwakarma
+                        </h3>
+
+                        <p>
+                            @Uttam48217@usa
+                        </p>
+
+                        <span>
+                            u_a8k29x7p
+                        </span>
+
+                    </div>
 
                     <button
                         type="button"
@@ -372,39 +289,31 @@
                 </article>
 
 
-                <!-- USER CARD 2 -->
+                <!-- =========================================
+                     USER CARD 2
+                ========================================== -->
 
-                <article
-                    class="user-card"
-                    data-name="Rahul Singh"
-                    data-username="Rahul39120@usa"
-                >
+                <article class="person-card">
 
-                    <div class="user-main">
-
-                        <div class="profile-photo">
-                            R
-                        </div>
-
-
-                        <div class="user-info">
-
-                            <h3>
-                                Rahul Singh
-                            </h3>
-
-                            <p class="username">
-                                Rahul39120@usa
-                            </p>
-
-                            <p class="user-id">
-                                u_rahul3912
-                            </p>
-
-                        </div>
-
+                    <div class="person-avatar avatar-two">
+                        A
                     </div>
 
+                    <div class="person-info">
+
+                        <h3>
+                            Aman
+                        </h3>
+
+                        <p>
+                            @Aman38214@usa
+                        </p>
+
+                        <span>
+                            u_b7k32p4m
+                        </span>
+
+                    </div>
 
                     <button
                         type="button"
@@ -416,39 +325,31 @@
                 </article>
 
 
-                <!-- USER CARD 3 -->
+                <!-- =========================================
+                     USER CARD 3
+                ========================================== -->
 
-                <article
-                    class="user-card"
-                    data-name="Priya Sharma"
-                    data-username="Priya58431@usa"
-                >
+                <article class="person-card">
 
-                    <div class="user-main">
-
-                        <div class="profile-photo">
-                            P
-                        </div>
-
-
-                        <div class="user-info">
-
-                            <h3>
-                                Priya Sharma
-                            </h3>
-
-                            <p class="username">
-                                Priya58431@usa
-                            </p>
-
-                            <p class="user-id">
-                                u_priya5843
-                            </p>
-
-                        </div>
-
+                    <div class="person-avatar avatar-three">
+                        R
                     </div>
 
+                    <div class="person-info">
+
+                        <h3>
+                            Rahul
+                        </h3>
+
+                        <p>
+                            @Rahul51982@usa
+                        </p>
+
+                        <span>
+                            u_c8m21x5p
+                        </span>
+
+                    </div>
 
                     <button
                         type="button"
@@ -460,39 +361,31 @@
                 </article>
 
 
-                <!-- USER CARD 4 -->
+                <!-- =========================================
+                     USER CARD 4
+                ========================================== -->
 
-                <article
-                    class="user-card"
-                    data-name="Neha Verma"
-                    data-username="Neha24891@usa"
-                >
+                <article class="person-card">
 
-                    <div class="user-main">
-
-                        <div class="profile-photo">
-                            N
-                        </div>
-
-
-                        <div class="user-info">
-
-                            <h3>
-                                Neha Verma
-                            </h3>
-
-                            <p class="username">
-                                Neha24891@usa
-                            </p>
-
-                            <p class="user-id">
-                                u_neha24891
-                            </p>
-
-                        </div>
-
+                    <div class="person-avatar avatar-four">
+                        P
                     </div>
 
+                    <div class="person-info">
+
+                        <h3>
+                            Priya
+                        </h3>
+
+                        <p>
+                            @Priya47291@usa
+                        </p>
+
+                        <span>
+                            u_d4m82k1q
+                        </span>
+
+                    </div>
 
                     <button
                         type="button"
@@ -504,50 +397,243 @@
                 </article>
 
 
-            </div>
+                <!-- =========================================
+                     USER CARD 5
+                ========================================== -->
+
+                <article class="person-card">
+
+                    <div class="person-avatar avatar-five">
+                        S
+                    </div>
+
+                    <div class="person-info">
+
+                        <h3>
+                            Shiv
+                        </h3>
+
+                        <p>
+                            @Shiv25184@usa
+                        </p>
+
+                        <span>
+                            u_e7p21x9m
+                        </span>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
 
 
-            <!-- EMPTY SEARCH -->
+                <!-- =========================================
+                     USER CARD 6
+                ========================================== -->
 
-            <div
-                id="emptySearch"
-                class="empty-state"
-                hidden
-            >
+                <article class="person-card">
 
-                <div class="empty-icon">
-                    🔍
-                </div>
+                    <div class="person-avatar avatar-six">
+                        K
+                    </div>
 
-                <h3>
-                    No people found
-                </h3>
+                    <div class="person-info">
 
-                <p>
-                    Try searching with another name or username.
-                </p>
+                        <h3>
+                            Karan
+                        </h3>
+
+                        <p>
+                            @Karan63821@usa
+                        </p>
+
+                        <span>
+                            u_f2k84m6p
+                        </span>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- =========================================
+                     USER CARD 7
+                ========================================== -->
+
+                <article class="person-card">
+
+                    <div class="person-avatar">
+                        N
+                    </div>
+
+                    <div class="person-info">
+
+                        <h3>
+                            Neha
+                        </h3>
+
+                        <p>
+                            @Neha41925@usa
+                        </p>
+
+                        <span>
+                            u_g8x25p3k
+                        </span>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- =========================================
+                     USER CARD 8
+                ========================================== -->
+
+                <article class="person-card">
+
+                    <div class="person-avatar avatar-two">
+                        V
+                    </div>
+
+                    <div class="person-info">
+
+                        <h3>
+                            Vivek
+                        </h3>
+
+                        <p>
+                            @Vivek71342@usa
+                        </p>
+
+                        <span>
+                            u_h4m29x7p
+                        </span>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- =========================================
+                     USER CARD 9
+                ========================================== -->
+
+                <article class="person-card">
+
+                    <div class="person-avatar avatar-three">
+                        M
+                    </div>
+
+                    <div class="person-info">
+
+                        <h3>
+                            Mohit
+                        </h3>
+
+                        <p>
+                            @Mohit35218@usa
+                        </p>
+
+                        <span>
+                            u_i7p42k5m
+                        </span>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- =========================================
+                     USER CARD 10
+                ========================================== -->
+
+                <article class="person-card">
+
+                    <div class="person-avatar avatar-four">
+                        A
+                    </div>
+
+                    <div class="person-info">
+
+                        <h3>
+                            Anjali
+                        </h3>
+
+                        <p>
+                            @Anjali52731@usa
+                        </p>
+
+                        <span>
+                            u_j2x86m4p
+                        </span>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <div class="scroll-end-space"></div>
 
             </div>
 
         </section>
 
-
     </main>
 
 
     <!-- =====================================================
-         BOTTOM NAVIGATION
+         FIXED BOTTOM NAVIGATION
     ====================================================== -->
 
-    <nav class="bottom-navigation">
-
+    <nav class="bottom-nav">
 
         <!-- HOME -->
 
         <button
             type="button"
             class="nav-item active"
-            data-page="home"
+            id="homeNav"
         >
 
             <svg
@@ -556,19 +642,13 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
-
                 <path
-                    d="M3 10.5 12 3l9 7.5"
+                    d="M3 10.5L12 3l9 7.5"
                 ></path>
 
                 <path
-                    d="M5 9.5V21h14V9.5"
+                    d="M5.5 9.5V21h13V9.5"
                 ></path>
-
-                <path
-                    d="M9 21v-6h6v6"
-                ></path>
-
             </svg>
 
             <span>
@@ -583,7 +663,6 @@
         <button
             type="button"
             class="nav-item"
-            data-page="reel"
             id="reelNav"
         >
 
@@ -593,7 +672,6 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
-
                 <rect
                     x="3"
                     y="4"
@@ -603,9 +681,16 @@
                 ></rect>
 
                 <path
-                    d="m10 9 5 3-5 3V9z"
+                    d="M8 4l3 5"
                 ></path>
 
+                <path
+                    d="M14 4l3 5"
+                ></path>
+
+                <path
+                    d="M10 12l5 3-5 3v-6z"
+                ></path>
             </svg>
 
             <span>
@@ -615,74 +700,53 @@
         </button>
 
 
-        <!-- CREATE -->
+        <!-- PLUS ONLY -->
 
         <button
             type="button"
-            class="nav-item create-nav"
-            data-page="create"
-            id="createButton"
+            class="plus-nav"
+            id="createNav"
             aria-label="Create"
         >
+            +
+        </button>
 
-            <span class="create-circle">
+
+        <!-- NOTIFICATION -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="notificationNav"
+        >
+
+            <span class="notification-icon-wrapper">
 
                 <svg
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2"
+                    stroke-width="1.8"
                 >
-
                     <path
-                        d="M12 5v14"
+                        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
                     ></path>
 
                     <path
-                        d="M5 12h14"
+                        d="M10 21h4"
                     ></path>
-
                 </svg>
 
+                <span
+                    class="notification-dot"
+                    id="notificationDot"
+                    hidden
+                ></span>
+
             </span>
 
             <span>
-                Create
-            </span>
-
-        </button>
-
-
-        <!-- SEARCH -->
-
-        <button
-            type="button"
-            class="nav-item"
-            data-page="search"
-            id="searchNav"
-        >
-
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
-
-                <circle
-                    cx="11"
-                    cy="11"
-                    r="7"
-                ></circle>
-
-                <path
-                    d="m20 20-4-4"
-                ></path>
-
-            </svg>
-
-            <span>
-                Search
+                Notification
             </span>
 
         </button>
@@ -693,7 +757,6 @@
         <button
             type="button"
             class="nav-item"
-            data-page="profile"
             id="profileNav"
         >
 
@@ -703,7 +766,6 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
-
                 <circle
                     cx="12"
                     cy="8"
@@ -713,7 +775,6 @@
                 <path
                     d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
                 ></path>
-
             </svg>
 
             <span>
@@ -722,32 +783,35 @@
 
         </button>
 
-
     </nav>
 
 
     <!-- =====================================================
-         MENU OVERLAY
+         SIDE MENU
     ====================================================== -->
 
     <div
-        id="menuOverlay"
         class="menu-overlay"
+        id="menuOverlay"
         hidden
     >
 
-        <div class="menu-panel">
+        <div
+            class="menu-panel"
+            id="menuPanel"
+        >
 
             <div class="menu-header">
 
-                <h2>
-                    Usanex
-                </h2>
+                <div class="menu-brand">
+                    <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
+                </div>
 
                 <button
                     type="button"
                     id="closeMenu"
                     class="close-menu"
+                    aria-label="Close menu"
                 >
                     ×
                 </button>
@@ -755,36 +819,46 @@
             </div>
 
 
-            <button class="menu-option">
-                Settings
-            </button>
+            <div class="menu-items">
 
-            <button class="menu-option">
-                Help & Support
-            </button>
+                <button
+                    type="button"
+                    id="menuProfile"
+                >
+                    Profile
+                </button>
 
-            <button class="menu-option">
-                About Usanex
-            </button>
+                <button
+                    type="button"
+                    id="menuNotifications"
+                >
+                    Notifications
+                </button>
 
+                <button
+                    type="button"
+                    id="menuSettings"
+                >
+                    Settings
+                </button>
 
-            <button
-                class="menu-option logout-option"
-                id="logoutButton"
-            >
-                Log out
-            </button>
+                <button
+                    type="button"
+                    id="logoutButton"
+                >
+                    Logout
+                </button>
+
+            </div>
 
         </div>
 
     </div>
 
-
 </div>
 
 
-<script src="/static/js/home.js?v=1"></script>
+<script src="/static/js/home.js?v=3"></script>
 
 </body>
-
 </html>
