@@ -14,11 +14,11 @@ const menuOverlay =
 const closeMenu =
     document.getElementById("closeMenu");
 
+const headerPlus =
+    document.getElementById("headerPlus");
+
 const homeSearch =
     document.getElementById("homeSearch");
-
-const createNav =
-    document.getElementById("createNav");
 
 const reelNav =
     document.getElementById("reelNav");
@@ -112,6 +112,25 @@ if (menuOverlay) {
 
 
 /* =========================================================
+   HEADER PLUS
+========================================================= */
+
+if (headerPlus) {
+
+    headerPlus.addEventListener(
+        "click",
+        function () {
+
+            alert(
+                "Create feature will be added next."
+            );
+
+        }
+    );
+}
+
+
+/* =========================================================
    SEARCH
 ========================================================= */
 
@@ -190,25 +209,6 @@ followButtons.forEach(
 
     }
 );
-
-
-/* =========================================================
-   PLUS
-========================================================= */
-
-if (createNav) {
-
-    createNav.addEventListener(
-        "click",
-        function () {
-
-            alert(
-                "Create feature will be added next."
-            );
-
-        }
-    );
-}
 
 
 /* =========================================================
@@ -391,6 +391,7 @@ if (menuOverlay) {
     menuOverlay.hidden = true;
 }
 
+
 console.log(
-    "Usanex Home v3 loaded."
+    "Usanex Home v4 loaded successfully."
 );
