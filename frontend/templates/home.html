@@ -1,1 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <title>Home | Usanex</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/home.css?v=1"
+    >
+
+</head>
+
+
+<body>
+
+<div class="app">
+
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="top-header">
+
+        <button
+            type="button"
+            class="header-icon menu-button"
+            id="menuButton"
+            aria-label="Open menu"
+        >
+
+            <span></span>
+            <span></span>
+            <span></span>
+
+        </button>
+
+
+        <div class="home-logo">
+            <span class="logo-blue">Usa</span><span class="logo-white">nex</span>
+        </div>
+
+
+        <button
+            type="button"
+            class="header-icon notification-button"
+            id="notificationButton"
+            aria-label="Notifications"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <path
+                    d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                ></path>
+
+                <path
+                    d="M10 21h4"
+                ></path>
+
+            </svg>
+
+
+            <span
+                class="notification-dot"
+                id="notificationDot"
+                hidden
+            ></span>
+
+        </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         SEARCH
+    ====================================================== -->
+
+    <section class="search-section">
+
+        <div class="search-box">
+
+            <svg
+                class="search-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
+
+                <path
+                    d="m20 20-4-4"
+                ></path>
+
+            </svg>
+
+
+            <input
+                type="search"
+                id="homeSearch"
+                placeholder="Search on Usanex"
+                autocomplete="off"
+            >
+
+
+            <button
+                type="button"
+                id="clearSearch"
+                class="clear-search"
+                aria-label="Clear search"
+                hidden
+            >
+                ×
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- =================================================
+             NEX MOMENT
+        ================================================== -->
+
+        <section class="section-block">
+
+            <div class="section-heading">
+
+                <h2>
+                    Nex Moment
+                </h2>
+
+                <button
+                    type="button"
+                    class="see-all"
+                    id="momentSeeAll"
+                >
+                    See all
+                </button>
+
+            </div>
+
+
+            <div
+                class="moment-list"
+                id="momentList"
+            >
+
+                <!-- YOUR MOMENT -->
+
+                <button
+                    type="button"
+                    class="moment-item add-moment"
+                    id="addMomentButton"
+                >
+
+                    <div class="moment-photo-wrapper">
+
+                        <div class="moment-photo placeholder-photo">
+                            +
+                        </div>
+
+                        <span class="add-badge">
+                            +
+                        </span>
+
+                    </div>
+
+
+                    <span class="moment-name">
+                        Add Nex
+                    </span>
+
+                </button>
+
+
+                <!-- SAMPLE MOMENTS -->
+
+                <button
+                    type="button"
+                    class="moment-item"
+                >
+
+                    <div class="moment-photo-wrapper">
+
+                        <div class="moment-photo">
+                            A
+                        </div>
+
+                    </div>
+
+                    <span class="moment-name">
+                        Aman
+                    </span>
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="moment-item"
+                >
+
+                    <div class="moment-photo-wrapper">
+
+                        <div class="moment-photo">
+                            R
+                        </div>
+
+                    </div>
+
+                    <span class="moment-name">
+                        Rahul
+                    </span>
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="moment-item"
+                >
+
+                    <div class="moment-photo-wrapper">
+
+                        <div class="moment-photo">
+                            P
+                        </div>
+
+                    </div>
+
+                    <span class="moment-name">
+                        Priya
+                    </span>
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="moment-item"
+                >
+
+                    <div class="moment-photo-wrapper">
+
+                        <div class="moment-photo">
+                            N
+                        </div>
+
+                    </div>
+
+                    <span class="moment-name">
+                        Neha
+                    </span>
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="moment-item"
+                >
+
+                    <div class="moment-photo-wrapper">
+
+                        <div class="moment-photo">
+                            V
+                        </div>
+
+                    </div>
+
+                    <span class="moment-name">
+                        Vikash
+                    </span>
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PEOPLE
+        ================================================== -->
+
+        <section class="section-block people-section">
+
+            <div class="section-heading">
+
+                <h2>
+                    People
+                </h2>
+
+            </div>
+
+
+            <div
+                class="people-list"
+                id="peopleList"
+            >
+
+
+                <!-- USER CARD 1 -->
+
+                <article
+                    class="user-card"
+                    data-name="Aman Kumar"
+                    data-username="Aman48217@usa"
+                >
+
+                    <div class="user-main">
+
+                        <div class="profile-photo">
+                            A
+                        </div>
+
+
+                        <div class="user-info">
+
+                            <h3>
+                                Aman Kumar
+                            </h3>
+
+                            <p class="username">
+                                Aman48217@usa
+                            </p>
+
+                            <p class="user-id">
+                                u_aman4821
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- USER CARD 2 -->
+
+                <article
+                    class="user-card"
+                    data-name="Rahul Singh"
+                    data-username="Rahul39120@usa"
+                >
+
+                    <div class="user-main">
+
+                        <div class="profile-photo">
+                            R
+                        </div>
+
+
+                        <div class="user-info">
+
+                            <h3>
+                                Rahul Singh
+                            </h3>
+
+                            <p class="username">
+                                Rahul39120@usa
+                            </p>
+
+                            <p class="user-id">
+                                u_rahul3912
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- USER CARD 3 -->
+
+                <article
+                    class="user-card"
+                    data-name="Priya Sharma"
+                    data-username="Priya58431@usa"
+                >
+
+                    <div class="user-main">
+
+                        <div class="profile-photo">
+                            P
+                        </div>
+
+
+                        <div class="user-info">
+
+                            <h3>
+                                Priya Sharma
+                            </h3>
+
+                            <p class="username">
+                                Priya58431@usa
+                            </p>
+
+                            <p class="user-id">
+                                u_priya5843
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+                <!-- USER CARD 4 -->
+
+                <article
+                    class="user-card"
+                    data-name="Neha Verma"
+                    data-username="Neha24891@usa"
+                >
+
+                    <div class="user-main">
+
+                        <div class="profile-photo">
+                            N
+                        </div>
+
+
+                        <div class="user-info">
+
+                            <h3>
+                                Neha Verma
+                            </h3>
+
+                            <p class="username">
+                                Neha24891@usa
+                            </p>
+
+                            <p class="user-id">
+                                u_neha24891
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
+
+                </article>
+
+
+            </div>
+
+
+            <!-- EMPTY SEARCH -->
+
+            <div
+                id="emptySearch"
+                class="empty-state"
+                hidden
+            >
+
+                <div class="empty-icon">
+                    🔍
+                </div>
+
+                <h3>
+                    No people found
+                </h3>
+
+                <p>
+                    Try searching with another name or username.
+                </p>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+    ====================================================== -->
+
+    <nav class="bottom-navigation">
+
+
+        <!-- HOME -->
+
+        <button
+            type="button"
+            class="nav-item active"
+            data-page="home"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <path
+                    d="M3 10.5 12 3l9 7.5"
+                ></path>
+
+                <path
+                    d="M5 9.5V21h14V9.5"
+                ></path>
+
+                <path
+                    d="M9 21v-6h6v6"
+                ></path>
+
+            </svg>
+
+            <span>
+                Home
+            </span>
+
+        </button>
+
+
+        <!-- REEL -->
+
+        <button
+            type="button"
+            class="nav-item"
+            data-page="reel"
+            id="reelNav"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="16"
+                    rx="3"
+                ></rect>
+
+                <path
+                    d="m10 9 5 3-5 3V9z"
+                ></path>
+
+            </svg>
+
+            <span>
+                Reel
+            </span>
+
+        </button>
+
+
+        <!-- CREATE -->
+
+        <button
+            type="button"
+            class="nav-item create-nav"
+            data-page="create"
+            id="createButton"
+            aria-label="Create"
+        >
+
+            <span class="create-circle">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+
+                    <path
+                        d="M12 5v14"
+                    ></path>
+
+                    <path
+                        d="M5 12h14"
+                    ></path>
+
+                </svg>
+
+            </span>
+
+            <span>
+                Create
+            </span>
+
+        </button>
+
+
+        <!-- SEARCH -->
+
+        <button
+            type="button"
+            class="nav-item"
+            data-page="search"
+            id="searchNav"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
+
+                <path
+                    d="m20 20-4-4"
+                ></path>
+
+            </svg>
+
+            <span>
+                Search
+            </span>
+
+        </button>
+
+
+        <!-- PROFILE -->
+
+        <button
+            type="button"
+            class="nav-item"
+            data-page="profile"
+            id="profileNav"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <circle
+                    cx="12"
+                    cy="8"
+                    r="4"
+                ></circle>
+
+                <path
+                    d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
+                ></path>
+
+            </svg>
+
+            <span>
+                Profile
+            </span>
+
+        </button>
+
+
+    </nav>
+
+
+    <!-- =====================================================
+         MENU OVERLAY
+    ====================================================== -->
+
+    <div
+        id="menuOverlay"
+        class="menu-overlay"
+        hidden
+    >
+
+        <div class="menu-panel">
+
+            <div class="menu-header">
+
+                <h2>
+                    Usanex
+                </h2>
+
+                <button
+                    type="button"
+                    id="closeMenu"
+                    class="close-menu"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <button class="menu-option">
+                Settings
+            </button>
+
+            <button class="menu-option">
+                Help & Support
+            </button>
+
+            <button class="menu-option">
+                About Usanex
+            </button>
+
+
+            <button
+                class="menu-option logout-option"
+                id="logoutButton"
+            >
+                Log out
+            </button>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<script src="/static/js/home.js?v=1"></script>
+
+</body>
+
+</html>
