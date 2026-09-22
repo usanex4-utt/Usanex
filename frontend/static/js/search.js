@@ -1,5 +1,10 @@
 "use strict";
 
+
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
 const searchInput =
     document.getElementById("searchInput");
 
@@ -12,115 +17,174 @@ const searchResults =
 const searchStatus =
     document.getElementById("searchStatus");
 
-const backButton =
-    document.getElementById("backButton");
 
+/* =========================================================
+   SEARCH STATE
+========================================================= */
 
 let searchTimer = null;
+
 let currentController = null;
 
 
-/* =========================
-   BACK BUTTON
-========================= */
-
-backButton.addEventListener(
-    "click",
-    () => {
-        window.location.href = "/home";
-    }
-);
-
-
-/* =========================
+/* =========================================================
    SEARCH INPUT
-========================= */
+========================================================= */
 
-searchInput.addEventListener(
-    "input",
-    () => {
+if (searchInput) {
 
-        const query =
-            searchInput.value.trim();
+    searchInput.addEventListener(
+        "input",
+        function () {
 
-        clearTimeout(searchTimer);
+            const query =
+                searchInput.value.trim();
 
-        clearSearch.hidden =
-            query.length === 0;
 
-        if (!query) {
-            resetSearch();
-            return;
+            clearTimeout(
+                searchTimer
+            );
+
+
+            if (clearSearch) {
+
+                clearSearch.hidden =
+                    query.length === 0;
+
+            }
+
+
+            if (!query) {
+
+                resetSearch();
+
+                return;
+            }
+
+
+            searchTimer =
+                setTimeout(
+                    function () {
+
+                        searchPeople(
+                            query
+                        );
+
+                    },
+                    350
+                );
+
         }
+    );
 
-        searchTimer = setTimeout(
-            () => {
-                searchPeople(query);
-            },
-            350
-        );
-    }
-);
+}
 
 
-/* =========================
+/* =========================================================
    CLEAR SEARCH
-========================= */
+========================================================= */
 
-clearSearch.addEventListener(
-    "click",
-    () => {
+if (clearSearch) {
 
-        searchInput.value = "";
+    clearSearch.addEventListener(
+        "click",
+        function () {
 
-        clearSearch.hidden = true;
+            if (searchInput) {
 
-        resetSearch();
+                searchInput.value = "";
 
-        searchInput.focus();
-    }
-);
+            }
 
 
-/* =========================
-   RESET
-========================= */
+            clearSearch.hidden =
+                true;
+
+
+            resetSearch();
+
+
+            if (searchInput) {
+
+                searchInput.focus();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RESET SEARCH
+========================================================= */
 
 function resetSearch() {
 
     if (currentController) {
+
         currentController.abort();
+
         currentController = null;
+
     }
 
-    searchResults.innerHTML = "";
 
-    searchStatus.textContent =
-        "Search people on Usanex";
+    if (searchResults) {
+
+        searchResults.innerHTML = "";
+
+    }
+
+
+    if (searchStatus) {
+
+        searchStatus.textContent =
+            "Search people on Usanex";
+
+    }
+
 }
 
 
-/* =========================
+/* =========================================================
    SEARCH PEOPLE
-========================= */
+========================================================= */
 
-async function searchPeople(query) {
+async function searchPeople(
+    query
+) {
 
     if (currentController) {
+
         currentController.abort();
+
     }
+
 
     currentController =
         new AbortController();
 
-    searchStatus.textContent =
-        "Searching...";
 
-    searchResults.innerHTML = `
-        <div class="search-loading">
-            Searching people...
-        </div>
-    `;
+    if (searchStatus) {
+
+        searchStatus.textContent =
+            "Searching...";
+
+    }
+
+
+    if (searchResults) {
+
+        searchResults.innerHTML = `
+            <div class="search-loading">
+                Searching people...
+            </div>
+        `;
+
+    }
+
 
     try {
 
@@ -129,116 +193,215 @@ async function searchPeople(query) {
                 `/api/search/people?q=${encodeURIComponent(query)}&limit=20&offset=0`,
                 {
                     method: "GET",
-                    credentials: "same-origin",
+
+                    credentials:
+                        "same-origin",
+
                     headers: {
                         "Accept":
                             "application/json"
                     },
+
+                    cache: "no-store",
+
                     signal:
                         currentController.signal
                 }
             );
 
+
+        /* -----------------------------------------
+           LOGIN REQUIRED
+        ----------------------------------------- */
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.replace(
+                "/login"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           OTHER API ERROR
+        ----------------------------------------- */
+
         if (!response.ok) {
 
-            if (response.status === 401) {
-                window.location.href =
-                    "/login";
-                return;
-            }
-
             throw new Error(
-                "Search request failed"
+                `Search request failed: ${response.status}`
             );
+
         }
+
 
         const data =
             await response.json();
 
-        renderResults(data.users || []);
+
+        if (
+            !data ||
+            data.success !== true
+        ) {
+
+            throw new Error(
+                "Invalid search response"
+            );
+
+        }
+
+
+        renderResults(
+            data.users || []
+        );
+
 
     } catch (error) {
+
+        /* -----------------------------------------
+           Ignore cancelled search
+        ----------------------------------------- */
 
         if (
             error.name ===
             "AbortError"
         ) {
+
             return;
+
         }
 
+
         console.error(
-            "Search error:",
+            "Usanex search error:",
             error
         );
 
-        searchStatus.textContent =
-            "Something went wrong";
 
-        searchResults.innerHTML = `
-            <div class="search-empty">
-                Please try again.
-            </div>
-        `;
+        if (searchStatus) {
+
+            searchStatus.textContent =
+                "Something went wrong";
+
+        }
+
+
+        if (searchResults) {
+
+            searchResults.innerHTML = `
+                <div class="search-empty">
+                    Please try again.
+                </div>
+            `;
+
+        }
+
     }
+
 }
 
 
-/* =========================
+/* =========================================================
    RENDER RESULTS
-========================= */
+========================================================= */
 
-function renderResults(users) {
+function renderResults(
+    users
+) {
 
     if (!users.length) {
 
-        searchStatus.textContent =
-            "No people found";
+        if (searchStatus) {
 
-        searchResults.innerHTML = `
-            <div class="search-empty">
-                No matching people found.
-            </div>
-        `;
+            searchStatus.textContent =
+                "No people found";
+
+        }
+
+
+        if (searchResults) {
+
+            searchResults.innerHTML = `
+                <div class="search-empty">
+                    No matching people found.
+                </div>
+            `;
+
+        }
 
         return;
     }
 
-    searchStatus.textContent =
-        `${users.length} people found`;
 
-    searchResults.innerHTML = "";
+    if (searchStatus) {
+
+        searchStatus.textContent =
+            `${users.length} people found`;
+
+    }
+
+
+    if (searchResults) {
+
+        searchResults.innerHTML = "";
+
+    }
+
 
     users.forEach(
-        (user) => {
+        function (user) {
 
             const card =
-                createUserCard(user);
+                createUserCard(
+                    user
+                );
 
-            searchResults.appendChild(
-                card
-            );
+
+            if (searchResults) {
+
+                searchResults.appendChild(
+                    card
+                );
+
+            }
+
         }
     );
+
 }
 
 
-/* =========================
-   USER CARD
-========================= */
+/* =========================================================
+   CREATE USER CARD
+========================================================= */
 
-function createUserCard(user) {
+function createUserCard(
+    user
+) {
 
     const card =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
+
 
     card.className =
         "search-user-card";
 
 
-    /* Avatar */
+    /* =====================================================
+       AVATAR
+    ===================================================== */
 
     const avatar =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     avatar.className =
         "search-user-avatar";
@@ -247,26 +410,35 @@ function createUserCard(user) {
     if (user.profile_photo) {
 
         const image =
-            document.createElement("img");
+            document.createElement(
+                "img"
+            );
+
 
         image.src =
             user.profile_photo;
 
+
         image.alt =
             user.name || "User";
+
 
         image.loading =
             "lazy";
 
+
         image.onerror =
-            () => {
+            function () {
+
                 image.remove();
 
                 avatar.textContent =
                     getInitial(
                         user.name
                     );
+
             };
+
 
         avatar.appendChild(
             image
@@ -278,66 +450,103 @@ function createUserCard(user) {
             getInitial(
                 user.name
             );
+
     }
 
 
-    /* User information */
+    /* =====================================================
+       USER INFORMATION
+    ===================================================== */
 
     const info =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     info.className =
         "search-user-info";
 
 
     const name =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     name.className =
         "search-user-name";
+
 
     name.textContent =
         user.name || "User";
 
 
     const username =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
+
 
     username.className =
         "search-user-username";
+
 
     username.textContent =
         user.username || "";
 
 
-    info.appendChild(name);
-    info.appendChild(username);
+    info.appendChild(
+        name
+    );
+
+    info.appendChild(
+        username
+    );
 
 
-    /* Follow button */
+    /* =====================================================
+       FOLLOW BUTTON
+    ===================================================== */
 
     const followButton =
-        document.createElement("button");
+        document.createElement(
+            "button"
+        );
+
 
     followButton.type =
         "button";
 
+
     followButton.className =
         "search-follow-button";
+
 
     followButton.textContent =
         "Follow";
 
 
+    followButton.dataset.userId =
+        user.user_id || "";
+
+
+    followButton.dataset.username =
+        user.username || "";
+
+
     followButton.addEventListener(
         "click",
-        (event) => {
+        function (event) {
 
             event.stopPropagation();
 
+
             /*
              * Follow API next step me connect hoga.
-             * Abhi sirf UI action hai.
+             *
+             * Abhi UI state:
+             * Follow → Request Sent
              */
 
             if (
@@ -345,42 +554,103 @@ function createUserCard(user) {
                     "requested"
                 )
             ) {
+
                 return;
+
             }
+
 
             followButton.textContent =
                 "Request Sent";
 
+
             followButton.classList.add(
                 "requested"
             );
+
         }
     );
 
 
-    /* Assemble card */
+    /* =====================================================
+       CARD DATA
+    ===================================================== */
 
-    card.appendChild(avatar);
-    card.appendChild(info);
-    card.appendChild(followButton);
+    card.dataset.userId =
+        user.user_id || "";
+
+
+    card.dataset.username =
+        user.username || "";
+
+
+    /*
+     * Normal card click intentionally does nothing.
+     *
+     * Profile opening will later be connected
+     * only through the DP.
+     */
+
+
+    /* =====================================================
+       ASSEMBLE
+    ===================================================== */
+
+    card.appendChild(
+        avatar
+    );
+
+
+    card.appendChild(
+        info
+    );
+
+
+    card.appendChild(
+        followButton
+    );
 
 
     return card;
+
 }
 
 
-/* =========================
-   INITIAL
-========================= */
+/* =========================================================
+   GET INITIAL
+========================================================= */
 
-function getInitial(name) {
+function getInitial(
+    name
+) {
 
     if (!name) {
+
         return "U";
+
     }
+
 
     return name
         .trim()
         .charAt(0)
         .toUpperCase();
+
 }
+
+
+/* =========================================================
+   INITIAL STATE
+========================================================= */
+
+if (searchStatus) {
+
+    searchStatus.textContent =
+        "Search people on Usanex";
+
+}
+
+
+console.log(
+    "Usanex Search v4 loaded successfully."
+);
