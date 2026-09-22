@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Search - Usanex</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/search.css?v=1"
+    >
+</head>
+
+<body>
+
+<div class="search-page">
+
+    <!-- Header -->
+    <header class="search-header">
+
+        <button
+            type="button"
+            class="back-button"
+            id="backButton"
+            aria-label="Go back"
+        >
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M19 12H5"></path>
+                <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+        </button>
+
+        <h1>Search</h1>
+
+    </header>
+
+
+    <!-- Search Box -->
+    <main class="search-main">
+
+        <div class="search-box">
+
+            <svg
+                class="search-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
+
+                <path
+                    d="M20 20l-4-4"
+                ></path>
+            </svg>
+
+            <input
+                type="search"
+                id="searchInput"
+                placeholder="Search name, username, mobile or user ID"
+                autocomplete="off"
+                maxlength="100"
+            >
+
+            <button
+                type="button"
+                id="clearSearch"
+                class="clear-button"
+                aria-label="Clear search"
+                hidden
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <!-- Search Status -->
+        <div
+            id="searchStatus"
+            class="search-status"
+        >
+            Search people on Usanex
+        </div>
+
+
+        <!-- Results -->
+        <section
+            id="searchResults"
+            class="search-results"
+        ></section>
+
+    </main>
+
+</div>
+
+
+<script src="/static/js/search.js?v=1"></script>
+
+</body>
+</html>
