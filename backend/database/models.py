@@ -84,3 +84,36 @@ class OTPVerification(Base):
         default=0,
         nullable=False,
     )
+
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    session_token = Column(
+        String(128),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    expires_at = Column(
+        DateTime,
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+    )
