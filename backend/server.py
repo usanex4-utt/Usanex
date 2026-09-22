@@ -1,11 +1,10 @@
-import os
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from .database.database import Base, engine
 from .database import models
+from .routes.auth import router as auth_router
 
 
 app = FastAPI(
@@ -22,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(auth_router)
 
 
 @app.on_event("startup")
