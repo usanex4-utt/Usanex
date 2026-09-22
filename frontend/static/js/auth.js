@@ -50,12 +50,14 @@ function showMessage(
         return;
     }
 
-    loginMessage.textContent = message;
+    loginMessage.textContent =
+        message;
 
     loginMessage.className =
         `message ${type}`;
 
-    loginMessage.hidden = false;
+    loginMessage.hidden =
+        false;
 }
 
 
@@ -65,11 +67,14 @@ function hideMessage() {
         return;
     }
 
-    loginMessage.textContent = "";
+    loginMessage.textContent =
+        "";
 
-    loginMessage.className = "message";
+    loginMessage.className =
+        "message";
 
-    loginMessage.hidden = true;
+    loginMessage.hidden =
+        true;
 }
 
 
@@ -85,12 +90,15 @@ function setLoginLoading(
         return;
     }
 
-    loginButton.disabled = loading;
+    loginButton.disabled =
+        loading;
+
 
     const buttonText =
         loginButton.querySelector(
             ".login-button-text"
         );
+
 
     if (buttonText) {
 
@@ -132,6 +140,7 @@ async function loginUser(
 
     let data = {};
 
+
     try {
 
         data =
@@ -158,10 +167,12 @@ async function loginUser(
 
 
 /* =========================================================
-   SAVE USER
+   SAVE USER SESSION
 ========================================================= */
 
-function saveUserSession(user) {
+function saveUserSession(
+    user
+) {
 
     if (!user) {
         return;
@@ -204,19 +215,24 @@ function saveUserSession(user) {
    PASSWORD SHOW / HIDE
 ========================================================= */
 
-if (passwordToggle && passwordInput) {
+if (
+    passwordToggle &&
+    passwordInput
+) {
 
     passwordToggle.addEventListener(
         "click",
         function () {
 
             const isPassword =
-                passwordInput.type === "password";
+                passwordInput.type ===
+                "password";
 
 
             if (isPassword) {
 
-                passwordInput.type = "text";
+                passwordInput.type =
+                    "text";
 
                 passwordToggle.setAttribute(
                     "aria-label",
@@ -225,7 +241,8 @@ if (passwordToggle && passwordInput) {
 
             } else {
 
-                passwordInput.type = "password";
+                passwordInput.type =
+                    "password";
 
                 passwordToggle.setAttribute(
                     "aria-label",
@@ -265,6 +282,10 @@ if (loginForm) {
                     : "";
 
 
+            /* -----------------------------------------
+               VALIDATION
+            ----------------------------------------- */
+
             if (!identifier) {
 
                 showMessage(
@@ -289,10 +310,18 @@ if (loginForm) {
             }
 
 
+            /* -----------------------------------------
+               LOADING
+            ----------------------------------------- */
+
             setLoginLoading(true);
 
 
             try {
+
+                /* -------------------------------------
+                   API LOGIN
+                ------------------------------------- */
 
                 const data =
                     await loginUser(
@@ -300,6 +329,10 @@ if (loginForm) {
                         password
                     );
 
+
+                /* -------------------------------------
+                   VERIFY RESPONSE
+                ------------------------------------- */
 
                 if (
                     !data ||
@@ -313,10 +346,24 @@ if (loginForm) {
                 }
 
 
+                /* -------------------------------------
+                   SAVE CURRENT USER
+                ------------------------------------- */
+
                 saveUserSession(
                     data.user
                 );
 
+
+                console.log(
+                    "Usanex login successful:",
+                    data.user
+                );
+
+
+                /* -------------------------------------
+                   SUCCESS MESSAGE
+                ------------------------------------- */
 
                 showMessage(
                     `Welcome back, ${data.user.name}!`,
@@ -324,15 +371,18 @@ if (loginForm) {
                 );
 
 
-                /*
-                    Home page banne ke baad
-                    login successful hone par
-                    yahan /home par redirect hoga.
-                */
+                /* -------------------------------------
+                   GO TO HOME
+                ------------------------------------- */
 
-                console.log(
-                    "Usanex login successful:",
-                    data.user
+                setTimeout(
+                    function () {
+
+                        window.location.href =
+                            "/home";
+
+                    },
+                    300
                 );
 
 
@@ -429,7 +479,9 @@ window.UsanexAuth = {
 
         try {
 
-            return JSON.parse(user);
+            return JSON.parse(
+                user
+            );
 
         } catch {
 
@@ -454,3 +506,12 @@ window.UsanexAuth = {
             "/login";
     }
 };
+
+
+/* =========================================================
+   READY
+========================================================= */
+
+console.log(
+    "Usanex Auth v2 loaded successfully."
+);
