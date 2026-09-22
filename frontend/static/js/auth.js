@@ -2,27 +2,18 @@
 
 
 /* =========================================================
-   USANEX AUTHENTICATION
+   USANEX AUTH
 ========================================================= */
 
-
-/*
-    Backend API base.
-
-    Frontend और backend अगर उसी Render service पर
-    चल रहे हैं, तो relative URL सबसे सही रहेगा.
-
-    Example:
-        /api/auth/login
-*/
 const API_BASE_URL = "";
 
 
 /* =========================================================
-   DOM ELEMENTS
+   ELEMENTS
 ========================================================= */
 
-const loginForm = document.getElementById("loginForm");
+const loginForm =
+    document.getElementById("loginForm");
 
 const identifierInput =
     document.getElementById("identifier");
@@ -47,10 +38,8 @@ const forgotPasswordLink =
    MESSAGE
 ========================================================= */
 
-function showMessage(
-    message,
-    type = "error"
-) {
+function showMessage(message, type = "error") {
+
     if (!loginMessage) {
         return;
     }
@@ -65,49 +54,55 @@ function showMessage(
 
 
 function hideMessage() {
+
     if (!loginMessage) {
         return;
     }
 
     loginMessage.textContent = "";
 
-    loginMessage.hidden = true;
-
     loginMessage.className = "message";
+
+    loginMessage.hidden = true;
 }
 
 
 /* =========================================================
-   BUTTON STATE
+   LOADING
 ========================================================= */
 
-function setLoginLoading(
-    loading
-) {
+function setLoginLoading(loading) {
+
     if (!loginButton) {
         return;
     }
 
     loginButton.disabled = loading;
 
-    if (loading) {
-        loginButton.textContent =
-            "Logging in...";
-    } else {
-        loginButton.textContent =
-            "Login";
+    const buttonText =
+        loginButton.querySelector(
+            ".login-button-text"
+        );
+
+    if (buttonText) {
+
+        buttonText.textContent =
+            loading
+                ? "Logging in..."
+                : "Login";
     }
 }
 
 
 /* =========================================================
-   LOGIN
+   LOGIN API
 ========================================================= */
 
 async function loginUser(
     identifier,
     password
 ) {
+
     const response = await fetch(
         `${API_BASE_URL}/api/auth/login`,
         {
@@ -119,30 +114,30 @@ async function loginUser(
             },
 
             body: JSON.stringify({
-                identifier: identifier,
-                password: password
+                identifier,
+                password
             })
         }
     );
 
 
-    let data;
+    let data = {};
 
     try {
+
         data = await response.json();
+
     } catch {
+
         data = {};
     }
 
 
     if (!response.ok) {
 
-        const errorMessage =
-            data.detail ||
-            "Login failed. Please try again.";
-
         throw new Error(
-            errorMessage
+            data.detail ||
+            "Invalid username/mobile or password"
         );
     }
 
@@ -152,29 +147,30 @@ async function loginUser(
 
 
 /* =========================================================
-   SAVE USER SESSION
+   SAVE SESSION
 ========================================================= */
 
-function saveUserSession(
-    user
-) {
+function saveUserSession(user) {
+
     if (!user) {
         return;
     }
 
 
-    /*
-        Only non-sensitive account information
-        is stored here.
-
-        Password is NEVER stored.
-    */
-
     const sessionData = {
-        username: user.username || "",
-        user_id: user.user_id || "",
-        name: user.name || "",
-        mobile: user.mobile || "",
+
+        username:
+            user.username || "",
+
+        user_id:
+            user.user_id || "",
+
+        name:
+            user.name || "",
+
+        mobile:
+            user.mobile || "",
+
         profile_photo:
             user.profile_photo || ""
     };
@@ -194,7 +190,7 @@ function saveUserSession(
 
 
 /* =========================================================
-   LOGIN FORM SUBMIT
+   LOGIN
 ========================================================= */
 
 if (loginForm) {
@@ -220,19 +216,13 @@ if (loginForm) {
                     : "";
 
 
-            /* ---------------------------------------------
-               BASIC VALIDATION
-            --------------------------------------------- */
-
             if (!identifier) {
 
                 showMessage(
-                    "Please enter your username or mobile number."
+                    "Please enter your username or mobile."
                 );
 
-                if (identifierInput) {
-                    identifierInput.focus();
-                }
+                identifierInput?.focus();
 
                 return;
             }
@@ -244,17 +234,11 @@ if (loginForm) {
                     "Please enter your password."
                 );
 
-                if (passwordInput) {
-                    passwordInput.focus();
-                }
+                passwordInput?.focus();
 
                 return;
             }
 
-
-            /* ---------------------------------------------
-               START LOGIN
-            --------------------------------------------- */
 
             setLoginLoading(true);
 
@@ -270,51 +254,40 @@ if (loginForm) {
 
                 if (
                     !data ||
-                    data.success !== true
+                    data.success !== true ||
+                    !data.user
                 ) {
 
                     throw new Error(
-                        "Login failed. Please try again."
+                        "Login failed."
                     );
                 }
 
-
-                /* -----------------------------------------
-                   SAVE SESSION
-                ----------------------------------------- */
 
                 saveUserSession(
                     data.user
                 );
 
 
-                /* -----------------------------------------
-                   SUCCESS MESSAGE
-                ----------------------------------------- */
-
                 showMessage(
-                    "Login successful. Opening Usanex...",
+                    `Welcome back, ${data.user.name}!`,
                     "success"
                 );
 
 
                 /*
-                    Temporary redirect.
+                    Home page अभी बनाया नहीं गया है.
+                    इसलिए अभी login के बाद यहीं रहेंगे.
 
-                    Home page will be connected here
-                    after we create the frontend home
-                    module.
+                    Home बनने के बाद सिर्फ नीचे वाली
+                    line को /home से connect करेंगे.
                 */
 
-                setTimeout(
-                    function () {
-
-                        window.location.href =
-                            "/home";
-
-                    },
-                    700
+                console.log(
+                    "Usanex login successful:",
+                    data.user
                 );
+
 
             } catch (error) {
 
@@ -329,6 +302,7 @@ if (loginForm) {
                     "Unable to connect to Usanex."
                 );
 
+
             } finally {
 
                 setLoginLoading(false);
@@ -339,18 +313,19 @@ if (loginForm) {
 
 
 /* =========================================================
-   REGISTER LINK
+   REGISTER
 ========================================================= */
 
 if (registerLink) {
 
     registerLink.addEventListener(
         "click",
-        function () {
+        function (event) {
+
+            event.preventDefault();
 
             window.location.href =
                 "/register";
-
         }
     );
 }
@@ -368,12 +343,6 @@ if (forgotPasswordLink) {
 
             event.preventDefault();
 
-
-            /*
-                Forgot password page will be created
-                in the next authentication step.
-            */
-
             alert(
                 "Forgot Password will be available soon."
             );
@@ -383,62 +352,55 @@ if (forgotPasswordLink) {
 
 
 /* =========================================================
-   ALREADY LOGGED IN CHECK
-========================================================= */
-
-function isUserLoggedIn() {
-
-    return (
-        localStorage.getItem(
-            "usanex_logged_in"
-        ) === "true"
-    );
-}
-
-
-/* =========================================================
-   DEBUG HELPER
+   AUTH HELPERS
 ========================================================= */
 
 window.UsanexAuth = {
 
-    isLoggedIn:
-        isUserLoggedIn,
+    isLoggedIn: function () {
 
-    getUser:
-        function () {
+        return (
+            localStorage.getItem(
+                "usanex_logged_in"
+            ) === "true"
+        );
+    },
 
-            const user =
-                localStorage.getItem(
-                    "usanex_user"
-                );
 
-            if (!user) {
-                return null;
-            }
+    getUser: function () {
 
-            try {
-
-                return JSON.parse(user);
-
-            } catch {
-
-                return null;
-            }
-        },
-
-    logout:
-        function () {
-
-            localStorage.removeItem(
+        const user =
+            localStorage.getItem(
                 "usanex_user"
             );
 
-            localStorage.removeItem(
-                "usanex_logged_in"
-            );
-
-            window.location.href =
-                "/login";
+        if (!user) {
+            return null;
         }
-    };
+
+
+        try {
+
+            return JSON.parse(user);
+
+        } catch {
+
+            return null;
+        }
+    },
+
+
+    logout: function () {
+
+        localStorage.removeItem(
+            "usanex_user"
+        );
+
+        localStorage.removeItem(
+            "usanex_logged_in"
+        );
+
+        window.location.href =
+            "/login";
+    }
+};
