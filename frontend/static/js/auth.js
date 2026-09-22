@@ -325,12 +325,9 @@ if (loginForm) {
 
 
                 /*
-                    Home page abhi create nahi hua hai.
-                    Home page banne ke baad yahan:
-
-                    window.location.href = "/home";
-
-                    lagaya jayega.
+                    Home page banne ke baad
+                    login successful hone par
+                    yahan /home par redirect hoga.
                 */
 
                 console.log(
@@ -394,9 +391,8 @@ if (forgotPasswordLink) {
 
             event.preventDefault();
 
-            alert(
-                "Forgot Password will be available soon."
-            );
+            window.location.href =
+                "/forgot-password";
         }
     );
 }
