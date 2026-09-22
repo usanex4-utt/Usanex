@@ -196,51 +196,510 @@ if (searchNav) {
 
 
 /* =========================================================
-   FOLLOW / UNFOLLOW
+   PEOPLE - REAL DATABASE USERS
 ========================================================= */
 
-const followButtons =
-    document.querySelectorAll(
-        ".follow-button"
+function findPeopleContainer() {
+
+    return (
+        document.getElementById("peopleList") ||
+        document.querySelector(".people-list") ||
+        document.querySelector(".people-cards") ||
+        document.querySelector(".people-container")
     );
+}
 
 
-followButtons.forEach(
-    function (button) {
+function findPersonCard(container) {
 
-        button.addEventListener(
-            "click",
-            function () {
+    if (!container) {
+        return null;
+    }
 
-                const isFollowing =
-                    button.classList.contains(
-                        "following"
-                    );
+    return (
+        container.querySelector(".person-card") ||
+        container.querySelector(".people-card") ||
+        container.querySelector(".user-card") ||
+        container.querySelector(".person-item")
+    );
+}
 
-                if (isFollowing) {
 
-                    button.classList.remove(
-                        "following"
-                    );
+function setText(
+    element,
+    selectors,
+    value
+) {
 
-                    button.textContent =
-                        "Follow";
+    if (!element) {
+        return;
+    }
 
-                } else {
+    for (
+        const selector of selectors
+    ) {
 
-                    button.classList.add(
-                        "following"
-                    );
+        const target =
+            element.querySelector(selector);
 
-                    button.textContent =
-                        "Unfollow";
-                }
+        if (target) {
 
-            }
-        );
+            target.textContent =
+                value || "";
+
+            return;
+        }
 
     }
-);
+}
+
+
+function setAvatar(
+    element,
+    user
+) {
+
+    if (!element) {
+        return;
+    }
+
+    const image =
+        element.querySelector(
+            "img"
+        );
+
+    const avatar =
+        element.querySelector(
+            ".avatar, .profile-avatar, .person-avatar, .user-avatar"
+        );
+
+    const firstLetter =
+        (
+            user.name ||
+            user.username ||
+            "U"
+        )
+        .trim()
+        .charAt(0)
+        .toUpperCase();
+
+
+    if (image) {
+
+        if (user.profile_photo) {
+
+            image.src =
+                user.profile_photo;
+
+            image.alt =
+                user.name || "User";
+
+            image.hidden = false;
+
+            if (avatar) {
+                avatar.textContent = "";
+            }
+
+        } else {
+
+            image.removeAttribute(
+                "src"
+            );
+
+            image.hidden = true;
+
+            if (avatar) {
+                avatar.textContent =
+                    firstLetter;
+            }
+
+        }
+
+        return;
+    }
+
+
+    if (avatar) {
+
+        if (user.profile_photo) {
+
+            avatar.style.backgroundImage =
+                `url("${user.profile_photo}")`;
+
+            avatar.style.backgroundSize =
+                "cover";
+
+            avatar.style.backgroundPosition =
+                "center";
+
+            avatar.textContent = "";
+
+        } else {
+
+            avatar.style.backgroundImage =
+                "";
+
+            avatar.textContent =
+                firstLetter;
+
+        }
+
+    }
+}
+
+
+function attachFollowButton(
+    button
+) {
+
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener(
+        "click",
+        function () {
+
+            const isFollowing =
+                button.classList.contains(
+                    "following"
+                );
+
+
+            if (isFollowing) {
+
+                button.classList.remove(
+                    "following"
+                );
+
+                button.textContent =
+                    "Follow";
+
+            } else {
+
+                button.classList.add(
+                    "following"
+                );
+
+                button.textContent =
+                    "Unfollow";
+
+            }
+
+        }
+    );
+}
+
+
+function renderPeople(
+    users
+) {
+
+    const container =
+        findPeopleContainer();
+
+    if (!container) {
+
+        console.warn(
+            "Usanex: People container not found."
+        );
+
+        return;
+    }
+
+
+    const template =
+        findPersonCard(container);
+
+    if (!template) {
+
+        console.warn(
+            "Usanex: People card template not found."
+        );
+
+        return;
+    }
+
+
+    /*
+     * Existing HTML card is used as a template.
+     * This keeps the current UI/CSS unchanged.
+     */
+
+    container.innerHTML = "";
+
+
+    if (
+        !users ||
+        users.length === 0
+    ) {
+
+        const emptyMessage =
+            document.createElement(
+                "div"
+            );
+
+        emptyMessage.className =
+            "people-empty";
+
+        emptyMessage.textContent =
+            "No people found.";
+
+        container.appendChild(
+            emptyMessage
+        );
+
+        return;
+    }
+
+
+    users.forEach(
+        function (user) {
+
+            const card =
+                template.cloneNode(true);
+
+
+            /* -----------------------------------------
+               USER NAME
+            ----------------------------------------- */
+
+            setText(
+                card,
+                [
+                    ".person-name",
+                    ".people-name",
+                    ".user-name",
+                    "[data-user-name]"
+                ],
+                user.name
+            );
+
+
+            /* -----------------------------------------
+               USERNAME
+            ----------------------------------------- */
+
+            setText(
+                card,
+                [
+                    ".person-username",
+                    ".people-username",
+                    ".user-username",
+                    "[data-user-username]"
+                ],
+                user.username
+            );
+
+
+            /* -----------------------------------------
+               USER ID
+            ----------------------------------------- */
+
+            setText(
+                card,
+                [
+                    ".person-id",
+                    ".people-id",
+                    ".user-id",
+                    "[data-user-id]"
+                ],
+                user.user_id
+            );
+
+
+            /* -----------------------------------------
+               PROFILE PHOTO / AVATAR
+            ----------------------------------------- */
+
+            setAvatar(
+                card,
+                user
+            );
+
+
+            /* -----------------------------------------
+               FOLLOW BUTTON
+            ----------------------------------------- */
+
+            const followButton =
+                card.querySelector(
+                    ".follow-button"
+                );
+
+
+            if (followButton) {
+
+                followButton.classList.remove(
+                    "following"
+                );
+
+                followButton.textContent =
+                    "Follow";
+
+                followButton.dataset.userId =
+                    user.user_id;
+
+                followButton.dataset.username =
+                    user.username;
+
+                attachFollowButton(
+                    followButton
+                );
+            }
+
+
+            /* -----------------------------------------
+               USER DATA
+            ----------------------------------------- */
+
+            card.dataset.userId =
+                user.user_id;
+
+            card.dataset.username =
+                user.username;
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+}
+
+
+async function loadPeople() {
+
+    const container =
+        findPeopleContainer();
+
+    if (!container) {
+
+        console.warn(
+            "Usanex: People container not found."
+        );
+
+        return;
+    }
+
+
+    const template =
+        findPersonCard(container);
+
+    if (!template) {
+
+        console.warn(
+            "Usanex: People card template not found."
+        );
+
+        return;
+    }
+
+
+    /*
+     * Loading state
+     */
+
+    const originalHTML =
+        container.innerHTML;
+
+    container.dataset.loading =
+        "true";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/users/people?limit=20&offset=0",
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `People API error: ${response.status}`
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !data ||
+            data.success !== true
+        ) {
+
+            throw new Error(
+                "Invalid people API response"
+            );
+
+        }
+
+
+        renderPeople(
+            data.users || []
+        );
+
+
+        console.log(
+            "Usanex: Real users loaded:",
+            data.users?.length || 0
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Usanex: Failed to load people.",
+            error
+        );
+
+
+        /*
+         * Keep the existing UI if API fails.
+         * This prevents a blank Home page.
+         */
+
+        container.innerHTML =
+            originalHTML;
+
+
+        const buttons =
+            container.querySelectorAll(
+                ".follow-button"
+            );
+
+
+        buttons.forEach(
+            attachFollowButton
+        );
+
+    } finally {
+
+        container.dataset.loading =
+            "false";
+    }
+}
+
+
+/* =========================================================
+   INITIAL LOAD OF REAL USERS
+========================================================= */
+
+loadPeople();
 
 
 /* =========================================================
@@ -407,9 +866,11 @@ if (logoutButton) {
                     "Are you sure you want to logout?"
                 );
 
+
             if (!confirmed) {
                 return;
             }
+
 
             window.location.href =
                 "/login";
@@ -461,10 +922,15 @@ if (peopleSeeAll) {
 ========================================================= */
 
 if (menuOverlay) {
+
     menuOverlay.hidden = true;
 }
 
 
+/* =========================================================
+   VERSION
+========================================================= */
+
 console.log(
-    "Usanex Home v5 loaded successfully."
+    "Usanex Home v6 - database people loader loaded successfully."
 );
