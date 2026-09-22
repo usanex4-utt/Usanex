@@ -10,6 +10,7 @@ from .database.database import Base, engine
 from .database import models
 from .routes.auth import router as auth_router
 from .routes.pages import router as pages_router
+from .routes.users import router as users_router
 
 
 # =========================================================
