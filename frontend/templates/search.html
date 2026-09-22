@@ -8,11 +8,11 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Search - Usanex</title>
+    <title>Usanex</title>
 
     <link
         rel="stylesheet"
-        href="/static/css/search.css?v=1"
+        href="/static/css/search.css?v=4"
     >
 </head>
 
@@ -20,34 +20,9 @@
 
 <div class="search-page">
 
-    <!-- Header -->
-    <header class="search-header">
-
-        <button
-            type="button"
-            class="back-button"
-            id="backButton"
-            aria-label="Go back"
-        >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            >
-                <path d="M19 12H5"></path>
-                <path d="M12 19l-7-7 7-7"></path>
-            </svg>
-        </button>
-
-        <h1>Search</h1>
-
-    </header>
-
-
-    <!-- Search Box -->
     <main class="search-main">
 
+        <!-- Search Box -->
         <div class="search-box">
 
             <svg
@@ -56,6 +31,7 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.8"
+                aria-hidden="true"
             >
                 <circle
                     cx="11"
@@ -71,7 +47,7 @@
             <input
                 type="search"
                 id="searchInput"
-                placeholder="Search name, username, mobile or user ID"
+                placeholder="Search with Usanex AI"
                 autocomplete="off"
                 maxlength="100"
             >
@@ -98,10 +74,11 @@
         </div>
 
 
-        <!-- Results -->
+        <!-- Search Results -->
         <section
             id="searchResults"
             class="search-results"
+            aria-live="polite"
         ></section>
 
     </main>
@@ -109,7 +86,7 @@
 </div>
 
 
-<script src="/static/js/search.js?v=1"></script>
+<script src="/static/js/search.js?v=3"></script>
 
 </body>
 </html>
