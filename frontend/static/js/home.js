@@ -615,10 +615,12 @@ async function loadPeople() {
                 "/api/users/people?limit=20&offset=0",
                 {
                     method: "GET",
+
                     headers: {
                         "Accept":
                             "application/json"
                     },
+
                     cache: "no-store"
                 }
             );
@@ -670,7 +672,6 @@ async function loadPeople() {
 
         /*
          * Keep the existing UI if API fails.
-         * This prevents a blank Home page.
          */
 
         container.innerHTML =
@@ -852,14 +853,92 @@ if (menuSettings) {
 
 
 /* =========================================================
-   LOGOUT
+   REAL SERVER LOGOUT
 ========================================================= */
+
+async function logoutUser() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/auth/logout",
+                {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        let data = {};
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data = {};
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Logout failed."
+            );
+        }
+
+
+        /* -----------------------------------------
+           REMOVE OLD LOCAL LOGIN DATA
+        ----------------------------------------- */
+
+        localStorage.removeItem(
+            "usanex_user"
+        );
+
+        localStorage.removeItem(
+            "usanex_logged_in"
+        );
+
+
+        /* -----------------------------------------
+           GO TO LOGIN
+        ----------------------------------------- */
+
+        window.location.replace(
+            "/login"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Usanex logout error:",
+            error
+        );
+
+
+        alert(
+            "Unable to logout right now. Please try again."
+        );
+    }
+}
+
 
 if (logoutButton) {
 
     logoutButton.addEventListener(
         "click",
-        function () {
+        async function () {
 
             const confirmed =
                 window.confirm(
@@ -872,8 +951,11 @@ if (logoutButton) {
             }
 
 
-            window.location.href =
-                "/login";
+            logoutButton.disabled = true;
+
+            await logoutUser();
+
+            logoutButton.disabled = false;
         }
     );
 }
@@ -932,5 +1014,5 @@ if (menuOverlay) {
 ========================================================= */
 
 console.log(
-    "Usanex Home v6 - database people loader loaded successfully."
+    "Usanex Home v7 - secure server logout loaded successfully."
 );
