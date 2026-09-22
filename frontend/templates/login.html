@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Login - Usanex</title>
+    <title>Login | Usanex</title>
 
     <link
         rel="stylesheet"
@@ -18,131 +18,27 @@
 
 <body>
 
-    <main class="auth-page">
+<div class="login-page">
 
-        <section class="auth-card">
+    <!-- =========================================
+         BACKGROUND
+    ========================================== -->
 
-            <!-- Usanex Logo -->
-            <div class="brand">
-                <div class="brand-logo">U</div>
-
-                <div class="brand-name">
-                    Usanex
-                </div>
-            </div>
+    <div class="background-glow glow-one"></div>
+    <div class="background-glow glow-two"></div>
+    <div class="background-glow glow-three"></div>
 
 
-            <!-- Heading -->
-            <div class="auth-heading">
+    <!-- =========================================
+         LEFT BRAND SECTION
+    ========================================== -->
 
-                <h1>Welcome back</h1>
+    <section class="brand-section">
 
-                <p>
-                    Login to your Usanex account
-                </p>
+        <div class="brand-content">
 
-            </div>
+            <!-- Stylish Logo -->
+            <div class="hero-brand">
 
-
-            <!-- Login Form -->
-            <form
-                id="loginForm"
-                class="auth-form"
-            >
-
-                <!-- Username / Mobile -->
-                <div class="form-group">
-
-                    <label for="identifier">
-                        Username or Mobile
-                    </label>
-
-                    <input
-                        type="text"
-                        id="identifier"
-                        name="identifier"
-                        placeholder="Enter username or mobile"
-                        autocomplete="username"
-                        required
-                    >
-
-                </div>
-
-
-                <!-- Password -->
-                <div class="form-group">
-
-                    <label for="password">
-                        Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Enter password"
-                        autocomplete="current-password"
-                        required
-                    >
-
-                </div>
-
-
-                <!-- Forgot Password -->
-                <div class="forgot-row">
-
-                    <a
-                        href="#"
-                        id="forgotPasswordLink"
-                    >
-                        Forgot password?
-                    </a>
-
-                </div>
-
-
-                <!-- Error / Success Message -->
-                <div
-                    id="loginMessage"
-                    class="message"
-                    hidden
-                ></div>
-
-
-                <!-- Login Button -->
-                <button
-                    type="submit"
-                    id="loginButton"
-                    class="primary-button"
-                >
-                    Login
-                </button>
-
-            </form>
-
-
-            <!-- Register -->
-            <div class="auth-footer">
-
-                <span>
-                    Don't have an account?
-                </span>
-
-                <a
-                    href="/register"
-                    id="registerLink"
-                >
-                    Create account
-                </a>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <script src="/static/js/auth.js"></script>
-
-</body>
-</html>
+                <div class="hero-logo">
+                    <span class="logo-u">
