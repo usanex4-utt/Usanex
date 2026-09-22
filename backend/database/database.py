@@ -6,10 +6,14 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL environment variable is not set")
+    raise RuntimeError(
+        "DATABASE_URL environment variable is not set"
+    )
 
 
+# Render PostgreSQL compatibility
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace(
         "postgres://",
@@ -46,5 +50,6 @@ def get_db():
 
     try:
         yield db
+
     finally:
         db.close()
