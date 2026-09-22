@@ -3,6 +3,9 @@ import string
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from sqlalchemy.orm import Session
+
+from ..database.models import User
 
 
 password_hasher = PasswordHasher()
@@ -37,3 +40,33 @@ def generate_otp(length: int = 6) -> str:
         secrets.choice(string.digits)
         for _ in range(length)
     )
+
+
+def generate_username(name: str, db: Session) -> str:
+    """Generate a unique Usanex username."""
+
+    first_name = name.strip().split()[0]
+
+    clean_name = "".join(
+        character
+        for character in first_name
+        if character.isalnum()
+    )
+
+    if not clean_name:
+        clean_name = "user"
+
+    clean_name = clean_name[:30]
+
+    while True:
+        number = secrets.randbelow(90000) + 10000
+        username = f"{clean_name}{number}@usa"
+
+        existing_user = (
+            db.query(User)
+            .filter(User.username == username)
+            .first()
+        )
+
+        if existing_user is None:
+            return username
