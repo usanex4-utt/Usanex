@@ -2,6 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
@@ -17,15 +18,11 @@ from .routes.pages import router as pages_router
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
-STATIC_DIR = (
-    BASE_DIR
-    / "frontend"
-    / "static"
-)
+STATIC_DIR = BASE_DIR / "frontend" / "static"
 
 
 # =========================================================
-# FASTAPI APP
+# APP
 # =========================================================
 
 app = FastAPI(
@@ -60,16 +57,12 @@ app.mount(
 
 
 # =========================================================
-# ROUTES
+# ROUTERS
 # =========================================================
 
-app.include_router(
-    auth_router
-)
+app.include_router(auth_router)
 
-app.include_router(
-    pages_router
-)
+app.include_router(pages_router)
 
 
 # =========================================================
@@ -78,34 +71,29 @@ app.include_router(
 
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(
-        bind=engine
-    )
+    Base.metadata.create_all(bind=engine)
 
 
 # =========================================================
 # ROOT
 # =========================================================
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
-    return {
-        "app": "Usanex",
-        "status": "online",
-    }
+    return RedirectResponse(
+        url="/login",
+        status_code=307,
+    )
 
 
 # =========================================================
-# HEALTH CHECK
+# HEALTH
 # =========================================================
 
 @app.get("/health")
 def health():
-
     try:
-
         with engine.connect() as connection:
-
             connection.execute(
                 text("SELECT 1")
             )
@@ -116,7 +104,6 @@ def health():
         }
 
     except Exception as exc:
-
         return {
             "status": "error",
             "database": "disconnected",
