@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..database.database import get_db
@@ -10,6 +10,10 @@ from ..services.auth_service import (
     hash_password,
     verify_password,
 )
+from ..services.otp_service import (
+    create_otp,
+    verify_otp,
+)
 
 
 router = APIRouter(
@@ -18,19 +22,19 @@ router = APIRouter(
 )
 
 
-# =========================
-# REGISTER
-# =========================
+# =========================================================
+# REGISTER - SEND OTP
+# =========================================================
 
-class RegisterRequest(BaseModel):
-    name: str
-    mobile: str
-    password: str
+class RegisterOTPRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    mobile: str = Field(min_length=5, max_length=20)
+    password: str = Field(min_length=6, max_length=128)
 
 
-@router.post("/register")
-def register(
-    request: RegisterRequest,
+@router.post("/register/send-otp")
+def register_send_otp(
+    request: RegisterOTPRequest,
     db: Session = Depends(get_db),
 ):
     name = request.name.strip()
@@ -55,19 +59,84 @@ def register(
             detail="Password is required",
         )
 
-    existing_mobile = (
+    existing_user = (
         db.query(User)
         .filter(User.mobile == mobile)
         .first()
     )
 
-    if existing_mobile:
+    if existing_user:
         raise HTTPException(
             status_code=409,
             detail="Mobile number is already registered",
         )
 
-    username = generate_username(name, db)
+    otp = create_otp(
+        db=db,
+        identifier=mobile,
+        purpose="register",
+    )
+
+    return {
+        "success": True,
+        "message": "OTP generated successfully",
+
+        # DEVELOPMENT ONLY
+        # Remove this before production SMS integration.
+        "development_otp": otp,
+    }
+
+
+# =========================================================
+# REGISTER - VERIFY OTP
+# =========================================================
+
+class RegisterVerifyRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    mobile: str = Field(min_length=5, max_length=20)
+    password: str = Field(min_length=6, max_length=128)
+    otp: str = Field(min_length=6, max_length=6)
+
+
+@router.post("/register/verify")
+def register_verify(
+    request: RegisterVerifyRequest,
+    db: Session = Depends(get_db),
+):
+    name = request.name.strip()
+    mobile = request.mobile.strip()
+    password = request.password
+    otp = request.otp.strip()
+
+    existing_user = (
+        db.query(User)
+        .filter(User.mobile == mobile)
+        .first()
+    )
+
+    if existing_user:
+        raise HTTPException(
+            status_code=409,
+            detail="Mobile number is already registered",
+        )
+
+    verified = verify_otp(
+        db=db,
+        identifier=mobile,
+        otp=otp,
+        purpose="register",
+    )
+
+    if not verified:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired OTP",
+        )
+
+    username = generate_username(
+        name=name,
+        db=db,
+    )
 
     while True:
         user_id = generate_user_id()
@@ -87,6 +156,7 @@ def register(
         name=name,
         mobile=mobile,
         password_hash=hash_password(password),
+        profile_photo=None,
     )
 
     db.add(new_user)
@@ -105,13 +175,19 @@ def register(
     }
 
 
-# =========================
+# =========================================================
 # LOGIN
-# =========================
+# =========================================================
 
 class LoginRequest(BaseModel):
-    identifier: str
-    password: str
+    identifier: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+    password: str = Field(
+        min_length=1,
+        max_length=128,
+    )
 
 
 @router.post("/login")
@@ -121,18 +197,6 @@ def login(
 ):
     identifier = request.identifier.strip()
     password = request.password
-
-    if not identifier:
-        raise HTTPException(
-            status_code=400,
-            detail="Username or mobile number is required",
-        )
-
-    if not password:
-        raise HTTPException(
-            status_code=400,
-            detail="Password is required",
-        )
 
     user = (
         db.query(User)
@@ -149,10 +213,12 @@ def login(
             detail="Invalid username/mobile or password",
         )
 
-    if not verify_password(
-        password,
-        user.password_hash,
-    ):
+    password_valid = verify_password(
+        password=password,
+        password_hash=user.password_hash,
+    )
+
+    if not password_valid:
         raise HTTPException(
             status_code=401,
             detail="Invalid username/mobile or password",
