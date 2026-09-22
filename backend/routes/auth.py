@@ -23,7 +23,7 @@ router = APIRouter(
 
 
 # =========================================================
-# REGISTER - SEND OTP
+# REGISTER
 # =========================================================
 
 class RegisterOTPRequest(BaseModel):
@@ -80,16 +80,9 @@ def register_send_otp(
     return {
         "success": True,
         "message": "OTP generated successfully",
-
-        # DEVELOPMENT ONLY
-        # Remove this before production SMS integration.
         "development_otp": otp,
     }
 
-
-# =========================================================
-# REGISTER - VERIFY OTP
-# =========================================================
 
 class RegisterVerifyRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
@@ -184,6 +177,7 @@ class LoginRequest(BaseModel):
         min_length=1,
         max_length=100,
     )
+
     password: str = Field(
         min_length=1,
         max_length=128,
@@ -234,4 +228,157 @@ def login(
             "mobile": user.mobile,
             "profile_photo": user.profile_photo,
         },
+    }
+
+
+# =========================================================
+# FORGOT PASSWORD - SEND OTP
+# =========================================================
+
+class ForgotPasswordOTPRequest(BaseModel):
+    identifier: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+
+@router.post("/forgot-password/send-otp")
+def forgot_password_send_otp(
+    request: ForgotPasswordOTPRequest,
+    db: Session = Depends(get_db),
+):
+    identifier = request.identifier.strip()
+
+    if not identifier:
+        raise HTTPException(
+            status_code=400,
+            detail="Username or mobile is required",
+        )
+
+    user = (
+        db.query(User)
+        .filter(
+            (User.username == identifier)
+            | (User.mobile == identifier)
+        )
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Account not found",
+        )
+
+    otp = create_otp(
+        db=db,
+        identifier=identifier,
+        purpose="forgot_password",
+    )
+
+    return {
+        "success": True,
+        "message": "Password reset OTP generated successfully",
+        "development_otp": otp,
+    }
+
+
+# =========================================================
+# FORGOT PASSWORD - RESET
+# =========================================================
+
+class ForgotPasswordResetRequest(BaseModel):
+    identifier: str = Field(
+        min_length=1,
+        max_length=100,
+    )
+
+    otp: str = Field(
+        min_length=6,
+        max_length=6,
+    )
+
+    new_password: str = Field(
+        min_length=6,
+        max_length=128,
+    )
+
+    confirm_password: str = Field(
+        min_length=6,
+        max_length=128,
+    )
+
+
+@router.post("/forgot-password/reset")
+def forgot_password_reset(
+    request: ForgotPasswordResetRequest,
+    db: Session = Depends(get_db),
+):
+    identifier = request.identifier.strip()
+    otp = request.otp.strip()
+    new_password = request.new_password
+    confirm_password = request.confirm_password
+
+    # -----------------------------------------------------
+    # PASSWORD MATCH
+    # -----------------------------------------------------
+
+    if new_password != confirm_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Passwords do not match",
+        )
+
+
+    # -----------------------------------------------------
+    # FIND USER
+    # -----------------------------------------------------
+
+    user = (
+        db.query(User)
+        .filter(
+            (User.username == identifier)
+            | (User.mobile == identifier)
+        )
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Account not found",
+        )
+
+
+    # -----------------------------------------------------
+    # VERIFY OTP
+    # -----------------------------------------------------
+
+    verified = verify_otp(
+        db=db,
+        identifier=identifier,
+        otp=otp,
+        purpose="forgot_password",
+    )
+
+    if not verified:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired OTP",
+        )
+
+
+    # -----------------------------------------------------
+    # UPDATE PASSWORD
+    # -----------------------------------------------------
+
+    user.password_hash = hash_password(
+        new_password
+    )
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Password reset successfully",
     }
