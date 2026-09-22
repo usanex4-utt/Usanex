@@ -7,10 +7,10 @@ from fastapi.responses import FileResponse
 router = APIRouter()
 
 
-# Project root:
-# Usanex/
-# ├── backend/
-# └── frontend/
+# =========================================================
+# PATHS
+# =========================================================
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 TEMPLATES_DIR = (
@@ -20,6 +20,10 @@ TEMPLATES_DIR = (
 )
 
 
+# =========================================================
+# LOGIN
+# =========================================================
+
 @router.get("/login")
 def login_page():
     return FileResponse(
@@ -27,12 +31,31 @@ def login_page():
     )
 
 
+# =========================================================
+# REGISTER
+# =========================================================
+
 @router.get("/register")
 def register_page():
     return FileResponse(
         TEMPLATES_DIR / "register.html"
     )
 
+
+# =========================================================
+# FORGOT PASSWORD
+# =========================================================
+
+@router.get("/forgot-password")
+def forgot_password_page():
+    return FileResponse(
+        TEMPLATES_DIR / "forgot-password.html"
+    )
+
+
+# =========================================================
+# HOME
+# =========================================================
 
 @router.get("/home")
 def home_page():
