@@ -8,6 +8,7 @@ from ..services.auth_service import (
     generate_user_id,
     generate_username,
     hash_password,
+    verify_password,
 )
 
 
@@ -16,6 +17,10 @@ router = APIRouter(
     tags=["Authentication"],
 )
 
+
+# =========================
+# REGISTER
+# =========================
 
 class RegisterRequest(BaseModel):
     name: str
@@ -96,5 +101,71 @@ def register(
             "user_id": new_user.user_id,
             "name": new_user.name,
             "mobile": new_user.mobile,
+        },
+    }
+
+
+# =========================
+# LOGIN
+# =========================
+
+class LoginRequest(BaseModel):
+    identifier: str
+    password: str
+
+
+@router.post("/login")
+def login(
+    request: LoginRequest,
+    db: Session = Depends(get_db),
+):
+    identifier = request.identifier.strip()
+    password = request.password
+
+    if not identifier:
+        raise HTTPException(
+            status_code=400,
+            detail="Username or mobile number is required",
+        )
+
+    if not password:
+        raise HTTPException(
+            status_code=400,
+            detail="Password is required",
+        )
+
+    user = (
+        db.query(User)
+        .filter(
+            (User.username == identifier)
+            | (User.mobile == identifier)
+        )
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username/mobile or password",
+        )
+
+    if not verify_password(
+        password,
+        user.password_hash,
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username/mobile or password",
+        )
+
+    return {
+        "success": True,
+        "message": "Login successful",
+        "user": {
+            "username": user.username,
+            "user_id": user.user_id,
+            "name": user.name,
+            "mobile": user.mobile,
+            "profile_photo": user.profile_photo,
         },
     }
