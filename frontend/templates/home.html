@@ -13,7 +13,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/home.css?v=3"
+        href="/static/css/home.css?v=5"
     >
 </head>
 
@@ -27,6 +27,8 @@
 
     <header class="top-header">
 
+        <!-- MENU -->
+
         <button
             type="button"
             class="menu-button"
@@ -38,586 +40,590 @@
             <span></span>
         </button>
 
+
+        <!-- USANEX -->
+
         <div class="brand">
             <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
         </div>
+
+
+        <!-- PLUS -->
+
+        <button
+            type="button"
+            class="header-plus"
+            id="headerPlus"
+            aria-label="Create"
+        >
+            +
+        </button>
 
     </header>
 
 
     <!-- =====================================================
-         MAIN APP AREA
+         MAIN CONTENT
     ====================================================== -->
 
     <main class="main-area">
 
-        <!-- =================================================
-             SEARCH
-        ================================================== -->
-
-        <section class="search-section">
-
-            <div class="search-box">
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    aria-hidden="true"
-                >
-                    <circle
-                        cx="11"
-                        cy="11"
-                        r="7"
-                    ></circle>
-
-                    <path
-                        d="M20 20l-4-4"
-                    ></path>
-                </svg>
-
-                <input
-                    type="search"
-                    id="homeSearch"
-                    placeholder="Search people..."
-                    autocomplete="off"
-                >
-
-            </div>
-
-        </section>
+        <div class="content-scroll">
 
 
-        <!-- =================================================
-             FIXED / STICKY STATUS AREA
-        ================================================== -->
+            <!-- =================================================
+                 SEARCH
+            ================================================== -->
 
-        <section class="status-section">
+            <section class="search-section">
 
-            <div class="section-header">
+                <div class="search-box">
 
-                <h2>Nex Moment</h2>
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <circle
+                            cx="11"
+                            cy="11"
+                            r="7"
+                        ></circle>
 
-                <button
-                    type="button"
-                    class="see-all"
-                    id="momentSeeAll"
-                >
-                    See all
-                </button>
+                        <path
+                            d="M20 20l-4-4"
+                        ></path>
+                    </svg>
 
-            </div>
+                    <input
+                        type="search"
+                        id="homeSearch"
+                        placeholder="Search people..."
+                        autocomplete="off"
+                    >
+
+                </div>
+
+            </section>
 
 
-            <div class="moments">
+            <!-- =================================================
+                 NEX MOMENT
+                 THIS SECTION STAYS STICKY
+            ================================================== -->
 
-                <!-- YOU -->
+            <section class="status-section">
 
-                <div class="moment-item">
+                <div class="section-header">
 
-                    <div class="moment-avatar your-moment">
+                    <h2>
+                        Nex Moment
+                    </h2>
 
-                        <div class="moment-plus">
-                            +
+                    <button
+                        type="button"
+                        class="see-all"
+                        id="momentSeeAll"
+                    >
+                        See all
+                    </button>
+
+                </div>
+
+
+                <div class="moments">
+
+
+                    <!-- YOU -->
+
+                    <div class="moment-item">
+
+                        <div class="moment-avatar your-moment">
+
+                            <div class="moment-plus">
+                                +
+                            </div>
+
                         </div>
 
-                    </div>
-
-                    <span>
-                        You
-                    </span>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <div class="moment-item">
-
-                    <div class="moment-avatar">
-                        U
-                    </div>
-
-                    <span>
-                        Uttam
-                    </span>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <div class="moment-item">
-
-                    <div class="moment-avatar avatar-two">
-                        A
-                    </div>
-
-                    <span>
-                        Aman
-                    </span>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <div class="moment-item">
-
-                    <div class="moment-avatar avatar-three">
-                        R
-                    </div>
-
-                    <span>
-                        Rahul
-                    </span>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <div class="moment-item">
-
-                    <div class="moment-avatar avatar-four">
-                        P
-                    </div>
-
-                    <span>
-                        Priya
-                    </span>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <div class="moment-item">
-
-                    <div class="moment-avatar avatar-five">
-                        S
-                    </div>
-
-                    <span>
-                        Shiv
-                    </span>
-
-                </div>
-
-
-                <!-- USER -->
-
-                <div class="moment-item">
-
-                    <div class="moment-avatar avatar-six">
-                        K
-                    </div>
-
-                    <span>
-                        Karan
-                    </span>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             ONLY THIS AREA WILL SCROLL
-        ================================================== -->
-
-        <section class="people-scroll-area">
-
-            <div class="people-header">
-
-                <h2>
-                    People
-                </h2>
-
-                <button
-                    type="button"
-                    class="see-all"
-                    id="peopleSeeAll"
-                >
-                    See all
-                </button>
-
-            </div>
-
-
-            <div
-                class="people-list"
-                id="peopleList"
-            >
-
-                <!-- =========================================
-                     USER CARD 1
-                ========================================== -->
-
-                <article class="person-card">
-
-                    <div class="person-avatar">
-                        U
-                    </div>
-
-                    <div class="person-info">
-
-                        <h3>
-                            Uttam Vishwakarma
-                        </h3>
-
-                        <p>
-                            @Uttam48217@usa
-                        </p>
-
                         <span>
-                            u_a8k29x7p
+                            You
                         </span>
 
                     </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
 
-                </article>
+                    <!-- UTTAM -->
 
+                    <div class="moment-item">
 
-                <!-- =========================================
-                     USER CARD 2
-                ========================================== -->
+                        <div class="moment-avatar">
+                            U
+                        </div>
 
-                <article class="person-card">
+                        <span>
+                            Uttam
+                        </span>
 
-                    <div class="person-avatar avatar-two">
-                        A
                     </div>
 
-                    <div class="person-info">
 
-                        <h3>
+                    <!-- AMAN -->
+
+                    <div class="moment-item">
+
+                        <div class="moment-avatar avatar-two">
+                            A
+                        </div>
+
+                        <span>
                             Aman
-                        </h3>
-
-                        <p>
-                            @Aman38214@usa
-                        </p>
-
-                        <span>
-                            u_b7k32p4m
                         </span>
 
                     </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
 
-                </article>
+                    <!-- RAHUL -->
 
+                    <div class="moment-item">
 
-                <!-- =========================================
-                     USER CARD 3
-                ========================================== -->
+                        <div class="moment-avatar avatar-three">
+                            R
+                        </div>
 
-                <article class="person-card">
-
-                    <div class="person-avatar avatar-three">
-                        R
-                    </div>
-
-                    <div class="person-info">
-
-                        <h3>
+                        <span>
                             Rahul
-                        </h3>
-
-                        <p>
-                            @Rahul51982@usa
-                        </p>
-
-                        <span>
-                            u_c8m21x5p
                         </span>
 
                     </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
 
-                </article>
+                    <!-- PRIYA -->
 
+                    <div class="moment-item">
 
-                <!-- =========================================
-                     USER CARD 4
-                ========================================== -->
+                        <div class="moment-avatar avatar-four">
+                            P
+                        </div>
 
-                <article class="person-card">
-
-                    <div class="person-avatar avatar-four">
-                        P
-                    </div>
-
-                    <div class="person-info">
-
-                        <h3>
+                        <span>
                             Priya
-                        </h3>
-
-                        <p>
-                            @Priya47291@usa
-                        </p>
-
-                        <span>
-                            u_d4m82k1q
                         </span>
 
                     </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
 
-                </article>
+                    <!-- SHIV -->
 
+                    <div class="moment-item">
 
-                <!-- =========================================
-                     USER CARD 5
-                ========================================== -->
+                        <div class="moment-avatar avatar-five">
+                            S
+                        </div>
 
-                <article class="person-card">
-
-                    <div class="person-avatar avatar-five">
-                        S
-                    </div>
-
-                    <div class="person-info">
-
-                        <h3>
+                        <span>
                             Shiv
-                        </h3>
-
-                        <p>
-                            @Shiv25184@usa
-                        </p>
-
-                        <span>
-                            u_e7p21x9m
                         </span>
 
                     </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
 
-                </article>
+                    <!-- KARAN -->
 
+                    <div class="moment-item">
 
-                <!-- =========================================
-                     USER CARD 6
-                ========================================== -->
+                        <div class="moment-avatar avatar-six">
+                            K
+                        </div>
 
-                <article class="person-card">
-
-                    <div class="person-avatar avatar-six">
-                        K
-                    </div>
-
-                    <div class="person-info">
-
-                        <h3>
+                        <span>
                             Karan
-                        </h3>
-
-                        <p>
-                            @Karan63821@usa
-                        </p>
-
-                        <span>
-                            u_f2k84m6p
                         </span>
 
                     </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
+                </div>
 
-                </article>
+            </section>
 
 
-                <!-- =========================================
-                     USER CARD 7
-                ========================================== -->
+            <!-- =================================================
+                 PEOPLE
+            ================================================== -->
 
-                <article class="person-card">
+            <section class="people-section">
 
-                    <div class="person-avatar">
-                        N
-                    </div>
+                <div class="people-header">
 
-                    <div class="person-info">
-
-                        <h3>
-                            Neha
-                        </h3>
-
-                        <p>
-                            @Neha41925@usa
-                        </p>
-
-                        <span>
-                            u_g8x25p3k
-                        </span>
-
-                    </div>
+                    <h2>
+                        People
+                    </h2>
 
                     <button
                         type="button"
-                        class="follow-button"
+                        class="see-all"
+                        id="peopleSeeAll"
                     >
-                        Follow
+                        See all
                     </button>
 
-                </article>
+                </div>
 
 
-                <!-- =========================================
-                     USER CARD 8
-                ========================================== -->
-
-                <article class="person-card">
-
-                    <div class="person-avatar avatar-two">
-                        V
-                    </div>
-
-                    <div class="person-info">
-
-                        <h3>
-                            Vivek
-                        </h3>
-
-                        <p>
-                            @Vivek71342@usa
-                        </p>
-
-                        <span>
-                            u_h4m29x7p
-                        </span>
-
-                    </div>
-
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
-
-                </article>
+                <div
+                    class="people-list"
+                    id="peopleList"
+                >
 
 
-                <!-- =========================================
-                     USER CARD 9
-                ========================================== -->
+                    <!-- USER 1 -->
 
-                <article class="person-card">
+                    <article class="person-card">
 
-                    <div class="person-avatar avatar-three">
-                        M
-                    </div>
+                        <div class="person-avatar">
+                            U
+                        </div>
 
-                    <div class="person-info">
+                        <div class="person-info">
 
-                        <h3>
-                            Mohit
-                        </h3>
+                            <h3>
+                                Uttam Vishwakarma
+                            </h3>
 
-                        <p>
-                            @Mohit35218@usa
-                        </p>
+                            <p>
+                                @Uttam48217@usa
+                            </p>
 
-                        <span>
-                            u_i7p42k5m
-                        </span>
+                            <span>
+                                u_a8k29x7p
+                            </span>
 
-                    </div>
+                        </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
 
-                </article>
+                    </article>
 
 
-                <!-- =========================================
-                     USER CARD 10
-                ========================================== -->
+                    <!-- USER 2 -->
 
-                <article class="person-card">
+                    <article class="person-card">
 
-                    <div class="person-avatar avatar-four">
-                        A
-                    </div>
+                        <div class="person-avatar avatar-two">
+                            A
+                        </div>
 
-                    <div class="person-info">
+                        <div class="person-info">
 
-                        <h3>
-                            Anjali
-                        </h3>
+                            <h3>
+                                Aman
+                            </h3>
 
-                        <p>
-                            @Anjali52731@usa
-                        </p>
+                            <p>
+                                @Aman38214@usa
+                            </p>
 
-                        <span>
-                            u_j2x86m4p
-                        </span>
+                            <span>
+                                u_b7k32p4m
+                            </span>
 
-                    </div>
+                        </div>
 
-                    <button
-                        type="button"
-                        class="follow-button"
-                    >
-                        Follow
-                    </button>
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
 
-                </article>
+                    </article>
 
 
-                <div class="scroll-end-space"></div>
+                    <!-- USER 3 -->
 
-            </div>
+                    <article class="person-card">
 
-        </section>
+                        <div class="person-avatar avatar-three">
+                            R
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Rahul
+                            </h3>
+
+                            <p>
+                                @Rahul51982@usa
+                            </p>
+
+                            <span>
+                                u_c8m21x5p
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 4 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar avatar-four">
+                            P
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Priya
+                            </h3>
+
+                            <p>
+                                @Priya47291@usa
+                            </p>
+
+                            <span>
+                                u_d4m82k1q
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 5 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar avatar-five">
+                            S
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Shiv
+                            </h3>
+
+                            <p>
+                                @Shiv25184@usa
+                            </p>
+
+                            <span>
+                                u_e7p21x9m
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 6 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar avatar-six">
+                            K
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Karan
+                            </h3>
+
+                            <p>
+                                @Karan63821@usa
+                            </p>
+
+                            <span>
+                                u_f2k84m6p
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 7 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar">
+                            N
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Neha
+                            </h3>
+
+                            <p>
+                                @Neha41925@usa
+                            </p>
+
+                            <span>
+                                u_g8x25p3k
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 8 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar avatar-two">
+                            V
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Vivek
+                            </h3>
+
+                            <p>
+                                @Vivek71342@usa
+                            </p>
+
+                            <span>
+                                u_h4m29x7p
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 9 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar avatar-three">
+                            M
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Mohit
+                            </h3>
+
+                            <p>
+                                @Mohit35218@usa
+                            </p>
+
+                            <span>
+                                u_i7p42k5m
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <!-- USER 10 -->
+
+                    <article class="person-card">
+
+                        <div class="person-avatar avatar-four">
+                            A
+                        </div>
+
+                        <div class="person-info">
+
+                            <h3>
+                                Anjali
+                            </h3>
+
+                            <p>
+                                @Anjali52731@usa
+                            </p>
+
+                            <span>
+                                u_j2x86m4p
+                            </span>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="follow-button"
+                        >
+                            Follow
+                        </button>
+
+                    </article>
+
+
+                    <div class="scroll-end-space"></div>
+
+                </div>
+
+            </section>
+
+        </div>
 
     </main>
 
@@ -627,6 +633,7 @@
     ====================================================== -->
 
     <nav class="bottom-nav">
+
 
         <!-- HOME -->
 
@@ -642,6 +649,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <path
                     d="M3 10.5L12 3l9 7.5"
                 ></path>
@@ -649,6 +657,7 @@
                 <path
                     d="M5.5 9.5V21h13V9.5"
                 ></path>
+
             </svg>
 
             <span>
@@ -672,6 +681,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <rect
                     x="3"
                     y="4"
@@ -691,6 +701,7 @@
                 <path
                     d="M10 12l5 3-5 3v-6z"
                 ></path>
+
             </svg>
 
             <span>
@@ -700,15 +711,37 @@
         </button>
 
 
-        <!-- PLUS ONLY -->
+        <!-- SEARCH -->
 
         <button
             type="button"
-            class="plus-nav"
-            id="createNav"
-            aria-label="Create"
+            class="nav-item"
+            id="searchNav"
         >
-            +
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
+
+                <path
+                    d="M20 20l-4-4"
+                ></path>
+
+            </svg>
+
+            <span>
+                Search
+            </span>
+
         </button>
 
 
@@ -728,6 +761,7 @@
                     stroke="currentColor"
                     stroke-width="1.8"
                 >
+
                     <path
                         d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
                     ></path>
@@ -735,6 +769,7 @@
                     <path
                         d="M10 21h4"
                     ></path>
+
                 </svg>
 
                 <span
@@ -766,6 +801,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <circle
                     cx="12"
                     cy="8"
@@ -775,6 +811,7 @@
                 <path
                     d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
                 ></path>
+
             </svg>
 
             <span>
@@ -796,10 +833,7 @@
         hidden
     >
 
-        <div
-            class="menu-panel"
-            id="menuPanel"
-        >
+        <div class="menu-panel">
 
             <div class="menu-header">
 
@@ -858,7 +892,7 @@
 </div>
 
 
-<script src="/static/js/home.js?v=3"></script>
+<script src="/static/js/home.js?v=5"></script>
 
 </body>
 </html>
