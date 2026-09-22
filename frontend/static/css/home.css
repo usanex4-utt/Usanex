@@ -39,7 +39,7 @@ button {
 
 
 /* =========================================================
-   APP SHELL
+   APP
 ========================================================= */
 
 .app-shell {
@@ -57,7 +57,8 @@ button {
 
 
 /* =========================================================
-   FIXED TOP HEADER
+   TOP HEADER
+   NO BORDER / NO LINE
 ========================================================= */
 
 .top-header {
@@ -75,16 +76,20 @@ button {
     align-items: center;
     justify-content: center;
 
-    background: rgba(5, 7, 11, 0.97);
-
-    border-bottom: 1px solid #151a22;
+    background: #05070b;
 
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
 }
 
+
+/* =========================================================
+   BRAND
+========================================================= */
+
 .brand {
     font-size: 25px;
+
     font-weight: 800;
 
     letter-spacing: -1.3px;
@@ -102,7 +107,7 @@ button {
 
 
 /* =========================================================
-   MENU
+   MENU BUTTON
 ========================================================= */
 
 .menu-button {
@@ -153,6 +158,42 @@ button {
 
 
 /* =========================================================
+   TOP PLUS
+========================================================= */
+
+.header-plus {
+    position: absolute;
+
+    right: 16px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+
+    color: #ffffff;
+
+    font-size: 30px;
+    font-weight: 300;
+
+    line-height: 1;
+}
+
+.header-plus:active {
+    transform:
+        translateY(-50%)
+        scale(0.88);
+}
+
+
+/* =========================================================
    MAIN AREA
 ========================================================= */
 
@@ -171,21 +212,37 @@ button {
 
 
 /* =========================================================
+   MAIN SCROLL
+========================================================= */
+
+.content-scroll {
+    width: 100%;
+    height: 100%;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: none;
+}
+
+.content-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* =========================================================
    SEARCH
-   Search scrolls away when People area moves.
 ========================================================= */
 
 .search-section {
-    position: relative;
-
-    z-index: 10;
-
     width: 100%;
 
     padding:
         15px
         16px
-        12px;
+        13px;
 
     background: #05070b;
 }
@@ -241,14 +298,16 @@ button {
 
 
 /* =========================================================
-   STATUS / MOMENT
-   This remains visible while People scrolls.
+   NEX MOMENT
+   STICKY
 ========================================================= */
 
 .status-section {
-    position: relative;
+    position: sticky;
 
-    z-index: 20;
+    top: 0;
+
+    z-index: 30;
 
     width: 100%;
 
@@ -262,14 +321,11 @@ button {
     border-bottom: 1px solid #111720;
 }
 
-.section-header,
-.people-header {
+.section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
 
-.section-header {
     margin-bottom: 13px;
 }
 
@@ -278,6 +334,7 @@ button {
     color: #ffffff;
 
     font-size: 18px;
+
     font-weight: 700;
 }
 
@@ -287,6 +344,7 @@ button {
     color: #1683ff;
 
     font-size: 13px;
+
     font-weight: 600;
 }
 
@@ -364,6 +422,7 @@ button {
     color: #ffffff;
 
     font-size: 17px;
+
     font-weight: 700;
 }
 
@@ -417,50 +476,29 @@ button {
 
 
 /* =========================================================
-   PEOPLE SCROLL AREA
-   ONLY THIS SECTION SCROLLS
+   PEOPLE
 ========================================================= */
 
-.people-scroll-area {
-    position: absolute;
-
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    overflow-y: auto;
-    overflow-x: hidden;
+.people-section {
+    width: 100%;
 
     padding:
         0
         16px
         25px;
 
-    -webkit-overflow-scrolling: touch;
-
-    scrollbar-width: none;
+    background: #05070b;
 }
-
-.people-scroll-area::-webkit-scrollbar {
-    display: none;
-}
-
-
-/*
-   People header is sticky.
-   Status stays above it and does not move.
-*/
 
 .people-header {
-    position: sticky;
+    width: 100%;
 
-    top: 0;
-
-    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
     padding:
-        14px
+        15px
         0
         12px;
 
@@ -480,6 +518,11 @@ button {
 
     gap: 11px;
 }
+
+
+/* =========================================================
+   PERSON CARD
+========================================================= */
 
 .person-card {
     width: 100%;
@@ -514,6 +557,7 @@ button {
     color: #ffffff;
 
     font-size: 17px;
+
     font-weight: 700;
 }
 
@@ -535,6 +579,7 @@ button {
     color: #ffffff;
 
     font-size: 14px;
+
     font-weight: 650;
 }
 
@@ -583,6 +628,7 @@ button {
     color: #ffffff;
 
     font-size: 12px;
+
     font-weight: 650;
 }
 
@@ -595,13 +641,12 @@ button {
 }
 
 .scroll-end-space {
-    height: 20px;
-    flex: 0 0 20px;
+    height: 25px;
 }
 
 
 /* =========================================================
-   FIXED BOTTOM NAV
+   BOTTOM NAVIGATION
 ========================================================= */
 
 .bottom-nav {
@@ -620,7 +665,7 @@ button {
     grid-template-columns:
         1fr
         1fr
-        0.8fr
+        1fr
         1.15fr
         1fr;
 
@@ -641,7 +686,9 @@ button {
 }
 
 
-/* NORMAL NAV */
+/* =========================================================
+   NAV ITEMS
+========================================================= */
 
 .nav-item {
     height: 58px;
@@ -659,6 +706,7 @@ button {
     color: #697482;
 
     font-size: 10px;
+
     font-weight: 500;
 }
 
@@ -669,36 +717,6 @@ button {
 
 .nav-item.active {
     color: #1683ff;
-}
-
-
-/* =========================================================
-   PLUS
-========================================================= */
-
-.plus-nav {
-    width: 100%;
-    height: 58px;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    background: transparent;
-
-    color: #ffffff;
-
-    font-size: 32px;
-    font-weight: 300;
-
-    line-height: 1;
-
-    padding: 0;
-}
-
-.plus-nav:active {
-    transform: scale(0.92);
 }
 
 
@@ -736,7 +754,7 @@ button {
 
 
 /* =========================================================
-   MENU OVERLAY
+   SIDE MENU
 ========================================================= */
 
 .menu-overlay {
@@ -833,6 +851,14 @@ button {
 
 @media (min-width: 700px) {
 
+    .top-header {
+        height: 68px;
+    }
+
+    .main-area {
+        top: 68px;
+    }
+
     .bottom-nav {
         left: 50%;
         right: auto;
@@ -842,28 +868,25 @@ button {
         transform: translateX(-50%);
 
         border-left: 1px solid #171d26;
+
         border-right: 1px solid #171d26;
-    }
-
-    .top-header {
-        height: 68px;
-    }
-
-    .main-area {
-        top: 68px;
     }
 }
 
 
 /* =========================================================
-   SMALL PHONES
+   SMALL MOBILE
 ========================================================= */
 
-@media (max-width: 360px) {
+@media (max-width: 380px) {
 
     .search-section,
-    .status-section,
-    .people-scroll-area {
+    .status-section {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .people-section {
         padding-left: 12px;
         padding-right: 12px;
     }
@@ -883,5 +906,14 @@ button {
 
     .follow-button {
         min-width: 62px;
+    }
+
+    .nav-item {
+        font-size: 9px;
+    }
+
+    .nav-item svg {
+        width: 21px;
+        height: 21px;
     }
 }
