@@ -2,7 +2,7 @@
 
 
 /* =========================================================
-   USANEX AUTHENTICATION
+   USANEX AUTH
 ========================================================= */
 
 const API_BASE_URL = "";
@@ -36,9 +36,6 @@ const registerLink =
 const forgotPasswordLink =
     document.getElementById("forgotPasswordLink");
 
-const rememberMe =
-    document.getElementById("rememberMe");
-
 
 /* =========================================================
    MESSAGE
@@ -53,17 +50,12 @@ function showMessage(
         return;
     }
 
-
-    loginMessage.textContent =
-        message;
-
+    loginMessage.textContent = message;
 
     loginMessage.className =
         `message ${type}`;
 
-
-    loginMessage.hidden =
-        false;
+    loginMessage.hidden = false;
 }
 
 
@@ -73,14 +65,11 @@ function hideMessage() {
         return;
     }
 
-
     loginMessage.textContent = "";
 
-    loginMessage.className =
-        "message";
+    loginMessage.className = "message";
 
-    loginMessage.hidden =
-        true;
+    loginMessage.hidden = true;
 }
 
 
@@ -96,22 +85,12 @@ function setLoginLoading(
         return;
     }
 
-
-    loginButton.disabled =
-        loading;
-
+    loginButton.disabled = loading;
 
     const buttonText =
         loginButton.querySelector(
             ".login-button-text"
         );
-
-
-    const buttonArrow =
-        loginButton.querySelector(
-            ".login-arrow"
-        );
-
 
     if (buttonText) {
 
@@ -119,15 +98,6 @@ function setLoginLoading(
             loading
                 ? "Logging in..."
                 : "Login";
-    }
-
-
-    if (buttonArrow) {
-
-        buttonArrow.textContent =
-            loading
-                ? "..."
-                : "→";
     }
 }
 
@@ -153,18 +123,14 @@ async function loginUser(
                 },
 
                 body: JSON.stringify({
-                    identifier:
-                        identifier,
-
-                    password:
-                        password
+                    identifier,
+                    password
                 })
             }
         );
 
 
     let data = {};
-
 
     try {
 
@@ -192,13 +158,10 @@ async function loginUser(
 
 
 /* =========================================================
-   SAVE USER SESSION
+   SAVE USER
 ========================================================= */
 
-function saveUserSession(
-    user,
-    remember
-) {
+function saveUserSession(user) {
 
     if (!user) {
         return;
@@ -224,9 +187,6 @@ function saveUserSession(
     };
 
 
-    /*
-     * Main session
-     */
     localStorage.setItem(
         "usanex_user",
         JSON.stringify(sessionData)
@@ -237,74 +197,6 @@ function saveUserSession(
         "usanex_logged_in",
         "true"
     );
-
-
-    /*
-     * Remember preference
-     */
-    localStorage.setItem(
-        "usanex_remember_me",
-        remember
-            ? "true"
-            : "false"
-    );
-}
-
-
-/* =========================================================
-   LOAD SAVED IDENTIFIER
-========================================================= */
-
-function loadSavedIdentifier() {
-
-    if (!identifierInput) {
-        return;
-    }
-
-
-    const remember =
-        localStorage.getItem(
-            "usanex_remember_me"
-        );
-
-
-    const savedUser =
-        localStorage.getItem(
-            "usanex_user"
-        );
-
-
-    if (
-        remember === "true" &&
-        savedUser
-    ) {
-
-        try {
-
-            const user =
-                JSON.parse(savedUser);
-
-
-            if (user && user.username) {
-
-                identifierInput.value =
-                    user.username;
-            }
-
-
-            if (rememberMe) {
-
-                rememberMe.checked =
-                    true;
-            }
-
-        } catch {
-
-            localStorage.removeItem(
-                "usanex_user"
-            );
-        }
-    }
 }
 
 
@@ -312,31 +204,19 @@ function loadSavedIdentifier() {
    PASSWORD SHOW / HIDE
 ========================================================= */
 
-function setupPasswordToggle() {
-
-    if (
-        !passwordInput ||
-        !passwordToggle
-    ) {
-
-        return;
-    }
-
+if (passwordToggle && passwordInput) {
 
     passwordToggle.addEventListener(
         "click",
         function () {
 
             const isPassword =
-                passwordInput.type ===
-                "password";
+                passwordInput.type === "password";
 
 
             if (isPassword) {
 
-                passwordInput.type =
-                    "text";
-
+                passwordInput.type = "text";
 
                 passwordToggle.setAttribute(
                     "aria-label",
@@ -345,15 +225,14 @@ function setupPasswordToggle() {
 
             } else {
 
-                passwordInput.type =
-                    "password";
-
+                passwordInput.type = "password";
 
                 passwordToggle.setAttribute(
                     "aria-label",
                     "Show password"
                 );
             }
+
         }
     );
 }
@@ -371,7 +250,6 @@ if (loginForm) {
 
             event.preventDefault();
 
-
             hideMessage();
 
 
@@ -387,28 +265,13 @@ if (loginForm) {
                     : "";
 
 
-            const remember =
-                rememberMe
-                    ? rememberMe.checked
-                    : false;
-
-
-            /* -----------------------------------------
-               VALIDATION
-            ----------------------------------------- */
-
             if (!identifier) {
 
                 showMessage(
-                    "Please enter your username or mobile number."
+                    "Please enter your username or mobile."
                 );
 
-
-                if (identifierInput) {
-
-                    identifierInput.focus();
-                }
-
+                identifierInput?.focus();
 
                 return;
             }
@@ -420,29 +283,16 @@ if (loginForm) {
                     "Please enter your password."
                 );
 
-
-                if (passwordInput) {
-
-                    passwordInput.focus();
-                }
-
+                passwordInput?.focus();
 
                 return;
             }
 
 
-            /* -----------------------------------------
-               LOADING
-            ----------------------------------------- */
-
             setLoginLoading(true);
 
 
             try {
-
-                /* -------------------------------------
-                   API
-                ------------------------------------- */
 
                 const data =
                     await loginUser(
@@ -451,10 +301,6 @@ if (loginForm) {
                     );
 
 
-                /* -------------------------------------
-                   RESPONSE VALIDATION
-                ------------------------------------- */
-
                 if (
                     !data ||
                     data.success !== true ||
@@ -462,24 +308,15 @@ if (loginForm) {
                 ) {
 
                     throw new Error(
-                        "Login failed. Please try again."
+                        "Login failed."
                     );
                 }
 
 
-                /* -------------------------------------
-                   SAVE SESSION
-                ------------------------------------- */
-
                 saveUserSession(
-                    data.user,
-                    remember
+                    data.user
                 );
 
-
-                /* -------------------------------------
-                   SUCCESS
-                ------------------------------------- */
 
                 showMessage(
                     `Welcome back, ${data.user.name}!`,
@@ -488,16 +325,17 @@ if (loginForm) {
 
 
                 /*
-                 * Home page is now the next destination.
-                 */
-                setTimeout(
-                    function () {
+                    Home page abhi create nahi hua hai.
+                    Home page banne ke baad yahan:
 
-                        window.location.href =
-                            "/home";
+                    window.location.href = "/home";
 
-                    },
-                    500
+                    lagaya jayega.
+                */
+
+                console.log(
+                    "Usanex login successful:",
+                    data.user
                 );
 
 
@@ -519,6 +357,7 @@ if (loginForm) {
 
                 setLoginLoading(false);
             }
+
         }
     );
 }
@@ -534,9 +373,6 @@ if (registerLink) {
         "click",
         function (event) {
 
-            /*
-             * Let browser open /register.
-             */
             event.preventDefault();
 
             window.location.href =
@@ -556,12 +392,9 @@ if (forgotPasswordLink) {
         "click",
         function (event) {
 
-            /*
-             * Forgot-password page अभी नहीं बनाया गया है.
-             */
             event.preventDefault();
 
-            showMessage(
+            alert(
                 "Forgot Password will be available soon."
             );
         }
@@ -594,7 +427,6 @@ window.UsanexAuth = {
 
 
         if (!user) {
-
             return null;
         }
 
@@ -622,26 +454,7 @@ window.UsanexAuth = {
         );
 
 
-        localStorage.removeItem(
-            "usanex_remember_me"
-        );
-
-
         window.location.href =
             "/login";
     }
 };
-
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
-setupPasswordToggle();
-
-loadSavedIdentifier();
-
-
-console.log(
-    "Usanex authentication loaded successfully."
-);
