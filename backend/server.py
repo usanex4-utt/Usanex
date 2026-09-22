@@ -11,20 +11,13 @@ from .database import models
 from .routes.auth import router as auth_router
 from .routes.pages import router as pages_router
 from .routes.users import router as users_router
+from .routes.search import router as search_router
 
-
-# =========================================================
-# PATHS
-# =========================================================
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
 STATIC_DIR = BASE_DIR / "frontend" / "static"
 
-
-# =========================================================
-# APP
-# =========================================================
 
 app = FastAPI(
     title="Usanex",
@@ -32,10 +25,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-
-# =========================================================
-# CORS
-# =========================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,10 +35,6 @@ app.add_middleware(
 )
 
 
-# =========================================================
-# STATIC FILES
-# =========================================================
-
 app.mount(
     "/static",
     StaticFiles(directory=STATIC_DIR),
@@ -57,28 +42,19 @@ app.mount(
 )
 
 
-# =========================================================
-# ROUTERS
-# =========================================================
-
 app.include_router(auth_router)
 
 app.include_router(pages_router)
 
 app.include_router(users_router)
 
-# =========================================================
-# DATABASE
-# =========================================================
+app.include_router(search_router)
+
 
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
 
-
-# =========================================================
-# ROOT
-# =========================================================
 
 @app.get("/", include_in_schema=False)
 def root():
@@ -87,10 +63,6 @@ def root():
         status_code=307,
     )
 
-
-# =========================================================
-# HEALTH
-# =========================================================
 
 @app.get("/health")
 def health():
