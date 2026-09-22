@@ -134,22 +134,21 @@ function hideMessage(element) {
 
 function showStep(step) {
 
-    if (stepIdentifier) {
-        stepIdentifier.hidden =
-            step !== "identifier";
+    if (!stepIdentifier ||
+        !stepOtp ||
+        !stepSuccess) {
+        return;
     }
 
 
-    if (stepOtp) {
-        stepOtp.hidden =
-            step !== "otp";
-    }
+    stepIdentifier.hidden =
+        step !== "identifier";
 
+    stepOtp.hidden =
+        step !== "otp";
 
-    if (stepSuccess) {
-        stepSuccess.hidden =
-            step !== "success";
-    }
+    stepSuccess.hidden =
+        step !== "success";
 
 
     window.scrollTo({
@@ -202,7 +201,7 @@ async function sendForgotPasswordOTP(
 
     const response =
         await fetch(
-            `${API_BASE_URL}/api/auth/forgot-password/send-otp`,
+            "/api/auth/forgot-password/send-otp",
             {
                 method: "POST",
 
@@ -212,23 +211,28 @@ async function sendForgotPasswordOTP(
                 },
 
                 body: JSON.stringify({
-                    identifier
+                    identifier: identifier
                 })
             }
         );
 
 
+    const text =
+        await response.text();
+
+
     let data = {};
+
 
     try {
 
-        data =
-            await response.json();
+        data = JSON.parse(text);
 
     } catch {
 
-        data = {};
-
+        throw new Error(
+            "Server returned an invalid response."
+        );
     }
 
 
@@ -258,7 +262,7 @@ async function resetPassword(
 
     const response =
         await fetch(
-            `${API_BASE_URL}/api/auth/forgot-password/reset`,
+            "/api/auth/forgot-password/reset",
             {
                 method: "POST",
 
@@ -268,8 +272,8 @@ async function resetPassword(
                 },
 
                 body: JSON.stringify({
-                    identifier,
-                    otp,
+                    identifier: identifier,
+                    otp: otp,
                     new_password: newPassword,
                     confirm_password: confirmPassword
                 })
@@ -277,17 +281,22 @@ async function resetPassword(
         );
 
 
+    const text =
+        await response.text();
+
+
     let data = {};
+
 
     try {
 
-        data =
-            await response.json();
+        data = JSON.parse(text);
 
     } catch {
 
-        data = {};
-
+        throw new Error(
+            "Server returned an invalid response."
+        );
     }
 
 
@@ -310,7 +319,7 @@ async function resetPassword(
 
 function stopOtpTimer() {
 
-    if (otpCountdown) {
+    if (otpCountdown !== null) {
 
         clearInterval(
             otpCountdown
@@ -413,7 +422,7 @@ function startOtpTimer() {
 
 
 /* =========================================================
-   PASSWORD TOGGLE
+   PASSWORD SHOW / HIDE
 ========================================================= */
 
 function setupPasswordToggle(
@@ -430,11 +439,9 @@ function setupPasswordToggle(
         "click",
         function () {
 
-            const isPassword =
-                input.type === "password";
-
-
-            if (isPassword) {
+            if (
+                input.type === "password"
+            ) {
 
                 input.type = "text";
 
@@ -520,7 +527,9 @@ if (sendOtpForm) {
                     "Please enter your username or mobile."
                 );
 
-                identifierInput?.focus();
+                if (identifierInput) {
+                    identifierInput.focus();
+                }
 
                 return;
             }
@@ -542,14 +551,17 @@ if (sendOtpForm) {
                     );
 
 
+                /*
+                    IMPORTANT:
+                    Identifier ko save karna zaroori hai.
+                */
+
                 currentIdentifier =
                     identifier;
 
 
                 /*
-                    Development mode:
-                    Backend OTP response ko
-                    screen par show kiya ja raha hai.
+                    Development OTP
                 */
 
                 if (
@@ -566,6 +578,11 @@ if (sendOtpForm) {
                 }
 
 
+                /*
+                    IMPORTANT:
+                    OTP screen ko immediately show karo.
+                */
+
                 showStep("otp");
 
 
@@ -574,11 +591,15 @@ if (sendOtpForm) {
 
                 if (otpInput) {
 
+                    otpInput.value = "";
+
                     setTimeout(
                         function () {
+
                             otpInput.focus();
+
                         },
-                        150
+                        200
                     );
                 }
 
@@ -649,10 +670,6 @@ if (resetPasswordForm) {
                     : "";
 
 
-            /* ---------------------------------------------
-               VALIDATION
-            --------------------------------------------- */
-
             if (!currentIdentifier) {
 
                 showMessage(
@@ -673,7 +690,9 @@ if (resetPasswordForm) {
                     "Please enter the 6-digit OTP."
                 );
 
-                otpInput?.focus();
+                if (otpInput) {
+                    otpInput.focus();
+                }
 
                 return;
             }
@@ -686,7 +705,9 @@ if (resetPasswordForm) {
                     "Password must be at least 6 characters."
                 );
 
-                newPasswordInput?.focus();
+                if (newPasswordInput) {
+                    newPasswordInput.focus();
+                }
 
                 return;
             }
@@ -702,7 +723,9 @@ if (resetPasswordForm) {
                     "Passwords do not match."
                 );
 
-                confirmPasswordInput?.focus();
+                if (confirmPasswordInput) {
+                    confirmPasswordInput.focus();
+                }
 
                 return;
             }
@@ -807,7 +830,6 @@ if (resendOtpButton) {
             resendOtpButton.disabled =
                 true;
 
-
             resendOtpButton.textContent =
                 "Sending...";
 
@@ -821,4 +843,129 @@ if (resendOtpButton) {
 
 
                 if (
-                    data.development_
+                    data.development_otp &&
+                    developmentOtp &&
+                    developmentOtpCard
+                ) {
+
+                    developmentOtp.textContent =
+                        data.development_otp;
+
+                    developmentOtpCard.hidden =
+                        false;
+                }
+
+
+                startOtpTimer();
+
+
+                if (otpInput) {
+
+                    otpInput.value = "";
+                }
+
+
+                showMessage(
+                    resetMessage,
+                    "A new OTP has been generated.",
+                    "success"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Resend OTP error:",
+                    error
+                );
+
+
+                showMessage(
+                    resetMessage,
+                    error.message ||
+                    "Unable to resend OTP."
+                );
+
+
+            } finally {
+
+                if (
+                    remainingSeconds > 0
+                ) {
+
+                    resendOtpButton.disabled =
+                        true;
+
+                } else {
+
+                    resendOtpButton.disabled =
+                        false;
+                }
+
+
+                resendOtpButton.textContent =
+                    "Resend OTP";
+            }
+
+        }
+    );
+}
+
+
+/* =========================================================
+   BACK
+========================================================= */
+
+if (backToIdentifier) {
+
+    backToIdentifier.addEventListener(
+        "click",
+        function () {
+
+            stopOtpTimer();
+
+
+            currentIdentifier =
+                "";
+
+
+            if (otpInput) {
+                otpInput.value = "";
+            }
+
+
+            if (newPasswordInput) {
+                newPasswordInput.value = "";
+            }
+
+
+            if (confirmPasswordInput) {
+                confirmPasswordInput.value = "";
+            }
+
+
+            if (developmentOtpCard) {
+
+                developmentOtpCard.hidden =
+                    true;
+            }
+
+
+            hideMessage(
+                resetMessage
+            );
+
+
+            showStep(
+                "identifier"
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   INITIAL STATE
+========================================================= */
+
+showStep("identifier");
