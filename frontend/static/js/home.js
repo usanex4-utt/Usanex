@@ -20,8 +20,14 @@ const headerPlus =
 const homeSearch =
     document.getElementById("homeSearch");
 
+const homeNav =
+    document.getElementById("homeNav");
+
 const reelNav =
     document.getElementById("reelNav");
+
+const searchNav =
+    document.getElementById("searchNav");
 
 const notificationNav =
     document.getElementById("notificationNav");
@@ -112,7 +118,7 @@ if (menuOverlay) {
 
 
 /* =========================================================
-   HEADER PLUS
+   TOP PLUS
 ========================================================= */
 
 if (headerPlus) {
@@ -164,6 +170,32 @@ if (homeSearch) {
 
 
 /* =========================================================
+   BOTTOM SEARCH
+========================================================= */
+
+if (searchNav) {
+
+    searchNav.addEventListener(
+        "click",
+        function () {
+
+            if (homeSearch) {
+
+                homeSearch.focus();
+
+                homeSearch.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+            }
+
+        }
+    );
+}
+
+
+/* =========================================================
    FOLLOW / UNFOLLOW
 ========================================================= */
 
@@ -180,12 +212,12 @@ followButtons.forEach(
             "click",
             function () {
 
-                const following =
+                const isFollowing =
                     button.classList.contains(
                         "following"
                     );
 
-                if (following) {
+                if (isFollowing) {
 
                     button.classList.remove(
                         "following"
@@ -269,7 +301,36 @@ if (profileNav) {
 
 
 /* =========================================================
-   MENU ITEMS
+   HOME
+========================================================= */
+
+if (homeNav) {
+
+    homeNav.addEventListener(
+        "click",
+        function () {
+
+            const contentScroll =
+                document.querySelector(
+                    ".content-scroll"
+                );
+
+            if (contentScroll) {
+
+                contentScroll.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+
+            }
+
+        }
+    );
+}
+
+
+/* =========================================================
+   MENU PROFILE
 ========================================================= */
 
 if (menuProfile) {
@@ -289,6 +350,10 @@ if (menuProfile) {
 }
 
 
+/* =========================================================
+   MENU NOTIFICATIONS
+========================================================= */
+
 if (menuNotifications) {
 
     menuNotifications.addEventListener(
@@ -305,6 +370,10 @@ if (menuNotifications) {
     );
 }
 
+
+/* =========================================================
+   MENU SETTINGS
+========================================================= */
 
 if (menuSettings) {
 
@@ -350,7 +419,7 @@ if (logoutButton) {
 
 
 /* =========================================================
-   SEE ALL
+   NEX MOMENT SEE ALL
 ========================================================= */
 
 if (momentSeeAll) {
@@ -367,6 +436,10 @@ if (momentSeeAll) {
     );
 }
 
+
+/* =========================================================
+   PEOPLE SEE ALL
+========================================================= */
 
 if (peopleSeeAll) {
 
@@ -393,5 +466,5 @@ if (menuOverlay) {
 
 
 console.log(
-    "Usanex Home v4 loaded successfully."
+    "Usanex Home v5 loaded successfully."
 );
