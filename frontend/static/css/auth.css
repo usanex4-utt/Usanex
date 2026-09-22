@@ -1439,17 +1439,7 @@ body {
 }
 
 
-/* =========================================================
-   ACCESSIBILITY
-========================================================= */
 
-button,
-a,
-input {
-
-    -webkit-tap-highlight-color:
-        transparent;
-}
 
 
 button:focus-visible,
@@ -1459,5 +1449,39 @@ input:focus-visible {
     outline:
         2px solid #38bdf8;
 
+    outline-offset: 3px;
+}
+
+/* =========================================================
+   FINAL INPUT FOCUS FIX
+========================================================= */
+
+.input-box input:focus,
+.input-box input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.input-box:focus-within {
+    border-color: #38bdf8;
+
+    box-shadow:
+        0 0 0 3px rgba(56, 189, 248, 0.12),
+        0 0 18px rgba(37, 99, 235, 0.10);
+}
+
+.password-toggle:focus,
+.password-toggle:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.password-toggle:focus-visible {
+    color: #7dd3fc;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid #38bdf8;
     outline-offset: 3px;
 }
