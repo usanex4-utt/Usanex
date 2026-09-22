@@ -1,11 +1,32 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from .database.database import Base, engine
 from .database import models
 from .routes.auth import router as auth_router
+from .routes.pages import router as pages_router
 
+
+# =========================================================
+# PATHS
+# =========================================================
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+
+STATIC_DIR = (
+    BASE_DIR
+    / "frontend"
+    / "static"
+)
+
+
+# =========================================================
+# FASTAPI APP
+# =========================================================
 
 app = FastAPI(
     title="Usanex",
@@ -28,10 +49,27 @@ app.add_middleware(
 
 
 # =========================================================
+# STATIC FILES
+# =========================================================
+
+app.mount(
+    "/static",
+    StaticFiles(directory=STATIC_DIR),
+    name="static",
+)
+
+
+# =========================================================
 # ROUTES
 # =========================================================
 
-app.include_router(auth_router)
+app.include_router(
+    auth_router
+)
+
+app.include_router(
+    pages_router
+)
 
 
 # =========================================================
@@ -40,7 +78,9 @@ app.include_router(auth_router)
 
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(
+        bind=engine
+    )
 
 
 # =========================================================
@@ -61,9 +101,14 @@ def root():
 
 @app.get("/health")
 def health():
+
     try:
+
         with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+
+            connection.execute(
+                text("SELECT 1")
+            )
 
         return {
             "status": "ok",
@@ -71,6 +116,7 @@ def health():
         }
 
     except Exception as exc:
+
         return {
             "status": "error",
             "database": "disconnected",
