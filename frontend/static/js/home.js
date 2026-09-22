@@ -137,10 +137,66 @@ if (headerPlus) {
 
 
 /* =========================================================
-   SEARCH
+   HOME SEARCH
 ========================================================= */
 
+/*
+ * Home search box is only a quick entry point.
+ *
+ * Tapping / pressing Enter opens the dedicated
+ * Search page.
+ *
+ * We intentionally use normal browser navigation
+ * so the phone Back button can return to Home.
+ */
+
+function openSearchPage() {
+
+    window.location.href = "/search";
+}
+
+
 if (homeSearch) {
+
+    /* -----------------------------------------
+       Tap / focus
+    ----------------------------------------- */
+
+    homeSearch.addEventListener(
+        "focus",
+        function () {
+
+            /*
+             * On mobile, focusing the Home search
+             * should open the real Search page.
+             *
+             * Small delay prevents the current
+             * input from behaving unexpectedly.
+             */
+
+            setTimeout(
+                function () {
+
+                    if (
+                        document.activeElement ===
+                        homeSearch
+                    ) {
+
+                        openSearchPage();
+
+                    }
+
+                },
+                50
+            );
+
+        }
+    );
+
+
+    /* -----------------------------------------
+       Enter
+    ----------------------------------------- */
 
     homeSearch.addEventListener(
         "keydown",
@@ -152,20 +208,13 @@ if (homeSearch) {
                 return;
             }
 
-            const query =
-                homeSearch.value.trim();
+            event.preventDefault();
 
-            if (!query) {
-                return;
-            }
-
-            console.log(
-                "Usanex search:",
-                query
-            );
+            openSearchPage();
 
         }
     );
+
 }
 
 
@@ -179,16 +228,7 @@ if (searchNav) {
         "click",
         function () {
 
-            if (homeSearch) {
-
-                homeSearch.focus();
-
-                homeSearch.scrollIntoView({
-                    behavior: "smooth",
-                    block: "center"
-                });
-
-            }
+            openSearchPage();
 
         }
     );
@@ -1014,5 +1054,5 @@ if (menuOverlay) {
 ========================================================= */
 
 console.log(
-    "Usanex Home v7 - secure server logout loaded successfully."
+    "Usanex Home v8 - search navigation + secure server logout loaded successfully."
 );
