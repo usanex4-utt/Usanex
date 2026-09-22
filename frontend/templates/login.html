@@ -1,1 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
 
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Login - Usanex</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/auth.css"
+    >
+</head>
+
+<body>
+
+    <main class="auth-page">
+
+        <section class="auth-card">
+
+            <!-- Usanex Logo -->
+            <div class="brand">
+                <div class="brand-logo">U</div>
+
+                <div class="brand-name">
+                    Usanex
+                </div>
+            </div>
+
+
+            <!-- Heading -->
+            <div class="auth-heading">
+
+                <h1>Welcome back</h1>
+
+                <p>
+                    Login to your Usanex account
+                </p>
+
+            </div>
+
+
+            <!-- Login Form -->
+            <form
+                id="loginForm"
+                class="auth-form"
+            >
+
+                <!-- Username / Mobile -->
+                <div class="form-group">
+
+                    <label for="identifier">
+                        Username or Mobile
+                    </label>
+
+                    <input
+                        type="text"
+                        id="identifier"
+                        name="identifier"
+                        placeholder="Enter username or mobile"
+                        autocomplete="username"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Password -->
+                <div class="form-group">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Forgot Password -->
+                <div class="forgot-row">
+
+                    <a
+                        href="#"
+                        id="forgotPasswordLink"
+                    >
+                        Forgot password?
+                    </a>
+
+                </div>
+
+
+                <!-- Error / Success Message -->
+                <div
+                    id="loginMessage"
+                    class="message"
+                    hidden
+                ></div>
+
+
+                <!-- Login Button -->
+                <button
+                    type="submit"
+                    id="loginButton"
+                    class="primary-button"
+                >
+                    Login
+                </button>
+
+            </form>
+
+
+            <!-- Register -->
+            <div class="auth-footer">
+
+                <span>
+                    Don't have an account?
+                </span>
+
+                <a
+                    href="/register"
+                    id="registerLink"
+                >
+                    Create account
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="/static/js/auth.js"></script>
+
+</body>
+</html>
