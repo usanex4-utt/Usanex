@@ -2,7 +2,7 @@
 
 
 /* =========================================================
-   USANEX AUTH
+   USANEX AUTHENTICATION
 ========================================================= */
 
 const API_BASE_URL = "";
@@ -21,6 +21,9 @@ const identifierInput =
 const passwordInput =
     document.getElementById("password");
 
+const passwordToggle =
+    document.getElementById("passwordToggle");
+
 const loginButton =
     document.getElementById("loginButton");
 
@@ -33,23 +36,34 @@ const registerLink =
 const forgotPasswordLink =
     document.getElementById("forgotPasswordLink");
 
+const rememberMe =
+    document.getElementById("rememberMe");
+
 
 /* =========================================================
    MESSAGE
 ========================================================= */
 
-function showMessage(message, type = "error") {
+function showMessage(
+    message,
+    type = "error"
+) {
 
     if (!loginMessage) {
         return;
     }
 
-    loginMessage.textContent = message;
+
+    loginMessage.textContent =
+        message;
+
 
     loginMessage.className =
         `message ${type}`;
 
-    loginMessage.hidden = false;
+
+    loginMessage.hidden =
+        false;
 }
 
 
@@ -59,11 +73,14 @@ function hideMessage() {
         return;
     }
 
+
     loginMessage.textContent = "";
 
-    loginMessage.className = "message";
+    loginMessage.className =
+        "message";
 
-    loginMessage.hidden = true;
+    loginMessage.hidden =
+        true;
 }
 
 
@@ -71,18 +88,30 @@ function hideMessage() {
    LOADING
 ========================================================= */
 
-function setLoginLoading(loading) {
+function setLoginLoading(
+    loading
+) {
 
     if (!loginButton) {
         return;
     }
 
-    loginButton.disabled = loading;
+
+    loginButton.disabled =
+        loading;
+
 
     const buttonText =
         loginButton.querySelector(
             ".login-button-text"
         );
+
+
+    const buttonArrow =
+        loginButton.querySelector(
+            ".login-arrow"
+        );
+
 
     if (buttonText) {
 
@@ -90,6 +119,15 @@ function setLoginLoading(loading) {
             loading
                 ? "Logging in..."
                 : "Login";
+    }
+
+
+    if (buttonArrow) {
+
+        buttonArrow.textContent =
+            loading
+                ? "..."
+                : "→";
     }
 }
 
@@ -103,33 +141,40 @@ async function loginUser(
     password
 ) {
 
-    const response = await fetch(
-        `${API_BASE_URL}/api/auth/login`,
-        {
-            method: "POST",
+    const response =
+        await fetch(
+            `${API_BASE_URL}/api/auth/login`,
+            {
+                method: "POST",
 
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-            body: JSON.stringify({
-                identifier,
-                password
-            })
-        }
-    );
+                body: JSON.stringify({
+                    identifier:
+                        identifier,
+
+                    password:
+                        password
+                })
+            }
+        );
 
 
     let data = {};
 
+
     try {
 
-        data = await response.json();
+        data =
+            await response.json();
 
     } catch {
 
         data = {};
+
     }
 
 
@@ -147,10 +192,13 @@ async function loginUser(
 
 
 /* =========================================================
-   SAVE SESSION
+   SAVE USER SESSION
 ========================================================= */
 
-function saveUserSession(user) {
+function saveUserSession(
+    user,
+    remember
+) {
 
     if (!user) {
         return;
@@ -176,6 +224,9 @@ function saveUserSession(user) {
     };
 
 
+    /*
+     * Main session
+     */
     localStorage.setItem(
         "usanex_user",
         JSON.stringify(sessionData)
@@ -185,6 +236,125 @@ function saveUserSession(user) {
     localStorage.setItem(
         "usanex_logged_in",
         "true"
+    );
+
+
+    /*
+     * Remember preference
+     */
+    localStorage.setItem(
+        "usanex_remember_me",
+        remember
+            ? "true"
+            : "false"
+    );
+}
+
+
+/* =========================================================
+   LOAD SAVED IDENTIFIER
+========================================================= */
+
+function loadSavedIdentifier() {
+
+    if (!identifierInput) {
+        return;
+    }
+
+
+    const remember =
+        localStorage.getItem(
+            "usanex_remember_me"
+        );
+
+
+    const savedUser =
+        localStorage.getItem(
+            "usanex_user"
+        );
+
+
+    if (
+        remember === "true" &&
+        savedUser
+    ) {
+
+        try {
+
+            const user =
+                JSON.parse(savedUser);
+
+
+            if (user && user.username) {
+
+                identifierInput.value =
+                    user.username;
+            }
+
+
+            if (rememberMe) {
+
+                rememberMe.checked =
+                    true;
+            }
+
+        } catch {
+
+            localStorage.removeItem(
+                "usanex_user"
+            );
+        }
+    }
+}
+
+
+/* =========================================================
+   PASSWORD SHOW / HIDE
+========================================================= */
+
+function setupPasswordToggle() {
+
+    if (
+        !passwordInput ||
+        !passwordToggle
+    ) {
+
+        return;
+    }
+
+
+    passwordToggle.addEventListener(
+        "click",
+        function () {
+
+            const isPassword =
+                passwordInput.type ===
+                "password";
+
+
+            if (isPassword) {
+
+                passwordInput.type =
+                    "text";
+
+
+                passwordToggle.setAttribute(
+                    "aria-label",
+                    "Hide password"
+                );
+
+            } else {
+
+                passwordInput.type =
+                    "password";
+
+
+                passwordToggle.setAttribute(
+                    "aria-label",
+                    "Show password"
+                );
+            }
+        }
     );
 }
 
@@ -201,6 +371,7 @@ if (loginForm) {
 
             event.preventDefault();
 
+
             hideMessage();
 
 
@@ -216,13 +387,28 @@ if (loginForm) {
                     : "";
 
 
+            const remember =
+                rememberMe
+                    ? rememberMe.checked
+                    : false;
+
+
+            /* -----------------------------------------
+               VALIDATION
+            ----------------------------------------- */
+
             if (!identifier) {
 
                 showMessage(
-                    "Please enter your username or mobile."
+                    "Please enter your username or mobile number."
                 );
 
-                identifierInput?.focus();
+
+                if (identifierInput) {
+
+                    identifierInput.focus();
+                }
+
 
                 return;
             }
@@ -234,16 +420,29 @@ if (loginForm) {
                     "Please enter your password."
                 );
 
-                passwordInput?.focus();
+
+                if (passwordInput) {
+
+                    passwordInput.focus();
+                }
+
 
                 return;
             }
 
 
+            /* -----------------------------------------
+               LOADING
+            ----------------------------------------- */
+
             setLoginLoading(true);
 
 
             try {
+
+                /* -------------------------------------
+                   API
+                ------------------------------------- */
 
                 const data =
                     await loginUser(
@@ -252,6 +451,10 @@ if (loginForm) {
                     );
 
 
+                /* -------------------------------------
+                   RESPONSE VALIDATION
+                ------------------------------------- */
+
                 if (
                     !data ||
                     data.success !== true ||
@@ -259,15 +462,24 @@ if (loginForm) {
                 ) {
 
                     throw new Error(
-                        "Login failed."
+                        "Login failed. Please try again."
                     );
                 }
 
 
+                /* -------------------------------------
+                   SAVE SESSION
+                ------------------------------------- */
+
                 saveUserSession(
-                    data.user
+                    data.user,
+                    remember
                 );
 
+
+                /* -------------------------------------
+                   SUCCESS
+                ------------------------------------- */
 
                 showMessage(
                     `Welcome back, ${data.user.name}!`,
@@ -276,16 +488,16 @@ if (loginForm) {
 
 
                 /*
-                    Home page अभी बनाया नहीं गया है.
-                    इसलिए अभी login के बाद यहीं रहेंगे.
+                 * Home page is now the next destination.
+                 */
+                setTimeout(
+                    function () {
 
-                    Home बनने के बाद सिर्फ नीचे वाली
-                    line को /home से connect करेंगे.
-                */
+                        window.location.href =
+                            "/home";
 
-                console.log(
-                    "Usanex login successful:",
-                    data.user
+                    },
+                    500
                 );
 
 
@@ -322,6 +534,9 @@ if (registerLink) {
         "click",
         function (event) {
 
+            /*
+             * Let browser open /register.
+             */
             event.preventDefault();
 
             window.location.href =
@@ -341,9 +556,12 @@ if (forgotPasswordLink) {
         "click",
         function (event) {
 
+            /*
+             * Forgot-password page अभी नहीं बनाया गया है.
+             */
             event.preventDefault();
 
-            alert(
+            showMessage(
                 "Forgot Password will be available soon."
             );
         }
@@ -374,7 +592,9 @@ window.UsanexAuth = {
                 "usanex_user"
             );
 
+
         if (!user) {
+
             return null;
         }
 
@@ -396,11 +616,32 @@ window.UsanexAuth = {
             "usanex_user"
         );
 
+
         localStorage.removeItem(
             "usanex_logged_in"
         );
+
+
+        localStorage.removeItem(
+            "usanex_remember_me"
+        );
+
 
         window.location.href =
             "/login";
     }
 };
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+setupPasswordToggle();
+
+loadSavedIdentifier();
+
+
+console.log(
+    "Usanex authentication loaded successfully."
+);
