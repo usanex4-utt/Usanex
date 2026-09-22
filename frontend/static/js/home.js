@@ -2,180 +2,143 @@
 
 
 /* =========================================================
-   USANEX HOME
-========================================================= */
-
-
-/* =========================================================
    ELEMENTS
 ========================================================= */
-
-const homeSearch =
-    document.getElementById("homeSearch");
-
-const clearSearch =
-    document.getElementById("clearSearch");
-
-const peopleList =
-    document.getElementById("peopleList");
-
-const emptySearch =
-    document.getElementById("emptySearch");
-
-const addMomentButton =
-    document.getElementById("addMomentButton");
-
-const notificationButton =
-    document.getElementById(
-        "notificationButton"
-    );
-
-const notificationDot =
-    document.getElementById(
-        "notificationDot"
-    );
 
 const menuButton =
     document.getElementById("menuButton");
 
-const closeMenu =
-    document.getElementById("closeMenu");
-
 const menuOverlay =
     document.getElementById("menuOverlay");
 
-const logoutButton =
-    document.getElementById("logoutButton");
+const closeMenu =
+    document.getElementById("closeMenu");
 
-const searchNav =
-    document.getElementById("searchNav");
+const homeSearch =
+    document.getElementById("homeSearch");
 
-const profileNav =
-    document.getElementById("profileNav");
+const createNav =
+    document.getElementById("createNav");
 
 const reelNav =
     document.getElementById("reelNav");
 
-const createButton =
-    document.getElementById("createButton");
+const notificationNav =
+    document.getElementById("notificationNav");
+
+const profileNav =
+    document.getElementById("profileNav");
+
+const logoutButton =
+    document.getElementById("logoutButton");
+
+const menuProfile =
+    document.getElementById("menuProfile");
+
+const menuNotifications =
+    document.getElementById("menuNotifications");
+
+const menuSettings =
+    document.getElementById("menuSettings");
+
+const momentSeeAll =
+    document.getElementById("momentSeeAll");
+
+const peopleSeeAll =
+    document.getElementById("peopleSeeAll");
+
+
+/* =========================================================
+   MENU
+========================================================= */
+
+function openMenu() {
+
+    if (!menuOverlay) {
+        return;
+    }
+
+    menuOverlay.hidden = false;
+
+    document.body.style.overflow = "hidden";
+}
+
+
+function closeMenuPanel() {
+
+    if (!menuOverlay) {
+        return;
+    }
+
+    menuOverlay.hidden = true;
+
+    document.body.style.overflow = "";
+}
+
+
+if (menuButton) {
+
+    menuButton.addEventListener(
+        "click",
+        openMenu
+    );
+}
+
+
+if (closeMenu) {
+
+    closeMenu.addEventListener(
+        "click",
+        closeMenuPanel
+    );
+}
+
+
+if (menuOverlay) {
+
+    menuOverlay.addEventListener(
+        "click",
+        function (event) {
+
+            if (
+                event.target === menuOverlay
+            ) {
+                closeMenuPanel();
+            }
+
+        }
+    );
+}
 
 
 /* =========================================================
    SEARCH
 ========================================================= */
 
-function filterPeople() {
-
-    if (!peopleList) {
-        return;
-    }
-
-
-    const query =
-        homeSearch
-            ? homeSearch.value
-                .trim()
-                .toLowerCase()
-            : "";
-
-
-    const cards =
-        peopleList.querySelectorAll(
-            ".user-card"
-        );
-
-
-    let visibleCount = 0;
-
-
-    cards.forEach(
-        function (card) {
-
-            const name =
-                (
-                    card.dataset.name ||
-                    ""
-                ).toLowerCase();
-
-
-            const username =
-                (
-                    card.dataset.username ||
-                    ""
-                ).toLowerCase();
-
-
-            const text =
-                card.textContent
-                    .toLowerCase();
-
-
-            const match =
-                !query ||
-                name.includes(query) ||
-                username.includes(query) ||
-                text.includes(query);
-
-
-            if (match) {
-
-                card.style.display =
-                    "flex";
-
-                visibleCount++;
-
-            } else {
-
-                card.style.display =
-                    "none";
-            }
-
-        }
-    );
-
-
-    if (emptySearch) {
-
-        emptySearch.hidden =
-            visibleCount !== 0;
-    }
-
-
-    if (clearSearch) {
-
-        clearSearch.hidden =
-            !query;
-    }
-}
-
-
 if (homeSearch) {
 
     homeSearch.addEventListener(
-        "input",
-        filterPeople
-    );
-}
+        "keydown",
+        function (event) {
 
-
-/* =========================================================
-   CLEAR SEARCH
-========================================================= */
-
-if (clearSearch) {
-
-    clearSearch.addEventListener(
-        "click",
-        function () {
-
-            if (homeSearch) {
-
-                homeSearch.value = "";
-
-                homeSearch.focus();
+            if (
+                event.key !== "Enter"
+            ) {
+                return;
             }
 
-            filterPeople();
+            const query =
+                homeSearch.value.trim();
+
+            if (!query) {
+                return;
+            }
+
+            console.log(
+                "Usanex search:",
+                query
+            );
+
         }
     );
 }
@@ -198,13 +161,12 @@ followButtons.forEach(
             "click",
             function () {
 
-                const isFollowing =
+                const following =
                     button.classList.contains(
                         "following"
                     );
 
-
-                if (isFollowing) {
+                if (following) {
 
                     button.classList.remove(
                         "following"
@@ -220,7 +182,7 @@ followButtons.forEach(
                     );
 
                     button.textContent =
-                        "Following";
+                        "Unfollow";
                 }
 
             }
@@ -231,17 +193,36 @@ followButtons.forEach(
 
 
 /* =========================================================
-   NEX MOMENT
+   PLUS
 ========================================================= */
 
-if (addMomentButton) {
+if (createNav) {
 
-    addMomentButton.addEventListener(
+    createNav.addEventListener(
         "click",
         function () {
 
             alert(
-                "Nex Moment creation will be added next."
+                "Create feature will be added next."
+            );
+
+        }
+    );
+}
+
+
+/* =========================================================
+   REEL
+========================================================= */
+
+if (reelNav) {
+
+    reelNav.addEventListener(
+        "click",
+        function () {
+
+            alert(
+                "Reels feature will be added next."
             );
 
         }
@@ -253,14 +234,15 @@ if (addMomentButton) {
    NOTIFICATION
 ========================================================= */
 
-if (notificationButton) {
+if (notificationNav) {
 
-    notificationButton.addEventListener(
+    notificationNav.addEventListener(
         "click",
         function () {
 
-            window.location.href =
-                "/notifications";
+            alert(
+                "Notifications feature will be added next."
+            );
 
         }
     );
@@ -268,66 +250,73 @@ if (notificationButton) {
 
 
 /* =========================================================
-   MENU
+   PROFILE
 ========================================================= */
 
-function openMenu() {
+if (profileNav) {
 
-    if (!menuOverlay) {
-        return;
-    }
-
-    menuOverlay.hidden = false;
-
-    document.body.style.overflow =
-        "hidden";
-}
-
-
-function hideMenu() {
-
-    if (!menuOverlay) {
-        return;
-    }
-
-    menuOverlay.hidden = true;
-
-    document.body.style.overflow =
-        "";
-}
-
-
-if (menuButton) {
-
-    menuButton.addEventListener(
+    profileNav.addEventListener(
         "click",
-        openMenu
+        function () {
+
+            alert(
+                "Profile feature will be added next."
+            );
+
+        }
     );
 }
 
 
-if (closeMenu) {
+/* =========================================================
+   MENU ITEMS
+========================================================= */
 
-    closeMenu.addEventListener(
+if (menuProfile) {
+
+    menuProfile.addEventListener(
         "click",
-        hideMenu
+        function () {
+
+            closeMenuPanel();
+
+            alert(
+                "Profile feature will be added next."
+            );
+
+        }
     );
 }
 
 
-if (menuOverlay) {
+if (menuNotifications) {
 
-    menuOverlay.addEventListener(
+    menuNotifications.addEventListener(
         "click",
-        function (event) {
+        function () {
 
-            if (
-                event.target ===
-                menuOverlay
-            ) {
+            closeMenuPanel();
 
-                hideMenu();
-            }
+            alert(
+                "Notifications feature will be added next."
+            );
+
+        }
+    );
+}
+
+
+if (menuSettings) {
+
+    menuSettings.addEventListener(
+        "click",
+        function () {
+
+            closeMenuPanel();
+
+            alert(
+                "Settings feature will be added next."
+            );
 
         }
     );
@@ -344,81 +333,49 @@ if (logoutButton) {
         "click",
         function () {
 
-            /*
-             * Authentication session will be
-             * connected here later.
-             */
+            const confirmed =
+                window.confirm(
+                    "Are you sure you want to logout?"
+                );
+
+            if (!confirmed) {
+                return;
+            }
 
             window.location.href =
                 "/login";
-
         }
     );
 }
 
 
 /* =========================================================
-   BOTTOM NAVIGATION
+   SEE ALL
 ========================================================= */
 
-if (reelNav) {
+if (momentSeeAll) {
 
-    reelNav.addEventListener(
-        "click",
-        function () {
-
-            window.location.href =
-                "/reels";
-
-        }
-    );
-}
-
-
-if (searchNav) {
-
-    searchNav.addEventListener(
-        "click",
-        function () {
-
-            if (homeSearch) {
-
-                homeSearch.focus();
-
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
-
-            }
-
-        }
-    );
-}
-
-
-if (profileNav) {
-
-    profileNav.addEventListener(
-        "click",
-        function () {
-
-            window.location.href =
-                "/profile";
-
-        }
-    );
-}
-
-
-if (createButton) {
-
-    createButton.addEventListener(
+    momentSeeAll.addEventListener(
         "click",
         function () {
 
             alert(
-                "Create options will be added next."
+                "All moments will be added next."
+            );
+
+        }
+    );
+}
+
+
+if (peopleSeeAll) {
+
+    peopleSeeAll.addEventListener(
+        "click",
+        function () {
+
+            alert(
+                "All people will be added next."
             );
 
         }
@@ -430,11 +387,10 @@ if (createButton) {
    INITIAL STATE
 ========================================================= */
 
-if (notificationDot) {
-
-    notificationDot.hidden =
-        true;
+if (menuOverlay) {
+    menuOverlay.hidden = true;
 }
 
-
-filterPeople();
+console.log(
+    "Usanex Home v3 loaded."
+);
