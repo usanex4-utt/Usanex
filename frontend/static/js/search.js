@@ -227,7 +227,7 @@ async function searchPeople(
 
 
         /* -----------------------------------------
-           OTHER API ERROR
+           API ERROR
         ----------------------------------------- */
 
         if (!response.ok) {
@@ -261,10 +261,6 @@ async function searchPeople(
 
 
     } catch (error) {
-
-        /* -----------------------------------------
-           Ignore cancelled search
-        ----------------------------------------- */
 
         if (
             error.name ===
@@ -542,30 +538,9 @@ function createUserCard(
             event.stopPropagation();
 
 
-            /*
-             * Follow API next step me connect hoga.
-             *
-             * Abhi UI state:
-             * Follow → Request Sent
-             */
-
-            if (
-                followButton.classList.contains(
-                    "requested"
-                )
-            ) {
-
-                return;
-
-            }
-
-
-            followButton.textContent =
-                "Request Sent";
-
-
-            followButton.classList.add(
-                "requested"
+            sendConnectionRequest(
+                user,
+                followButton
             );
 
         }
@@ -584,16 +559,8 @@ function createUserCard(
         user.username || "";
 
 
-    /*
-     * Normal card click intentionally does nothing.
-     *
-     * Profile opening will later be connected
-     * only through the DP.
-     */
-
-
     /* =====================================================
-       ASSEMBLE
+       ASSEMBLE CARD
     ===================================================== */
 
     card.appendChild(
@@ -612,6 +579,257 @@ function createUserCard(
 
 
     return card;
+
+}
+
+
+/* =========================================================
+   SEND REAL CONNECTION REQUEST
+========================================================= */
+
+async function sendConnectionRequest(
+    user,
+    button
+) {
+
+    const targetUserId =
+        (
+            user.user_id ||
+            ""
+        ).trim();
+
+
+    /* -----------------------------------------
+       Safety check
+    ----------------------------------------- */
+
+    if (!targetUserId) {
+
+        alert(
+            "User ID is missing."
+        );
+
+        return;
+    }
+
+
+    /* -----------------------------------------
+       Prevent duplicate clicks
+    ----------------------------------------- */
+
+    if (
+        button.disabled ||
+        button.classList.contains(
+            "requested"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const originalText =
+        button.textContent;
+
+
+    button.disabled =
+        true;
+
+
+    button.textContent =
+        "Sending...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/connections/request",
+                {
+                    method: "POST",
+
+                    credentials:
+                        "same-origin",
+
+                    headers: {
+                        "Accept":
+                            "application/json",
+
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            user_id:
+                                targetUserId
+                        })
+                }
+            );
+
+
+        let data = {};
+
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data = {};
+
+        }
+
+
+        /* -----------------------------------------
+           SESSION EXPIRED
+        ----------------------------------------- */
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.replace(
+                "/login"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           REQUEST SUCCESS
+        ----------------------------------------- */
+
+        if (
+            response.ok &&
+            data.success === true
+        ) {
+
+            button.textContent =
+                "Request Sent";
+
+
+            button.classList.add(
+                "requested"
+            );
+
+
+            button.disabled =
+                true;
+
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           ALREADY PENDING / CONNECTED
+        ----------------------------------------- */
+
+        if (
+            response.status === 409
+        ) {
+
+            const message =
+                data.detail ||
+                "Connection request already exists.";
+
+
+            /*
+             * If the request is already pending,
+             * show the correct UI state.
+             */
+
+            if (
+                message.toLowerCase()
+                    .includes(
+                        "already pending"
+                    )
+            ) {
+
+                button.textContent =
+                    "Request Sent";
+
+
+                button.classList.add(
+                    "requested"
+                );
+
+
+                button.disabled =
+                    true;
+
+
+                return;
+            }
+
+
+            if (
+                message.toLowerCase()
+                    .includes(
+                        "already connected"
+                    )
+            ) {
+
+                button.textContent =
+                    "Connected";
+
+
+                button.classList.add(
+                    "requested"
+                );
+
+
+                button.disabled =
+                    true;
+
+
+                return;
+            }
+
+
+            throw new Error(
+                message
+            );
+        }
+
+
+        /* -----------------------------------------
+           OTHER ERROR
+        ----------------------------------------- */
+
+        throw new Error(
+            data.detail ||
+            "Unable to send connection request."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Usanex connection request error:",
+            error
+        );
+
+
+        button.disabled =
+            false;
+
+
+        button.textContent =
+            originalText;
+
+
+        alert(
+            error.message ||
+            "Unable to send request. Please try again."
+        );
+
+    }
 
 }
 
@@ -652,5 +870,5 @@ if (searchStatus) {
 
 
 console.log(
-    "Usanex Search v4 loaded successfully."
+    "Usanex Search v5 - real connection request loaded successfully."
 );
