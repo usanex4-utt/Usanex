@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <title>Create Account | Usanex</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/register.css"
+    >
+</head>
+
+<body>
+
+<div class="register-page">
+
+    <main class="register-container">
+
+        <!-- BRAND -->
+
+        <div class="brand">
+            <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
+        </div>
+
+
+        <!-- ================================
+             STEP 1
+        ================================= -->
+
+        <section
+            id="registerStep"
+            class="register-step"
+        >
+
+            <div class="page-heading">
+
+                <h1>
+                    Create your <span>Usanex</span> account
+                </h1>
+
+                <p>
+                    Create your account and connect with real people.
+                </p>
+
+            </div>
+
+
+            <form
+                id="registerForm"
+                class="register-form"
+            >
+
+                <!-- NAME -->
+
+                <div class="input-group">
+
+                    <label for="name">
+                        Full Name
+                    </label>
+
+                    <div class="input-box">
+
+                        <span class="input-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <circle
+                                    cx="12"
+                                    cy="8"
+                                    r="4"
+                                ></circle>
+
+                                <path
+                                    d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
+                                ></path>
+                            </svg>
+
+                        </span>
+
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            placeholder="Enter your name"
+                            autocomplete="name"
+                            maxlength="100"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- MOBILE -->
+
+                <div class="input-group">
+
+                    <label for="mobile">
+                        Mobile Number
+                    </label>
+
+                    <div class="input-box">
+
+                        <span class="input-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <rect
+                                    x="7"
+                                    y="2"
+                                    width="10"
+                                    height="20"
+                                    rx="2"
+                                ></rect>
+
+                                <path
+                                    d="M10 18h4"
+                                ></path>
+                            </svg>
+
+                        </span>
+
+                        <input
+                            type="tel"
+                            id="mobile"
+                            name="mobile"
+                            placeholder="Enter mobile number"
+                            autocomplete="tel"
+                            maxlength="20"
+                            inputmode="tel"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- PASSWORD -->
+
+                <div class="input-group">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <div class="input-box">
+
+                        <span class="input-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <rect
+                                    x="4"
+                                    y="10"
+                                    width="16"
+                                    height="11"
+                                    rx="2"
+                                ></rect>
+
+                                <path
+                                    d="M8 10V7a4 4 0 018 0v3"
+                                ></path>
+                            </svg>
+
+                        </span>
+
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Create password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            maxlength="128"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            class="password-toggle"
+                            id="passwordToggle"
+                            aria-label="Show password"
+                        >
+                            <span>Show</span>
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CONFIRM PASSWORD -->
+
+                <div class="input-group">
+
+                    <label for="confirmPassword">
+                        Confirm Password
+                    </label>
+
+                    <div class="input-box">
+
+                        <span class="input-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    d="M5 12l4 4L19 6"
+                                ></path>
+                            </svg>
+
+                        </span>
+
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            placeholder="Confirm password"
+                            autocomplete="new-password"
+                            minlength="6"
+                            maxlength="128"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- MESSAGE -->
+
+                <div
+                    id="registerMessage"
+                    class="message"
+                    hidden
+                ></div>
+
+
+                <!-- GET OTP -->
+
+                <button
+                    type="submit"
+                    id="getOtpButton"
+                    class="primary-button"
+                >
+                    <span id="getOtpText">
+                        Get OTP
+                    </span>
+
+                    <span class="button-arrow">
+                        →
+                    </span>
+                </button>
+
+            </form>
+
+
+            <!-- LOGIN -->
+
+            <div class="bottom-text">
+
+                <span>
+                    Already have an account?
+                </span>
+
+                <a href="/login">
+                    Login
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- ================================
+             STEP 2 OTP
+        ================================= -->
+
+        <section
+            id="otpStep"
+            class="register-step"
+            hidden
+        >
+
+            <div class="page-heading">
+
+                <h1>
+                    Verify your <span>mobile</span>
+                </h1>
+
+                <p>
+                    Enter the 6-digit OTP sent to your mobile number.
+                </p>
+
+            </div>
+
+
+            <div class="otp-info">
+
+                <span>
+                    OTP is valid for
+                </span>
+
+                <strong id="otpTimer">
+                    02:00
+                </strong>
+
+            </div>
+
+
+            <div class="otp-box">
+
+                <input
+                    type="text"
+                    id="otp"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    placeholder="000000"
+                >
+
+            </div>
+
+
+            <!-- DEVELOPMENT OTP -->
+
+            <div
+                id="developmentOtp"
+                class="development-otp"
+                hidden
+            >
+
+                <span>
+                    Development OTP
+                </span>
+
+                <strong id="developmentOtpValue">
+                    ------
+                </strong>
+
+            </div>
+
+
+            <div
+                id="otpMessage"
+                class="message"
+                hidden
+            ></div>
+
+
+            <button
+                type="button"
+                id="verifyOtpButton"
+                class="primary-button"
+            >
+
+                <span id="verifyOtpText">
+                    Verify OTP
+                </span>
+
+                <span class="button-arrow">
+                    →
+                </span>
+
+            </button>
+
+
+            <button
+                type="button"
+                id="resendOtpButton"
+                class="secondary-button"
+                disabled
+            >
+                Resend OTP
+            </button>
+
+
+            <button
+                type="button"
+                id="backToRegisterButton"
+                class="text-button"
+            >
+                ← Change details
+            </button>
+
+        </section>
+
+
+        <!-- ================================
+             STEP 3 ACCOUNT CREATED
+        ================================= -->
+
+        <section
+            id="successStep"
+            class="register-step success-step"
+            hidden
+        >
+
+            <div class="success-icon">
+                ✓
+            </div>
+
+
+            <div class="page-heading">
+
+                <h1>
+                    Account <span>Created</span>
+                </h1>
+
+                <p>
+                    Welcome to Usanex. Your account has been created successfully.
+                </p>
+
+            </div>
+
+
+            <div class="account-card">
+
+                <div class="account-row">
+
+                    <span>
+                        Username
+                    </span>
+
+                    <strong id="createdUsername">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="account-row">
+
+                    <span>
+                        User ID
+                    </span>
+
+                    <strong id="createdUserId">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="copyAccountButton"
+                class="secondary-button"
+            >
+                Copy Account Details
+            </button>
+
+
+            <button
+                type="button"
+                id="continueLoginButton"
+                class="primary-button"
+            >
+
+                <span>
+                    Continue to Login
+                </span>
+
+                <span class="button-arrow">
+                    →
+                </span>
+
+            </button>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script src="/static/js/register.js"></script>
+
+</body>
+</html>
