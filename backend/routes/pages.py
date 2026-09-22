@@ -11,10 +11,6 @@ from .auth import get_current_user_from_request
 router = APIRouter()
 
 
-# =========================================================
-# PATHS
-# =========================================================
-
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 TEMPLATES_DIR = (
@@ -24,20 +20,12 @@ TEMPLATES_DIR = (
 )
 
 
-# =========================================================
-# LOGIN
-# =========================================================
-
 @router.get("/login")
 def login_page():
     return FileResponse(
         TEMPLATES_DIR / "login.html"
     )
 
-
-# =========================================================
-# REGISTER
-# =========================================================
 
 @router.get("/register")
 def register_page():
@@ -46,10 +34,6 @@ def register_page():
     )
 
 
-# =========================================================
-# FORGOT PASSWORD
-# =========================================================
-
 @router.get("/forgot-password")
 def forgot_password_page():
     return FileResponse(
@@ -57,39 +41,42 @@ def forgot_password_page():
     )
 
 
-# =========================================================
-# HOME - PROTECTED
-# =========================================================
+@router.get("/search")
+def search_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = get_current_user_from_request(
+        request=request,
+        db=db,
+    )
+
+    if user is None:
+        return RedirectResponse(
+            url="/login",
+            status_code=307,
+        )
+
+    return FileResponse(
+        TEMPLATES_DIR / "search.html"
+    )
+
 
 @router.get("/home")
 def home_page(
     request: Request,
     db: Session = Depends(get_db),
 ):
-
-    # -----------------------------------------------------
-    # CHECK LOGIN SESSION
-    # -----------------------------------------------------
-
     user = get_current_user_from_request(
         request=request,
         db=db,
     )
 
-    # -----------------------------------------------------
-    # NO VALID SESSION
-    # -----------------------------------------------------
-
     if user is None:
-
         return RedirectResponse(
             url="/login",
             status_code=307,
         )
-
-    # -----------------------------------------------------
-    # VALID SESSION
-    # -----------------------------------------------------
 
     return FileResponse(
         TEMPLATES_DIR / "home.html"
