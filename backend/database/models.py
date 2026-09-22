@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, DateTime, Integer, String
 
 from .database import Base
 
@@ -6,13 +6,17 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     username = Column(
-    String(100),
-    unique=True,
-    index=True,
-    nullable=False,
+        String(100),
+        unique=True,
+        index=True,
+        nullable=False,
     )
 
     user_id = Column(
@@ -48,7 +52,11 @@ class User(Base):
 class OTPVerification(Base):
     __tablename__ = "otp_verifications"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     identifier = Column(
         String(100),
