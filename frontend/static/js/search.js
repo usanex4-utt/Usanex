@@ -2,6 +2,12 @@
 
 
 /* =========================================================
+   USANEX SEARCH
+   Follow → Verify → Connected
+========================================================= */
+
+
+/* =========================================================
    ELEMENTS
 ========================================================= */
 
@@ -27,6 +33,29 @@ let searchTimer = null;
 let currentController = null;
 
 
+/*
+ * When Go Card opens this page, these values are
+ * received from the notification page.
+ */
+
+const pageParams =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const verificationUserId =
+    (
+        pageParams.get("user_id") ||
+        ""
+    ).trim();
+
+const verificationId =
+    (
+        pageParams.get("verification_id") ||
+        ""
+    ).trim();
+
+
 /* =========================================================
    SEARCH INPUT
 ========================================================= */
@@ -40,19 +69,15 @@ if (searchInput) {
             const query =
                 searchInput.value.trim();
 
-
             clearTimeout(
                 searchTimer
             );
-
 
             if (clearSearch) {
 
                 clearSearch.hidden =
                     query.length === 0;
-
             }
-
 
             if (!query) {
 
@@ -60,7 +85,6 @@ if (searchInput) {
 
                 return;
             }
-
 
             searchTimer =
                 setTimeout(
@@ -96,13 +120,10 @@ if (clearSearch) {
 
             }
 
-
             clearSearch.hidden =
                 true;
 
-
             resetSearch();
-
 
             if (searchInput) {
 
@@ -130,13 +151,11 @@ function resetSearch() {
 
     }
 
-
     if (searchResults) {
 
         searchResults.innerHTML = "";
 
     }
-
 
     if (searchStatus) {
 
@@ -162,10 +181,8 @@ async function searchPeople(
 
     }
 
-
     currentController =
         new AbortController();
-
 
     if (searchStatus) {
 
@@ -173,7 +190,6 @@ async function searchPeople(
             "Searching...";
 
     }
-
 
     if (searchResults) {
 
@@ -184,7 +200,6 @@ async function searchPeople(
         `;
 
     }
-
 
     try {
 
@@ -209,7 +224,6 @@ async function searchPeople(
                 }
             );
 
-
         /* -----------------------------------------
            LOGIN REQUIRED
         ----------------------------------------- */
@@ -225,7 +239,6 @@ async function searchPeople(
             return;
         }
 
-
         /* -----------------------------------------
            API ERROR
         ----------------------------------------- */
@@ -238,10 +251,8 @@ async function searchPeople(
 
         }
 
-
         const data =
             await response.json();
-
 
         if (
             !data ||
@@ -254,11 +265,9 @@ async function searchPeople(
 
         }
 
-
         renderResults(
             data.users || []
         );
-
 
     } catch (error) {
 
@@ -268,15 +277,12 @@ async function searchPeople(
         ) {
 
             return;
-
         }
-
 
         console.error(
             "Usanex search error:",
             error
         );
-
 
         if (searchStatus) {
 
@@ -284,7 +290,6 @@ async function searchPeople(
                 "Something went wrong";
 
         }
-
 
         if (searchResults) {
 
@@ -318,7 +323,6 @@ function renderResults(
 
         }
 
-
         if (searchResults) {
 
             searchResults.innerHTML = `
@@ -332,7 +336,6 @@ function renderResults(
         return;
     }
 
-
     if (searchStatus) {
 
         searchStatus.textContent =
@@ -340,13 +343,11 @@ function renderResults(
 
     }
 
-
     if (searchResults) {
 
         searchResults.innerHTML = "";
 
     }
-
 
     users.forEach(
         function (user) {
@@ -355,7 +356,6 @@ function renderResults(
                 createUserCard(
                     user
                 );
-
 
             if (searchResults) {
 
@@ -384,9 +384,14 @@ function createUserCard(
             "article"
         );
 
-
     card.className =
         "search-user-card";
+
+    card.dataset.userId =
+        user.user_id || "";
+
+    card.dataset.username =
+        user.username || "";
 
 
     /* =====================================================
@@ -397,7 +402,6 @@ function createUserCard(
         document.createElement(
             "div"
         );
-
 
     avatar.className =
         "search-user-avatar";
@@ -410,18 +414,14 @@ function createUserCard(
                 "img"
             );
 
-
         image.src =
             user.profile_photo;
-
 
         image.alt =
             user.name || "User";
 
-
         image.loading =
             "lazy";
-
 
         image.onerror =
             function () {
@@ -434,7 +434,6 @@ function createUserCard(
                     );
 
             };
-
 
         avatar.appendChild(
             image
@@ -459,7 +458,6 @@ function createUserCard(
             "div"
         );
 
-
     info.className =
         "search-user-info";
 
@@ -469,10 +467,8 @@ function createUserCard(
             "div"
         );
 
-
     name.className =
         "search-user-name";
-
 
     name.textContent =
         user.name || "User";
@@ -483,10 +479,8 @@ function createUserCard(
             "div"
         );
 
-
     username.className =
         "search-user-username";
-
 
     username.textContent =
         user.username || "";
@@ -502,30 +496,97 @@ function createUserCard(
 
 
     /* =====================================================
-       FOLLOW BUTTON
+       ACTION AREA
     ===================================================== */
+
+    const actionArea =
+        document.createElement(
+            "div"
+        );
+
+    actionArea.className =
+        "search-user-action-area";
+
+
+    /*
+     * If this page was opened from
+     * "Go Card", show VERIFY for the
+     * requested user.
+     */
+
+    const isVerificationCard =
+        verificationUserId &&
+        verificationUserId ===
+            (
+                user.user_id ||
+                ""
+            );
+
+
+    if (isVerificationCard) {
+
+        createVerifyAction(
+            user,
+            actionArea
+        );
+
+    } else {
+
+        createFollowAction(
+            user,
+            actionArea
+        );
+
+    }
+
+
+    /* =====================================================
+       ASSEMBLE CARD
+    ===================================================== */
+
+    card.appendChild(
+        avatar
+    );
+
+    card.appendChild(
+        info
+    );
+
+    card.appendChild(
+        actionArea
+    );
+
+
+    return card;
+
+}
+
+
+/* =========================================================
+   CREATE FOLLOW ACTION
+========================================================= */
+
+function createFollowAction(
+    user,
+    actionArea
+) {
 
     const followButton =
         document.createElement(
             "button"
         );
 
-
     followButton.type =
         "button";
-
 
     followButton.className =
         "search-follow-button";
 
-
     followButton.textContent =
         "Follow";
 
-
     followButton.dataset.userId =
         user.user_id || "";
-
 
     followButton.dataset.username =
         user.username || "";
@@ -537,7 +598,6 @@ function createUserCard(
 
             event.stopPropagation();
 
-
             sendConnectionRequest(
                 user,
                 followButton
@@ -547,38 +607,505 @@ function createUserCard(
     );
 
 
-    /* =====================================================
-       CARD DATA
-    ===================================================== */
-
-    card.dataset.userId =
-        user.user_id || "";
-
-
-    card.dataset.username =
-        user.username || "";
-
-
-    /* =====================================================
-       ASSEMBLE CARD
-    ===================================================== */
-
-    card.appendChild(
-        avatar
-    );
-
-
-    card.appendChild(
-        info
-    );
-
-
-    card.appendChild(
+    actionArea.appendChild(
         followButton
     );
 
+}
 
-    return card;
+
+/* =========================================================
+   CREATE VERIFY ACTION
+========================================================= */
+
+function createVerifyAction(
+    user,
+    actionArea
+) {
+
+    const verifyButton =
+        document.createElement(
+            "button"
+        );
+
+    verifyButton.type =
+        "button";
+
+    verifyButton.className =
+        "search-follow-button";
+
+    verifyButton.textContent =
+        "VERIFY";
+
+    verifyButton.dataset.userId =
+        user.user_id || "";
+
+
+    verifyButton.addEventListener(
+        "click",
+        function (event) {
+
+            event.stopPropagation();
+
+            openVerificationBox(
+                user,
+                actionArea
+            );
+
+        }
+    );
+
+
+    actionArea.appendChild(
+        verifyButton
+    );
+
+}
+
+
+/* =========================================================
+   OPEN VERIFICATION BOX
+========================================================= */
+
+function openVerificationBox(
+    user,
+    actionArea
+) {
+
+    /*
+     * Prevent duplicate verification boxes.
+     */
+
+    if (
+        actionArea.querySelector(
+            ".usanex-verify-box"
+        )
+    ) {
+
+        return;
+    }
+
+
+    actionArea.innerHTML = `
+        <div
+            class="usanex-verify-box"
+            style="
+                position:absolute;
+                right:12px;
+                top:100%;
+                margin-top:8px;
+                z-index:50;
+                width:210px;
+                padding:12px;
+                border-radius:14px;
+                background:#151b25;
+                border:1px solid #293342;
+                box-shadow:0 12px 30px rgba(0,0,0,.45);
+            "
+        >
+
+            <input
+                type="text"
+                class="usanex-code-input"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                placeholder="Enter 6-digit code"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    height:42px;
+                    border-radius:10px;
+                    border:1px solid #364152;
+                    outline:none;
+                    background:#0d121a;
+                    color:#fff;
+                    padding:0 11px;
+                    font-size:14px;
+                "
+            >
+
+            <button
+                type="button"
+                class="usanex-verify-submit"
+                style="
+                    width:100%;
+                    margin-top:8px;
+                    height:40px;
+                    border:0;
+                    border-radius:10px;
+                    background:#2563eb;
+                    color:#fff;
+                    font-size:14px;
+                    font-weight:700;
+                    cursor:pointer;
+                "
+            >
+                Verify
+            </button>
+
+            <div
+                class="usanex-verify-message"
+                style="
+                    margin-top:7px;
+                    min-height:17px;
+                    font-size:12px;
+                    color:#aab4c3;
+                    line-height:1.35;
+                "
+            ></div>
+
+        </div>
+    `;
+
+
+    /*
+     * Make sure the card can contain
+     * the floating verification box.
+     */
+
+    const card =
+        actionArea.closest(
+            ".search-user-card"
+        );
+
+    if (card) {
+
+        card.style.position =
+            "relative";
+
+        card.style.overflow =
+            "visible";
+    }
+
+
+    const input =
+        actionArea.querySelector(
+            ".usanex-code-input"
+        );
+
+    const submitButton =
+        actionArea.querySelector(
+            ".usanex-verify-submit"
+        );
+
+    const message =
+        actionArea.querySelector(
+            ".usanex-verify-message"
+        );
+
+
+    if (input) {
+
+        input.focus();
+
+
+        /*
+         * Only digits.
+         */
+
+        input.addEventListener(
+            "input",
+            function () {
+
+                input.value =
+                    input.value
+                        .replace(
+                            /\D/g,
+                            ""
+                        )
+                        .slice(
+                            0,
+                            6
+                        );
+
+            }
+        );
+
+
+        /*
+         * Enter key submits.
+         */
+
+        input.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    event.preventDefault();
+
+                    verifyConnectionCode(
+                        user,
+                        input,
+                        submitButton,
+                        message
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (submitButton) {
+
+        submitButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.stopPropagation();
+
+                verifyConnectionCode(
+                    user,
+                    input,
+                    submitButton,
+                    message
+                );
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   VERIFY CONNECTION CODE
+========================================================= */
+
+async function verifyConnectionCode(
+    user,
+    input,
+    submitButton,
+    message
+) {
+
+    const code =
+        (
+            input?.value ||
+            ""
+        ).trim();
+
+
+    /* -----------------------------------------
+       VALIDATE CODE
+    ----------------------------------------- */
+
+    if (!/^\d{6}$/.test(code)) {
+
+        if (message) {
+
+            message.textContent =
+                "Enter a valid 6-digit code.";
+
+            message.style.color =
+                "#ff7b7b";
+        }
+
+        if (input) {
+
+            input.focus();
+
+        }
+
+        return;
+    }
+
+
+    /*
+     * Verification ID is required.
+     */
+
+    if (!verificationId) {
+
+        if (message) {
+
+            message.textContent =
+                "Verification session not found.";
+
+            message.style.color =
+                "#ff7b7b";
+        }
+
+        return;
+    }
+
+
+    if (submitButton) {
+
+        submitButton.disabled =
+            true;
+
+        submitButton.textContent =
+            "Verifying...";
+
+        submitButton.style.opacity =
+            "0.7";
+    }
+
+
+    if (message) {
+
+        message.textContent =
+            "Checking code...";
+
+        message.style.color =
+            "#aab4c3";
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/connections/verify",
+                {
+                    method: "POST",
+
+                    credentials:
+                        "same-origin",
+
+                    headers: {
+                        "Accept":
+                            "application/json",
+
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            verification_id:
+                                Number(
+                                    verificationId
+                                ),
+
+                            code:
+                                code
+                        })
+                }
+            );
+
+
+        let data = {};
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data = {};
+
+        }
+
+
+        /* -----------------------------------------
+           SESSION EXPIRED
+        ----------------------------------------- */
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.replace(
+                "/login"
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           SUCCESS
+        ----------------------------------------- */
+
+        if (
+            response.ok &&
+            data.success === true
+        ) {
+
+            if (message) {
+
+                message.textContent =
+                    "Connected successfully.";
+
+                message.style.color =
+                    "#6ee7a0";
+
+            }
+
+
+            /*
+             * Small delay so the user can
+             * see successful verification.
+             */
+
+            setTimeout(
+                function () {
+
+                    window.location.replace(
+                        "/home"
+                    );
+
+                },
+                500
+            );
+
+            return;
+        }
+
+
+        /* -----------------------------------------
+           ERROR
+        ----------------------------------------- */
+
+        throw new Error(
+            data.detail ||
+            "Verification failed."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Usanex verification error:",
+            error
+        );
+
+
+        if (message) {
+
+            message.textContent =
+                error.message ||
+                "Invalid verification code.";
+
+            message.style.color =
+                "#ff7b7b";
+        }
+
+
+        if (submitButton) {
+
+            submitButton.disabled =
+                false;
+
+            submitButton.textContent =
+                "Verify";
+
+            submitButton.style.opacity =
+                "1";
+        }
+
+    }
 
 }
 
@@ -599,10 +1126,6 @@ async function sendConnectionRequest(
         ).trim();
 
 
-    /* -----------------------------------------
-       Safety check
-    ----------------------------------------- */
-
     if (!targetUserId) {
 
         alert(
@@ -613,10 +1136,6 @@ async function sendConnectionRequest(
     }
 
 
-    /* -----------------------------------------
-       Prevent duplicate clicks
-    ----------------------------------------- */
-
     if (
         button.disabled ||
         button.classList.contains(
@@ -625,7 +1144,6 @@ async function sendConnectionRequest(
     ) {
 
         return;
-
     }
 
 
@@ -635,7 +1153,6 @@ async function sendConnectionRequest(
 
     button.disabled =
         true;
-
 
     button.textContent =
         "Sending...";
@@ -684,10 +1201,6 @@ async function sendConnectionRequest(
         }
 
 
-        /* -----------------------------------------
-           SESSION EXPIRED
-        ----------------------------------------- */
-
         if (
             response.status === 401
         ) {
@@ -700,10 +1213,6 @@ async function sendConnectionRequest(
         }
 
 
-        /* -----------------------------------------
-           REQUEST SUCCESS
-        ----------------------------------------- */
-
         if (
             response.ok &&
             data.success === true
@@ -712,23 +1221,16 @@ async function sendConnectionRequest(
             button.textContent =
                 "Request Sent";
 
-
             button.classList.add(
                 "requested"
             );
 
-
             button.disabled =
                 true;
-
 
             return;
         }
 
-
-        /* -----------------------------------------
-           ALREADY PENDING / CONNECTED
-        ----------------------------------------- */
 
         if (
             response.status === 409
@@ -738,11 +1240,6 @@ async function sendConnectionRequest(
                 data.detail ||
                 "Connection request already exists.";
 
-
-            /*
-             * If the request is already pending,
-             * show the correct UI state.
-             */
 
             if (
                 message.toLowerCase()
@@ -754,15 +1251,12 @@ async function sendConnectionRequest(
                 button.textContent =
                     "Request Sent";
 
-
                 button.classList.add(
                     "requested"
                 );
 
-
                 button.disabled =
                     true;
-
 
                 return;
             }
@@ -778,15 +1272,12 @@ async function sendConnectionRequest(
                 button.textContent =
                     "Connected";
 
-
                 button.classList.add(
                     "requested"
                 );
 
-
                 button.disabled =
                     true;
-
 
                 return;
             }
@@ -797,10 +1288,6 @@ async function sendConnectionRequest(
             );
         }
 
-
-        /* -----------------------------------------
-           OTHER ERROR
-        ----------------------------------------- */
 
         throw new Error(
             data.detail ||
@@ -818,7 +1305,6 @@ async function sendConnectionRequest(
 
         button.disabled =
             false;
-
 
         button.textContent =
             originalText;
@@ -848,12 +1334,55 @@ function getInitial(
 
     }
 
-
     return name
         .trim()
         .charAt(0)
         .toUpperCase();
 
+}
+
+
+/* =========================================================
+   GO CARD MODE
+========================================================= */
+
+/*
+ * When coming from Notifications → Go Card,
+ * automatically search for that user.
+ */
+
+function openVerificationUser() {
+
+    if (
+        !verificationUserId ||
+        !searchInput
+    ) {
+
+        return false;
+    }
+
+
+    /*
+     * Search by user ID.
+     */
+
+    searchInput.value =
+        verificationUserId;
+
+
+    if (clearSearch) {
+
+        clearSearch.hidden =
+            false;
+    }
+
+
+    searchPeople(
+        verificationUserId
+    );
+
+
+    return true;
 }
 
 
@@ -869,6 +1398,30 @@ if (searchStatus) {
 }
 
 
+/* =========================================================
+   INITIAL PAGE LOAD
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        /*
+         * Normal search page
+         */
+
+        if (
+            verificationUserId
+        ) {
+
+            openVerificationUser();
+
+        }
+
+    }
+);
+
+
 console.log(
-    "Usanex Search v5 - real connection request loaded successfully."
+    "Usanex Search v6 - Follow + Go Card + Verification loaded."
 );
