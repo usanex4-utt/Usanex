@@ -2,8 +2,8 @@
 
 /* =========================================================
    USANEX HOME
-   Version 9
-========================================================= */
+   Simple Home
+   ========================================================= */
 
 
 /* =========================================================
@@ -71,6 +71,179 @@ const momentSeeAll =
 
 const peopleSeeAll =
     getElement("peopleSeeAll");
+
+
+/* =========================================================
+   SEARCH PAGE
+========================================================= */
+
+function openSearchPage() {
+    goTo("/search");
+}
+
+
+/* =========================================================
+   HOME SEARCH
+========================================================= */
+
+if (homeSearch) {
+
+    homeSearch.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            openSearchPage();
+
+        }
+    );
+
+
+    homeSearch.addEventListener(
+        "focus",
+        function (event) {
+
+            event.preventDefault();
+
+            openSearchPage();
+
+        }
+    );
+
+
+    homeSearch.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                openSearchPage();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SEARCH BOTTOM NAV
+========================================================= */
+
+if (searchNav) {
+
+    searchNav.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            openSearchPage();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   LEFT EDGE SWIPE → SEARCH
+========================================================= */
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+const EDGE_ZONE = 35;
+const SWIPE_DISTANCE = 80;
+
+
+document.addEventListener(
+    "touchstart",
+    function (event) {
+
+        if (!event.touches.length) {
+            return;
+        }
+
+        touchStartX =
+            event.touches[0].clientX;
+
+        touchStartY =
+            event.touches[0].clientY;
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+document.addEventListener(
+    "touchend",
+    function (event) {
+
+        if (!event.changedTouches.length) {
+            return;
+        }
+
+
+        const touch =
+            event.changedTouches[0];
+
+
+        const touchEndX =
+            touch.clientX;
+
+        const touchEndY =
+            touch.clientY;
+
+
+        const movedX =
+            touchEndX - touchStartX;
+
+        const movedY =
+            Math.abs(
+                touchEndY - touchStartY
+            );
+
+
+        /*
+         * Only start from the LEFT EDGE.
+         *
+         * LEFT EDGE → RIGHT
+         */
+
+        const startedFromLeft =
+            touchStartX <= EDGE_ZONE;
+
+
+        const isRightSwipe =
+            movedX >= SWIPE_DISTANCE;
+
+
+        const isMostlyHorizontal =
+            movedX > movedY;
+
+
+        if (
+            startedFromLeft &&
+            isRightSwipe &&
+            isMostlyHorizontal
+        ) {
+
+            openSearchPage();
+
+        }
+
+    },
+    {
+        passive: true
+    }
+);
 
 
 /* =========================================================
@@ -181,60 +354,7 @@ if (headerPlus) {
 
 
 /* =========================================================
-   HOME SEARCH
-========================================================= */
-
-function openSearchPage() {
-
-    goTo("/search");
-
-}
-
-
-if (homeSearch) {
-
-    homeSearch.addEventListener(
-        "click",
-        function () {
-
-            openSearchPage();
-
-        }
-    );
-
-
-    homeSearch.addEventListener(
-        "focus",
-        function () {
-
-            openSearchPage();
-
-        }
-    );
-
-
-    homeSearch.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                event.preventDefault();
-
-                openSearchPage();
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   BOTTOM HOME
+   HOME BUTTON
 ========================================================= */
 
 if (homeNav) {
@@ -274,27 +394,7 @@ if (homeNav) {
 
 
 /* =========================================================
-   SEARCH NAVIGATION
-========================================================= */
-
-if (searchNav) {
-
-    searchNav.addEventListener(
-        "click",
-        function (event) {
-
-            event.preventDefault();
-
-            openSearchPage();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   NOTIFICATION NAVIGATION
+   NOTIFICATIONS
 ========================================================= */
 
 function openNotifications() {
@@ -313,6 +413,24 @@ if (notificationNav) {
         function (event) {
 
             event.preventDefault();
+
+            openNotifications();
+
+        }
+    );
+
+}
+
+
+if (menuNotifications) {
+
+    menuNotifications.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            closeMenuPanel();
 
             openNotifications();
 
@@ -370,29 +488,7 @@ if (menuProfile) {
 
 
 /* =========================================================
-   MENU NOTIFICATIONS
-========================================================= */
-
-if (menuNotifications) {
-
-    menuNotifications.addEventListener(
-        "click",
-        function (event) {
-
-            event.preventDefault();
-
-            closeMenuPanel();
-
-            openNotifications();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   MENU SETTINGS
+   SETTINGS
 ========================================================= */
 
 if (menuSettings) {
@@ -445,8 +541,7 @@ async function logoutUser() {
 
     if (logoutButton) {
 
-        logoutButton.disabled =
-            true;
+        logoutButton.disabled = true;
 
     }
 
@@ -588,7 +683,7 @@ if (momentSeeAll) {
 
 
 /* =========================================================
-   PEOPLE SEE ALL
+   PEOPLE → SEARCH
 ========================================================= */
 
 if (peopleSeeAll) {
@@ -608,635 +703,73 @@ if (peopleSeeAll) {
 
 
 /* =========================================================
-   PEOPLE DATABASE
+   REMOVE HOME USER CARDS
 ========================================================= */
 
-function findPeopleContainer() {
+/*
+ * Home currently contains old demo/user cards
+ * inside #peopleList.
+ *
+ * We remove them completely.
+ *
+ * Search page will handle user searching.
+ */
 
-    return (
-        getElement("peopleList") ||
-        document.querySelector(
-            ".people-list"
-        ) ||
-        document.querySelector(
-            ".people-cards"
-        ) ||
-        document.querySelector(
-            ".people-container"
-        )
-    );
+const peopleList =
+    getElement("peopleList");
 
-}
 
+if (peopleList) {
 
-function findPersonCard(
-    container
-) {
-
-    if (!container) {
-        return null;
-    }
-
-    return (
-        container.querySelector(
-            ".person-card"
-        ) ||
-        container.querySelector(
-            ".people-card"
-        ) ||
-        container.querySelector(
-            ".user-card"
-        ) ||
-        container.querySelector(
-            ".person-item"
-        )
-    );
-
-}
-
-
-function setText(
-    element,
-    selectors,
-    value
-) {
-
-    if (!element) {
-        return;
-    }
-
-
-    for (
-        const selector of selectors
-    ) {
-
-        const target =
-            element.querySelector(
-                selector
-            );
-
-
-        if (target) {
-
-            target.textContent =
-                value || "";
-
-            return;
-
-        }
-
-    }
-
-}
-
-
-function setAvatar(
-    element,
-    user
-) {
-
-    if (!element) {
-        return;
-    }
-
-
-    const image =
-        element.querySelector(
-            "img"
-        );
-
-
-    const avatar =
-        element.querySelector(
-            ".avatar, .profile-avatar, .person-avatar, .user-avatar"
-        );
-
-
-    const firstLetter =
-        (
-            user.name ||
-            user.username ||
-            "U"
-        )
-        .trim()
-        .charAt(0)
-        .toUpperCase();
-
-
-    if (image) {
-
-        if (user.profile_photo) {
-
-            image.src =
-                user.profile_photo;
-
-            image.alt =
-                user.name ||
-                "User";
-
-            image.hidden =
-                false;
-
-
-            if (avatar) {
-
-                avatar.textContent =
-                    "";
-
-            }
-
-        } else {
-
-            image.removeAttribute(
-                "src"
-            );
-
-            image.hidden =
-                true;
-
-
-            if (avatar) {
-
-                avatar.textContent =
-                    firstLetter;
-
-            }
-
-        }
-
-        return;
-
-    }
-
-
-    if (avatar) {
-
-        if (user.profile_photo) {
-
-            avatar.style.backgroundImage =
-                `url("${user.profile_photo}")`;
-
-            avatar.style.backgroundSize =
-                "cover";
-
-            avatar.style.backgroundPosition =
-                "center";
-
-            avatar.textContent =
-                "";
-
-        } else {
-
-            avatar.style.backgroundImage =
-                "";
-
-            avatar.textContent =
-                firstLetter;
-
-        }
-
-    }
-
-}
-
-
-function attachFollowButton(
-    button
-) {
-
-    if (!button) {
-        return;
-    }
-
-
-    button.addEventListener(
-        "click",
-        async function (event) {
-
-            event.preventDefault();
-
-            event.stopPropagation();
-
-
-            const userId =
-                (
-                    button.dataset.userId ||
-                    ""
-                ).trim();
-
-
-            if (!userId) {
-
-                alert(
-                    "User ID is missing."
-                );
-
-                return;
-
-            }
-
-
-            if (
-                button.disabled
-            ) {
-
-                return;
-
-            }
-
-
-            button.disabled =
-                true;
-
-            button.textContent =
-                "Sending...";
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/connections/request",
-                        {
-                            method: "POST",
-
-                            credentials:
-                                "same-origin",
-
-                            headers: {
-                                "Accept":
-                                    "application/json",
-
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    user_id:
-                                        userId
-                                })
-                        }
-                    );
-
-
-                let data = {};
-
-
-                try {
-
-                    data =
-                        await response.json();
-
-                } catch {
-
-                    data = {};
-
-                }
-
-
-                if (
-                    response.status === 401
-                ) {
-
-                    goTo(
-                        "/login"
-                    );
-
-                    return;
-
-                }
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.detail ||
-                        "Unable to send request."
-                    );
-
-                }
-
-
-                button.textContent =
-                    "Request Sent";
-
-                button.classList.add(
-                    "requested"
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "Usanex follow error:",
-                    error
-                );
-
-
-                button.disabled =
-                    false;
-
-                button.textContent =
-                    "Follow";
-
-
-                alert(
-                    error.message ||
-                    "Unable to send request."
-                );
-
-            }
-
-        }
-    );
-
-}
-
-
-function renderPeople(
-    users
-) {
-
-    const container =
-        findPeopleContainer();
-
-
-    if (!container) {
-        return;
-    }
-
-
-    const template =
-        findPersonCard(
-            container
-        );
-
-
-    if (!template) {
-        return;
-    }
-
-
-    container.innerHTML =
-        "";
-
-
-    if (
-        !users ||
-        users.length === 0
-    ) {
-
-        const empty =
-            document.createElement(
-                "div"
-            );
-
-
-        empty.className =
-            "people-empty";
-
-
-        empty.textContent =
-            "No people found.";
-
-
-        container.appendChild(
-            empty
-        );
-
-
-        return;
-
-    }
-
-
-    users.forEach(
-        function (user) {
-
-            const card =
-                template.cloneNode(
-                    true
-                );
-
-
-            setText(
-                card,
-                [
-                    ".person-name",
-                    ".people-name",
-                    ".user-name",
-                    "[data-user-name]"
-                ],
-                user.name
-            );
-
-
-            setText(
-                card,
-                [
-                    ".person-username",
-                    ".people-username",
-                    ".user-username",
-                    "[data-user-username]"
-                ],
-                user.username
-            );
-
-
-            setText(
-                card,
-                [
-                    ".person-id",
-                    ".people-id",
-                    ".user-id",
-                    "[data-user-id]"
-                ],
-                user.user_id
-            );
-
-
-            setAvatar(
-                card,
-                user
-            );
-
-
-            const followButton =
-                card.querySelector(
-                    ".follow-button"
-                );
-
-
-            if (followButton) {
-
-                followButton.disabled =
-                    false;
-
-                followButton.textContent =
-                    "Follow";
-
-                followButton.classList.remove(
-                    "following",
-                    "requested"
-                );
-
-
-                followButton.dataset.userId =
-                    user.user_id || "";
-
-
-                attachFollowButton(
-                    followButton
-                );
-
-            }
-
-
-            card.dataset.userId =
-                user.user_id || "";
-
-
-            card.dataset.username =
-                user.username || "";
-
-
-            container.appendChild(
-                card
-            );
-
-        }
-    );
-
-}
-
-
-async function loadPeople() {
-
-    const container =
-        findPeopleContainer();
-
-
-    if (!container) {
-        return;
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/users/people?limit=20&offset=0",
-                {
-                    method: "GET",
-
-                    credentials:
-                        "same-origin",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
-
-                    cache: "no-store"
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            goTo(
-                "/login"
-            );
-
-            return;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                `People API error: ${response.status}`
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data ||
-            data.success !== true
-        ) {
-
-            throw new Error(
-                "Invalid people response"
-            );
-
-        }
-
-
-        renderPeople(
-            data.users || []
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Usanex people error:",
-            error
-        );
-
-    }
+    peopleList.innerHTML = "";
 
 }
 
 
 /* =========================================================
-   INITIAL STATE
+   REMOVE OLD PEOPLE SECTION
+========================================================= */
+
+/*
+ * There should be no user cards on Home.
+ */
+
+const peopleSection =
+    document.querySelector(
+        ".people-section"
+    );
+
+
+if (peopleSection) {
+
+    peopleSection.remove();
+
+}
+
+
+/* =========================================================
+   START
 ========================================================= */
 
 if (menuOverlay) {
 
-    menuOverlay.hidden =
-        true;
+    menuOverlay.hidden = true;
 
 }
 
 
-loadPeople();
-
-
-/* =========================================================
-   DEBUG
-========================================================= */
-
 console.log(
-    "Usanex Home v9 loaded."
+    "Usanex Home - simple mode loaded."
 );
 
 console.log(
-    "Search:",
-    !!homeSearch
+    "Home cards: disabled"
 );
 
 console.log(
-    "Notification:",
-    !!notificationNav
+    "Header search: enabled"
 );
 
 console.log(
-    "Logout:",
-    !!logoutButton
-);
-
-console.log(
-    "Profile:",
-    !!profileNav
+    "Left edge swipe: enabled"
 );
