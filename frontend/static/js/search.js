@@ -2,107 +2,1073 @@
 
 /* =========================================================
    USANEX SEARCH
-
-   Search:
-   - Name
-   - Username
-   - User ID
-   - Mobile Number
-
-   Status:
-   - You
-   - Follow
-   - Requested
-   - Request
-   - Connected
-
-   DP behavior:
-   - You       -> Own profile
-   - Connected -> Other user's profile
-   - Others    -> DP viewer only
+   Search + Connections + DP Viewer
+   Version: 10
 ========================================================= */
+
+console.log("Usanex Search v10 loaded.");
 
 
 /* =========================================================
-   ELEMENTS
+   DOM
 ========================================================= */
 
-const searchInput =
-    document.getElementById("searchInput");
-
-const clearSearch =
-    document.getElementById("clearSearch");
-
-const searchResults =
-    document.getElementById("searchResults");
-
-const searchStatus =
-    document.getElementById("searchStatus");
+const searchInput = document.getElementById("searchInput");
+const clearSearch = document.getElementById("clearSearch");
+const searchStatus = document.getElementById("searchStatus");
+const searchResults = document.getElementById("searchResults");
 
 
 /* =========================================================
-   SEARCH STATE
+   STATE
 ========================================================= */
 
 let searchTimer = null;
-let currentController = null;
+
+let currentSearchRequest = null;
+
+let dpViewer = null;
+let dpImage = null;
+
+let dpScale = 1;
+let dpX = 0;
+let dpY = 0;
+
+const DP_MIN_SCALE = 1;
+const DP_MAX_SCALE = 4;
+
+let pointers = new Map();
+
+let pinchStartDistance = 0;
+let pinchStartScale = 1;
+
+let dragStartX = 0;
+let dragStartY = 0;
+
+let dragStartImageX = 0;
+let dragStartImageY = 0;
+
+let isDragging = false;
 
 
 /* =========================================================
-   VERIFICATION / GO CARD PARAMETERS
+   HELPERS
 ========================================================= */
 
-const pageParams =
-    new URLSearchParams(
-        window.location.search
-    );
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
-const verificationUserId =
-    (
-        pageParams.get("user_id") ||
-        ""
-    ).trim();
 
-const verificationId =
-    (
-        pageParams.get("verification_id") ||
-        ""
-    ).trim();
+function escapeHtmlAttribute(value) {
+    return escapeHtml(value);
+}
+
+
+function getInitial(name) {
+    const text = String(name || "").trim();
+
+    if (!text) {
+        return "U";
+    }
+
+    return text.charAt(0).toUpperCase();
+}
+
+
+function getConnectionStatus(user) {
+    if (user.is_self || user.connection_status === "self") {
+        return "self";
+    }
+
+    if (
+        user.is_connected ||
+        user.connection_status === "connected"
+    ) {
+        return "connected";
+    }
+
+    if (
+        user.request_sent ||
+        user.connection_status === "pending_sent"
+    ) {
+        return "pending_sent";
+    }
+
+    if (
+        user.request_received ||
+        user.connection_status === "pending_received"
+    ) {
+        return "pending_received";
+    }
+
+    return "none";
+}
 
 
 /* =========================================================
-   SEARCH INPUT
+   SEARCH
 ========================================================= */
 
-if (searchInput) {
+async function performSearch() {
+    if (!searchInput || !searchResults) {
+        return;
+    }
 
-    searchInput.addEventListener(
-        "input",
-        function () {
+    const query = searchInput.value.trim();
 
-            const query =
-                searchInput.value.trim();
+    if (query.length === 0) {
+        if (clearSearch) {
+            clearSearch.style.display = "none";
+        }
 
-            clearTimeout(searchTimer);
+        if (searchStatus) {
+            searchStatus.textContent = "Search people by name, username, user ID or mobile";
+        }
 
-            if (clearSearch) {
-                clearSearch.hidden =
-                    query.length === 0;
+        searchResults.innerHTML = "";
+
+        return;
+    }
+
+    if (clearSearch) {
+        clearSearch.style.display = "flex";
+    }
+
+    if (searchStatus) {
+        searchStatus.textContent = "Searching...";
+    }
+
+    searchResults.innerHTML = `
+        <div class="search-loading">
+            Searching...
+        </div>
+    `;
+
+    if (currentSearchRequest) {
+        try {
+            currentSearchRequest.abort();
+        } catch (_) {}
+    }
+
+    currentSearchRequest = new AbortController();
+
+    try {
+        const response = await fetch(
+            `/api/search/people?q=${encodeURIComponent(query)}&limit=50&offset=0`,
+            {
+                method: "GET",
+                credentials: "include",
+                signal: currentSearchRequest.signal,
+                headers: {
+                    "Accept": "application/json"
+                }
             }
+        );
 
-            if (!query) {
-                resetSearch();
+        if (!response.ok) {
+            if (response.status === 401) {
+                window.location.href = "/login";
                 return;
             }
 
-            searchTimer =
-                setTimeout(
-                    function () {
-                        searchPeople(query);
-                    },
-                    350
-                );
+            throw new Error(`Search failed: ${response.status}`);
         }
+
+        const data = await response.json();
+
+        const users = Array.isArray(data.users)
+            ? data.users
+            : [];
+
+        renderSearchResults(users);
+
+    } catch (error) {
+        if (error.name === "AbortError") {
+            return;
+        }
+
+        console.error("Search error:", error);
+
+        if (searchStatus) {
+            searchStatus.textContent = "Something went wrong.";
+        }
+
+        searchResults.innerHTML = `
+            <div class="search-empty">
+                Unable to load search results.<br>
+                Please try again.
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   RENDER RESULTS
+========================================================= */
+
+function renderSearchResults(users) {
+    if (!searchResults) {
+        return;
+    }
+
+    if (!users.length) {
+        if (searchStatus) {
+            searchStatus.textContent = "No users found.";
+        }
+
+        searchResults.innerHTML = `
+            <div class="search-empty">
+                No matching users found.
+            </div>
+        `;
+
+        return;
+    }
+
+    if (searchStatus) {
+        searchStatus.textContent =
+            `${users.length} user${users.length === 1 ? "" : "s"} found`;
+    }
+
+    searchResults.innerHTML = "";
+
+    users.forEach(user => {
+        searchResults.appendChild(createUserCard(user));
+    });
+}
+
+
+/* =========================================================
+   USER CARD
+========================================================= */
+
+function createUserCard(user) {
+    const card = document.createElement("div");
+
+    card.className = "search-user-card";
+
+    const status = getConnectionStatus(user);
+
+    const name = escapeHtml(user.name || "User");
+    const username = escapeHtml(user.username || "");
+    const userId = escapeHtml(user.user_id || "");
+    const photo = user.profile_photo
+        ? escapeHtmlAttribute(user.profile_photo)
+        : "";
+
+    const initial = escapeHtml(
+        getInitial(user.name || user.username || user.user_id)
+    );
+
+    let avatarHTML = "";
+
+    if (photo) {
+        avatarHTML = `
+            <div
+                class="search-user-avatar"
+                role="button"
+                tabindex="0"
+                aria-label="View profile photo"
+            >
+                <img
+                    src="${photo}"
+                    alt="${name}"
+                    draggable="false"
+                >
+            </div>
+        `;
+    } else {
+        avatarHTML = `
+            <div
+                class="search-user-avatar"
+                role="button"
+                tabindex="0"
+                aria-label="View profile photo"
+            >
+                ${initial}
+            </div>
+        `;
+    }
+
+    let buttonText = "Follow";
+    let buttonClass = "";
+    let buttonDisabled = false;
+
+    if (status === "self") {
+        buttonText = "You";
+        buttonDisabled = true;
+    }
+
+    else if (status === "connected") {
+        buttonText = "Connected";
+        buttonClass = "connected";
+    }
+
+    else if (status === "pending_sent") {
+        buttonText = "Requested";
+        buttonClass = "requested";
+        buttonDisabled = true;
+    }
+
+    else if (status === "pending_received") {
+        buttonText = "Request";
+        buttonClass = "request";
+    }
+
+    card.innerHTML = `
+        ${avatarHTML}
+
+        <div class="search-user-info">
+            <div class="search-user-name">
+                ${name}
+            </div>
+
+            <div class="search-user-username">
+                ${username ? "@" + username : userId}
+            </div>
+        </div>
+
+        <button
+            type="button"
+            class="search-follow-button ${buttonClass}"
+            ${buttonDisabled ? "disabled" : ""}
+        >
+            ${buttonText}
+        </button>
+    `;
+
+
+    /* =====================================================
+       AVATAR
+    ===================================================== */
+
+    const avatar = card.querySelector(".search-user-avatar");
+
+    if (avatar) {
+
+        const openAvatar = function(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            handleAvatarClick(user, status);
+        };
+
+        avatar.addEventListener("click", openAvatar);
+
+        avatar.addEventListener("keydown", function(event) {
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+                openAvatar(event);
+            }
+        });
+
+        avatar.addEventListener(
+            "contextmenu",
+            function(event) {
+                event.preventDefault();
+            }
+        );
+    }
+
+
+    /* =====================================================
+       STATUS BUTTON
+    ===================================================== */
+
+    const button = card.querySelector(".search-follow-button");
+
+    if (button) {
+
+        button.addEventListener("click", async function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (status === "self") {
+                return;
+            }
+
+            if (status === "pending_sent") {
+                return;
+            }
+
+            if (status === "connected") {
+                openUserProfile(user);
+                return;
+            }
+
+            if (status === "pending_received") {
+                window.location.href = "/notifications";
+                return;
+            }
+
+            if (status === "none") {
+                await sendConnectionRequest(user, button);
+            }
+        });
+    }
+
+    return card;
+}
+
+
+/* =========================================================
+   AVATAR CLICK
+========================================================= */
+
+function handleAvatarClick(user, status) {
+
+    if (status === "self") {
+        window.location.href = "/profile";
+        return;
+    }
+
+    if (status === "connected") {
+        openUserProfile(user);
+        return;
+    }
+
+    openDpViewer(user);
+}
+
+
+/* =========================================================
+   OPEN PROFILE
+========================================================= */
+
+function openUserProfile(user) {
+    if (!user || !user.user_id) {
+        return;
+    }
+
+    window.location.href =
+        `/profile?user_id=${encodeURIComponent(user.user_id)}`;
+}
+
+
+/* =========================================================
+   SEND CONNECTION REQUEST
+========================================================= */
+
+async function sendConnectionRequest(user, button) {
+    if (!user || !user.user_id) {
+        return;
+    }
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Sending...";
+    }
+
+    try {
+        const response = await fetch(
+            "/api/connections/request",
+            {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    user_id: user.user_id
+                })
+            }
+        );
+
+        if (response.status === 401) {
+            window.location.href = "/login";
+            return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(
+                data.detail ||
+                data.message ||
+                "Unable to send request."
+            );
+        }
+
+        if (button) {
+            button.textContent = "Requested";
+            button.classList.add("requested");
+            button.disabled = true;
+        }
+
+    } catch (error) {
+        console.error("Connection request error:", error);
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Follow";
+        }
+
+        alert(
+            error.message ||
+            "Unable to send connection request."
+        );
+    }
+}
+
+
+/* =========================================================
+   DP VIEWER
+========================================================= */
+
+function openDpViewer(user) {
+
+    if (!user || !user.profile_photo) {
+        return;
+    }
+
+    closeDpViewer();
+
+    dpScale = 1;
+    dpX = 0;
+    dpY = 0;
+
+    pointers.clear();
+
+    pinchStartDistance = 0;
+    pinchStartScale = 1;
+
+    isDragging = false;
+
+
+    /* =====================================================
+       ROOT
+    ===================================================== */
+
+    const viewer = document.createElement("div");
+
+    viewer.id = "usanexDpViewer";
+
+    viewer.className = "usanex-dp-viewer";
+
+    viewer.setAttribute("role", "dialog");
+    viewer.setAttribute("aria-modal", "true");
+    viewer.setAttribute("aria-label", "Profile photo viewer");
+
+
+    /* =====================================================
+       OVERLAY
+    ===================================================== */
+
+    const overlay = document.createElement("div");
+
+    overlay.className = "usanex-dp-overlay";
+
+
+    /* =====================================================
+       CONTENT
+    ===================================================== */
+
+    const content = document.createElement("div");
+
+    content.className = "usanex-dp-content";
+
+
+    /* =====================================================
+       IMAGE
+    ===================================================== */
+
+    const image = document.createElement("img");
+
+    image.className = "usanex-dp-large";
+
+    image.src = user.profile_photo;
+
+    image.alt = user.name || "Profile photo";
+
+    image.draggable = false;
+
+    image.setAttribute("draggable", "false");
+
+
+    /* =====================================================
+       CLOSE
+    ===================================================== */
+
+    const closeButton = document.createElement("button");
+
+    closeButton.type = "button";
+
+    closeButton.className = "usanex-dp-close";
+
+    closeButton.setAttribute("aria-label", "Close");
+
+    closeButton.innerHTML = "&times;";
+
+
+    /* =====================================================
+       USER INFO
+    ===================================================== */
+
+    const userInfo = document.createElement("div");
+
+    userInfo.className = "usanex-dp-user-info";
+
+    userInfo.innerHTML = `
+        <div class="usanex-dp-user-name">
+            ${escapeHtml(user.name || "User")}
+        </div>
+    `;
+
+
+    content.appendChild(image);
+
+    overlay.appendChild(content);
+    overlay.appendChild(closeButton);
+    overlay.appendChild(userInfo);
+
+    viewer.appendChild(overlay);
+
+    document.body.appendChild(viewer);
+
+    document.body.classList.add("usanex-dp-open");
+
+
+    dpViewer = viewer;
+
+    dpImage = image;
+
+
+    /* =====================================================
+       EVENTS
+    ===================================================== */
+
+    closeButton.addEventListener(
+        "click",
+        function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            closeDpViewer();
+        }
+    );
+
+
+    overlay.addEventListener(
+        "click",
+        function(event) {
+
+            if (
+                event.target === overlay ||
+                event.target === closeButton ||
+                event.target === userInfo
+            ) {
+                if (event.target === overlay) {
+                    closeDpViewer();
+                }
+
+                return;
+            }
+        }
+    );
+
+
+    viewer.addEventListener(
+        "contextmenu",
+        function(event) {
+            event.preventDefault();
+        }
+    );
+
+
+    image.addEventListener(
+        "dragstart",
+        function(event) {
+            event.preventDefault();
+        }
+    );
+
+
+    /* =====================================================
+       POINTER EVENTS
+    ===================================================== */
+
+    content.addEventListener(
+        "pointerdown",
+        dpPointerDown
+    );
+
+    content.addEventListener(
+        "pointermove",
+        dpPointerMove
+    );
+
+    content.addEventListener(
+        "pointerup",
+        dpPointerUp
+    );
+
+    content.addEventListener(
+        "pointercancel",
+        dpPointerUp
+    );
+
+    content.addEventListener(
+        "pointerleave",
+        dpPointerUp
+    );
+
+
+    /* =====================================================
+       DOUBLE TAP / DOUBLE CLICK
+    ===================================================== */
+
+    let lastTapTime = 0;
+
+    content.addEventListener(
+        "pointerup",
+        function(event) {
+
+            if (pointers.size > 0) {
+                return;
+            }
+
+            const now = Date.now();
+
+            if (now - lastTapTime < 300) {
+                toggleDpZoom(
+                    event.clientX,
+                    event.clientY
+                );
+            }
+
+            lastTapTime = now;
+        }
+    );
+
+
+    /* =====================================================
+       ESCAPE
+    ===================================================== */
+
+    document.addEventListener(
+        "keydown",
+        dpEscapeHandler
+    );
+}
+
+
+/* =========================================================
+   DP POINTER DOWN
+========================================================= */
+
+function dpPointerDown(event) {
+
+    if (!dpViewer || !dpImage) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const content = event.currentTarget;
+
+    pointers.set(
+        event.pointerId,
+        {
+            x: event.clientX,
+            y: event.clientY
+        }
+    );
+
+    try {
+        content.setPointerCapture(event.pointerId);
+    } catch (_) {}
+
+
+    if (pointers.size === 1) {
+
+        isDragging = true;
+
+        dragStartX = event.clientX;
+        dragStartY = event.clientY;
+
+        dragStartImageX = dpX;
+        dragStartImageY = dpY;
+    }
+
+
+    if (pointers.size === 2) {
+
+        isDragging = false;
+
+        const points = Array.from(
+            pointers.values()
+        );
+
+        pinchStartDistance =
+            getPointerDistance(
+                points[0],
+                points[1]
+            );
+
+        pinchStartScale = dpScale;
+    }
+}
+
+
+/* =========================================================
+   DP POINTER MOVE
+========================================================= */
+
+function dpPointerMove(event) {
+
+    if (!dpViewer || !dpImage) {
+        return;
+    }
+
+    if (!pointers.has(event.pointerId)) {
+        return;
+    }
+
+    event.preventDefault();
+
+    pointers.set(
+        event.pointerId,
+        {
+            x: event.clientX,
+            y: event.clientY
+        }
+    );
+
+
+    /* =====================================================
+       PINCH ZOOM
+    ===================================================== */
+
+    if (pointers.size >= 2) {
+
+        const points = Array.from(
+            pointers.values()
+        );
+
+        const currentDistance =
+            getPointerDistance(
+                points[0],
+                points[1]
+            );
+
+        if (pinchStartDistance > 0) {
+
+            const ratio =
+                currentDistance /
+                pinchStartDistance;
+
+            const nextScale =
+                pinchStartScale * ratio;
+
+            dpScale = clamp(
+                nextScale,
+                DP_MIN_SCALE,
+                DP_MAX_SCALE
+            );
+
+            if (dpScale === DP_MIN_SCALE) {
+                dpX = 0;
+                dpY = 0;
+            }
+
+            applyDpTransform();
+        }
+
+        return;
+    }
+
+
+    /* =====================================================
+       SINGLE FINGER DRAG
+    ===================================================== */
+
+    if (
+        pointers.size === 1 &&
+        dpScale > 1 &&
+        isDragging
+    ) {
+
+        const deltaX =
+            event.clientX - dragStartX;
+
+        const deltaY =
+            event.clientY - dragStartY;
+
+        dpX =
+            dragStartImageX + deltaX;
+
+        dpY =
+            dragStartImageY + deltaY;
+
+        applyDpTransform();
+    }
+}
+
+
+/* =========================================================
+   DP POINTER UP
+========================================================= */
+
+function dpPointerUp(event) {
+
+    pointers.delete(event.pointerId);
+
+    if (pointers.size === 0) {
+
+        isDragging = false;
+
+        pinchStartDistance = 0;
+        pinchStartScale = dpScale;
+
+    } else if (pointers.size === 1) {
+
+        const remaining =
+            Array.from(
+                pointers.values()
+            )[0];
+
+        isDragging = true;
+
+        dragStartX = remaining.x;
+        dragStartY = remaining.y;
+
+        dragStartImageX = dpX;
+        dragStartImageY = dpY;
+    }
+}
+
+
+/* =========================================================
+   DISTANCE
+========================================================= */
+
+function getPointerDistance(pointA, pointB) {
+
+    const dx =
+        pointA.x - pointB.x;
+
+    const dy =
+        pointA.y - pointB.y;
+
+    return Math.sqrt(
+        dx * dx +
+        dy * dy
+    );
+}
+
+
+/* =========================================================
+   CLAMP
+========================================================= */
+
+function clamp(value, min, max) {
+    return Math.min(
+        Math.max(value, min),
+        max
+    );
+}
+
+
+/* =========================================================
+   APPLY TRANSFORM
+========================================================= */
+
+function applyDpTransform() {
+
+    if (!dpImage) {
+        return;
+    }
+
+    dpImage.style.transform =
+        `translate3d(${dpX}px, ${dpY}px, 0) scale(${dpScale})`;
+}
+
+
+/* =========================================================
+   DOUBLE TAP ZOOM
+========================================================= */
+
+function toggleDpZoom(clientX, clientY) {
+
+    if (!dpImage) {
+        return;
+    }
+
+    if (dpScale <= 1.05) {
+
+        dpScale = 2;
+
+        dpX = 0;
+        dpY = 0;
+
+    } else {
+
+        dpScale = 1;
+
+        dpX = 0;
+        dpY = 0;
+    }
+
+    applyDpTransform();
+}
+
+
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function dpEscapeHandler(event) {
+
+    if (event.key === "Escape") {
+        closeDpViewer();
+    }
+}
+
+
+/* =========================================================
+   CLOSE DP VIEWER
+========================================================= */
+
+function closeDpViewer() {
+
+    if (dpViewer) {
+
+        dpViewer.remove();
+
+        dpViewer = null;
+        dpImage = null;
+    }
+
+    pointers.clear();
+
+    dpScale = 1;
+    dpX = 0;
+    dpY = 0;
+
+    pinchStartDistance = 0;
+    pinchStartScale = 1;
+
+    isDragging = false;
+
+    document.body.classList.remove(
+        "usanex-dp-open"
+    );
+
+    document.removeEventListener(
+        "keydown",
+        dpEscapeHandler
     );
 }
 
@@ -115,1644 +1081,211 @@ if (clearSearch) {
 
     clearSearch.addEventListener(
         "click",
-        function () {
+        function() {
 
-            if (searchInput) {
-                searchInput.value = "";
+            searchInput.value = "";
+
+            clearSearch.style.display = "none";
+
+            searchResults.innerHTML = "";
+
+            if (searchStatus) {
+                searchStatus.textContent =
+                    "Search people by name, username, user ID or mobile";
             }
 
-            clearSearch.hidden = true;
-
-            resetSearch();
-
-            if (searchInput) {
-                searchInput.focus();
-            }
+            searchInput.focus();
         }
     );
 }
 
 
 /* =========================================================
-   RESET SEARCH
+   SEARCH INPUT
 ========================================================= */
 
-function resetSearch() {
+if (searchInput) {
 
-    if (currentController) {
+    searchInput.addEventListener(
+        "input",
+        function() {
 
-        currentController.abort();
-        currentController = null;
+            clearTimeout(searchTimer);
 
-    }
+            const query =
+                searchInput.value.trim();
 
-    if (searchResults) {
-        searchResults.innerHTML = "";
-    }
+            if (!query) {
 
-    if (searchStatus) {
-        searchStatus.textContent =
-            "Search people on Usanex";
-    }
-}
-
-
-/* =========================================================
-   SEARCH PEOPLE
-========================================================= */
-
-async function searchPeople(query) {
-
-    if (currentController) {
-        currentController.abort();
-    }
-
-    currentController =
-        new AbortController();
-
-    if (searchStatus) {
-        searchStatus.textContent =
-            "Searching...";
-    }
-
-    if (searchResults) {
-
-        searchResults.innerHTML = `
-            <div class="search-loading">
-                Searching people...
-            </div>
-        `;
-
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/search/people?q=${encodeURIComponent(query)}&limit=50&offset=0`,
-                {
-                    method: "GET",
-
-                    credentials:
-                        "same-origin",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
-
-                    cache: "no-store",
-
-                    signal:
-                        currentController.signal
-                }
-            );
-
-
-        if (response.status === 401) {
-
-            window.location.replace(
-                "/login"
-            );
-
-            return;
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                `Search request failed: ${response.status}`
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data ||
-            data.success !== true
-        ) {
-
-            throw new Error(
-                "Invalid search response"
-            );
-
-        }
-
-
-        renderResults(
-            data.users || []
-        );
-
-
-    } catch (error) {
-
-        if (
-            error.name ===
-            "AbortError"
-        ) {
-            return;
-        }
-
-        console.error(
-            "Usanex search error:",
-            error
-        );
-
-        if (searchStatus) {
-            searchStatus.textContent =
-                "Something went wrong";
-        }
-
-        if (searchResults) {
-
-            searchResults.innerHTML = `
-                <div class="search-empty">
-                    Please try again.
-                </div>
-            `;
-
-        }
-    }
-}
-
-
-/* =========================================================
-   RENDER RESULTS
-========================================================= */
-
-function renderResults(users) {
-
-    if (!users.length) {
-
-        if (searchStatus) {
-            searchStatus.textContent =
-                "No people found";
-        }
-
-        if (searchResults) {
-
-            searchResults.innerHTML = `
-                <div class="search-empty">
-                    No matching people found.
-                </div>
-            `;
-
-        }
-
-        return;
-    }
-
-
-    if (searchStatus) {
-
-        searchStatus.textContent =
-            `${users.length} people found`;
-
-    }
-
-
-    if (searchResults) {
-        searchResults.innerHTML = "";
-    }
-
-
-    users.forEach(
-        function (user) {
-
-            const card =
-                createUserCard(user);
-
-            if (searchResults) {
-                searchResults.appendChild(card);
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   CREATE USER CARD
-========================================================= */
-
-function createUserCard(user) {
-
-    const card =
-        document.createElement(
-            "article"
-        );
-
-    card.className =
-        "search-user-card";
-
-    card.dataset.userId =
-        user.user_id || "";
-
-    card.dataset.username =
-        user.username || "";
-
-
-    /* =====================================================
-       CONNECTION STATUS
-    ===================================================== */
-
-    const connectionStatus =
-        getConnectionStatus(user);
-
-
-    /* =====================================================
-       AVATAR
-    ===================================================== */
-
-    const avatar =
-        document.createElement(
-            "div"
-        );
-
-    avatar.className =
-        "search-user-avatar";
-
-
-    /*
-     * Store status on avatar.
-     */
-
-    avatar.dataset.status =
-        connectionStatus;
-
-
-    if (user.profile_photo) {
-
-        const image =
-            document.createElement(
-                "img"
-            );
-
-        image.src =
-            user.profile_photo;
-
-        image.alt =
-            user.name || "User";
-
-        image.loading =
-            "lazy";
-
-
-        image.onerror =
-            function () {
-
-                image.remove();
-
-                avatar.textContent =
-                    getInitial(
-                        user.name
-                    );
-
-            };
-
-
-        avatar.appendChild(
-            image
-        );
-
-    } else {
-
-        avatar.textContent =
-            getInitial(
-                user.name
-            );
-
-    }
-
-
-    /* =====================================================
-       DP CLICK BEHAVIOR
-    ===================================================== */
-
-    avatar.addEventListener(
-        "click",
-        function (event) {
-
-            event.stopPropagation();
-
-            handleAvatarClick(
-                user,
-                connectionStatus
-            );
-
-        }
-    );
-
-
-    /* =====================================================
-       USER INFORMATION
-    ===================================================== */
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-    info.className =
-        "search-user-info";
-
-
-    const name =
-        document.createElement(
-            "div"
-        );
-
-    name.className =
-        "search-user-name";
-
-    name.textContent =
-        user.name || "User";
-
-
-    const username =
-        document.createElement(
-            "div"
-        );
-
-    username.className =
-        "search-user-username";
-
-    username.textContent =
-        user.username || "";
-
-
-    const userId =
-        document.createElement(
-            "div"
-        );
-
-    userId.className =
-        "search-user-id";
-
-    userId.textContent =
-        user.user_id || "";
-
-
-    info.appendChild(name);
-    info.appendChild(username);
-    info.appendChild(userId);
-
-
-    /* =====================================================
-       ACTION AREA
-    ===================================================== */
-
-    const actionArea =
-        document.createElement(
-            "div"
-        );
-
-    actionArea.className =
-        "search-user-action-area";
-
-
-    /* =====================================================
-       GO CARD / VERIFICATION
-    ===================================================== */
-
-    const isVerificationCard =
-        verificationUserId &&
-        verificationUserId ===
-            (
-                user.user_id ||
-                ""
-            );
-
-
-    if (
-        isVerificationCard &&
-        connectionStatus !== "connected" &&
-        connectionStatus !== "self"
-    ) {
-
-        createVerifyAction(
-            user,
-            actionArea
-        );
-
-    } else {
-
-        createStatusAction(
-            user,
-            actionArea,
-            connectionStatus
-        );
-
-    }
-
-
-    /* =====================================================
-       ASSEMBLE CARD
-    ===================================================== */
-
-    card.appendChild(avatar);
-    card.appendChild(info);
-    card.appendChild(actionArea);
-
-    return card;
-}
-
-
-/* =========================================================
-   HANDLE AVATAR CLICK
-========================================================= */
-
-function handleAvatarClick(
-    user,
-    status
-) {
-
-    /*
-     * Own account
-     * -> own profile page
-     */
-
-    if (status === "self") {
-
-        window.location.href =
-            "/profile";
-
-        return;
-    }
-
-
-    /*
-     * Connected user
-     * -> that user's profile
-     */
-
-    if (status === "connected") {
-
-        openUserProfile(user);
-
-        return;
-    }
-
-
-    /*
-     * Follow / Requested / Request
-     * -> only DP viewer
-     */
-
-    openDpViewer(user);
-}
-
-
-/* =========================================================
-   DP VIEWER
-========================================================= */
-
-function openDpViewer(user) {
-
-    const photo =
-        (
-            user.profile_photo ||
-            ""
-        ).trim();
-
-
-    /*
-     * If user has no profile photo,
-     * do not open an empty viewer.
-     */
-
-    if (!photo) {
-
-        return;
-
-    }
-
-
-    /*
-     * Remove an existing viewer first.
-     */
-
-    const existingViewer =
-        document.getElementById(
-            "usanexDpViewer"
-        );
-
-    if (existingViewer) {
-        existingViewer.remove();
-    }
-
-
-    const viewer =
-        document.createElement(
-            "div"
-        );
-
-    viewer.id =
-        "usanexDpViewer";
-
-    viewer.className =
-        "usanex-dp-viewer";
-
-
-    viewer.innerHTML = `
-        <div
-            class="usanex-dp-overlay"
-            aria-hidden="true"
-        ></div>
-
-        <button
-            type="button"
-            class="usanex-dp-close"
-            aria-label="Close profile photo"
-        >
-            ×
-        </button>
-
-        <div
-            class="usanex-dp-content"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Profile photo"
-        >
-
-            <img
-                class="usanex-dp-large"
-                src="${escapeHtmlAttribute(photo)}"
-                alt="${escapeHtmlAttribute(
-                    user.name || "Profile photo"
-                )}"
-            >
-
-        </div>
-    `;
-
-
-    document.body.appendChild(
-        viewer
-    );
-
-
-    /*
-     * Prevent page scroll.
-     */
-
-    document.body.classList.add(
-        "usanex-dp-open"
-    );
-
-
-    const closeButton =
-        viewer.querySelector(
-            ".usanex-dp-close"
-        );
-
-    const overlay =
-        viewer.querySelector(
-            ".usanex-dp-overlay"
-        );
-
-    const content =
-        viewer.querySelector(
-            ".usanex-dp-content"
-        );
-
-
-    function closeViewer() {
-
-        viewer.remove();
-
-        document.body.classList.remove(
-            "usanex-dp-open"
-        );
-
-        document.removeEventListener(
-            "keydown",
-            handleEscape
-        );
-    }
-
-
-    function handleEscape(event) {
-
-        if (
-            event.key ===
-            "Escape"
-        ) {
-
-            closeViewer();
-
-        }
-
-    }
-
-
-    if (closeButton) {
-
-        closeButton.addEventListener(
-            "click",
-            closeViewer
-        );
-
-    }
-
-
-    if (overlay) {
-
-        overlay.addEventListener(
-            "click",
-            closeViewer
-        );
-
-    }
-
-
-    /*
-     * Clicking outside the image closes viewer.
-     */
-
-    if (content) {
-
-        content.addEventListener(
-            "click",
-            function (event) {
-
-                if (
-                    event.target ===
-                    content
-                ) {
-
-                    closeViewer();
-
+                if (clearSearch) {
+                    clearSearch.style.display = "none";
                 }
 
+                if (searchStatus) {
+                    searchStatus.textContent =
+                        "Search people by name, username, user ID or mobile";
+                }
+
+                searchResults.innerHTML = "";
+
+                return;
             }
-        );
 
-    }
+            if (clearSearch) {
+                clearSearch.style.display = "flex";
+            }
+
+            searchTimer = setTimeout(
+                performSearch,
+                300
+            );
+        }
+    );
 
 
-    document.addEventListener(
+    searchInput.addEventListener(
         "keydown",
-        handleEscape
+        function(event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                clearTimeout(searchTimer);
+
+                performSearch();
+            }
+        }
     );
 }
 
 
 /* =========================================================
-   ESCAPE HTML ATTRIBUTE
+   BOTTOM NAVIGATION
 ========================================================= */
 
-function escapeHtmlAttribute(value) {
+function setupBottomNavigation() {
 
-    return String(value)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#39;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        );
-}
+    const homeNav =
+        document.getElementById("homeNav");
+
+    const reelNav =
+        document.getElementById("reelNav");
+
+    const searchNav =
+        document.getElementById("searchNav");
+
+    const notificationNav =
+        document.getElementById("notificationNav");
+
+    const profileNav =
+        document.getElementById("profileNav");
 
 
-/* =========================================================
-   GET CONNECTION STATUS
-========================================================= */
-
-function getConnectionStatus(user) {
-
-    const status =
-        String(
-            user.connection_status ||
-            user.status ||
-            ""
-        )
-            .trim()
-            .toLowerCase();
-
-
-    if (
-        user.is_self === true ||
-        status === "self"
-    ) {
-
-        return "self";
-
-    }
-
-
-    if (
-        user.is_connected === true ||
-        status === "connected"
-    ) {
-
-        return "connected";
-
-    }
-
-
-    if (
-        user.request_sent === true ||
-        status === "pending_sent" ||
-        status === "requested" ||
-        status === "pending"
-    ) {
-
-        return "pending_sent";
-
-    }
-
-
-    if (
-        user.request_received === true ||
-        status === "pending_received"
-    ) {
-
-        return "pending_received";
-
-    }
-
-
-    return "none";
-}
-
-
-/* =========================================================
-   CREATE STATUS ACTION
-========================================================= */
-
-function createStatusAction(
-    user,
-    actionArea,
-    status
-) {
-
-    const button =
-        document.createElement(
-            "button"
-        );
-
-    button.type =
-        "button";
-
-    button.className =
-        "search-follow-button";
-
-
-    /* =====================================================
-       SELF
-    ===================================================== */
-
-    if (status === "self") {
-
-        button.textContent =
-            "You";
-
-        button.classList.add(
-            "you"
-        );
-
-        button.disabled =
-            true;
-
-        actionArea.appendChild(
-            button
-        );
-
-        return;
-    }
-
-
-    /* =====================================================
-       CONNECTED
-    ===================================================== */
-
-    if (status === "connected") {
-
-        button.textContent =
-            "Connected";
-
-        button.classList.add(
-            "connected"
-        );
-
-        button.disabled =
-            false;
-
-
-        /*
-         * Button click also opens
-         * connected user's profile.
-         */
-
-        button.addEventListener(
+    if (homeNav) {
+        homeNav.addEventListener(
             "click",
-            function (event) {
-
-                event.stopPropagation();
-
-                openUserProfile(
-                    user
-                );
-
+            () => {
+                window.location.href = "/home";
             }
         );
-
-
-        actionArea.appendChild(
-            button
-        );
-
-        return;
     }
 
 
-    /* =====================================================
-       REQUEST SENT BY ME
-    ===================================================== */
-
-    if (status === "pending_sent") {
-
-        button.textContent =
-            "Requested";
-
-        button.classList.add(
-            "requested"
-        );
-
-        button.disabled =
-            true;
-
-        actionArea.appendChild(
-            button
-        );
-
-        return;
-    }
-
-
-    /* =====================================================
-       REQUEST RECEIVED
-    ===================================================== */
-
-    if (status === "pending_received") {
-
-        button.textContent =
-            "Request";
-
-        button.classList.add(
-            "request"
-        );
-
-        button.disabled =
-            false;
-
-
-        button.addEventListener(
+    if (reelNav) {
+        reelNav.addEventListener(
             "click",
-            function (event) {
-
-                event.stopPropagation();
-
-                window.location.href =
-                    "/notifications";
-
+            () => {
+                window.location.href = "/reels";
             }
         );
-
-
-        actionArea.appendChild(
-            button
-        );
-
-        return;
     }
 
 
-    /* =====================================================
-       NO CONNECTION
-    ===================================================== */
-
-    button.textContent =
-        "Follow";
-
-    button.dataset.userId =
-        user.user_id || "";
-
-
-    button.addEventListener(
-        "click",
-        function (event) {
-
-            event.stopPropagation();
-
-            sendConnectionRequest(
-                user,
-                button
-            );
-
-        }
-    );
-
-
-    actionArea.appendChild(
-        button
-    );
-}
-
-
-/* =========================================================
-   CREATE VERIFY ACTION
-========================================================= */
-
-function createVerifyAction(
-    user,
-    actionArea
-) {
-
-    const verifyButton =
-        document.createElement(
-            "button"
-        );
-
-    verifyButton.type =
-        "button";
-
-    verifyButton.className =
-        "search-follow-button";
-
-    verifyButton.textContent =
-        "VERIFY";
-
-    verifyButton.dataset.userId =
-        user.user_id || "";
-
-
-    verifyButton.addEventListener(
-        "click",
-        function (event) {
-
-            event.stopPropagation();
-
-            openVerificationBox(
-                user,
-                actionArea
-            );
-
-        }
-    );
-
-
-    actionArea.appendChild(
-        verifyButton
-    );
-}
-
-
-/* =========================================================
-   OPEN VERIFICATION BOX
-========================================================= */
-
-function openVerificationBox(
-    user,
-    actionArea
-) {
-
-    if (
-        actionArea.querySelector(
-            ".usanex-verify-box"
-        )
-    ) {
-        return;
-    }
-
-
-    actionArea.innerHTML = `
-        <div class="usanex-verify-box">
-
-            <input
-                type="text"
-                class="usanex-code-input"
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                maxlength="6"
-                placeholder="Enter 6-digit code"
-            >
-
-            <button
-                type="button"
-                class="usanex-verify-submit"
-            >
-                Verify
-            </button>
-
-            <div
-                class="usanex-verify-message"
-            ></div>
-
-        </div>
-    `;
-
-
-    const card =
-        actionArea.closest(
-            ".search-user-card"
-        );
-
-
-    if (card) {
-
-        card.style.position =
-            "relative";
-
-        card.style.overflow =
-            "visible";
-
-    }
-
-
-    const input =
-        actionArea.querySelector(
-            ".usanex-code-input"
-        );
-
-    const submitButton =
-        actionArea.querySelector(
-            ".usanex-verify-submit"
-        );
-
-    const message =
-        actionArea.querySelector(
-            ".usanex-verify-message"
-        );
-
-
-    if (input) {
-
-        input.focus();
-
-
-        input.addEventListener(
-            "input",
-            function () {
-
-                input.value =
-                    input.value
-                        .replace(/\D/g, "")
-                        .slice(0, 6);
-
-            }
-        );
-
-
-        input.addEventListener(
-            "keydown",
-            function (event) {
-
-                if (
-                    event.key === "Enter"
-                ) {
-
-                    event.preventDefault();
-
-                    verifyConnectionCode(
-                        user,
-                        input,
-                        submitButton,
-                        message
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-
-    if (submitButton) {
-
-        submitButton.addEventListener(
+    if (searchNav) {
+        searchNav.addEventListener(
             "click",
-            function (event) {
-
-                event.stopPropagation();
-
-                verifyConnectionCode(
-                    user,
-                    input,
-                    submitButton,
-                    message
-                );
-
+            () => {
+                window.location.href = "/search";
             }
         );
-
-    }
-}
-
-
-/* =========================================================
-   VERIFY CONNECTION CODE
-========================================================= */
-
-async function verifyConnectionCode(
-    user,
-    input,
-    submitButton,
-    message
-) {
-
-    const code =
-        (
-            input?.value ||
-            ""
-        ).trim();
-
-
-    if (!/^\d{6}$/.test(code)) {
-
-        if (message) {
-
-            message.textContent =
-                "Enter a valid 6-digit code.";
-
-            message.className =
-                "usanex-verify-message error";
-
-        }
-
-        return;
     }
 
 
-    if (!verificationId) {
-
-        if (message) {
-
-            message.textContent =
-                "Verification session not found.";
-
-            message.className =
-                "usanex-verify-message error";
-
-        }
-
-        return;
-    }
-
-
-    if (submitButton) {
-
-        submitButton.disabled =
-            true;
-
-        submitButton.textContent =
-            "Verifying...";
-
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/connections/verify",
-                {
-                    method: "POST",
-
-                    credentials:
-                        "same-origin",
-
-                    headers: {
-                        "Accept":
-                            "application/json",
-
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            verification_id:
-                                Number(
-                                    verificationId
-                                ),
-
-                            code:
-                                code
-                        })
-                }
-            );
-
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch {
-
-            data = {};
-
-        }
-
-
-        if (response.status === 401) {
-
-            window.location.replace(
-                "/login"
-            );
-
-            return;
-        }
-
-
-        if (
-            response.ok &&
-            data.success === true
-        ) {
-
-            if (message) {
-
-                message.textContent =
-                    "Connected successfully.";
-
-                message.className =
-                    "usanex-verify-message success";
-
+    if (notificationNav) {
+        notificationNav.addEventListener(
+            "click",
+            () => {
+                window.location.href = "/notifications";
             }
-
-
-            setTimeout(
-                function () {
-
-                    window.location.replace(
-                        "/home"
-                    );
-
-                },
-                500
-            );
-
-            return;
-        }
-
-
-        throw new Error(
-            data.detail ||
-            "Verification failed."
         );
-
-
-    } catch (error) {
-
-        console.error(
-            "Usanex verification error:",
-            error
-        );
-
-
-        if (message) {
-
-            message.textContent =
-                error.message ||
-                "Invalid verification code.";
-
-            message.className =
-                "usanex-verify-message error";
-
-        }
-
-
-        if (submitButton) {
-
-            submitButton.disabled =
-                false;
-
-            submitButton.textContent =
-                "Verify";
-
-        }
-    }
-}
-
-
-/* =========================================================
-   SEND CONNECTION REQUEST
-========================================================= */
-
-async function sendConnectionRequest(
-    user,
-    button
-) {
-
-    const targetUserId =
-        (
-            user.user_id ||
-            ""
-        ).trim();
-
-
-    if (!targetUserId) {
-
-        alert(
-            "User ID is missing."
-        );
-
-        return;
     }
 
 
-    if (button.disabled) {
-        return;
-    }
-
-
-    button.disabled =
-        true;
-
-    button.textContent =
-        "Sending...";
-
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/connections/request",
-                {
-                    method: "POST",
-
-                    credentials:
-                        "same-origin",
-
-                    headers: {
-                        "Accept":
-                            "application/json",
-
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            user_id:
-                                targetUserId
-                        })
-                }
-            );
-
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch {
-
-            data = {};
-
-        }
-
-
-        if (response.status === 401) {
-
-            window.location.replace(
-                "/login"
-            );
-
-            return;
-        }
-
-
-        if (
-            response.ok &&
-            data.success === true
-        ) {
-
-            button.textContent =
-                "Requested";
-
-            button.classList.add(
-                "requested"
-            );
-
-            button.disabled =
-                true;
-
-            return;
-        }
-
-
-        if (response.status === 409) {
-
-            const detail =
-                String(
-                    data.detail ||
-                    ""
-                ).toLowerCase();
-
-
-            if (
-                detail.includes(
-                    "connected"
-                )
-            ) {
-
-                button.textContent =
-                    "Connected";
-
-                button.classList.add(
-                    "connected"
-                );
-
-                button.disabled =
-                    false;
-
-                return;
+    if (profileNav) {
+        profileNav.addEventListener(
+            "click",
+            () => {
+                window.location.href = "/profile";
             }
-
-
-            if (
-                detail.includes(
-                    "pending"
-                ) ||
-                detail.includes(
-                    "request"
-                )
-            ) {
-
-                button.textContent =
-                    "Requested";
-
-                button.classList.add(
-                    "requested"
-                );
-
-                button.disabled =
-                    true;
-
-                return;
-            }
-        }
-
-
-        throw new Error(
-            data.detail ||
-            "Unable to send connection request."
         );
-
-
-    } catch (error) {
-
-        console.error(
-            "Usanex connection request error:",
-            error
-        );
-
-
-        button.disabled =
-            false;
-
-        button.textContent =
-            "Follow";
-
-
-        alert(
-            error.message ||
-            "Unable to send request. Please try again."
-        );
-
     }
 }
 
 
 /* =========================================================
-   OPEN CONNECTED USER PROFILE
-========================================================= */
-
-function openUserProfile(user) {
-
-    const userId =
-        (
-            user.user_id ||
-            ""
-        ).trim();
-
-
-    if (!userId) {
-        return;
-    }
-
-
-    window.location.href =
-        `/profile?user_id=${encodeURIComponent(
-            userId
-        )}`;
-}
-
-
-/* =========================================================
-   GET INITIAL
-========================================================= */
-
-function getInitial(name) {
-
-    if (!name) {
-        return "U";
-    }
-
-
-    return name
-        .trim()
-        .charAt(0)
-        .toUpperCase();
-}
-
-
-/* =========================================================
-   GO CARD MODE
-========================================================= */
-
-function openVerificationUser() {
-
-    if (
-        !verificationUserId ||
-        !searchInput
-    ) {
-        return false;
-    }
-
-
-    searchInput.value =
-        verificationUserId;
-
-
-    if (clearSearch) {
-        clearSearch.hidden = false;
-    }
-
-
-    searchPeople(
-        verificationUserId
-    );
-
-
-    return true;
-}
-
-
-/* =========================================================
-   INITIAL STATUS
-========================================================= */
-
-if (searchStatus) {
-
-    searchStatus.textContent =
-        "Search people on Usanex";
-
-}
-
-
-/* =========================================================
-   INITIAL PAGE LOAD
+   IMAGE PROTECTION HELPERS
 ========================================================= */
 
 document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+    "contextmenu",
+    function(event) {
 
-        if (verificationUserId) {
-            openVerificationUser();
+        const target = event.target;
+
+        if (
+            target &&
+            (
+                target.matches(".search-user-avatar img") ||
+                target.matches(".usanex-dp-large")
+            )
+        ) {
+            event.preventDefault();
         }
-
     }
 );
 
 
-console.log(
-    "Usanex Search v9 loaded."
+document.addEventListener(
+    "dragstart",
+    function(event) {
+
+        const target = event.target;
+
+        if (
+            target &&
+            (
+                target.matches(".search-user-avatar img") ||
+                target.matches(".usanex-dp-large")
+            )
+        ) {
+            event.preventDefault();
+        }
+    }
 );
+
+
+/* =========================================================
+   INIT
+========================================================= */
+
+setupBottomNavigation();
+
+if (clearSearch) {
+    clearSearch.style.display = "none";
+}
+
+if (searchStatus) {
+    searchStatus.textContent =
+        "Search people by name, username, user ID or mobile";
+}
