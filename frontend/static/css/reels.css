@@ -1,1 +1,750 @@
+/* =========================================================
+   USANEX - REELS
+   Full Screen Mobile Reels UI
+========================================================= */
 
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+    background: #000000;
+    color: #ffffff;
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+}
+
+button {
+    font: inherit;
+    border: 0;
+    outline: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.reels-page {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+
+    overflow: hidden;
+
+    background: #000000;
+}
+
+
+/* =========================================================
+   TOP HEADER
+========================================================= */
+
+.reels-header {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+    right: 0;
+
+    z-index: 100;
+
+    height: 64px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding:
+        env(safe-area-inset-top)
+        14px
+        0;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.70),
+            rgba(0, 0, 0, 0)
+        );
+
+    pointer-events: none;
+}
+
+.reels-title {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+
+    text-shadow:
+        0 1px 8px rgba(0, 0, 0, 0.65);
+
+    pointer-events: auto;
+}
+
+.camera-button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, 0.30);
+    color: #ffffff;
+
+    pointer-events: auto;
+}
+
+.camera-button svg {
+    width: 23px;
+    height: 23px;
+}
+
+.camera-button:active {
+    transform: scale(0.92);
+}
+
+
+/* =========================================================
+   REELS CONTAINER
+========================================================= */
+
+.reels-container {
+    width: 100%;
+    height: 100%;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    scroll-snap-type: y mandatory;
+
+    scrollbar-width: none;
+
+    background: #000000;
+}
+
+.reels-container::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* =========================================================
+   REEL CARD
+========================================================= */
+
+.reel-card {
+    position: relative;
+
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    overflow: hidden;
+
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+
+    background: #10151c;
+}
+
+
+/* =========================================================
+   VIDEO AREA
+========================================================= */
+
+.reel-video {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        radial-gradient(
+            circle at 50% 35%,
+            #1b2735,
+            #0b1017 55%,
+            #05070a 100%
+        );
+}
+
+.video-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 12px;
+
+    color: #7e8997;
+
+    text-align: center;
+
+    pointer-events: none;
+}
+
+.placeholder-icon {
+    width: 68px;
+    height: 68px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 22px;
+
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.placeholder-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.video-placeholder span {
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   VIDEO OVERLAY
+========================================================= */
+
+.reel-card::after {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.78) 0%,
+            rgba(0, 0, 0, 0.34) 24%,
+            rgba(0, 0, 0, 0.03) 55%,
+            rgba(0, 0, 0, 0.10) 100%
+        );
+}
+
+
+/* =========================================================
+   RIGHT ACTIONS
+========================================================= */
+
+.reel-actions {
+    position: absolute;
+
+    right: 10px;
+    bottom: 142px;
+
+    z-index: 20;
+
+    width: 58px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 19px;
+}
+
+.reel-action {
+    width: 52px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+
+    background: transparent;
+    color: #ffffff;
+
+    text-shadow:
+        0 1px 6px rgba(0, 0, 0, 0.8);
+
+    transition:
+        transform 0.15s ease,
+        color 0.15s ease;
+}
+
+.reel-action svg {
+    width: 29px;
+    height: 29px;
+
+    display: block;
+
+    filter:
+        drop-shadow(
+            0 2px 5px rgba(0, 0, 0, 0.65)
+        );
+}
+
+.reel-action span {
+    max-width: 55px;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.reel-action:active {
+    transform: scale(0.86);
+}
+
+.reel-action.liked {
+    color: #ff3d67;
+}
+
+.reel-action.liked svg {
+    fill: currentColor;
+}
+
+.more-action {
+    margin-top: 1px;
+}
+
+
+/* =========================================================
+   USER / CAPTION INFO
+========================================================= */
+
+.reel-info {
+    position: absolute;
+
+    left: 14px;
+    right: 78px;
+    bottom: 92px;
+
+    z-index: 20;
+
+    display: flex;
+    flex-direction: column;
+
+    pointer-events: none;
+
+    text-shadow:
+        0 1px 7px rgba(0, 0, 0, 0.75);
+}
+
+.reel-user-row {
+    display: flex;
+    align-items: center;
+
+    min-width: 0;
+
+    gap: 9px;
+
+    pointer-events: auto;
+}
+
+.reel-avatar {
+    width: 42px;
+    height: 42px;
+
+    flex: 0 0 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background:
+        linear-gradient(
+            145deg,
+            #1d73d1,
+            #0d3567
+        );
+
+    border: 1px solid rgba(255, 255, 255, 0.28);
+
+    color: #ffffff;
+
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.reel-user-details {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 2px;
+}
+
+.reel-user-details strong {
+    max-width: 150px;
+
+    overflow: hidden;
+
+    font-size: 14px;
+    font-weight: 750;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.reel-user-details span {
+    max-width: 150px;
+
+    overflow: hidden;
+
+    color: #c0c7d0;
+
+    font-size: 11px;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.follow-button {
+    min-width: 72px;
+    height: 32px;
+
+    margin-left: 3px;
+
+    padding: 0 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 9px;
+
+    background: rgba(0, 0, 0, 0.32);
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    pointer-events: auto;
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.follow-button.following {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.follow-button:active {
+    transform: scale(0.95);
+}
+
+
+/* =========================================================
+   CAPTION
+========================================================= */
+
+.reel-caption {
+    max-width: 310px;
+
+    margin-top: 11px;
+
+    color: #ffffff;
+
+    font-size: 13px;
+    line-height: 1.45;
+
+    pointer-events: auto;
+}
+
+
+/* =========================================================
+   AUDIO
+========================================================= */
+
+.reel-audio {
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    margin-top: 9px;
+
+    color: #d5d9df;
+
+    font-size: 11px;
+}
+
+.reel-audio svg {
+    width: 15px;
+    height: 15px;
+}
+
+
+/* =========================================================
+   BOTTOM NAVIGATION
+========================================================= */
+
+.bottom-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 200;
+
+    width: 100%;
+    height: 72px;
+
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        1fr
+        1fr
+        1.15fr
+        1fr;
+
+    align-items: center;
+
+    padding:
+        7px
+        max(7px, env(safe-area-inset-right))
+        calc(7px + env(safe-area-inset-bottom))
+        max(7px, env(safe-area-inset-left));
+
+    background: rgba(7, 9, 13, 0.96);
+
+    border-top: 1px solid #171d26;
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+
+/* =========================================================
+   NAV ITEMS
+========================================================= */
+
+.nav-item {
+    height: 58px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    background: transparent;
+
+    color: #697482;
+
+    font-size: 10px;
+    font-weight: 500;
+
+    transition:
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.nav-item svg {
+    width: 22px;
+    height: 22px;
+
+    flex: 0 0 auto;
+}
+
+.nav-item.active {
+    color: #1683ff;
+}
+
+.nav-item:active {
+    transform: scale(0.94);
+}
+
+
+/* =========================================================
+   NOTIFICATION DOT
+========================================================= */
+
+.notification-icon-wrapper {
+    position: relative;
+
+    width: 22px;
+    height: 22px;
+}
+
+.notification-icon-wrapper svg {
+    width: 22px;
+    height: 22px;
+}
+
+.notification-dot {
+    position: absolute;
+
+    top: -1px;
+    right: -2px;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #1683ff;
+
+    border: 1px solid #07090d;
+}
+
+
+/* =========================================================
+   TABLET / DESKTOP
+========================================================= */
+
+@media (min-width: 768px) {
+
+    .reels-container {
+        max-width: 620px;
+        margin: 0 auto;
+    }
+
+    .reels-header {
+        left: 50%;
+        right: auto;
+
+        width: 620px;
+
+        transform: translateX(-50%);
+
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .bottom-nav {
+        left: 50%;
+        right: auto;
+
+        width: 680px;
+
+        transform: translateX(-50%);
+
+        border-left: 1px solid #171d26;
+        border-right: 1px solid #171d26;
+    }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 430px) {
+
+    .reels-title {
+        font-size: 20px;
+    }
+
+    .camera-button {
+        width: 40px;
+        height: 40px;
+    }
+
+    .reel-actions {
+        right: 7px;
+        bottom: 137px;
+
+        gap: 17px;
+    }
+
+    .reel-action {
+        width: 49px;
+    }
+
+    .reel-action svg {
+        width: 27px;
+        height: 27px;
+    }
+
+    .reel-info {
+        left: 12px;
+        right: 68px;
+        bottom: 90px;
+    }
+
+    .reel-avatar {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+    }
+
+    .follow-button {
+        min-width: 68px;
+        height: 31px;
+        padding: 0 10px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 350px) {
+
+    .reel-user-details strong,
+    .reel-user-details span {
+        max-width: 110px;
+    }
+
+    .follow-button {
+        min-width: 62px;
+
+        padding-left: 8px;
+        padding-right: 8px;
+
+        font-size: 11px;
+    }
+
+    .reel-caption {
+        max-width: 245px;
+        font-size: 12px;
+    }
+
+    .nav-item {
+        font-size: 9px;
+    }
+
+    .nav-item svg,
+    .notification-icon-wrapper,
+    .notification-icon-wrapper svg {
+        width: 21px;
+        height: 21px;
+    }
+}
