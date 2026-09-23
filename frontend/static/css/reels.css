@@ -28,6 +28,11 @@ body {
         sans-serif;
 }
 
+body {
+    margin: 0;
+    padding: 0;
+}
+
 button {
     font: inherit;
     border: 0;
@@ -91,6 +96,7 @@ button {
 .reels-title {
     font-size: 21px;
     font-weight: 800;
+
     letter-spacing: 0.2px;
 
     color: #ffffff;
@@ -102,7 +108,9 @@ button {
 }
 
 
-/* PLUS BUTTON */
+/* =========================================================
+   CREATE REEL PLUS BUTTON
+========================================================= */
 
 .create-reel-button {
     width: 42px;
@@ -114,12 +122,14 @@ button {
 
     border-radius: 50%;
 
-    background: rgba(0, 0, 0, 0.34);
+    background:
+        rgba(0, 0, 0, 0.34);
 
     color: #ffffff;
 
     font-size: 30px;
     font-weight: 300;
+
     line-height: 1;
 
     pointer-events: auto;
@@ -130,7 +140,8 @@ button {
 }
 
 .create-reel-button:hover {
-    background: rgba(255, 255, 255, 0.10);
+    background:
+        rgba(255, 255, 255, 0.10);
 }
 
 .create-reel-button:active {
@@ -195,6 +206,7 @@ button {
     inset: 0;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -209,7 +221,9 @@ button {
 
 .video-placeholder {
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
 
@@ -227,14 +241,18 @@ button {
     height: 68px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
     border-radius: 22px;
 
-    background: rgba(255, 255, 255, 0.055);
+    background:
+        rgba(255, 255, 255, 0.055);
 
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.10);
 }
 
 .placeholder-icon svg {
@@ -286,7 +304,9 @@ button {
     width: 58px;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
 
     gap: 16px;
@@ -296,7 +316,9 @@ button {
     width: 54px;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
 
@@ -322,7 +344,8 @@ button {
 
     filter:
         drop-shadow(
-            0 2px 5px rgba(0, 0, 0, 0.65)
+            0 2px 5px
+            rgba(0, 0, 0, 0.65)
         );
 }
 
@@ -335,6 +358,7 @@ button {
     white-space: nowrap;
 
     overflow: hidden;
+
     text-overflow: ellipsis;
 }
 
@@ -388,24 +412,25 @@ button {
 
     left: 14px;
     right: 78px;
+
     bottom: 91px;
 
     z-index: 30;
 
     display: flex;
+
     flex-direction: column;
 
     pointer-events: none;
 
     text-shadow:
-        0 1px 7px rgba(0, 0, 0, 0.80);
+        0 1px 7px
+        rgba(0, 0, 0, 0.80);
 }
-
-
-/* USER ROW */
 
 .reel-user-row {
     display: flex;
+
     align-items: center;
 
     min-width: 0;
@@ -415,6 +440,11 @@ button {
     pointer-events: auto;
 }
 
+
+/* =========================================================
+   AVATAR
+========================================================= */
+
 .reel-avatar {
     width: 42px;
     height: 42px;
@@ -422,6 +452,7 @@ button {
     flex: 0 0 42px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -434,7 +465,9 @@ button {
             #0d3567
         );
 
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.28);
 
     color: #ffffff;
 
@@ -442,10 +475,16 @@ button {
     font-weight: 800;
 }
 
+
+/* =========================================================
+   USER DETAILS
+========================================================= */
+
 .reel-user-details {
     min-width: 0;
 
     display: flex;
+
     flex-direction: column;
 
     gap: 2px;
@@ -462,6 +501,7 @@ button {
     font-weight: 750;
 
     white-space: nowrap;
+
     text-overflow: ellipsis;
 }
 
@@ -475,11 +515,14 @@ button {
     font-size: 11px;
 
     white-space: nowrap;
+
     text-overflow: ellipsis;
 }
 
 
-/* FOLLOW */
+/* =========================================================
+   FOLLOW BUTTON
+========================================================= */
 
 .follow-button {
     min-width: 72px;
@@ -487,13 +530,17 @@ button {
 
     margin-left: 3px;
 
-    padding: 0 12px;
+    padding:
+        0 12px;
 
-    border: 1px solid rgba(255, 255, 255, 0.42);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.42);
 
     border-radius: 9px;
 
-    background: rgba(0, 0, 0, 0.32);
+    background:
+        rgba(0, 0, 0, 0.32);
 
     color: #ffffff;
 
@@ -512,7 +559,8 @@ button {
 }
 
 .follow-button.following {
-    background: rgba(255, 255, 255, 0.14);
+    background:
+        rgba(255, 255, 255, 0.14);
 
     border-color:
         rgba(255, 255, 255, 0.25);
@@ -535,6 +583,7 @@ button {
     color: #ffffff;
 
     font-size: 13px;
+
     line-height: 1.45;
 
     pointer-events: auto;
@@ -547,6 +596,7 @@ button {
 
 .interest-controls {
     display: flex;
+
     align-items: center;
 
     gap: 8px;
@@ -596,7 +646,8 @@ button {
 }
 
 .interest-button.selected {
-    background: rgba(22, 131, 255, 0.20);
+    background:
+        rgba(22, 131, 255, 0.20);
 
     border-color:
         rgba(22, 131, 255, 0.65);
@@ -611,6 +662,7 @@ button {
 
 .reel-audio {
     display: flex;
+
     align-items: center;
 
     gap: 7px;
@@ -630,6 +682,7 @@ button {
 
 /* =========================================================
    BOTTOM NAVIGATION
+   EXACTLY AT SCREEN BOTTOM
 ========================================================= */
 
 .bottom-nav {
@@ -642,7 +695,8 @@ button {
     z-index: 200;
 
     width: 100%;
-    height: 72px;
+
+    height: 64px;
 
     display: grid;
 
@@ -650,19 +704,21 @@ button {
         1fr
         1fr
         1fr
-        1.15fr
+        1fr
         1fr;
 
     align-items: center;
 
+    margin: 0;
+
     padding:
-        7px
-        max(7px, env(safe-area-inset-right))
-        calc(7px + env(safe-area-inset-bottom))
-        max(7px, env(safe-area-inset-left));
+        0
+        max(4px, env(safe-area-inset-right))
+        env(safe-area-inset-bottom)
+        max(4px, env(safe-area-inset-left));
 
     background:
-        rgba(7, 9, 13, 0.97);
+        rgba(7, 9, 13, 0.98);
 
     border-top:
         1px solid #171d26;
@@ -677,14 +733,20 @@ button {
 ========================================================= */
 
 .nav-item {
-    height: 58px;
+    width: 100%;
+    height: 64px;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
 
-    gap: 4px;
+    gap: 3px;
+
+    padding: 0;
+    margin: 0;
 
     background: transparent;
 
@@ -715,7 +777,7 @@ button {
 
 
 /* =========================================================
-   NOTIFICATION DOT
+   NOTIFICATION ICON
 ========================================================= */
 
 .notification-icon-wrapper {
@@ -730,6 +792,11 @@ button {
     height: 22px;
 }
 
+
+/* =========================================================
+   NOTIFICATION DOT
+========================================================= */
+
 .notification-dot {
     position: absolute;
 
@@ -743,7 +810,8 @@ button {
 
     background: #1683ff;
 
-    border: 1px solid #07090d;
+    border:
+        1px solid #07090d;
 }
 
 
@@ -765,7 +833,8 @@ button {
 
         width: 620px;
 
-        transform: translateX(-50%);
+        transform:
+            translateX(-50%);
 
         padding-left: 14px;
         padding-right: 14px;
@@ -777,7 +846,8 @@ button {
 
         width: 680px;
 
-        transform: translateX(-50%);
+        transform:
+            translateX(-50%);
 
         border-left:
             1px solid #171d26;
@@ -805,8 +875,10 @@ button {
         font-size: 29px;
     }
 
+
     .reel-actions {
         right: 6px;
+
         bottom: 143px;
 
         gap: 14px;
@@ -825,11 +897,14 @@ button {
         font-size: 9.5px;
     }
 
+
     .reel-info {
         left: 12px;
         right: 68px;
+
         bottom: 90px;
     }
+
 
     .reel-avatar {
         width: 40px;
@@ -837,6 +912,7 @@ button {
 
         flex-basis: 40px;
     }
+
 
     .follow-button {
         min-width: 68px;
@@ -847,6 +923,7 @@ button {
             0 10px;
     }
 
+
     .interest-controls {
         gap: 6px;
     }
@@ -856,6 +933,29 @@ button {
             0 9px;
 
         font-size: 9.5px;
+    }
+
+
+    /* Bottom navigation */
+
+    .bottom-nav {
+        height: 62px;
+
+        padding-bottom:
+            env(safe-area-inset-bottom);
+    }
+
+    .nav-item {
+        height: 62px;
+
+        font-size: 9.5px;
+    }
+
+    .nav-item svg,
+    .notification-icon-wrapper,
+    .notification-icon-wrapper svg {
+        width: 21px;
+        height: 21px;
     }
 }
 
@@ -871,6 +971,7 @@ button {
         max-width: 105px;
     }
 
+
     .follow-button {
         min-width: 62px;
 
@@ -880,11 +981,13 @@ button {
         font-size: 11px;
     }
 
+
     .reel-caption {
         max-width: 235px;
 
         font-size: 12px;
     }
+
 
     .interest-controls {
         gap: 5px;
@@ -899,9 +1002,11 @@ button {
         font-size: 8.5px;
     }
 
+
     .nav-item {
         font-size: 9px;
     }
+
 
     .nav-item svg,
     .notification-icon-wrapper,
