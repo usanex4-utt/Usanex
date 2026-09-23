@@ -13,7 +13,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/home.css?v=10"
+        href="/static/css/home.css?v=20"
     >
 </head>
 
@@ -21,7 +21,8 @@
 
 <div class="app-shell">
 
-    <!-- HEADER -->
+    <!-- ================= HEADER ================= -->
+
     <header class="top-header">
 
         <button
@@ -51,12 +52,14 @@
     </header>
 
 
-    <!-- MAIN -->
+    <!-- ================= MAIN ================= -->
+
     <main class="main-area">
 
         <div class="content-scroll">
 
-            <!-- NEX MOMENT -->
+            <!-- ================= NEX MOMENT ================= -->
+
             <section class="status-section">
 
                 <div class="section-header">
@@ -161,7 +164,8 @@
             </section>
 
 
-            <!-- CONNECTED PEOPLE -->
+            <!-- ================= CONNECTED PEOPLE ================= -->
+
             <section
                 class="connected-people-section"
                 id="connectedPeopleSection"
@@ -170,9 +174,7 @@
 
                 <div class="connected-section-header">
 
-                    <h2>
-                        Connected People
-                    </h2>
+                    <h2>Connected People</h2>
 
                     <span
                         class="connected-count"
@@ -196,10 +198,12 @@
     </main>
 
 
-    <!-- BOTTOM NAVIGATION -->
+    <!-- ================= BOTTOM NAV ================= -->
+
     <nav class="bottom-nav">
 
         <!-- HOME -->
+
         <button
             type="button"
             class="nav-item active"
@@ -222,6 +226,7 @@
 
 
         <!-- REEL -->
+
         <button
             type="button"
             class="nav-item"
@@ -244,7 +249,6 @@
 
                 <path d="M8 4l3 5"></path>
                 <path d="M14 4l3 5"></path>
-
                 <path d="M10 12l5 3-5 3v-6z"></path>
             </svg>
 
@@ -254,6 +258,7 @@
 
 
         <!-- SEARCH -->
+
         <button
             type="button"
             class="nav-item"
@@ -281,6 +286,7 @@
 
 
         <!-- NOTIFICATION -->
+
         <button
             type="button"
             class="nav-item"
@@ -313,6 +319,7 @@
 
 
         <!-- PROFILE -->
+
         <button
             type="button"
             class="nav-item"
@@ -341,21 +348,24 @@
     </nav>
 
 
-    <!-- SIDE MENU -->
+    <!-- ================= SIDE MENU ================= -->
+
     <div
         class="menu-overlay"
         id="menuOverlay"
         hidden
     >
 
-        <div class="menu-panel">
+        <div
+            class="menu-panel"
+            role="dialog"
+            aria-modal="true"
+        >
 
             <div class="menu-header">
 
                 <div class="menu-brand">
-
                     <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
-
                 </div>
 
                 <button
@@ -412,9 +422,7 @@
 </div>
 
 
-<!-- HOME JAVASCRIPT -->
-<script src="/static/js/home.js?v=15"></script>
+<script src="/static/js/home.js?v=20"></script>
 
 </body>
-
 </html>
