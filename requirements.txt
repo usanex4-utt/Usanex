@@ -6,3 +6,4 @@ python-multipart
 argon2-cffi
 pydantic
 pydantic-settings
+jinja2
