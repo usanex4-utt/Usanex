@@ -13,7 +13,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/notifications.css?v=1"
+        href="/static/css/notifications.css?v=2"
     >
 </head>
 
@@ -44,7 +44,10 @@
                     aria-hidden="true"
                 >
                     <path d="M19 12H5"></path>
-                    <path d="M12 19l-7-7 7-7"></path>
+
+                    <path
+                        d="M12 19l-7-7 7-7"
+                    ></path>
                 </svg>
 
             </button>
@@ -68,7 +71,9 @@
 
     <main class="notifications-main">
 
-        <!-- Loading state -->
+        <!-- =================================================
+             LOADING
+        ================================================== -->
 
         <div
             id="notificationLoading"
@@ -78,7 +83,9 @@
         </div>
 
 
-        <!-- Empty state -->
+        <!-- =================================================
+             EMPTY STATE
+        ================================================== -->
 
         <div
             id="notificationEmpty"
@@ -95,6 +102,7 @@
                     stroke-width="1.7"
                     aria-hidden="true"
                 >
+
                     <path
                         d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
                     ></path>
@@ -102,6 +110,7 @@
                     <path
                         d="M10 21h4"
                     ></path>
+
                 </svg>
 
             </div>
@@ -110,6 +119,7 @@
             <h2>
                 No notifications
             </h2>
+
 
             <p>
                 New connection requests will appear here.
@@ -173,10 +183,24 @@
 
     </main>
 
+
+    <!-- =====================================================
+         TOP NOTIFICATION POPUP
+    ====================================================== -->
+
+    <div
+        id="notificationPopup"
+        class="status-popup"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        hidden
+    ></div>
+
 </div>
 
 
-<script src="/static/js/notifications.js?v=1"></script>
+<script src="/static/js/notifications.js?v=2"></script>
 
 </body>
 
