@@ -1,32 +1,21 @@
-from datetime import datetime, timedelta, timezone
-import secrets
-import string
-
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..database.database import get_db
 from ..database.models import (
-    ConnectionNotification,
+    User,
     ConnectionRequest,
     ConnectionVerification,
-    User,
+    ConnectionNotification,
     UserConnection,
-)
-from ..services.connection_security import (
-    decrypt_code,
-    encrypt_code,
 )
 from .auth import get_current_user_from_request
 
-
-# =========================================================
-# ROUTER
-# =========================================================
 
 router = APIRouter(
     prefix="/api/connections",
@@ -34,33 +23,34 @@ router = APIRouter(
 )
 
 
-# =========================================================
-# SECURITY SETTINGS
-# =========================================================
-
-VERIFICATION_CODE_LENGTH = 6
-VERIFICATION_EXPIRY_HOURS = 24
-MAX_VERIFICATION_ATTEMPTS = 5
-
-verification_hasher = PasswordHasher()
-
-
-# =========================================================
+# ============================================================
 # REQUEST MODELS
-# =========================================================
+# ============================================================
 
-class ConnectionRequestCreate(BaseModel):
+class ConnectionRequestBody(BaseModel):
     user_id: str
 
 
-class ConnectionVerifyRequest(BaseModel):
-    verification_id: int
-    code: str
+class LegacyFollowBody(BaseModel):
+    requester_id: Optional[str] = None
+    target_user_id: Optional[str] = None
+    requester_user_id: Optional[str] = None
+    target_id: Optional[str] = None
 
 
-# =========================================================
-# AUTHENTICATED USER
-# =========================================================
+class ActionBody(BaseModel):
+    notification_id: int
+    user_id: Optional[str] = None
+
+
+class NotificationReadBody(BaseModel):
+    notification_id: int
+    user_id: Optional[str] = None
+
+
+# ============================================================
+# HELPERS
+# ============================================================
 
 def get_authenticated_user(
     request: Request,
@@ -80,130 +70,88 @@ def get_authenticated_user(
     return user
 
 
-# =========================================================
-# GENERATE VERIFICATION CODE
-# =========================================================
-
-def generate_verification_code():
-    return "".join(
-        secrets.choice(string.digits)
-        for _ in range(VERIFICATION_CODE_LENGTH)
-    )
-
-
-# =========================================================
-# CREATE VERIFICATION
-# =========================================================
-
-def create_verification(
+def get_pair_connection(
     db: Session,
-    connection_request: ConnectionRequest,
+    user_a_id: int,
+    user_b_id: int,
 ):
-    db.query(
-        ConnectionVerification
-    ).filter(
-        ConnectionVerification.connection_request_id
-        == connection_request.id,
-        ConnectionVerification.status
-        == "pending",
-    ).delete(
-        synchronize_session=False
-    )
-
-    code = generate_verification_code()
-
-    code_hash = verification_hasher.hash(
-        code
-    )
-
-    now = datetime.now(
-        timezone.utc
-    )
-
-    expires_at = (
-        now
-        + timedelta(
-            hours=VERIFICATION_EXPIRY_HOURS
+    return (
+        db.query(UserConnection)
+        .filter(
+            UserConnection.status == "connected",
+            or_(
+                (
+                    UserConnection.user_one_id == user_a_id
+                )
+                & (
+                    UserConnection.user_two_id == user_b_id
+                ),
+                (
+                    UserConnection.user_one_id == user_b_id
+                )
+                & (
+                    UserConnection.user_two_id == user_a_id
+                ),
+            ),
         )
+        .first()
     )
 
-    verification = ConnectionVerification(
-        connection_request_id=connection_request.id,
-        requester_id=connection_request.sender_id,
-        receiver_id=connection_request.receiver_id,
-        code_hash=code_hash,
-        expires_at=expires_at,
-        attempts=0,
-        status="pending",
-        created_at=now,
-        verified_at=None,
+
+def get_latest_request(
+    db: Session,
+    sender_id: int,
+    receiver_id: int,
+):
+    return (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.sender_id == sender_id,
+            ConnectionRequest.receiver_id == receiver_id,
+        )
+        .order_by(
+            ConnectionRequest.id.desc()
+        )
+        .first()
     )
 
-    db.add(
-        verification
+
+def get_latest_notification_for_request(
+    db: Session,
+    request_id: int,
+):
+    return (
+        db.query(ConnectionNotification)
+        .filter(
+            ConnectionNotification.connection_request_id
+            == request_id
+        )
+        .order_by(
+            ConnectionNotification.id.desc()
+        )
+        .first()
     )
 
-    db.flush()
 
-    encrypted_code = encrypt_code(
-        code
-    )
-
-    notification = ConnectionNotification(
-        receiver_id=connection_request.sender_id,
-        sender_id=connection_request.receiver_id,
-        connection_request_id=connection_request.id,
-        verification_id=verification.id,
-        notification_type="connection_verification",
-        encrypted_code=encrypted_code,
-        is_read=0,
-        created_at=now,
-    )
-
-    db.add(
-        notification
-    )
-
-    db.commit()
-
-    db.refresh(
-        verification
-    )
-
-    db.refresh(
-        notification
-    )
-
-    return verification, notification
-
-
-# =========================================================
+# ============================================================
 # SEND CONNECTION REQUEST
-# =========================================================
+# ============================================================
 
 @router.post("/request")
 def send_connection_request(
-    payload: ConnectionRequestCreate,
+    body: ConnectionRequestBody,
     request: Request,
     db: Session = Depends(get_db),
 ):
     current_user = get_authenticated_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
-
-    target_user_id = payload.user_id.strip()
-
-    if not target_user_id:
-        raise HTTPException(
-            status_code=400,
-            detail="User ID is required",
-        )
 
     target_user = (
         db.query(User)
         .filter(
-            User.user_id == target_user_id
+            User.user_id == body.user_id.strip()
         )
         .first()
     )
@@ -217,135 +165,356 @@ def send_connection_request(
     if target_user.id == current_user.id:
         raise HTTPException(
             status_code=400,
-            detail="You cannot send a request to yourself",
+            detail="You cannot connect with yourself",
         )
 
-    existing_connection = (
-        db.query(UserConnection)
-        .filter(
-            (
-                (
-                    UserConnection.user_one_id
-                    == current_user.id
-                )
-                &
-                (
-                    UserConnection.user_two_id
-                    == target_user.id
-                )
-            )
-            |
-            (
-                (
-                    UserConnection.user_one_id
-                    == target_user.id
-                )
-                &
-                (
-                    UserConnection.user_two_id
-                    == current_user.id
-                )
-            )
-        )
-        .first()
+    # Already connected
+    existing_connection = get_pair_connection(
+        db,
+        current_user.id,
+        target_user.id,
     )
 
-    if existing_connection is not None:
-        raise HTTPException(
-            status_code=409,
-            detail="You are already connected",
-        )
+    if existing_connection:
+        return {
+            "success": True,
+            "status": "connected",
+            "message": "Already connected",
+        }
 
-    existing_request = (
-        db.query(ConnectionRequest)
-        .filter(
-            ConnectionRequest.sender_id
-            == current_user.id,
-            ConnectionRequest.receiver_id
-            == target_user.id,
-        )
-        .order_by(
-            ConnectionRequest.id.desc()
-        )
-        .first()
+    # Check latest request in both directions
+    outgoing = get_latest_request(
+        db,
+        current_user.id,
+        target_user.id,
     )
 
-    if existing_request is not None:
-
-        if existing_request.status == "pending":
-            raise HTTPException(
-                status_code=409,
-                detail="Connection request already pending",
-            )
-
-        if existing_request.status == "accepted":
-            raise HTTPException(
-                status_code=409,
-                detail="You are already connected",
-            )
-
-        if existing_request.status == "rejected":
-            db.delete(
-                existing_request
-            )
-            db.commit()
-
-    reverse_request = (
-        db.query(ConnectionRequest)
-        .filter(
-            ConnectionRequest.sender_id
-            == target_user.id,
-            ConnectionRequest.receiver_id
-            == current_user.id,
-            ConnectionRequest.status
-            == "pending",
-        )
-        .first()
+    incoming = get_latest_request(
+        db,
+        target_user.id,
+        current_user.id,
     )
 
-    if reverse_request is not None:
-        raise HTTPException(
-            status_code=409,
-            detail="This user has already sent you a request",
+    # Existing pending outgoing request
+    if outgoing and outgoing.status == "pending":
+        return {
+            "success": True,
+            "status": "pending_sent",
+            "message": "Connection request already sent",
+        }
+
+    # Target already sent a request to current user
+    if incoming and incoming.status == "pending":
+        return {
+            "success": True,
+            "status": "pending_received",
+            "message": "This user has already sent you a request",
+        }
+
+    now = datetime.utcnow()
+
+    # Reuse previous rejected request if possible
+    if outgoing and outgoing.status == "rejected":
+        outgoing.status = "pending"
+        outgoing.updated_at = now
+        request_row = outgoing
+
+    else:
+        request_row = ConnectionRequest(
+            sender_id=current_user.id,
+            receiver_id=target_user.id,
+            status="pending",
+            created_at=now,
+            updated_at=now,
         )
 
-    now = datetime.now(
-        timezone.utc
-    )
+        db.add(request_row)
+        db.flush()
 
-    new_request = ConnectionRequest(
-        sender_id=current_user.id,
+    # Create notification
+    notification = ConnectionNotification(
         receiver_id=target_user.id,
-        status="pending",
+        sender_id=current_user.id,
+        connection_request_id=request_row.id,
+        verification_id=None,
+        notification_type="connection_request",
+        encrypted_code=None,
+        is_read=0,
         created_at=now,
-        updated_at=now,
     )
 
-    db.add(
-        new_request
-    )
+    db.add(notification)
 
     db.commit()
 
-    db.refresh(
-        new_request
-    )
-
     return {
         "success": True,
+        "status": "pending_sent",
         "message": "Connection request sent",
-        "request": {
-            "id": new_request.id,
-            "status": new_request.status,
-            "receiver_user_id": target_user.user_id,
-            "receiver_username": target_user.username,
-        },
+        "request_id": request_row.id,
+        "notification_id": notification.id,
     }
 
 
-# =========================================================
-# GET INCOMING CONNECTION REQUESTS
-# =========================================================
+# ============================================================
+# LEGACY FOLLOW COMPATIBILITY
+# ============================================================
+
+@router.post("/follow")
+def follow_compatibility(
+    body: LegacyFollowBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    target_id = (
+        body.target_user_id
+        or body.target_id
+    )
+
+    if not target_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Target user ID is required",
+        )
+
+    return send_connection_request(
+        ConnectionRequestBody(
+            user_id=target_id
+        ),
+        request,
+        db,
+    )
+
+
+# ============================================================
+# ACCEPT REQUEST
+# ============================================================
+
+@router.post("/request/{request_id}/accept")
+def accept_connection_request(
+    request_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    connection_request = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.id == request_id
+        )
+        .first()
+    )
+
+    if connection_request is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Connection request not found",
+        )
+
+    if (
+        connection_request.receiver_id
+        != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot accept this request",
+        )
+
+    if connection_request.status == "accepted":
+        return {
+            "success": True,
+            "status": "connected",
+            "message": "Already accepted",
+        }
+
+    if connection_request.status != "pending":
+        raise HTTPException(
+            status_code=400,
+            detail="This request is no longer pending",
+        )
+
+    now = datetime.utcnow()
+
+    connection_request.status = "accepted"
+    connection_request.updated_at = now
+
+    # Create connection immediately after Accept
+    existing_connection = get_pair_connection(
+        db,
+        connection_request.sender_id,
+        connection_request.receiver_id,
+    )
+
+    if existing_connection is None:
+        user_connection = UserConnection(
+            user_one_id=connection_request.sender_id,
+            user_two_id=connection_request.receiver_id,
+            status="connected",
+            created_at=now,
+            updated_at=now,
+        )
+
+        db.add(user_connection)
+
+    # Find original request notification
+    original_notification = (
+        get_latest_notification_for_request(
+            db,
+            connection_request.id,
+        )
+    )
+
+    if original_notification:
+        original_notification.is_read = 1
+
+    # Notify requester
+    accepted_notification = ConnectionNotification(
+        receiver_id=connection_request.sender_id,
+        sender_id=current_user.id,
+        connection_request_id=connection_request.id,
+        verification_id=None,
+        notification_type="connection_accepted",
+        encrypted_code=None,
+        is_read=0,
+        created_at=now,
+    )
+
+    db.add(accepted_notification)
+
+    db.commit()
+
+    return {
+        "success": True,
+        "status": "connected",
+        "message": "Connection accepted",
+        "connection": True,
+    }
+
+
+# ============================================================
+# REJECT REQUEST
+# ============================================================
+
+@router.post("/request/{request_id}/reject")
+def reject_connection_request(
+    request_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    connection_request = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.id == request_id
+        )
+        .first()
+    )
+
+    if connection_request is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Connection request not found",
+        )
+
+    if (
+        connection_request.receiver_id
+        != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot reject this request",
+        )
+
+    if connection_request.status != "pending":
+        return {
+            "success": True,
+            "status": connection_request.status,
+            "message": "Request is no longer pending",
+        }
+
+    now = datetime.utcnow()
+
+    connection_request.status = "rejected"
+    connection_request.updated_at = now
+
+    original_notification = (
+        get_latest_notification_for_request(
+            db,
+            connection_request.id,
+        )
+    )
+
+    if original_notification:
+        original_notification.is_read = 1
+
+    # Notify original sender
+    rejected_notification = ConnectionNotification(
+        receiver_id=connection_request.sender_id,
+        sender_id=current_user.id,
+        connection_request_id=connection_request.id,
+        verification_id=None,
+        notification_type="connection_rejected",
+        encrypted_code=None,
+        is_read=0,
+        created_at=now,
+    )
+
+    db.add(rejected_notification)
+
+    db.commit()
+
+    return {
+        "success": True,
+        "status": "rejected",
+        "message": "Connection request rejected",
+    }
+
+
+# ============================================================
+# LEGACY ACCEPT
+# ============================================================
+
+@router.post("/accept")
+def accept_compatibility(
+    body: ActionBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    return accept_connection_request(
+        body.notification_id,
+        request,
+        db,
+    )
+
+
+# ============================================================
+# LEGACY REJECT
+# ============================================================
+
+@router.post("/reject")
+def reject_compatibility(
+    body: ActionBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    return reject_connection_request(
+        body.notification_id,
+        request,
+        db,
+    )
+
+
+# ============================================================
+# GET CONNECTION REQUESTS
+# ============================================================
 
 @router.get("/requests")
 def get_connection_requests(
@@ -353,17 +522,16 @@ def get_connection_requests(
     db: Session = Depends(get_db),
 ):
     current_user = get_authenticated_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
-    requests = (
+    rows = (
         db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.receiver_id
             == current_user.id,
-            ConnectionRequest.status
-            == "pending",
+            ConnectionRequest.status == "pending",
         )
         .order_by(
             ConnectionRequest.id.desc()
@@ -373,13 +541,11 @@ def get_connection_requests(
 
     result = []
 
-    for connection_request in requests:
-
+    for row in rows:
         sender = (
             db.query(User)
             .filter(
-                User.id
-                == connection_request.sender_id
+                User.id == row.sender_id
             )
             .first()
         )
@@ -387,198 +553,29 @@ def get_connection_requests(
         if sender is None:
             continue
 
-        result.append(
-            {
-                "id": connection_request.id,
-                "status": connection_request.status,
-                "created_at": (
-                    connection_request.created_at.isoformat()
-                    if connection_request.created_at
-                    else None
-                ),
-                "sender": {
-                    "user_id": sender.user_id,
-                    "username": sender.username,
-                    "name": sender.name,
-                    "profile_photo": sender.profile_photo,
-                },
-            }
-        )
+        result.append({
+            "id": row.id,
+            "request_id": row.id,
+            "sender_id": sender.id,
+            "sender_user_id": sender.user_id,
+            "sender_username": sender.username,
+            "sender_name": sender.name,
+            "sender_profile_photo": sender.profile_photo,
+            "receiver_user_id": current_user.user_id,
+            "status": row.status,
+            "created_at": row.created_at.isoformat()
+            if row.created_at else None,
+        })
 
     return {
         "success": True,
-        "count": len(result),
         "requests": result,
     }
 
 
-# =========================================================
-# ACCEPT CONNECTION REQUEST
-# =========================================================
-
-@router.post(
-    "/request/{request_id}/accept"
-)
-def accept_connection_request(
-    request_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    current_user = get_authenticated_user(
-        request=request,
-        db=db,
-    )
-
-    connection_request = (
-        db.query(ConnectionRequest)
-        .filter(
-            ConnectionRequest.id == request_id,
-            ConnectionRequest.receiver_id
-            == current_user.id,
-            ConnectionRequest.status
-            == "pending",
-        )
-        .first()
-    )
-
-    if connection_request is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Pending connection request not found",
-        )
-
-    sender = (
-        db.query(User)
-        .filter(
-            User.id
-            == connection_request.sender_id
-        )
-        .first()
-    )
-
-    if sender is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Request sender not found",
-        )
-
-    now = datetime.now(
-        timezone.utc
-    )
-
-    connection_request.status = "accepted"
-    connection_request.updated_at = now
-
-    db.commit()
-
-    verification, notification = (
-        create_verification(
-            db=db,
-            connection_request=connection_request,
-        )
-    )
-
-    return {
-        "success": True,
-        "message": (
-            "Connection accepted. "
-            "Verification code created."
-        ),
-        "connection": {
-            "request_id": connection_request.id,
-            "status": connection_request.status,
-            "user_id": sender.user_id,
-            "username": sender.username,
-            "name": sender.name,
-            "profile_photo": sender.profile_photo,
-        },
-        "verification": {
-            "verification_id": verification.id,
-            "status": verification.status,
-            "expires_in_hours": VERIFICATION_EXPIRY_HOURS,
-        },
-        "notification": {
-            "notification_id": notification.id,
-            "type": notification.notification_type,
-        },
-    }
-
-
-# =========================================================
-# REJECT CONNECTION REQUEST
-# =========================================================
-
-@router.post(
-    "/request/{request_id}/reject"
-)
-def reject_connection_request(
-    request_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    current_user = get_authenticated_user(
-        request=request,
-        db=db,
-    )
-
-    connection_request = (
-        db.query(ConnectionRequest)
-        .filter(
-            ConnectionRequest.id == request_id,
-            ConnectionRequest.receiver_id
-            == current_user.id,
-            ConnectionRequest.status
-            == "pending",
-        )
-        .first()
-    )
-
-    if connection_request is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Pending connection request not found",
-        )
-
-    sender = (
-        db.query(User)
-        .filter(
-            User.id
-            == connection_request.sender_id
-        )
-        .first()
-    )
-
-    if sender is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Request sender not found",
-        )
-
-    now = datetime.now(
-        timezone.utc
-    )
-
-    connection_request.status = "rejected"
-    connection_request.updated_at = now
-
-    db.commit()
-
-    return {
-        "success": True,
-        "message": "Connection request rejected",
-        "request": {
-            "request_id": connection_request.id,
-            "status": connection_request.status,
-            "user_id": sender.user_id,
-            "username": sender.username,
-            "name": sender.name,
-        },
-    }
-
-
-# =========================================================
-# GET VERIFICATION NOTIFICATIONS
-# =========================================================
+# ============================================================
+# GET NOTIFICATIONS
+# ============================================================
 
 @router.get("/notifications")
 def get_connection_notifications(
@@ -586,33 +583,30 @@ def get_connection_notifications(
     db: Session = Depends(get_db),
 ):
     current_user = get_authenticated_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
-    notifications = (
+    rows = (
         db.query(ConnectionNotification)
         .filter(
             ConnectionNotification.receiver_id
             == current_user.id,
-            ConnectionNotification.notification_type
-            == "connection_verification",
         )
         .order_by(
             ConnectionNotification.id.desc()
         )
+        .limit(100)
         .all()
     )
 
     result = []
 
-    for notification in notifications:
-
+    for row in rows:
         sender = (
             db.query(User)
             .filter(
-                User.id
-                == notification.sender_id
+                User.id == row.sender_id
             )
             .first()
         )
@@ -620,119 +614,106 @@ def get_connection_notifications(
         if sender is None:
             continue
 
-        verification = None
+        request_row = (
+            db.query(ConnectionRequest)
+            .filter(
+                ConnectionRequest.id
+                == row.connection_request_id
+            )
+            .first()
+        )
 
-        if notification.verification_id:
-            verification = (
-                db.query(
-                    ConnectionVerification
-                )
-                .filter(
-                    ConnectionVerification.id
-                    == notification.verification_id
-                )
-                .first()
+        if row.notification_type == "connection_request":
+            message = (
+                f"Request sent by @{sender.username} "
+                f"({sender.user_id})"
             )
 
-        is_expired = False
+        elif row.notification_type == "connection_accepted":
+            message = (
+                f"@{sender.username} accepted your "
+                f"connection request."
+            )
 
-        if verification is not None:
+        elif row.notification_type == "connection_rejected":
+            message = (
+                f"@{sender.username} rejected your "
+                f"connection request."
+            )
 
-            expires_at = verification.expires_at
+        else:
+            message = "You have a new notification."
 
-            if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(
-                    tzinfo=timezone.utc
-                )
-
-            if datetime.now(
-                timezone.utc
-            ) >= expires_at:
-                is_expired = True
-
-        verification_code = None
-
-        if (
-            notification.encrypted_code
-            and not is_expired
-            and verification is not None
-            and verification.status == "pending"
-        ):
-            try:
-                verification_code = decrypt_code(
-                    notification.encrypted_code
-                )
-            except ValueError:
-                verification_code = None
-
-        result.append(
-            {
-                "notification_id": notification.id,
-                "type": notification.notification_type,
-                "is_read": bool(notification.is_read),
-                "created_at": (
-                    notification.created_at.isoformat()
-                    if notification.created_at
-                    else None
-                ),
-                "verification": {
-                    "verification_id": (
-                        verification.id
-                        if verification
-                        else None
-                    ),
-                    "status": (
-                        verification.status
-                        if verification
-                        else "unknown"
-                    ),
-                    "is_expired": is_expired,
-                    "expires_at": (
-                        verification.expires_at.isoformat()
-                        if verification
-                        and verification.expires_at
-                        else None
-                    ),
-                    "code": verification_code,
-                },
-                "user": {
-                    "user_id": sender.user_id,
-                    "username": sender.username,
-                    "name": sender.name,
-                    "profile_photo": sender.profile_photo,
-                },
-            }
-        )
+        result.append({
+            "id": row.id,
+            "notification_id": row.id,
+            "type": row.notification_type,
+            "notification_type": row.notification_type,
+            "sender_id": sender.id,
+            "sender_user_id": sender.user_id,
+            "sender_username": sender.username,
+            "sender_name": sender.name,
+            "sender_profile_picture": sender.profile_photo,
+            "message": message,
+            "connection_request_id": (
+                request_row.id
+                if request_row
+                else row.connection_request_id
+            ),
+            "request_id": (
+                request_row.id
+                if request_row
+                else row.connection_request_id
+            ),
+            "is_read": bool(row.is_read),
+            "created_at": (
+                row.created_at.isoformat()
+                if row.created_at
+                else None
+            ),
+        })
 
     return {
         "success": True,
-        "count": len(result),
         "notifications": result,
     }
 
 
-# =========================================================
-# MARK NOTIFICATION AS READ
-# =========================================================
+# ============================================================
+# LEGACY NOTIFICATIONS ROUTE
+# ============================================================
 
-@router.post(
-    "/notifications/{notification_id}/read"
-)
+@router.get("/all")
+def get_all_notifications(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    return get_connection_notifications(
+        request,
+        db,
+    )
+
+
+# ============================================================
+# MARK NOTIFICATION READ
+# ============================================================
+
+@router.post("/notifications/read")
 def mark_notification_read(
-    notification_id: int,
+    body: NotificationReadBody,
     request: Request,
     db: Session = Depends(get_db),
 ):
     current_user = get_authenticated_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
     notification = (
         db.query(ConnectionNotification)
         .filter(
             ConnectionNotification.id
-            == notification_id,
+            == body.notification_id,
             ConnectionNotification.receiver_id
             == current_user.id,
         )
@@ -755,270 +736,89 @@ def mark_notification_read(
     }
 
 
-# =========================================================
-# VERIFY CONNECTION CODE
-# =========================================================
+# ============================================================
+# LEGACY READ ROUTE
+# ============================================================
 
-@router.post("/verify")
-def verify_connection_code(
-    payload: ConnectionVerifyRequest,
+@router.post("/read")
+def mark_read_compatibility(
+    body: NotificationReadBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    return mark_notification_read(
+        body,
+        request,
+        db,
+    )
+
+
+# ============================================================
+# HOME CONNECTIONS
+# ============================================================
+
+@router.get("")
+def get_connections(
     request: Request,
     db: Session = Depends(get_db),
 ):
     current_user = get_authenticated_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
-    code = payload.code.strip()
-
-    if not code:
-        raise HTTPException(
-            status_code=400,
-            detail="Verification code is required",
-        )
-
-    if len(code) != VERIFICATION_CODE_LENGTH:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid verification code",
-        )
-
-    verification = (
-        db.query(ConnectionVerification)
-        .filter(
-            ConnectionVerification.id
-            == payload.verification_id,
-            ConnectionVerification.requester_id
-            == current_user.id,
-        )
-        .first()
-    )
-
-    if verification is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Verification not found",
-        )
-
-    if verification.status == "verified":
-        raise HTTPException(
-            status_code=409,
-            detail="This verification has already been completed",
-        )
-
-    if verification.status != "pending":
-        raise HTTPException(
-            status_code=409,
-            detail="Verification is no longer active",
-        )
-
-    expires_at = verification.expires_at
-
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(
-            tzinfo=timezone.utc
-        )
-
-    now = datetime.now(
-        timezone.utc
-    )
-
-    if now >= expires_at:
-
-        verification.status = "expired"
-
-        db.commit()
-
-        raise HTTPException(
-            status_code=410,
-            detail="Verification code has expired",
-        )
-
-    if verification.attempts >= MAX_VERIFICATION_ATTEMPTS:
-
-        verification.status = "blocked"
-
-        db.commit()
-
-        raise HTTPException(
-            status_code=429,
-            detail="Maximum verification attempts exceeded",
-        )
-
-    verification.attempts += 1
-
-    try:
-
-        valid = verification_hasher.verify(
-            verification.code_hash,
-            code,
-        )
-
-    except VerifyMismatchError:
-
-        valid = False
-
-    if not valid:
-
-        if (
-            verification.attempts
-            >= MAX_VERIFICATION_ATTEMPTS
-        ):
-            verification.status = "blocked"
-
-        db.commit()
-
-        remaining = max(
-            0,
-            MAX_VERIFICATION_ATTEMPTS
-            - verification.attempts,
-        )
-
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Invalid verification code. "
-                f"Attempts remaining: {remaining}"
-            ),
-        )
-
-    connection_request = (
-        db.query(ConnectionRequest)
-        .filter(
-            ConnectionRequest.id
-            == verification.connection_request_id,
-            ConnectionRequest.sender_id
-            == verification.requester_id,
-            ConnectionRequest.receiver_id
-            == verification.receiver_id,
-            ConnectionRequest.status
-            == "accepted",
-        )
-        .first()
-    )
-
-    if connection_request is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Connection request not found",
-        )
-
-    existing_connection = (
+    rows = (
         db.query(UserConnection)
         .filter(
-            (
-                (
-                    UserConnection.user_one_id
-                    == verification.requester_id
-                )
-                &
-                (
-                    UserConnection.user_two_id
-                    == verification.receiver_id
-                )
+            UserConnection.status == "connected",
+            or_(
+                UserConnection.user_one_id
+                == current_user.id,
+                UserConnection.user_two_id
+                == current_user.id,
+            ),
+        )
+        .order_by(
+            UserConnection.id.desc()
+        )
+        .all()
+    )
+
+    users = []
+    seen = set()
+
+    for row in rows:
+
+        if row.user_one_id == current_user.id:
+            other_id = row.user_two_id
+        else:
+            other_id = row.user_one_id
+
+        if other_id in seen:
+            continue
+
+        seen.add(other_id)
+
+        user = (
+            db.query(User)
+            .filter(
+                User.id == other_id
             )
-            |
-            (
-                (
-                    UserConnection.user_one_id
-                    == verification.receiver_id
-                )
-                &
-                (
-                    UserConnection.user_two_id
-                    == verification.requester_id
-                )
-            )
+            .first()
         )
-        .first()
-    )
 
-    if existing_connection is not None:
+        if user is None:
+            continue
 
-        verification.status = "verified"
-        verification.verified_at = now
-
-        db.commit()
-
-        return {
-            "success": True,
-            "message": "You are already connected",
-            "connection": {
-                "id": existing_connection.id,
-                "status": existing_connection.status,
-            },
-        }
-
-    new_connection = UserConnection(
-        user_one_id=verification.requester_id,
-        user_two_id=verification.receiver_id,
-        status="connected",
-        created_at=now,
-        updated_at=now,
-    )
-
-    db.add(
-        new_connection
-    )
-
-    verification.status = "verified"
-    verification.verified_at = now
-
-    notification = (
-        db.query(ConnectionNotification)
-        .filter(
-            ConnectionNotification.verification_id
-            == verification.id,
-            ConnectionNotification.receiver_id
-            == current_user.id,
-        )
-        .first()
-    )
-
-    if notification is not None:
-        notification.is_read = 1
-
-    db.commit()
-
-    db.refresh(
-        new_connection
-    )
-
-    connected_user = (
-        db.query(User)
-        .filter(
-            User.id
-            == verification.receiver_id
-        )
-        .first()
-    )
+        users.append({
+            "user_id": user.user_id,
+            "username": user.username,
+            "name": user.name,
+            "profile_photo": user.profile_photo,
+        })
 
     return {
         "success": True,
-        "message": "Connection verified successfully",
-        "connection": {
-            "id": new_connection.id,
-            "status": new_connection.status,
-            "user_id": (
-                connected_user.user_id
-                if connected_user
-                else None
-            ),
-            "username": (
-                connected_user.username
-                if connected_user
-                else None
-            ),
-            "name": (
-                connected_user.name
-                if connected_user
-                else None
-            ),
-            "profile_photo": (
-                connected_user.profile_photo
-                if connected_user
-                else None
-            ),
-        },
+        "users": users,
+        "connections": users,
     }
