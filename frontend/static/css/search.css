@@ -27,6 +27,10 @@ body {
     overflow-y: auto;
 }
 
+body.usanex-dp-open {
+    overflow: hidden;
+}
+
 button,
 input {
     font: inherit;
@@ -97,7 +101,6 @@ button {
 
 .search-box:focus-within {
     border-color: #2f7cff;
-
     background: #11161e;
 }
 
@@ -175,8 +178,6 @@ button {
 
     font-size: 22px;
     line-height: 1;
-
-    cursor: pointer;
 }
 
 .clear-button:active {
@@ -270,6 +271,13 @@ button {
 
     font-size: 19px;
     font-weight: 700;
+
+    cursor: pointer;
+
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
 }
 
 .search-user-avatar img {
@@ -279,6 +287,10 @@ button {
     display: block;
 
     object-fit: cover;
+
+    pointer-events: none;
+
+    -webkit-user-drag: none;
 }
 
 
@@ -340,8 +352,6 @@ button {
 
     font-size: 13px;
     font-weight: 700;
-
-    cursor: pointer;
 }
 
 .search-follow-button:active {
@@ -388,6 +398,232 @@ button {
     color: #7e8795;
 
     font-size: 14px;
+}
+
+
+/* =========================================================
+   DP VIEWER
+========================================================= */
+
+.usanex-dp-viewer {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 5000;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    touch-action: none;
+
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
+}
+
+
+/* =========================================================
+   DP OVERLAY
+========================================================= */
+
+.usanex-dp-overlay {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.94);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    animation: usanexDpFadeIn 0.18s ease-out;
+}
+
+
+/* =========================================================
+   DP CONTENT
+========================================================= */
+
+.usanex-dp-content {
+    position: relative;
+
+    width: min(82vw, 390px);
+    height: min(82vw, 390px);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    border-radius: 50%;
+
+    background: #11161e;
+
+    border: 2px solid rgba(255, 255, 255, 0.12);
+
+    box-shadow:
+        0 0 0 8px rgba(255, 255, 255, 0.025),
+        0 25px 80px rgba(0, 0, 0, 0.65);
+
+    touch-action: none;
+
+    animation: usanexDpScaleIn 0.2s ease-out;
+}
+
+
+/* =========================================================
+   DP IMAGE
+========================================================= */
+
+.usanex-dp-large {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    border-radius: 50%;
+
+    transform-origin: center center;
+
+    will-change: transform;
+
+    pointer-events: none;
+
+    -webkit-user-drag: none;
+
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
+
+    touch-action: none;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+========================================================= */
+
+.usanex-dp-close {
+    position: absolute;
+
+    top: max(20px, env(safe-area-inset-top));
+    right: max(20px, env(safe-area-inset-right));
+
+    z-index: 10;
+
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(25, 29, 36, 0.92);
+
+    color: #ffffff;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    border-radius: 50%;
+
+    font-size: 28px;
+    font-weight: 300;
+
+    line-height: 1;
+
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+
+    z-index: 20;
+}
+
+.usanex-dp-close:active {
+    transform: scale(0.91);
+}
+
+
+/* =========================================================
+   DP USER INFO
+========================================================= */
+
+.usanex-dp-user-info {
+    position: absolute;
+
+    left: 50%;
+    bottom: max(28px, env(safe-area-inset-bottom));
+
+    z-index: 15;
+
+    transform: translateX(-50%);
+
+    max-width: 85%;
+
+    padding: 8px 16px;
+
+    background: rgba(10, 13, 18, 0.78);
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    border-radius: 14px;
+
+    text-align: center;
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    pointer-events: none;
+}
+
+.usanex-dp-user-name {
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   DP ANIMATION
+========================================================= */
+
+@keyframes usanexDpFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes usanexDpScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.88);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 
@@ -557,6 +793,11 @@ button {
         border-left: 1px solid #171d26;
         border-right: 1px solid #171d26;
     }
+
+    .usanex-dp-content {
+        width: 390px;
+        height: 390px;
+    }
 }
 
 
@@ -601,4 +842,45 @@ button {
         width: 21px;
         height: 21px;
     }
+
+    .usanex-dp-content {
+        width: 78vw;
+        height: 78vw;
+    }
+
+    .usanex-dp-close {
+        width: 40px;
+        height: 40px;
+
+        font-size: 25px;
+    }
+}
+
+
+/* =========================================================
+   REDUCE MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .usanex-dp-overlay,
+    .usanex-dp-content {
+        animation: none;
+    }
+}
+
+
+/* =========================================================
+   IMAGE PROTECTION HELPERS
+========================================================= */
+
+.usanex-dp-viewer img,
+.search-user-avatar img {
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+
+    pointer-events: none;
 }
