@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import secrets
 import string
 
@@ -15,7 +15,10 @@ from ..database.models import (
     ConnectionVerification,
     User,
 )
-from ..services.connection_security import encrypt_code
+from ..services.connection_security import (
+    decrypt_code,
+    encrypt_code,
+)
 from .auth import get_current_user_from_request
 
 
@@ -34,6 +37,8 @@ router = APIRouter(
 # =========================================================
 
 VERIFICATION_CODE_LENGTH = 6
+
+VERIFICATION_EXPIRY_MINUTES = 10
 
 MAX_VERIFICATION_ATTEMPTS = 5
 
@@ -91,7 +96,7 @@ def create_verification(
     db: Session,
     connection_request: ConnectionRequest,
 ):
-    # Remove previous pending verification
+    # Remove old pending verification
     db.query(
         ConnectionVerification
     ).filter(
@@ -105,30 +110,32 @@ def create_verification(
     )
 
 
-    # Generate code
+    # Generate verification code
     code = generate_verification_code()
 
 
-    # Hash for verification
+    # Hash code
     code_hash = verification_hasher.hash(
         code
     )
 
 
+    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    # Code is valid for 10 minutes
+    # Expiry
     expires_at = (
         now
-        + __import__("datetime").timedelta(
-            minutes=10
+        + timedelta(
+            minutes=VERIFICATION_EXPIRY_MINUTES
         )
     )
 
 
+    # Create verification record
     verification = ConnectionVerification(
         connection_request_id=
             connection_request.id,
@@ -169,6 +176,7 @@ def create_verification(
     )
 
 
+    # Create notification for requester
     notification = ConnectionNotification(
         receiver_id=
             connection_request.sender_id,
@@ -213,7 +221,7 @@ def create_verification(
 
     return (
         verification,
-        notification
+        notification,
     )
 
 
@@ -239,7 +247,6 @@ def send_connection_request(
 
 
     if not target_user_id:
-
         raise HTTPException(
             status_code=400,
             detail="User ID is required",
@@ -257,18 +264,13 @@ def send_connection_request(
 
 
     if target_user is None:
-
         raise HTTPException(
             status_code=404,
             detail="User not found",
         )
 
 
-    if (
-        target_user.id
-        == current_user.id
-    ):
-
+    if target_user.id == current_user.id:
         raise HTTPException(
             status_code=400,
             detail="You cannot send a request to yourself",
@@ -293,32 +295,21 @@ def send_connection_request(
 
     if existing_request is not None:
 
-        if (
-            existing_request.status
-            == "pending"
-        ):
-
+        if existing_request.status == "pending":
             raise HTTPException(
                 status_code=409,
                 detail="Connection request already pending",
             )
 
 
-        if (
-            existing_request.status
-            == "accepted"
-        ):
-
+        if existing_request.status == "accepted":
             raise HTTPException(
                 status_code=409,
                 detail="You are already connected",
             )
 
 
-        if (
-            existing_request.status
-            == "rejected"
-        ):
+        if existing_request.status == "rejected":
 
             db.delete(
                 existing_request
@@ -327,6 +318,7 @@ def send_connection_request(
             db.commit()
 
 
+    # Check reverse request
     reverse_request = (
         db.query(ConnectionRequest)
         .filter(
@@ -344,7 +336,6 @@ def send_connection_request(
 
 
     if reverse_request is not None:
-
         raise HTTPException(
             status_code=409,
             detail="This user has already sent you a request",
@@ -407,7 +398,7 @@ def send_connection_request(
 
 
 # =========================================================
-# GET INCOMING REQUESTS
+# GET INCOMING CONNECTION REQUESTS
 # =========================================================
 
 @router.get("/requests")
@@ -534,7 +525,6 @@ def accept_connection_request(
 
 
     if connection_request is None:
-
         raise HTTPException(
             status_code=404,
             detail="Pending connection request not found",
@@ -552,7 +542,6 @@ def accept_connection_request(
 
 
     if sender is None:
-
         raise HTTPException(
             status_code=404,
             detail="Request sender not found",
@@ -564,19 +553,15 @@ def accept_connection_request(
     )
 
 
-    connection_request.status = (
-        "accepted"
-    )
+    connection_request.status = "accepted"
 
-    connection_request.updated_at = (
-        now
-    )
+    connection_request.updated_at = now
 
 
     db.commit()
 
 
-    # Create verification + notification
+    # Create verification
     verification, notification = (
         create_verification(
             db=db,
@@ -620,7 +605,7 @@ def accept_connection_request(
                 verification.status,
 
             "expires_in_minutes":
-                10,
+                VERIFICATION_EXPIRY_MINUTES,
         },
 
         "notification": {
@@ -668,7 +653,6 @@ def reject_connection_request(
 
 
     if connection_request is None:
-
         raise HTTPException(
             status_code=404,
             detail="Pending connection request not found",
@@ -686,7 +670,6 @@ def reject_connection_request(
 
 
     if sender is None:
-
         raise HTTPException(
             status_code=404,
             detail="Request sender not found",
@@ -698,13 +681,9 @@ def reject_connection_request(
     )
 
 
-    connection_request.status = (
-        "rejected"
-    )
+    connection_request.status = "rejected"
 
-    connection_request.updated_at = (
-        now
-    )
+    connection_request.updated_at = now
 
 
     db.commit()
@@ -736,4 +715,245 @@ def reject_connection_request(
             "name":
                 sender.name,
         },
+    }
+
+
+# =========================================================
+# GET MY VERIFICATION NOTIFICATIONS
+# =========================================================
+
+@router.get("/notifications")
+def get_connection_notifications(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request=request,
+        db=db,
+    )
+
+
+    notifications = (
+        db.query(ConnectionNotification)
+        .filter(
+            ConnectionNotification.receiver_id
+            == current_user.id,
+
+            ConnectionNotification.notification_type
+            == "connection_verification",
+        )
+        .order_by(
+            ConnectionNotification.id.desc()
+        )
+        .all()
+    )
+
+
+    result = []
+
+
+    for notification in notifications:
+
+        sender = (
+            db.query(User)
+            .filter(
+                User.id
+                == notification.sender_id
+            )
+            .first()
+        )
+
+
+        if sender is None:
+            continue
+
+
+        verification = None
+
+
+        if notification.verification_id:
+            verification = (
+                db.query(
+                    ConnectionVerification
+                )
+                .filter(
+                    ConnectionVerification.id
+                    == notification.verification_id
+                )
+                .first()
+            )
+
+
+        # Expiry status
+        is_expired = False
+
+
+        if verification is not None:
+
+            expires_at = (
+                verification.expires_at
+            )
+
+
+            if expires_at.tzinfo is None:
+                expires_at = (
+                    expires_at.replace(
+                        tzinfo=timezone.utc
+                    )
+                )
+
+
+            if (
+                datetime.now(timezone.utc)
+                >= expires_at
+            ):
+                is_expired = True
+
+
+        # Decrypt only for authenticated owner
+        verification_code = None
+
+
+        if (
+            notification.encrypted_code
+            and not is_expired
+        ):
+
+            try:
+
+                verification_code = (
+                    decrypt_code(
+                        notification.encrypted_code
+                    )
+                )
+
+            except ValueError:
+
+                verification_code = None
+
+
+        result.append(
+            {
+                "notification_id":
+                    notification.id,
+
+                "type":
+                    notification.notification_type,
+
+                "is_read":
+                    bool(notification.is_read),
+
+                "created_at":
+                    (
+                        notification.created_at.isoformat()
+                        if notification.created_at
+                        else None
+                    ),
+
+                "verification": {
+                    "verification_id":
+                        (
+                            verification.id
+                            if verification
+                            else None
+                        ),
+
+                    "status":
+                        (
+                            verification.status
+                            if verification
+                            else "unknown"
+                        ),
+
+                    "is_expired":
+                        is_expired,
+
+                    "expires_at":
+                        (
+                            verification.expires_at.isoformat()
+                            if verification
+                            and verification.expires_at
+                            else None
+                        ),
+
+                    "code":
+                        verification_code,
+                },
+
+                "user": {
+                    "user_id":
+                        sender.user_id,
+
+                    "username":
+                        sender.username,
+
+                    "name":
+                        sender.name,
+
+                    "profile_photo":
+                        sender.profile_photo,
+                },
+            }
+        )
+
+
+    return {
+        "success": True,
+
+        "count":
+            len(result),
+
+        "notifications":
+            result,
+    }
+
+
+# =========================================================
+# MARK NOTIFICATION AS READ
+# =========================================================
+
+@router.post(
+    "/notifications/{notification_id}/read"
+)
+def mark_notification_read(
+    notification_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request=request,
+        db=db,
+    )
+
+
+    notification = (
+        db.query(ConnectionNotification)
+        .filter(
+            ConnectionNotification.id
+            == notification_id,
+
+            ConnectionNotification.receiver_id
+            == current_user.id,
+        )
+        .first()
+    )
+
+
+    if notification is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Notification not found",
+        )
+
+
+    notification.is_read = 1
+
+    db.commit()
+
+
+    return {
+        "success": True,
+
+        "message":
+            "Notification marked as read",
     }
