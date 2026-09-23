@@ -3,6 +3,7 @@ import secrets
 import string
 
 from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -14,6 +15,7 @@ from ..database.models import (
     ConnectionRequest,
     ConnectionVerification,
     User,
+    UserConnection,
 )
 from ..services.connection_security import (
     decrypt_code,
@@ -38,7 +40,7 @@ router = APIRouter(
 
 VERIFICATION_CODE_LENGTH = 6
 
-VERIFICATION_EXPIRY_MINUTES = 10
+VERIFICATION_EXPIRY_HOURS = 24
 
 MAX_VERIFICATION_ATTEMPTS = 5
 
@@ -46,11 +48,16 @@ verification_hasher = PasswordHasher()
 
 
 # =========================================================
-# REQUEST MODEL
+# REQUEST MODELS
 # =========================================================
 
 class ConnectionRequestCreate(BaseModel):
     user_id: str
+
+
+class ConnectionVerifyRequest(BaseModel):
+    verification_id: int
+    code: str
 
 
 # =========================================================
@@ -96,7 +103,7 @@ def create_verification(
     db: Session,
     connection_request: ConnectionRequest,
 ):
-    # Remove old pending verification
+    # Remove previous pending verification
     db.query(
         ConnectionVerification
     ).filter(
@@ -110,7 +117,7 @@ def create_verification(
     )
 
 
-    # Generate verification code
+    # Generate code
     code = generate_verification_code()
 
 
@@ -120,22 +127,20 @@ def create_verification(
     )
 
 
-    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    # Expiry
+    # 24-hour expiry
     expires_at = (
         now
         + timedelta(
-            minutes=VERIFICATION_EXPIRY_MINUTES
+            hours=VERIFICATION_EXPIRY_HOURS
         )
     )
 
 
-    # Create verification record
     verification = ConnectionVerification(
         connection_request_id=
             connection_request.id,
@@ -170,13 +175,12 @@ def create_verification(
     db.flush()
 
 
-    # Encrypt code for notification storage
+    # Encrypt code for notification
     encrypted_code = encrypt_code(
         code
     )
 
 
-    # Create notification for requester
     notification = ConnectionNotification(
         receiver_id=
             connection_request.sender_id,
@@ -277,6 +281,45 @@ def send_connection_request(
         )
 
 
+    # Check whether already connected
+    existing_connection = (
+        db.query(UserConnection)
+        .filter(
+            (
+                (
+                    UserConnection.user_one_id
+                    == current_user.id
+                )
+                &
+                (
+                    UserConnection.user_two_id
+                    == target_user.id
+                )
+            )
+            |
+            (
+                (
+                    UserConnection.user_one_id
+                    == target_user.id
+                )
+                &
+                (
+                    UserConnection.user_two_id
+                    == current_user.id
+                )
+            )
+        )
+        .first()
+    )
+
+
+    if existing_connection is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="You are already connected",
+        )
+
+
     existing_request = (
         db.query(ConnectionRequest)
         .filter(
@@ -310,7 +353,6 @@ def send_connection_request(
 
 
         if existing_request.status == "rejected":
-
             db.delete(
                 existing_request
             )
@@ -561,7 +603,7 @@ def accept_connection_request(
     db.commit()
 
 
-    # Create verification
+    # Create verification code
     verification, notification = (
         create_verification(
             db=db,
@@ -575,7 +617,7 @@ def accept_connection_request(
         "success": True,
 
         "message":
-            "Connection accepted. Verification notification created.",
+            "Connection accepted. Verification code created.",
 
         "connection": {
             "request_id":
@@ -604,8 +646,8 @@ def accept_connection_request(
             "status":
                 verification.status,
 
-            "expires_in_minutes":
-                VERIFICATION_EXPIRY_MINUTES,
+            "expires_in_hours":
+                VERIFICATION_EXPIRY_HOURS,
         },
 
         "notification": {
@@ -688,10 +730,6 @@ def reject_connection_request(
 
     db.commit()
 
-    db.refresh(
-        connection_request
-    )
-
 
     return {
         "success": True,
@@ -719,7 +757,7 @@ def reject_connection_request(
 
 
 # =========================================================
-# GET MY VERIFICATION NOTIFICATIONS
+# GET VERIFICATION NOTIFICATIONS
 # =========================================================
 
 @router.get("/notifications")
@@ -772,6 +810,7 @@ def get_connection_notifications(
 
 
         if notification.verification_id:
+
             verification = (
                 db.query(
                     ConnectionVerification
@@ -784,7 +823,6 @@ def get_connection_notifications(
             )
 
 
-        # Expiry status
         is_expired = False
 
 
@@ -810,13 +848,14 @@ def get_connection_notifications(
                 is_expired = True
 
 
-        # Decrypt only for authenticated owner
         verification_code = None
 
 
         if (
             notification.encrypted_code
             and not is_expired
+            and verification is not None
+            and verification.status == "pending"
         ):
 
             try:
@@ -957,3 +996,11 @@ def mark_notification_read(
         "message":
             "Notification marked as read",
     }
+
+
+# =========================================================
+# VERIFY CONNECTION CODE
+# =========================================================
+
+@router.post("/verify")
+def verify_connec
