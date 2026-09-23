@@ -1,0 +1,626 @@
+/* =========================================================
+   USANEX COMMON DESIGN SYSTEM
+   Shared by Home / Search / Reels / Notifications / Profile
+   ========================================================= */
+
+:root {
+    --ux-bg: #05070b;
+    --ux-surface: #0a0f15;
+    --ux-surface-2: #0e141c;
+    --ux-border: #17212c;
+
+    --ux-text: #e8edf5;
+    --ux-text-soft: #a7b1bf;
+    --ux-text-muted: #7f8b9b;
+    --ux-text-faint: #626e7e;
+
+    --ux-blue: #247cff;
+    --ux-blue-dark: #111e32;
+
+    --ux-danger: #ff7184;
+
+    --ux-header-height: 55px;
+    --ux-nav-height: 64px;
+
+    --ux-radius: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+
+    background: var(--ux-bg);
+    color: var(--ux-text);
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+button,
+input,
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+
+/* =========================================================
+   COMMON APP SHELL
+   ========================================================= */
+
+.usanex-page {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--ux-bg);
+}
+
+.usanex-content {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+
+    padding: 12px 14px 90px;
+}
+
+
+/* =========================================================
+   COMMON HEADER
+   ========================================================= */
+
+.usanex-header {
+    width: 100%;
+    height: var(--ux-header-height);
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 14px;
+
+    background: var(--ux-bg);
+}
+
+.usanex-menu-button,
+.usanex-icon-button {
+    width: 34px;
+    height: 34px;
+
+    border: none;
+    background: transparent;
+
+    color: var(--ux-text-soft);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+}
+
+.usanex-menu-button:active,
+.usanex-icon-button:active {
+    background: var(--ux-surface-2);
+}
+
+.usanex-brand {
+    margin-left: 7px;
+
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+
+.usanex-brand-blue {
+    color: var(--ux-blue);
+}
+
+.usanex-brand-white {
+    color: #eef2f7;
+}
+
+
+/* =========================================================
+   COMMON SECTION
+   ========================================================= */
+
+.usanex-section {
+    width: 100%;
+    margin-top: 18px;
+}
+
+.usanex-section:first-child {
+    margin-top: 0;
+}
+
+.usanex-section-header {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 9px;
+}
+
+.usanex-section-title {
+    color: var(--ux-text);
+
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 21px;
+}
+
+.usanex-section-action {
+    border: none;
+    background: transparent;
+
+    color: var(--ux-blue);
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   COMMON CARD
+   ========================================================= */
+
+.usanex-card {
+    width: 100%;
+
+    background: var(--ux-surface);
+
+    border: 1px solid var(--ux-border);
+    border-radius: var(--ux-radius);
+}
+
+.usanex-card:active {
+    background: var(--ux-surface-2);
+}
+
+
+/* =========================================================
+   COMMON AVATAR
+   ========================================================= */
+
+.usanex-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    border-radius: 50%;
+
+    background: #151f2c;
+    border: 2px solid var(--ux-blue);
+
+    color: #edf2f7;
+
+    font-weight: 600;
+}
+
+.usanex-avatar img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+
+/* =========================================================
+   COMMON USER INFO
+   ========================================================= */
+
+.usanex-user-info {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 1px;
+}
+
+.usanex-user-name {
+    color: var(--ux-text);
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.usanex-username {
+    color: var(--ux-text-muted);
+
+    font-size: 11px;
+    line-height: 14px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.usanex-user-id {
+    color: var(--ux-text-faint);
+
+    font-size: 9px;
+    line-height: 12px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   COMMON BLUE BUTTON
+   ========================================================= */
+
+.usanex-primary-button {
+    min-height: 34px;
+
+    padding: 0 14px;
+
+    border: none;
+    border-radius: 9px;
+
+    background: var(--ux-blue);
+    color: #fff;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.usanex-primary-button:active {
+    transform: scale(0.97);
+}
+
+
+/* =========================================================
+   COMMON INPUT
+   ========================================================= */
+
+.usanex-input {
+    width: 100%;
+    height: 42px;
+
+    padding: 0 13px;
+
+    border: 1px solid var(--ux-border);
+    border-radius: 10px;
+
+    outline: none;
+
+    background: var(--ux-surface);
+    color: var(--ux-text);
+
+    font-size: 13px;
+}
+
+.usanex-input::placeholder {
+    color: var(--ux-text-faint);
+}
+
+.usanex-input:focus {
+    border-color: var(--ux-blue);
+}
+
+
+/* =========================================================
+   COMMON BOTTOM NAVIGATION
+   ========================================================= */
+
+.usanex-bottom-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 1000;
+
+    width: 100%;
+    height: var(--ux-nav-height);
+
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+
+    background: #070a0f;
+
+    border-top: 1px solid #121923;
+
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.usanex-nav-item {
+    width: 20%;
+    height: var(--ux-nav-height);
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    color: #687486;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+}
+
+.usanex-nav-item svg {
+    width: 21px;
+    height: 21px;
+}
+
+.usanex-nav-item span {
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 500;
+}
+
+.usanex-nav-item.active {
+    color: var(--ux-blue);
+}
+
+
+/* =========================================================
+   COMMON NOTIFICATION DOT
+   ========================================================= */
+
+.usanex-notification-wrapper {
+    position: relative;
+
+    width: 21px;
+    height: 21px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.usanex-notification-dot {
+    position: absolute;
+
+    top: -2px;
+    right: -3px;
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #ff4058;
+
+    border: 1px solid #070a0f;
+}
+
+
+/* =========================================================
+   COMMON POPUP / TOAST
+   ========================================================= */
+
+.usanex-popup {
+    position: fixed;
+
+    left: 50%;
+    bottom: 82px;
+
+    z-index: 7000;
+
+    width: max-content;
+    max-width: calc(100% - 30px);
+
+    padding: 10px 14px;
+
+    border-radius: 9px;
+
+    background: #111923;
+    border: 1px solid var(--ux-border);
+
+    color: var(--ux-text);
+
+    font-size: 12px;
+
+    transform: translate(-50%, 15px);
+    opacity: 0;
+
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+}
+
+.usanex-popup.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+
+/* =========================================================
+   COMMON EMPTY STATE
+   ========================================================= */
+
+.usanex-empty {
+    width: 100%;
+
+    padding: 35px 20px;
+
+    text-align: center;
+
+    color: var(--ux-text-muted);
+
+    font-size: 13px;
+    line-height: 20px;
+}
+
+
+/* =========================================================
+   COMMON SIDE MENU
+   ========================================================= */
+
+.usanex-menu-overlay[hidden] {
+    display: none !important;
+}
+
+.usanex-menu-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 5000;
+
+    display: flex;
+
+    background: rgba(0, 0, 0, 0.58);
+}
+
+.usanex-menu-panel {
+    width: 270px;
+    max-width: 82vw;
+    height: 100%;
+
+    padding: 16px 13px;
+
+    background: #090e15;
+
+    border-right: 1px solid var(--ux-border);
+}
+
+.usanex-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 17px;
+}
+
+.usanex-menu-title {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.usanex-menu-close {
+    width: 31px;
+    height: 31px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #111b27;
+
+    color: #d9e1eb;
+
+    font-size: 21px;
+}
+
+.usanex-menu-items {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.usanex-menu-items button {
+    width: 100%;
+    height: 42px;
+
+    padding: 0 11px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: #bec8d5;
+
+    text-align: left;
+
+    font-size: 13px;
+}
+
+.usanex-menu-items button:active {
+    background: #121a24;
+}
+
+.usanex-menu-items button:last-child {
+    margin-top: 9px;
+    color: var(--ux-danger);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    :root {
+        --ux-header-height: 52px;
+        --ux-nav-height: 62px;
+    }
+
+    .usanex-header {
+        padding: 0 11px;
+    }
+
+    .usanex-brand {
+        font-size: 19px;
+    }
+
+    .usanex-content {
+        padding-left: 11px;
+        padding-right: 11px;
+    }
+}
+
+@media (min-width: 700px) {
+
+    .usanex-content {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .usanex-bottom-nav {
+        left: 50%;
+        right: auto;
+
+        width: min(680px, 100%);
+
+        transform: translateX(-50%);
+
+        border-left: 1px solid #121923;
+        border-right: 1px solid #121923;
+    }
+}
