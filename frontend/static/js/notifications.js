@@ -2,33 +2,29 @@
 
 /* =========================================================
    USANEX NOTIFICATIONS
-   Version 2
-========================================================= */
+   ========================================================= */
+
+const API_BASE = "/api/connections";
+
+let popupTimer = null;
 
 
 /* =========================================================
-   ELEMENTS
-========================================================= */
+   DOM
+   ========================================================= */
 
-const backButton =
-    document.getElementById("backButton");
+const loadingElement =
+    document.getElementById("notificationLoading");
 
-const notificationLoading =
-    document.getElementById(
-        "notificationLoading"
-    );
-
-const notificationEmpty =
-    document.getElementById(
-        "notificationEmpty"
-    );
+const emptyElement =
+    document.getElementById("notificationEmpty");
 
 const connectionRequestsSection =
     document.getElementById(
         "connectionRequestsSection"
     );
 
-const connectionRequests =
+const connectionRequestsContainer =
     document.getElementById(
         "connectionRequests"
     );
@@ -38,997 +34,1182 @@ const otherNotificationsSection =
         "otherNotificationsSection"
     );
 
-const notificationPopup =
+const otherNotificationsContainer =
+    document.getElementById(
+        "otherNotifications"
+    );
+
+const popupElement =
     document.getElementById(
         "notificationPopup"
     );
 
+const backButton =
+    document.getElementById(
+        "backButton"
+    );
+
 
 /* =========================================================
-   TOP NOTIFICATION POPUP
-========================================================= */
+   POPUP
+   ========================================================= */
 
-let popupTimer = null;
+function showPopup(message) {
 
-
-function showNotificationPopup(
-    message,
-    duration = 3000
-) {
-
-    if (!notificationPopup) {
+    if (!popupElement) {
         return;
     }
 
+    popupElement.textContent = message;
+
+    popupElement.hidden = false;
+
+    requestAnimationFrame(() => {
+        popupElement.classList.add(
+            "show"
+        );
+    });
 
     if (popupTimer) {
-
-        clearTimeout(
-            popupTimer
-        );
-
+        clearTimeout(popupTimer);
     }
 
+    popupTimer = setTimeout(() => {
 
-    notificationPopup.textContent =
-        message;
-
-
-    notificationPopup.hidden =
-        false;
-
-
-    /*
-     * Force browser to apply hidden=false
-     * before adding animation class.
-     */
-    requestAnimationFrame(
-        function () {
-
-            notificationPopup.classList.add(
-                "show"
-            );
-
-        }
-    );
-
-
-    popupTimer =
-        setTimeout(
-            function () {
-
-                hideNotificationPopup();
-
-            },
-            duration
+        popupElement.classList.remove(
+            "show"
         );
 
+        setTimeout(() => {
+
+            popupElement.hidden = true;
+
+        }, 300);
+
+    }, 3000);
 }
 
 
-function hideNotificationPopup() {
+/* =========================================================
+   API HELPER
+   ========================================================= */
 
-    if (!notificationPopup) {
+async function apiRequest(
+    url,
+    options = {}
+) {
+
+    const response = await fetch(
+        url,
+        {
+            credentials: "same-origin",
+
+            headers: {
+                "Content-Type":
+                    "application/json",
+
+                ...(options.headers || {}),
+            },
+
+            ...options,
+        }
+    );
+
+    let data = null;
+
+    try {
+        data = await response.json();
+    } catch {
+        data = null;
+    }
+
+    if (!response.ok) {
+
+        const message =
+            data?.detail ||
+            data?.message ||
+            "Something went wrong";
+
+        throw new Error(message);
+    }
+
+    return data;
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/* =========================================================
+   PROFILE IMAGE
+   ========================================================= */
+
+function getProfileImage(
+    profilePhoto,
+    name
+) {
+
+    if (profilePhoto) {
+
+        return `
+            <img
+                class="notification-avatar-image"
+                src="${escapeHtml(profilePhoto)}"
+                alt="${escapeHtml(name || "User")}"
+                loading="lazy"
+            >
+        `;
+    }
+
+    const firstLetter =
+        (name || "U")
+            .trim()
+            .charAt(0)
+            .toUpperCase();
+
+    return `
+        <div class="notification-avatar-fallback">
+            ${escapeHtml(firstLetter)}
+        </div>
+    `;
+}
+
+
+/* =========================================================
+   LOADING STATE
+   ========================================================= */
+
+function setLoading(
+    isLoading
+) {
+
+    if (!loadingElement) {
         return;
     }
 
-
-    notificationPopup.classList.remove(
-        "show"
-    );
-
-
-    setTimeout(
-        function () {
-
-            if (
-                !notificationPopup.classList.contains(
-                    "show"
-                )
-            ) {
-
-                notificationPopup.hidden =
-                    true;
-
-            }
-
-        },
-        320
-    );
-
+    loadingElement.hidden =
+        !isLoading;
 }
 
 
 /* =========================================================
-   BACK BUTTON
-========================================================= */
+   EMPTY STATE
+   ========================================================= */
 
-if (backButton) {
+function updateEmptyState() {
 
-    backButton.addEventListener(
-        "click",
-        function () {
+    const requestVisible =
+        connectionRequestsSection &&
+        !connectionRequestsSection.hidden;
 
-            if (
-                document.referrer &&
-                document.referrer.includes(
-                    window.location.host
-                )
-            ) {
+    const otherVisible =
+        otherNotificationsSection &&
+        !otherNotificationsSection.hidden;
 
-                window.history.back();
+    const hasContent =
+        requestVisible ||
+        otherVisible;
 
-                return;
-            }
-
-
-            window.location.href =
-                "/home";
-
-        }
-    );
-
+    if (emptyElement) {
+        emptyElement.hidden =
+            hasContent;
+    }
 }
 
 
 /* =========================================================
-   LOAD NOTIFICATIONS
-========================================================= */
+   REQUEST BUTTON STATE
+   ========================================================= */
 
-async function loadNotifications() {
+function setRequestButtonsDisabled(
+    requestId,
+    disabled
+) {
 
-    showLoading();
-
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/connections/requests",
-                {
-                    method: "GET",
-
-                    credentials:
-                        "same-origin",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    },
-
-                    cache: "no-store"
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.replace(
-                "/login"
-            );
-
-            return;
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                `Notification request failed: ${response.status}`
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !data ||
-            data.success !== true
-        ) {
-
-            throw new Error(
-                "Invalid notification response"
-            );
-
-        }
-
-
-        renderConnectionRequests(
-            data.requests || []
+    const buttons =
+        document.querySelectorAll(
+            `[data-request-id="${requestId}"]`
         );
 
-
-    } catch (error) {
-
-        console.error(
-            "Usanex notification error:",
-            error
-        );
-
-
-        showError();
-
-    }
-
+    buttons.forEach(
+        (button) => {
+            button.disabled = disabled;
+        }
+    );
 }
 
 
 /* =========================================================
-   SHOW LOADING
-========================================================= */
+   CONNECTION REQUEST CARD
+   ========================================================= */
 
-function showLoading() {
+function createConnectionRequestCard(
+    item
+) {
 
-    if (notificationLoading) {
+    const card =
+        document.createElement("article");
 
-        notificationLoading.hidden =
-            false;
+    card.className =
+        "connection-request-card";
 
-    }
+    card.dataset.requestId =
+        item.id;
 
+    const sender =
+        item.sender || {};
 
-    if (notificationEmpty) {
+    card.innerHTML = `
+        <div class="request-card-main">
 
-        notificationEmpty.hidden =
-            true;
-
-    }
-
-
-    if (connectionRequestsSection) {
-
-        connectionRequestsSection.hidden =
-            true;
-
-    }
-
-
-    if (otherNotificationsSection) {
-
-        otherNotificationsSection.hidden =
-            true;
-
-    }
-
-}
-
-
-/* =========================================================
-   SHOW ERROR
-========================================================= */
-
-function showError() {
-
-    if (notificationLoading) {
-
-        notificationLoading.hidden =
-            true;
-
-    }
-
-
-    if (notificationEmpty) {
-
-        notificationEmpty.hidden =
-            true;
-
-    }
-
-
-    if (connectionRequestsSection) {
-
-        connectionRequestsSection.hidden =
-            false;
-
-    }
-
-
-    if (connectionRequests) {
-
-        connectionRequests.innerHTML = `
-            <div class="notification-error">
-                Unable to load notifications.
-                Please try again.
+            <div class="notification-avatar">
+                ${getProfileImage(
+                    sender.profile_photo,
+                    sender.name
+                )}
             </div>
-        `;
 
-    }
+            <div class="request-user-info">
 
+                <div class="request-user-name">
+                    ${escapeHtml(
+                        sender.name || "User"
+                    )}
+                </div>
 
-    showNotificationPopup(
-        "Unable to load notifications.",
-        3500
-    );
+                <div class="request-user-username">
+                    ${escapeHtml(
+                        sender.username || ""
+                    )}
+                </div>
 
+                <div class="request-user-id">
+                    ${escapeHtml(
+                        sender.user_id || ""
+                    )}
+                </div>
+
+                <div class="request-message">
+                    wants to connect with you
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="request-actions">
+
+            <button
+                type="button"
+                class="request-action-button accept-button"
+                data-action="accept"
+                data-request-id="${item.id}"
+            >
+                Accept
+            </button>
+
+            <button
+                type="button"
+                class="request-action-button reject-button"
+                data-action="reject"
+                data-request-id="${item.id}"
+            >
+                Reject
+            </button>
+
+        </div>
+    `;
+
+    return card;
 }
 
 
 /* =========================================================
    RENDER CONNECTION REQUESTS
-========================================================= */
+   ========================================================= */
 
 function renderConnectionRequests(
     requests
 ) {
 
-    if (notificationLoading) {
-
-        notificationLoading.hidden =
-            true;
-
+    if (!connectionRequestsContainer) {
+        return;
     }
 
-
-    if (connectionRequests) {
-
-        connectionRequests.innerHTML =
-            "";
-
-    }
-
+    connectionRequestsContainer.innerHTML = "";
 
     if (
-        !requests ||
+        !Array.isArray(requests) ||
         requests.length === 0
     ) {
 
         if (connectionRequestsSection) {
-
             connectionRequestsSection.hidden =
                 true;
-
         }
 
-
-        if (notificationEmpty) {
-
-            notificationEmpty.hidden =
-                false;
-
-        }
-
+        updateEmptyState();
 
         return;
-
     }
-
-
-    if (notificationEmpty) {
-
-        notificationEmpty.hidden =
-            true;
-
-    }
-
-
-    if (connectionRequestsSection) {
-
-        connectionRequestsSection.hidden =
-            false;
-
-    }
-
 
     requests.forEach(
-        function (request) {
+        (item) => {
 
             const card =
                 createConnectionRequestCard(
-                    request
+                    item
                 );
 
-
-            if (connectionRequests) {
-
-                connectionRequests.appendChild(
-                    card
-                );
-
-            }
-
+            connectionRequestsContainer.appendChild(
+                card
+            );
         }
     );
 
+    if (connectionRequestsSection) {
+        connectionRequestsSection.hidden =
+            false;
+    }
+
+    updateEmptyState();
 }
 
 
 /* =========================================================
-   CREATE REQUEST CARD
-========================================================= */
+   LOAD CONNECTION REQUESTS
+   ========================================================= */
 
-function createConnectionRequestCard(
-    request
+async function loadConnectionRequests() {
+
+    const data =
+        await apiRequest(
+            `${API_BASE}/requests`
+        );
+
+    renderConnectionRequests(
+        data.requests || []
+    );
+}
+
+
+/* =========================================================
+   FORMAT VERIFICATION MESSAGE
+   ========================================================= */
+
+function getVerificationTitle(
+    notification
+) {
+
+    const user =
+        notification.user || {};
+
+    const name =
+        user.name || "User";
+
+    return `${name} accepted your connection request`;
+}
+
+
+/* =========================================================
+   CREATE VERIFICATION CARD
+   ========================================================= */
+
+function createVerificationCard(
+    notification
 ) {
 
     const card =
-        document.createElement(
-            "article"
-        );
-
+        document.createElement("article");
 
     card.className =
-        "connection-request-card";
+        "verification-card";
 
+    card.dataset.notificationId =
+        notification.notification_id;
 
-    card.dataset.requestId =
-        request.id || "";
+    const user =
+        notification.user || {};
 
+    const verification =
+        notification.verification || {};
 
-    const sender =
-        request.sender || {};
+    const code =
+        verification.code || "";
 
+    const verificationId =
+        verification.verification_id;
 
-    /* -----------------------------------------------------
-       AVATAR
-    ----------------------------------------------------- */
+    const status =
+        verification.status || "unknown";
 
-    const avatar =
-        document.createElement(
-            "div"
+    const expired =
+        Boolean(
+            verification.is_expired
         );
 
+    let actionHtml = "";
 
-    avatar.className =
-        "request-avatar";
+    if (
+        !expired &&
+        status === "pending" &&
+        code
+    ) {
 
+        actionHtml = `
+            <div class="verification-code-box">
 
-    if (sender.profile_photo) {
+                <div class="verification-code-label">
+                    Connection Code
+                </div>
 
-        const image =
-            document.createElement(
-                "img"
-            );
+                <div
+                    class="verification-code"
+                    data-code="${escapeHtml(code)}"
+                >
+                    ${escapeHtml(code)}
+                </div>
 
+            </div>
 
-        image.src =
-            sender.profile_photo;
+            <div class="verification-actions">
 
+                <button
+                    type="button"
+                    class="verification-button copy-code-button"
+                    data-code="${escapeHtml(code)}"
+                >
+                    Copy Code
+                </button>
 
-        image.alt =
-            sender.name || "User";
+                <button
+                    type="button"
+                    class="verification-button go-card-button"
+                    data-user-id="${escapeHtml(
+                        user.user_id || ""
+                    )}"
+                    data-verification-id="${escapeHtml(
+                        verificationId || ""
+                    )}"
+                >
+                    Go Card
+                </button>
 
+            </div>
+        `;
 
-        image.loading =
-            "lazy";
+    } else if (
+        expired ||
+        status === "expired"
+    ) {
 
+        actionHtml = `
+            <div class="verification-expired">
+                This connection code has expired.
+            </div>
+        `;
 
-        image.onerror =
-            function () {
+    } else if (
+        status === "verified"
+    ) {
 
-                image.remove();
+        actionHtml = `
+            <div class="verification-success">
+                Connection verified successfully.
+            </div>
+        `;
 
-                avatar.textContent =
-                    getInitial(
-                        sender.name
-                    );
+    } else if (
+        status === "blocked"
+    ) {
 
-            };
-
-
-        avatar.appendChild(
-            image
-        );
+        actionHtml = `
+            <div class="verification-expired">
+                This verification is blocked.
+            </div>
+        `;
 
     } else {
 
-        avatar.textContent =
-            getInitial(
-                sender.name
-            );
-
+        actionHtml = `
+            <div class="verification-expired">
+                Verification code is unavailable.
+            </div>
+        `;
     }
 
-
-    /* -----------------------------------------------------
-       USER INFORMATION
-    ----------------------------------------------------- */
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-
-    info.className =
-        "request-info";
-
-
-    const name =
-        document.createElement(
-            "div"
-        );
-
-
-    name.className =
-        "request-name";
-
-
-    name.textContent =
-        sender.name ||
-        "User";
-
-
-    const username =
-        document.createElement(
-            "div"
-        );
-
-
-    username.className =
-        "request-username";
-
-
-    username.textContent =
-        sender.username ||
-        "";
-
-
-    const userId =
-        document.createElement(
-            "div"
-        );
-
-
-    userId.className =
-        "request-user-id";
-
-
-    userId.textContent =
-        sender.user_id ||
-        "";
-
-
-    info.appendChild(
-        name
-    );
-
-    info.appendChild(
-        username
-    );
-
-    info.appendChild(
-        userId
-    );
-
-
-    /* -----------------------------------------------------
-       ACTION BUTTONS
-    ----------------------------------------------------- */
-
-    const actions =
-        document.createElement(
-            "div"
-        );
-
-
-    actions.className =
-        "request-actions";
-
-
-    const acceptButton =
-        document.createElement(
-            "button"
-        );
-
-
-    acceptButton.type =
-        "button";
-
-
-    acceptButton.className =
-        "request-action-button accept-button";
-
-
-    acceptButton.textContent =
-        "Accept";
-
-
-    const rejectButton =
-        document.createElement(
-            "button"
-        );
-
-
-    rejectButton.type =
-        "button";
-
-
-    rejectButton.className =
-        "request-action-button reject-button";
-
-
-    rejectButton.textContent =
-        "Reject";
-
-
-    acceptButton.addEventListener(
-        "click",
-        function () {
-
-            handleRequestAction(
-                request.id,
-                "accept",
-                card,
-                acceptButton,
-                rejectButton,
-                sender
-            );
-
-        }
-    );
-
-
-    rejectButton.addEventListener(
-        "click",
-        function () {
-
-            handleRequestAction(
-                request.id,
-                "reject",
-                card,
-                acceptButton,
-                rejectButton,
-                sender
-            );
-
-        }
-    );
-
-
-    actions.appendChild(
-        acceptButton
-    );
-
-    actions.appendChild(
-        rejectButton
-    );
-
-
-    /* -----------------------------------------------------
-       CARD
-    ----------------------------------------------------- */
-
-    card.appendChild(
-        avatar
-    );
-
-    card.appendChild(
-        info
-    );
-
-    card.appendChild(
-        actions
-    );
-
+    card.innerHTML = `
+        <div class="verification-main">
+
+            <div class="notification-avatar">
+                ${getProfileImage(
+                    user.profile_photo,
+                    user.name
+                )}
+            </div>
+
+            <div class="verification-user-info">
+
+                <div class="verification-title">
+                    ${escapeHtml(
+                        getVerificationTitle(
+                            notification
+                        )
+                    )}
+                </div>
+
+                <div class="verification-username">
+                    ${escapeHtml(
+                        user.username || ""
+                    )}
+                </div>
+
+                <div class="verification-user-id">
+                    ${escapeHtml(
+                        user.user_id || ""
+                    )}
+                </div>
+
+            </div>
+
+        </div>
+
+        ${actionHtml}
+    `;
 
     return card;
-
 }
 
 
 /* =========================================================
-   ACCEPT / REJECT REQUEST
-========================================================= */
+   RENDER VERIFICATION NOTIFICATIONS
+   ========================================================= */
 
-async function handleRequestAction(
-    requestId,
-    action,
-    card,
-    acceptButton,
-    rejectButton,
-    sender
+function renderVerificationNotifications(
+    notifications
 ) {
 
-    if (!requestId) {
-
-        showNotificationPopup(
-            "Request ID is missing."
-        );
-
+    if (!otherNotificationsContainer) {
         return;
-
     }
 
+    otherNotificationsContainer.innerHTML = "";
+
+    const verificationNotifications =
+        Array.isArray(notifications)
+            ? notifications
+            : [];
 
     if (
-        acceptButton.disabled ||
-        rejectButton.disabled
+        verificationNotifications.length === 0
     ) {
 
+        if (otherNotificationsSection) {
+            otherNotificationsSection.hidden =
+                true;
+        }
+
+        updateEmptyState();
+
         return;
-
     }
 
+    verificationNotifications.forEach(
+        (notification) => {
 
-    acceptButton.disabled =
-        true;
+            const card =
+                createVerificationCard(
+                    notification
+                );
 
-    rejectButton.disabled =
-        true;
+            otherNotificationsContainer.appendChild(
+                card
+            );
+        }
+    );
 
-
-    const originalAcceptText =
-        acceptButton.textContent;
-
-    const originalRejectText =
-        rejectButton.textContent;
-
-
-    if (action === "accept") {
-
-        acceptButton.textContent =
-            "Accepting...";
-
-    } else {
-
-        rejectButton.textContent =
-            "Rejecting...";
-
+    if (otherNotificationsSection) {
+        otherNotificationsSection.hidden =
+            false;
     }
 
+    updateEmptyState();
+}
+
+
+/* =========================================================
+   LOAD VERIFICATION NOTIFICATIONS
+   ========================================================= */
+
+async function loadVerificationNotifications() {
+
+    const data =
+        await apiRequest(
+            `${API_BASE}/notifications`
+        );
+
+    renderVerificationNotifications(
+        data.notifications || []
+    );
+}
+
+
+/* =========================================================
+   LOAD EVERYTHING
+   ========================================================= */
+
+async function loadNotifications() {
+
+    setLoading(true);
 
     try {
 
-        const response =
-            await fetch(
-                `/api/connections/request/${requestId}/${action}`,
-                {
-                    method: "POST",
-
-                    credentials:
-                        "same-origin",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        let data = {};
-
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch {
-
-            data = {};
-
-        }
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.replace(
-                "/login"
-            );
-
-            return;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                `Unable to ${action} request.`
-            );
-
-        }
-
-
-        if (
-            !data ||
-            data.success !== true
-        ) {
-
-            throw new Error(
-                `Unable to ${action} request.`
-            );
-
-        }
-
-
-        /* -------------------------------------------------
-           ACCEPT SUCCESS
-        ------------------------------------------------- */
-
-        if (action === "accept") {
-
-            showNotificationPopup(
-                `${sender.name || "User"} connected successfully.`,
-                3500
-            );
-
-
-            console.log(
-                "Usanex: Connection accepted.",
-                data.connection
-            );
-
-        }
-
-
-        /* -------------------------------------------------
-           REJECT SUCCESS
-        ------------------------------------------------- */
-
-        if (action === "reject") {
-
-            showNotificationPopup(
-                "Connection request rejected.",
-                3000
-            );
-
-
-            console.log(
-                "Usanex: Connection rejected.",
-                data.request
-            );
-
-        }
-
-
-        /* -------------------------------------------------
-           REMOVE CARD
-        ------------------------------------------------- */
-
-        if (card) {
-
-            card.style.opacity =
-                "0";
-
-            card.style.transform =
-                "translateY(-8px) scale(0.98)";
-
-            card.style.transition =
-                "opacity 0.22s ease, transform 0.22s ease";
-
-
-            setTimeout(
-                function () {
-
-                    card.remove();
-
-                    checkEmptyState();
-
-                },
-                220
-            );
-
-        }
-
+        await Promise.all([
+            loadConnectionRequests(),
+            loadVerificationNotifications(),
+        ]);
 
     } catch (error) {
 
         console.error(
-            `Usanex ${action} request error:`,
+            "Notification loading error:",
             error
         );
 
-
-        acceptButton.disabled =
-            false;
-
-        rejectButton.disabled =
-            false;
-
-
-        acceptButton.textContent =
-            originalAcceptText;
-
-        rejectButton.textContent =
-            originalRejectText;
-
-
-        showNotificationPopup(
+        showPopup(
             error.message ||
-            `Unable to ${action} request. Please try again.`,
-            4000
+            "Unable to load notifications"
         );
 
-    }
+    } finally {
 
+        setLoading(false);
+
+        updateEmptyState();
+    }
 }
 
 
 /* =========================================================
-   CHECK EMPTY STATE
-========================================================= */
+   ACCEPT REQUEST
+   ========================================================= */
 
-function checkEmptyState() {
+async function acceptRequest(
+    requestId,
+    button
+) {
 
-    if (!connectionRequests) {
+    if (button) {
+        button.disabled = true;
+    }
+
+    try {
+
+        const data =
+            await apiRequest(
+                `${API_BASE}/request/${requestId}/accept`,
+                {
+                    method: "POST",
+                }
+            );
+
+        showPopup(
+            "Connection request accepted."
+        );
+
+        const card =
+            document.querySelector(
+                `.connection-request-card[data-request-id="${requestId}"]`
+            );
+
+        if (card) {
+
+            card.classList.add(
+                "notification-card-removing"
+            );
+
+            setTimeout(() => {
+
+                card.remove();
+
+                if (
+                    connectionRequestsContainer &&
+                    connectionRequestsContainer
+                        .children.length === 0
+                ) {
+
+                    if (connectionRequestsSection) {
+                        connectionRequestsSection.hidden =
+                            true;
+                    }
+
+                    updateEmptyState();
+                }
+
+            }, 250);
+        }
+
+        await loadVerificationNotifications();
+
+        /*
+         * The backend creates the verification
+         * notification immediately after accept.
+         */
+        if (
+            data &&
+            data.verification
+        ) {
+            showPopup(
+                "Verification code is ready."
+            );
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Accept request error:",
+            error
+        );
+
+        showPopup(
+            error.message ||
+            "Unable to accept request"
+        );
+
+        if (button) {
+            button.disabled = false;
+        }
+    }
+}
+
+
+/* =========================================================
+   REJECT REQUEST
+   ========================================================= */
+
+async function rejectRequest(
+    requestId,
+    button
+) {
+
+    if (button) {
+        button.disabled = true;
+    }
+
+    try {
+
+        await apiRequest(
+            `${API_BASE}/request/${requestId}/reject`,
+            {
+                method: "POST",
+            }
+        );
+
+        showPopup(
+            "Connection request rejected."
+        );
+
+        const card =
+            document.querySelector(
+                `.connection-request-card[data-request-id="${requestId}"]`
+            );
+
+        if (card) {
+
+            card.classList.add(
+                "notification-card-removing"
+            );
+
+            setTimeout(() => {
+
+                card.remove();
+
+                if (
+                    connectionRequestsContainer &&
+                    connectionRequestsContainer
+                        .children.length === 0
+                ) {
+
+                    if (connectionRequestsSection) {
+                        connectionRequestsSection.hidden =
+                            true;
+                    }
+
+                    updateEmptyState();
+                }
+
+            }, 250);
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Reject request error:",
+            error
+        );
+
+        showPopup(
+            error.message ||
+            "Unable to reject request"
+        );
+
+        if (button) {
+            button.disabled = false;
+        }
+    }
+}
+
+
+/* =========================================================
+   COPY VERIFICATION CODE
+   ========================================================= */
+
+async function copyVerificationCode(
+    code
+) {
+
+    if (!code) {
+        showPopup(
+            "Verification code is unavailable."
+        );
         return;
     }
 
+    try {
 
-    const cards =
-        connectionRequests.querySelectorAll(
-            ".connection-request-card"
+        if (
+            navigator.clipboard &&
+            window.isSecureContext
+        ) {
+
+            await navigator.clipboard.writeText(
+                code
+            );
+
+        } else {
+
+            const textarea =
+                document.createElement(
+                    "textarea"
+                );
+
+            textarea.value = code;
+
+            textarea.style.position =
+                "fixed";
+
+            textarea.style.opacity =
+                "0";
+
+            document.body.appendChild(
+                textarea
+            );
+
+            textarea.focus();
+
+            textarea.select();
+
+            document.execCommand(
+                "copy"
+            );
+
+            textarea.remove();
+        }
+
+        showPopup(
+            "Verification code copied."
         );
 
+    } catch (error) {
 
-    if (cards.length === 0) {
+        console.error(
+            "Copy code error:",
+            error
+        );
 
-        if (connectionRequestsSection) {
-
-            connectionRequestsSection.hidden =
-                true;
-
-        }
-
-
-        if (notificationEmpty) {
-
-            notificationEmpty.hidden =
-                false;
-
-        }
-
+        showPopup(
+            "Could not copy the code."
+        );
     }
-
 }
 
 
 /* =========================================================
-   GET INITIAL
-========================================================= */
+   GO CARD
+   ========================================================= */
 
-function getInitial(
-    name
+function goToUserCard(
+    userId,
+    verificationId
 ) {
 
-    if (!name) {
+    if (!userId) {
 
-        return "U";
+        showPopup(
+            "User card is unavailable."
+        );
 
+        return;
     }
 
+    /*
+     * The profile/card page will use these
+     * query parameters for the verification flow.
+     */
 
-    return name
-        .trim()
-        .charAt(0)
-        .toUpperCase();
+    const params =
+        new URLSearchParams();
 
+    params.set(
+        "user_id",
+        userId
+    );
+
+    if (verificationId) {
+
+        params.set(
+            "verification_id",
+            verificationId
+        );
+    }
+
+    window.location.href =
+        `/profile?${params.toString()}`;
 }
 
 
 /* =========================================================
-   INITIAL POPUP STATE
-========================================================= */
+   MARK NOTIFICATION READ
+   ========================================================= */
 
-if (notificationPopup) {
+async function markNotificationRead(
+    notificationId
+) {
 
-    notificationPopup.hidden =
-        true;
+    if (!notificationId) {
+        return;
+    }
 
+    try {
+
+        await apiRequest(
+            `${API_BASE}/notifications/${notificationId}/read`,
+            {
+                method: "POST",
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Mark notification read error:",
+            error
+        );
+    }
 }
+
+
+/* =========================================================
+   CLICK HANDLER
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    async (event) => {
+
+        const target =
+            event.target;
+
+        /*
+         * Accept
+         */
+
+        const acceptButton =
+            target.closest(
+                '[data-action="accept"]'
+            );
+
+        if (acceptButton) {
+
+            const requestId =
+                acceptButton.dataset.requestId;
+
+            if (requestId) {
+
+                await acceptRequest(
+                    requestId,
+                    acceptButton
+                );
+            }
+
+            return;
+        }
+
+
+        /*
+         * Reject
+         */
+
+        const rejectButton =
+            target.closest(
+                '[data-action="reject"]'
+            );
+
+        if (rejectButton) {
+
+            const requestId =
+                rejectButton.dataset.requestId;
+
+            if (requestId) {
+
+                await rejectRequest(
+                    requestId,
+                    rejectButton
+                );
+            }
+
+            return;
+        }
+
+
+        /*
+         * Copy code
+         */
+
+        const copyButton =
+            target.closest(
+                ".copy-code-button"
+            );
+
+        if (copyButton) {
+
+            const code =
+                copyButton.dataset.code;
+
+            await copyVerificationCode(
+                code
+            );
+
+            return;
+        }
+
+
+        /*
+         * Go Card
+         */
+
+        const goCardButton =
+            target.closest(
+                ".go-card-button"
+            );
+
+        if (goCardButton) {
+
+            const userId =
+                goCardButton.dataset.userId;
+
+            const verificationId =
+                goCardButton.dataset.verificationId;
+
+            const card =
+                goCardButton.closest(
+                    ".verification-card"
+                );
+
+            if (card) {
+
+                const notificationId =
+                    card.dataset.notificationId;
+
+                await markNotificationRead(
+                    notificationId
+                );
+            }
+
+            goToUserCard(
+                userId,
+                verificationId
+            );
+
+            return;
+        }
+    }
+);
+
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
+
+if (backButton) {
+
+    backButton.addEventListener(
+        "click",
+        () => {
+
+            if (
+                window.history.length > 1
+            ) {
+
+                window.history.back();
+
+            } else {
+
+                window.location.href =
+                    "/home";
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   PAGE VISIBILITY
+   ========================================================= */
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        if (
+            document.visibilityState
+            === "visible"
+        ) {
+
+            loadNotifications();
+        }
+    }
+);
 
 
 /* =========================================================
    INITIAL LOAD
-========================================================= */
+   ========================================================= */
 
-loadNotifications();
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
+        loadNotifications();
 
-/* =========================================================
-   VERSION
-========================================================= */
-
-console.log(
-    "Usanex Notifications v2 loaded."
+    }
 );
