@@ -1,5 +1,10 @@
 "use strict";
 
+/* =========================================================
+   USANEX NOTIFICATIONS
+   Version 2
+========================================================= */
+
 
 /* =========================================================
    ELEMENTS
@@ -33,6 +38,106 @@ const otherNotificationsSection =
         "otherNotificationsSection"
     );
 
+const notificationPopup =
+    document.getElementById(
+        "notificationPopup"
+    );
+
+
+/* =========================================================
+   TOP NOTIFICATION POPUP
+========================================================= */
+
+let popupTimer = null;
+
+
+function showNotificationPopup(
+    message,
+    duration = 3000
+) {
+
+    if (!notificationPopup) {
+        return;
+    }
+
+
+    if (popupTimer) {
+
+        clearTimeout(
+            popupTimer
+        );
+
+    }
+
+
+    notificationPopup.textContent =
+        message;
+
+
+    notificationPopup.hidden =
+        false;
+
+
+    /*
+     * Force browser to apply hidden=false
+     * before adding animation class.
+     */
+    requestAnimationFrame(
+        function () {
+
+            notificationPopup.classList.add(
+                "show"
+            );
+
+        }
+    );
+
+
+    popupTimer =
+        setTimeout(
+            function () {
+
+                hideNotificationPopup();
+
+            },
+            duration
+        );
+
+}
+
+
+function hideNotificationPopup() {
+
+    if (!notificationPopup) {
+        return;
+    }
+
+
+    notificationPopup.classList.remove(
+        "show"
+    );
+
+
+    setTimeout(
+        function () {
+
+            if (
+                !notificationPopup.classList.contains(
+                    "show"
+                )
+            ) {
+
+                notificationPopup.hidden =
+                    true;
+
+            }
+
+        },
+        320
+    );
+
+}
+
 
 /* =========================================================
    BACK BUTTON
@@ -62,6 +167,7 @@ if (backButton) {
 
         }
     );
+
 }
 
 
@@ -233,6 +339,12 @@ function showError() {
 
     }
 
+
+    showNotificationPopup(
+        "Unable to load notifications.",
+        3500
+    );
+
 }
 
 
@@ -347,10 +459,6 @@ function createConnectionRequestCard(
         request.id || "";
 
 
-    /* -----------------------------------------------------
-       SENDER
-    ----------------------------------------------------- */
-
     const sender =
         request.sender || {};
 
@@ -417,7 +525,7 @@ function createConnectionRequestCard(
 
 
     /* -----------------------------------------------------
-       USER INFO
+       USER INFORMATION
     ----------------------------------------------------- */
 
     const info =
@@ -489,7 +597,7 @@ function createConnectionRequestCard(
 
 
     /* -----------------------------------------------------
-       ACTIONS
+       ACTION BUTTONS
     ----------------------------------------------------- */
 
     const actions =
@@ -501,10 +609,6 @@ function createConnectionRequestCard(
     actions.className =
         "request-actions";
 
-
-    /* -----------------------------------------------------
-       ACCEPT
-    ----------------------------------------------------- */
 
     const acceptButton =
         document.createElement(
@@ -524,26 +628,6 @@ function createConnectionRequestCard(
         "Accept";
 
 
-    acceptButton.addEventListener(
-        "click",
-        function () {
-
-            handleRequestAction(
-                request.id,
-                "accept",
-                card,
-                acceptButton,
-                rejectButton
-            );
-
-        }
-    );
-
-
-    /* -----------------------------------------------------
-       REJECT
-    ----------------------------------------------------- */
-
     const rejectButton =
         document.createElement(
             "button"
@@ -562,6 +646,23 @@ function createConnectionRequestCard(
         "Reject";
 
 
+    acceptButton.addEventListener(
+        "click",
+        function () {
+
+            handleRequestAction(
+                request.id,
+                "accept",
+                card,
+                acceptButton,
+                rejectButton,
+                sender
+            );
+
+        }
+    );
+
+
     rejectButton.addEventListener(
         "click",
         function () {
@@ -571,7 +672,8 @@ function createConnectionRequestCard(
                 "reject",
                 card,
                 acceptButton,
-                rejectButton
+                rejectButton,
+                sender
             );
 
         }
@@ -618,16 +720,18 @@ async function handleRequestAction(
     action,
     card,
     acceptButton,
-    rejectButton
+    rejectButton,
+    sender
 ) {
 
     if (!requestId) {
 
-        alert(
+        showNotificationPopup(
             "Request ID is missing."
         );
 
         return;
+
     }
 
 
@@ -711,6 +815,7 @@ async function handleRequestAction(
             );
 
             return;
+
         }
 
 
@@ -737,6 +842,46 @@ async function handleRequestAction(
 
 
         /* -------------------------------------------------
+           ACCEPT SUCCESS
+        ------------------------------------------------- */
+
+        if (action === "accept") {
+
+            showNotificationPopup(
+                `${sender.name || "User"} connected successfully.`,
+                3500
+            );
+
+
+            console.log(
+                "Usanex: Connection accepted.",
+                data.connection
+            );
+
+        }
+
+
+        /* -------------------------------------------------
+           REJECT SUCCESS
+        ------------------------------------------------- */
+
+        if (action === "reject") {
+
+            showNotificationPopup(
+                "Connection request rejected.",
+                3000
+            );
+
+
+            console.log(
+                "Usanex: Connection rejected.",
+                data.request
+            );
+
+        }
+
+
+        /* -------------------------------------------------
            REMOVE CARD
         ------------------------------------------------- */
 
@@ -746,10 +891,10 @@ async function handleRequestAction(
                 "0";
 
             card.style.transform =
-                "scale(0.98)";
+                "translateY(-8px) scale(0.98)";
 
             card.style.transition =
-                "opacity 0.2s ease, transform 0.2s ease";
+                "opacity 0.22s ease, transform 0.22s ease";
 
 
             setTimeout(
@@ -761,27 +906,6 @@ async function handleRequestAction(
 
                 },
                 220
-            );
-
-        }
-
-
-        /* -------------------------------------------------
-           ACCEPT MESSAGE
-        ------------------------------------------------- */
-
-        if (action === "accept") {
-
-            console.log(
-                "Usanex: Connection accepted.",
-                data.connection
-            );
-
-        } else {
-
-            console.log(
-                "Usanex: Connection rejected.",
-                data.request
             );
 
         }
@@ -809,9 +933,10 @@ async function handleRequestAction(
             originalRejectText;
 
 
-        alert(
+        showNotificationPopup(
             error.message ||
-            `Unable to ${action} request. Please try again.`
+            `Unable to ${action} request. Please try again.`,
+            4000
         );
 
     }
@@ -882,6 +1007,18 @@ function getInitial(
 
 
 /* =========================================================
+   INITIAL POPUP STATE
+========================================================= */
+
+if (notificationPopup) {
+
+    notificationPopup.hidden =
+        true;
+
+}
+
+
+/* =========================================================
    INITIAL LOAD
 ========================================================= */
 
@@ -893,5 +1030,5 @@ loadNotifications();
 ========================================================= */
 
 console.log(
-    "Usanex Notifications v1 - connection requests loaded successfully."
+    "Usanex Notifications v2 loaded."
 );
