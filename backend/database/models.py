@@ -175,7 +175,7 @@ class ConnectionRequest(Base):
 
 
 # =========================================================
-# CONNECTION VERIFICATION CODES
+# CONNECTION VERIFICATION
 # =========================================================
 
 class ConnectionVerification(Base):
@@ -236,6 +236,71 @@ class ConnectionVerification(Base):
     verified_at = Column(
         DateTime,
         nullable=True,
+    )
+
+
+# =========================================================
+# CONNECTION NOTIFICATIONS
+# =========================================================
+
+class ConnectionNotification(Base):
+    __tablename__ = "connection_notifications"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    receiver_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    sender_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    connection_request_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    verification_id = Column(
+        Integer,
+        index=True,
+        nullable=True,
+    )
+
+    notification_type = Column(
+        String(50),
+        index=True,
+        nullable=False,
+    )
+
+    # The verification code will NOT be stored
+    # as plain text.
+    #
+    # This field stores an encrypted/recoverable
+    # version for the notification flow.
+    encrypted_code = Column(
+        String(500),
+        nullable=True,
+    )
+
+    is_read = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
     )
 
 
