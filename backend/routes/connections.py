@@ -3,6 +3,7 @@ import secrets
 import string
 
 from argon2 import PasswordHasher
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -15,6 +16,10 @@ from ..database.models import (
 )
 from .auth import get_current_user_from_request
 
+
+# =========================================================
+# ROUTER
+# =========================================================
 
 router = APIRouter(
     prefix="/api/connections",
@@ -36,7 +41,7 @@ verification_hasher = PasswordHasher()
 
 
 # =========================================================
-# REQUEST MODELS
+# REQUEST MODEL
 # =========================================================
 
 class ConnectionRequestCreate(BaseModel):
@@ -66,19 +71,23 @@ def get_authenticated_user(
 
 
 # =========================================================
-# VERIFICATION CODE
+# GENERATE VERIFICATION CODE
 # =========================================================
 
 def generate_verification_code():
-    characters = string.digits
-
     return "".join(
-        secrets.choice(characters)
+        secrets.choice(
+            string.digits
+        )
         for _ in range(
             VERIFICATION_CODE_LENGTH
         )
     )
 
+
+# =========================================================
+# CREATE VERIFICATION CODE
+# =========================================================
 
 def create_verification_code(
     db: Session,
@@ -87,11 +96,11 @@ def create_verification_code(
     """
     Creates a short-lived verification code.
 
-    The actual code is generated only once.
-    Only its Argon2 hash is stored in the database.
+    Only the Argon2 hash is stored
+    in the database.
     """
 
-    # Remove any previous pending verification
+    # Remove old pending codes
     db.query(
         ConnectionVerification
     ).filter(
@@ -105,21 +114,23 @@ def create_verification_code(
     )
 
 
-    code =
-        generate_verification_code()
+    # Generate new code
+    code = generate_verification_code()
 
 
-    code_hash =
-        verification_hasher.hash(
-            code
-        )
+    # Hash code
+    code_hash = verification_hasher.hash(
+        code
+    )
 
 
+    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
+    # Expiry time
     expires_at = (
         now
         + timedelta(
@@ -128,32 +139,32 @@ def create_verification_code(
     )
 
 
-    verification =
-        ConnectionVerification(
-            connection_request_id=
-                connection_request.id,
+    # Create database record
+    verification = ConnectionVerification(
+        connection_request_id=
+            connection_request.id,
 
-            requester_id=
-                connection_request.sender_id,
+        requester_id=
+            connection_request.sender_id,
 
-            receiver_id=
-                connection_request.receiver_id,
+        receiver_id=
+            connection_request.receiver_id,
 
-            code_hash=
-                code_hash,
+        code_hash=
+            code_hash,
 
-            expires_at=
-                expires_at,
+        expires_at=
+            expires_at,
 
-            attempts=0,
+        attempts=0,
 
-            status="pending",
+        status="pending",
 
-            created_at=
-                now,
+        created_at=
+            now,
 
-            verified_at=None,
-        )
+        verified_at=None,
+    )
 
 
     db.add(
@@ -189,8 +200,9 @@ def send_connection_request(
     )
 
 
-    target_user_id =
+    target_user_id = (
         payload.user_id.strip()
+    )
 
 
     if not target_user_id:
@@ -201,6 +213,7 @@ def send_connection_request(
         )
 
 
+    # Find target user
     target_user = (
         db.query(User)
         .filter(
@@ -219,6 +232,7 @@ def send_connection_request(
         )
 
 
+    # Prevent self request
     if (
         target_user.id
         == current_user.id
@@ -230,6 +244,7 @@ def send_connection_request(
         )
 
 
+    # Check existing request
     existing_request = (
         db.query(
             ConnectionRequest
@@ -250,6 +265,7 @@ def send_connection_request(
 
     if existing_request is not None:
 
+        # Already pending
         if (
             existing_request.status
             == "pending"
@@ -261,6 +277,7 @@ def send_connection_request(
             )
 
 
+        # Already accepted
         if (
             existing_request.status
             == "accepted"
@@ -272,6 +289,7 @@ def send_connection_request(
             )
 
 
+        # Previous request rejected
         if (
             existing_request.status
             == "rejected"
@@ -284,6 +302,7 @@ def send_connection_request(
             db.commit()
 
 
+    # Check reverse request
     reverse_request = (
         db.query(
             ConnectionRequest
@@ -310,27 +329,28 @@ def send_connection_request(
         )
 
 
+    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    new_request =
-        ConnectionRequest(
-            sender_id=
-                current_user.id,
+    # Create request
+    new_request = ConnectionRequest(
+        sender_id=
+            current_user.id,
 
-            receiver_id=
-                target_user.id,
+        receiver_id=
+            target_user.id,
 
-            status="pending",
+        status="pending",
 
-            created_at=
-                now,
+        created_at=
+            now,
 
-            updated_at=
-                now,
-        )
+        updated_at=
+            now,
+    )
 
 
     db.add(
@@ -367,7 +387,7 @@ def send_connection_request(
 
 
 # =========================================================
-# GET INCOMING REQUESTS
+# GET INCOMING CONNECTION REQUESTS
 # =========================================================
 
 @router.get("/requests")
@@ -479,6 +499,7 @@ def accept_connection_request(
     )
 
 
+    # Find pending request
     connection_request = (
         db.query(
             ConnectionRequest
@@ -505,6 +526,7 @@ def accept_connection_request(
         )
 
 
+    # Find sender
     sender = (
         db.query(User)
         .filter(
@@ -523,22 +545,26 @@ def accept_connection_request(
         )
 
 
+    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    connection_request.status =
+    # Mark request accepted
+    connection_request.status = (
         "accepted"
+    )
 
-    connection_request.updated_at =
+    connection_request.updated_at = (
         now
+    )
 
 
-    # -----------------------------------------------------
-    # CREATE VERIFICATION CODE
-    # -----------------------------------------------------
+    db.commit()
 
+
+    # Create verification code
     verification, verification_code = (
         create_verification_code(
             db=db,
@@ -575,14 +601,14 @@ def accept_connection_request(
         },
 
         "verification": {
+            "verification_id":
+                verification.id,
+
             "status":
                 verification.status,
 
             "expires_in_minutes":
                 VERIFICATION_EXPIRY_MINUTES,
-
-            "verification_id":
-                verification.id,
         },
     }
 
@@ -605,6 +631,7 @@ def reject_connection_request(
     )
 
 
+    # Find pending request
     connection_request = (
         db.query(
             ConnectionRequest
@@ -631,6 +658,7 @@ def reject_connection_request(
         )
 
 
+    # Find sender
     sender = (
         db.query(User)
         .filter(
@@ -649,16 +677,20 @@ def reject_connection_request(
         )
 
 
+    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    connection_request.status =
+    # Mark rejected
+    connection_request.status = (
         "rejected"
+    )
 
-    connection_request.updated_at =
+    connection_request.updated_at = (
         now
+    )
 
 
     db.commit()
