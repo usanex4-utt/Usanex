@@ -155,7 +155,9 @@ def send_connection_request(
         updated_at=now,
     )
 
-    db.add(new_request)
+    db.add(
+        new_request
+    )
 
     db.commit()
 
@@ -225,7 +227,6 @@ def get_connection_requests(
             .first()
         )
 
-
         if sender is None:
             continue
 
@@ -260,7 +261,9 @@ def get_connection_requests(
 # ACCEPT CONNECTION REQUEST
 # =========================================================
 
-@router.post("/request/{request_id}/accept")
+@router.post(
+    "/request/{request_id}/accept"
+)
 def accept_connection_request(
     request_id: int,
     request: Request,
@@ -319,11 +322,9 @@ def accept_connection_request(
 
     now = datetime.now(timezone.utc)
 
-    connection_request.status =
-        "accepted"
+    connection_request.status = "accepted"
 
-    connection_request.updated_at =
-        now
+    connection_request.updated_at = now
 
 
     db.commit()
@@ -351,7 +352,9 @@ def accept_connection_request(
 # REJECT CONNECTION REQUEST
 # =========================================================
 
-@router.post("/request/{request_id}/reject")
+@router.post(
+    "/request/{request_id}/reject"
+)
 def reject_connection_request(
     request_id: int,
     request: Request,
@@ -410,11 +413,9 @@ def reject_connection_request(
 
     now = datetime.now(timezone.utc)
 
-    connection_request.status =
-        "rejected"
+    connection_request.status = "rejected"
 
-    connection_request.updated_at =
-        now
+    connection_request.updated_at = now
 
 
     db.commit()
