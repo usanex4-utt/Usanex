@@ -5,51 +5,40 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const loading = document.getElementById(
-        "notificationLoading"
-    );
-
-    const empty = document.getElementById(
-        "notificationEmpty"
-    );
-
-    const requestsSection = document.getElementById(
-        "connectionRequestsSection"
-    );
-
-    const requestsContainer = document.getElementById(
-        "connectionRequests"
-    );
-
-    const otherSection = document.getElementById(
-        "otherNotificationsSection"
-    );
-
-    const otherContainer = document.getElementById(
-        "otherNotifications"
-    );
-
-    const popup = document.getElementById(
-        "notificationPopup"
-    );
-
-    const backButton = document.getElementById(
-        "backButton"
-    );
-
-
-    // =====================================================
-    // BACK
-    // =====================================================
-
-    if (backButton) {
-        backButton.addEventListener(
-            "click",
-            () => {
-                window.location.href = "/home";
-            }
+    const loading =
+        document.getElementById(
+            "notificationLoading"
         );
-    }
+
+    const empty =
+        document.getElementById(
+            "notificationEmpty"
+        );
+
+    const requestsSection =
+        document.getElementById(
+            "connectionRequestsSection"
+        );
+
+    const requestsContainer =
+        document.getElementById(
+            "connectionRequests"
+        );
+
+    const otherSection =
+        document.getElementById(
+            "otherNotificationsSection"
+        );
+
+    const otherContainer =
+        document.getElementById(
+            "otherNotifications"
+        );
+
+    const popup =
+        document.getElementById(
+            "notificationPopup"
+        );
 
 
     // =====================================================
@@ -67,15 +56,21 @@ document.addEventListener("DOMContentLoaded", () => {
         popup.hidden = false;
 
         requestAnimationFrame(() => {
+
             popup.classList.add("show");
+
         });
+
 
         setTimeout(() => {
 
             popup.classList.remove("show");
 
+
             setTimeout(() => {
+
                 popup.hidden = true;
+
             }, 300);
 
         }, 2500);
@@ -88,9 +83,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function escapeHtml(value) {
 
-        if (value === null || value === undefined) {
+        if (
+            value === null ||
+            value === undefined
+        ) {
+
             return "";
+
         }
+
 
         return String(value)
             .replace(/&/g, "&amp;")
@@ -102,6 +103,131 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =====================================================
+    // BOTTOM NAVIGATION
+    // =====================================================
+
+    const homeNav =
+        document.getElementById(
+            "homeNav"
+        );
+
+    const reelNav =
+        document.getElementById(
+            "reelNav"
+        );
+
+    const searchNav =
+        document.getElementById(
+            "searchNav"
+        );
+
+    const notificationNav =
+        document.getElementById(
+            "notificationNav"
+        );
+
+    const profileNav =
+        document.getElementById(
+            "profileNav"
+        );
+
+
+    // -----------------------------------------------------
+    // HOME
+    // -----------------------------------------------------
+
+    if (homeNav) {
+
+        homeNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/home";
+
+            }
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // REEL
+    // -----------------------------------------------------
+
+    if (reelNav) {
+
+        reelNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/reels";
+
+            }
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // SEARCH
+    // -----------------------------------------------------
+
+    if (searchNav) {
+
+        searchNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/search";
+
+            }
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // NOTIFICATION
+    // -----------------------------------------------------
+
+    if (notificationNav) {
+
+        notificationNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/notifications";
+
+            }
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // PROFILE
+    // -----------------------------------------------------
+
+    if (profileNav) {
+
+        profileNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/profile";
+
+            }
+        );
+
+    }
+
+
+    // =====================================================
     // LOAD ALL NOTIFICATIONS
     // =====================================================
 
@@ -109,37 +235,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
 
-            loading.hidden = false;
-            empty.hidden = true;
+            if (loading) {
+                loading.hidden = false;
+            }
 
-            requestsSection.hidden = true;
-            otherSection.hidden = true;
+            if (empty) {
+                empty.hidden = true;
+            }
 
-            requestsContainer.innerHTML = "";
-            otherContainer.innerHTML = "";
+            if (requestsSection) {
+                requestsSection.hidden = true;
+            }
+
+            if (otherSection) {
+                otherSection.hidden = true;
+            }
+
+            if (requestsContainer) {
+                requestsContainer.innerHTML = "";
+            }
+
+            if (otherContainer) {
+                otherContainer.innerHTML = "";
+            }
 
 
-            // ---------------------------------------------
+            // =================================================
             // CONNECTION REQUESTS
-            // ---------------------------------------------
+            // =================================================
 
-            const requestResponse = await fetch(
-                "/api/connections/requests",
-                {
-                    method: "GET",
-                    credentials: "include"
-                }
-            );
+            const requestResponse =
+                await fetch(
+                    "/api/connections/requests",
+                    {
+                        method: "GET",
+                        credentials: "include"
+                    }
+                );
 
 
-            if (requestResponse.status === 401) {
+            if (
+                requestResponse.status === 401
+            ) {
 
-                window.location.href = "/login";
+                window.location.href =
+                    "/login";
+
                 return;
             }
 
 
             let requestData = [];
+
 
             if (requestResponse.ok) {
 
@@ -149,9 +296,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // ---------------------------------------------
+            // =================================================
             // VERIFICATION NOTIFICATIONS
-            // ---------------------------------------------
+            // =================================================
 
             const notificationResponse =
                 await fetch(
@@ -167,12 +314,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 notificationResponse.status === 401
             ) {
 
-                window.location.href = "/login";
+                window.location.href =
+                    "/login";
+
                 return;
             }
 
 
             let notificationData = [];
+
 
             if (notificationResponse.ok) {
 
@@ -182,11 +332,15 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // ---------------------------------------------
-            // NORMALIZE DATA
-            // ---------------------------------------------
+            // =================================================
+            // NORMALIZE REQUEST DATA
+            // =================================================
 
-            if (!Array.isArray(requestData)) {
+            if (
+                !Array.isArray(
+                    requestData
+                )
+            ) {
 
                 if (
                     requestData &&
@@ -201,11 +355,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
 
                     requestData = [];
+
                 }
+
             }
 
 
-            if (!Array.isArray(notificationData)) {
+            // =================================================
+            // NORMALIZE NOTIFICATION DATA
+            // =================================================
+
+            if (
+                !Array.isArray(
+                    notificationData
+                )
+            ) {
 
                 if (
                     notificationData &&
@@ -220,28 +384,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
 
                     notificationData = [];
+
                 }
+
             }
 
 
-            // ---------------------------------------------
+            // =================================================
             // RENDER
-            // ---------------------------------------------
+            // =================================================
 
             renderConnectionRequests(
                 requestData
             );
+
 
             renderVerificationNotifications(
                 notificationData
             );
 
 
-            loading.hidden = true;
+            if (loading) {
+                loading.hidden = true;
+            }
 
 
             const hasRequests =
                 requestData.length > 0;
+
 
             const hasNotifications =
                 notificationData.length > 0;
@@ -252,7 +422,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 !hasNotifications
             ) {
 
-                empty.hidden = false;
+                if (empty) {
+                    empty.hidden = false;
+                }
+
             }
 
 
@@ -263,14 +436,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-            loading.hidden = true;
 
-            empty.hidden = false;
+            if (loading) {
+                loading.hidden = true;
+            }
+
+
+            if (empty) {
+                empty.hidden = false;
+            }
+
 
             showPopup(
                 "Unable to load notifications."
             );
+
         }
+
     }
 
 
@@ -282,18 +464,27 @@ document.addEventListener("DOMContentLoaded", () => {
         requests
     ) {
 
+        if (!requestsContainer) {
+            return;
+        }
+
+
         requestsContainer.innerHTML = "";
 
 
         if (!requests.length) {
 
-            requestsSection.hidden = true;
+            if (requestsSection) {
+                requestsSection.hidden = true;
+            }
 
             return;
         }
 
 
-        requestsSection.hidden = false;
+        if (requestsSection) {
+            requestsSection.hidden = false;
+        }
 
 
         requests.forEach(
@@ -363,11 +554,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             `
                         }
 
+
                         <div class="notification-user-info">
 
                             <strong>
                                 ${escapeHtml(name)}
                             </strong>
+
 
                             ${
                                 username
@@ -380,6 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 :
                                 ""
                             }
+
 
                             ${
                                 userId
@@ -403,7 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <button
                             type="button"
                             class="accept-button"
-                            data-request-id="${requestId}"
+                            data-request-id="${escapeHtml(requestId)}"
                             data-action="accept"
                         >
                             Accept
@@ -413,7 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <button
                             type="button"
                             class="reject-button"
-                            data-request-id="${requestId}"
+                            data-request-id="${escapeHtml(requestId)}"
                             data-action="reject"
                         >
                             Reject
@@ -427,13 +621,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 requestsContainer.appendChild(
                     card
                 );
+
             }
         );
 
 
-        // ---------------------------------------------
+        // =================================================
         // ACCEPT / REJECT
-        // ---------------------------------------------
+        // =================================================
 
         requestsContainer
             .querySelectorAll(
@@ -449,6 +644,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             const requestId =
                                 button.dataset.requestId;
 
+
                             const action =
                                 button.dataset.action;
 
@@ -458,14 +654,15 @@ document.addEventListener("DOMContentLoaded", () => {
                             }
 
 
-                            button.disabled = true;
+                            button.disabled =
+                                true;
 
 
                             try {
 
                                 const response =
                                     await fetch(
-                                        `/api/connections/request/${requestId}/${action}`,
+                                        `/api/connections/request/${encodeURIComponent(requestId)}/${action}`,
                                         {
                                             method: "POST",
                                             credentials: "include"
@@ -489,10 +686,12 @@ document.addEventListener("DOMContentLoaded", () => {
                                     let message =
                                         "Action failed.";
 
+
                                     try {
 
                                         const data =
                                             await response.json();
+
 
                                         message =
                                             data.detail ||
@@ -500,9 +699,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                     } catch (_) {}
 
+
                                     showPopup(
                                         message
                                     );
+
 
                                     button.disabled =
                                         false;
@@ -512,7 +713,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                                 if (
-                                    action === "accept"
+                                    action ===
+                                    "accept"
                                 ) {
 
                                     showPopup(
@@ -524,6 +726,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     showPopup(
                                         "Connection request rejected."
                                     );
+
                                 }
 
 
@@ -537,12 +740,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                     error
                                 );
 
+
                                 showPopup(
                                     "Something went wrong."
                                 );
 
+
                                 button.disabled =
                                     false;
+
                             }
 
                         }
@@ -550,6 +756,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 }
             );
+
     }
 
 
@@ -561,18 +768,27 @@ document.addEventListener("DOMContentLoaded", () => {
         notifications
     ) {
 
+        if (!otherContainer) {
+            return;
+        }
+
+
         otherContainer.innerHTML = "";
 
 
         if (!notifications.length) {
 
-            otherSection.hidden = true;
+            if (otherSection) {
+                otherSection.hidden = true;
+            }
 
             return;
         }
 
 
-        otherSection.hidden = false;
+        if (otherSection) {
+            otherSection.hidden = false;
+        }
 
 
         notifications.forEach(
@@ -642,6 +858,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 ${escapeHtml(senderName)}
                             </strong>
 
+
                             ${
                                 senderUsername
                                 ?
@@ -653,6 +870,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 :
                                 ""
                             }
+
 
                             ${
                                 senderUserId
@@ -681,7 +899,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="verification-code-row">
 
                             <strong class="verification-code">
-                                ${escapeHtml(code || "------")}
+                                ${escapeHtml(
+                                    code || "------"
+                                )}
                             </strong>
 
 
@@ -712,9 +932,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-                // -----------------------------------------
+                // =================================================
                 // COPY CODE
-                // -----------------------------------------
+                // =================================================
 
                 const copyButton =
                     card.querySelector(
@@ -740,9 +960,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                             try {
 
-                                await navigator.clipboard.writeText(
-                                    code
-                                );
+                                await navigator
+                                    .clipboard
+                                    .writeText(
+                                        code
+                                    );
+
 
                                 showPopup(
                                     "Code copied."
@@ -754,19 +977,22 @@ document.addEventListener("DOMContentLoaded", () => {
                                     error
                                 );
 
+
                                 showPopup(
                                     "Copy failed."
                                 );
+
                             }
 
                         }
                     );
+
                 }
 
 
-                // -----------------------------------------
+                // =================================================
                 // GO CARD
-                // -----------------------------------------
+                // =================================================
 
                 const goCardButton =
                     card.querySelector(
@@ -800,15 +1026,16 @@ document.addEventListener("DOMContentLoaded", () => {
                             }
 
 
-                            // Mark notification as read
-                            // before going to Search.
+                            // -----------------------------------------
+                            // MARK NOTIFICATION AS READ
+                            // -----------------------------------------
 
                             if (notificationId) {
 
                                 try {
 
                                     await fetch(
-                                        `/api/connections/notifications/${notificationId}/read`,
+                                        `/api/connections/notifications/${encodeURIComponent(notificationId)}/read`,
                                         {
                                             method: "POST",
                                             credentials: "include"
@@ -821,13 +1048,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                         "Could not mark notification read:",
                                         error
                                     );
+
                                 }
+
                             }
 
 
-                            // IMPORTANT:
-                            // Go Card MUST return to SEARCH,
-                            // NOT PROFILE.
+                            // -----------------------------------------
+                            // GO TO SEARCH
+                            // -----------------------------------------
 
                             const searchUrl =
                                 "/search" +
@@ -846,10 +1075,109 @@ document.addEventListener("DOMContentLoaded", () => {
 
                         }
                     );
+
                 }
 
             }
         );
+
+    }
+
+
+    // =====================================================
+    // DELETE ALL NOTIFICATIONS
+    // =====================================================
+
+    const deleteNotifications =
+        document.getElementById(
+            "deleteNotifications"
+        );
+
+
+    if (deleteNotifications) {
+
+        deleteNotifications.addEventListener(
+            "click",
+            async () => {
+
+                const confirmed =
+                    window.confirm(
+                        "Delete all notifications?"
+                    );
+
+
+                if (!confirmed) {
+                    return;
+                }
+
+
+                deleteNotifications.disabled =
+                    true;
+
+
+                try {
+
+                    /*
+                     * Backend delete endpoint can be
+                     * connected here later.
+                     *
+                     * For now we clear the visible
+                     * notifications after confirmation.
+                     */
+
+
+                    if (requestsContainer) {
+                        requestsContainer.innerHTML = "";
+                    }
+
+
+                    if (otherContainer) {
+                        otherContainer.innerHTML = "";
+                    }
+
+
+                    if (requestsSection) {
+                        requestsSection.hidden = true;
+                    }
+
+
+                    if (otherSection) {
+                        otherSection.hidden = true;
+                    }
+
+
+                    if (empty) {
+                        empty.hidden = false;
+                    }
+
+
+                    showPopup(
+                        "Notifications cleared."
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        "Delete notifications error:",
+                        error
+                    );
+
+
+                    showPopup(
+                        "Unable to delete notifications."
+                    );
+
+                } finally {
+
+                    deleteNotifications.disabled =
+                        false;
+
+                }
+
+            }
+        );
+
     }
 
 
