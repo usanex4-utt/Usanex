@@ -1,28 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
-    <title>Usanex</title>
+    <title>Search | Usanex</title>
 
     <link
         rel="stylesheet"
-        href="/static/css/search.css?v=4"
+        href="/static/css/search.css?v=5"
     >
+
 </head>
+
 
 <body>
 
 <div class="search-page">
 
+
+    <!-- =====================================================
+         MAIN SEARCH AREA
+    ====================================================== -->
+
     <main class="search-main">
 
-        <!-- Search Box -->
+
+        <!-- SEARCH BOX -->
+
         <div class="search-box">
 
             <svg
@@ -33,6 +44,7 @@
                 stroke-width="1.8"
                 aria-hidden="true"
             >
+
                 <circle
                     cx="11"
                     cy="11"
@@ -42,15 +54,18 @@
                 <path
                     d="M20 20l-4-4"
                 ></path>
+
             </svg>
+
 
             <input
                 type="search"
                 id="searchInput"
-                placeholder="Search with Usanex AI"
+                placeholder="Search people"
                 autocomplete="off"
                 maxlength="100"
             >
+
 
             <button
                 type="button"
@@ -65,7 +80,8 @@
         </div>
 
 
-        <!-- Search Status -->
+        <!-- SEARCH STATUS -->
+
         <div
             id="searchStatus"
             class="search-status"
@@ -74,19 +90,355 @@
         </div>
 
 
-        <!-- Search Results -->
+        <!-- SEARCH RESULTS -->
+
         <section
             id="searchResults"
             class="search-results"
             aria-live="polite"
         ></section>
 
+
     </main>
+
+
+
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+    ====================================================== -->
+
+    <nav class="bottom-nav">
+
+
+        <!-- HOME -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="homeNav"
+            aria-label="Home"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <path
+                    d="M3 10.5L12 3l9 7.5"
+                ></path>
+
+                <path
+                    d="M5.5 9.5V21h13V9.5"
+                ></path>
+
+            </svg>
+
+            <span>
+                Home
+            </span>
+
+        </button>
+
+
+
+        <!-- REEL -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="reelNav"
+            aria-label="Reel"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="16"
+                    rx="3"
+                ></rect>
+
+                <path
+                    d="M8 4l3 5"
+                ></path>
+
+                <path
+                    d="M14 4l3 5"
+                ></path>
+
+                <path
+                    d="M10 12l5 3-5 3v-6z"
+                ></path>
+
+            </svg>
+
+            <span>
+                Reel
+            </span>
+
+        </button>
+
+
+
+        <!-- SEARCH - ACTIVE -->
+
+        <button
+            type="button"
+            class="nav-item active"
+            id="searchNav"
+            aria-label="Search"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
+
+                <path
+                    d="M20 20l-4-4"
+                ></path>
+
+            </svg>
+
+            <span>
+                Search
+            </span>
+
+        </button>
+
+
+
+        <!-- NOTIFICATION -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="notificationNav"
+            aria-label="Notification"
+        >
+
+            <span class="notification-icon-wrapper">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                >
+
+                    <path
+                        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                    ></path>
+
+                    <path
+                        d="M10 21h4"
+                    ></path>
+
+                </svg>
+
+                <span
+                    class="notification-dot"
+                    id="notificationDot"
+                    hidden
+                ></span>
+
+            </span>
+
+            <span>
+                Notification
+            </span>
+
+        </button>
+
+
+
+        <!-- PROFILE -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="profileNav"
+            aria-label="Profile"
+        >
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+
+                <circle
+                    cx="12"
+                    cy="8"
+                    r="4"
+                ></circle>
+
+                <path
+                    d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
+                ></path>
+
+            </svg>
+
+            <span>
+                Profile
+            </span>
+
+        </button>
+
+
+    </nav>
+
 
 </div>
 
 
-<script src="/static/js/search.js?v=3"></script>
+<script src="/static/js/search.js?v=4"></script>
+
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+
+
+    /*
+    =========================================================
+       HOME
+    =========================================================
+    */
+
+    const homeNav =
+        document.getElementById("homeNav");
+
+    if (homeNav) {
+
+        homeNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href = "/home";
+
+            }
+        );
+
+    }
+
+
+    /*
+    =========================================================
+       REEL
+    =========================================================
+    */
+
+    const reelNav =
+        document.getElementById("reelNav");
+
+    if (reelNav) {
+
+        reelNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href = "/reels";
+
+            }
+        );
+
+    }
+
+
+    /*
+    =========================================================
+       SEARCH
+    =========================================================
+    */
+
+    const searchNav =
+        document.getElementById("searchNav");
+
+    if (searchNav) {
+
+        searchNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href = "/search";
+
+            }
+        );
+
+    }
+
+
+    /*
+    =========================================================
+       NOTIFICATIONS
+    =========================================================
+    */
+
+    const notificationNav =
+        document.getElementById("notificationNav");
+
+    if (notificationNav) {
+
+        notificationNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/notifications";
+
+            }
+        );
+
+    }
+
+
+    /*
+    =========================================================
+       PROFILE
+    =========================================================
+    */
+
+    const profileNav =
+        document.getElementById("profileNav");
+
+    if (profileNav) {
+
+        profileNav.addEventListener(
+            "click",
+            () => {
+
+                window.location.href =
+                    "/profile";
+
+            }
+        );
+
+    }
+
+});
+
+</script>
 
 </body>
+
 </html>
