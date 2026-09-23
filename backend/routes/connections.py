@@ -37,6 +37,10 @@ def get_authenticated_user(
     return user
 
 
+# =========================================================
+# SEND CONNECTION REQUEST
+# =========================================================
+
 @router.post("/request")
 def send_connection_request(
     payload: ConnectionRequestCreate,
@@ -111,7 +115,11 @@ def send_connection_request(
             )
 
         if existing_request.status == "rejected":
-            db.delete(existing_request)
+
+            db.delete(
+                existing_request
+            )
+
             db.commit()
 
 
@@ -148,8 +156,12 @@ def send_connection_request(
     )
 
     db.add(new_request)
+
     db.commit()
-    db.refresh(new_request)
+
+    db.refresh(
+        new_request
+    )
 
 
     return {
@@ -160,5 +172,266 @@ def send_connection_request(
             "status": new_request.status,
             "receiver_user_id": target_user.user_id,
             "receiver_username": target_user.username,
+        },
+    }
+
+
+# =========================================================
+# GET INCOMING CONNECTION REQUESTS
+# =========================================================
+
+@router.get("/requests")
+def get_connection_requests(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Get pending connection requests
+    received by the currently logged-in user.
+    """
+
+    current_user = get_authenticated_user(
+        request=request,
+        db=db,
+    )
+
+    requests = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.receiver_id
+            == current_user.id,
+
+            ConnectionRequest.status
+            == "pending",
+        )
+        .order_by(
+            ConnectionRequest.id.desc()
+        )
+        .all()
+    )
+
+
+    result = []
+
+
+    for connection_request in requests:
+
+        sender = (
+            db.query(User)
+            .filter(
+                User.id
+                == connection_request.sender_id
+            )
+            .first()
+        )
+
+
+        if sender is None:
+            continue
+
+
+        result.append(
+            {
+                "id": connection_request.id,
+                "status": connection_request.status,
+                "created_at": (
+                    connection_request.created_at.isoformat()
+                    if connection_request.created_at
+                    else None
+                ),
+                "sender": {
+                    "user_id": sender.user_id,
+                    "username": sender.username,
+                    "name": sender.name,
+                    "profile_photo": sender.profile_photo,
+                },
+            }
+        )
+
+
+    return {
+        "success": True,
+        "count": len(result),
+        "requests": result,
+    }
+
+
+# =========================================================
+# ACCEPT CONNECTION REQUEST
+# =========================================================
+
+@router.post("/request/{request_id}/accept")
+def accept_connection_request(
+    request_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Accept a pending connection request.
+    Only the receiver can accept it.
+    """
+
+    current_user = get_authenticated_user(
+        request=request,
+        db=db,
+    )
+
+
+    connection_request = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.id
+            == request_id,
+
+            ConnectionRequest.receiver_id
+            == current_user.id,
+
+            ConnectionRequest.status
+            == "pending",
+        )
+        .first()
+    )
+
+
+    if connection_request is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Pending connection request not found",
+        )
+
+
+    sender = (
+        db.query(User)
+        .filter(
+            User.id
+            == connection_request.sender_id
+        )
+        .first()
+    )
+
+
+    if sender is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Request sender not found",
+        )
+
+
+    now = datetime.now(timezone.utc)
+
+    connection_request.status =
+        "accepted"
+
+    connection_request.updated_at =
+        now
+
+
+    db.commit()
+
+    db.refresh(
+        connection_request
+    )
+
+
+    return {
+        "success": True,
+        "message": "Connection request accepted",
+        "connection": {
+            "request_id": connection_request.id,
+            "status": connection_request.status,
+            "user_id": sender.user_id,
+            "username": sender.username,
+            "name": sender.name,
+            "profile_photo": sender.profile_photo,
+        },
+    }
+
+
+# =========================================================
+# REJECT CONNECTION REQUEST
+# =========================================================
+
+@router.post("/request/{request_id}/reject")
+def reject_connection_request(
+    request_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Reject a pending connection request.
+    Only the receiver can reject it.
+    """
+
+    current_user = get_authenticated_user(
+        request=request,
+        db=db,
+    )
+
+
+    connection_request = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.id
+            == request_id,
+
+            ConnectionRequest.receiver_id
+            == current_user.id,
+
+            ConnectionRequest.status
+            == "pending",
+        )
+        .first()
+    )
+
+
+    if connection_request is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Pending connection request not found",
+        )
+
+
+    sender = (
+        db.query(User)
+        .filter(
+            User.id
+            == connection_request.sender_id
+        )
+        .first()
+    )
+
+
+    if sender is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Request sender not found",
+        )
+
+
+    now = datetime.now(timezone.utc)
+
+    connection_request.status =
+        "rejected"
+
+    connection_request.updated_at =
+        now
+
+
+    db.commit()
+
+    db.refresh(
+        connection_request
+    )
+
+
+    return {
+        "success": True,
+        "message": "Connection request rejected",
+        "request": {
+            "request_id": connection_request.id,
+            "status": connection_request.status,
+            "user_id": sender.user_id,
+            "username": sender.username,
+            "name": sender.name,
         },
     }
