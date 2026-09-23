@@ -9,12 +9,17 @@
    - User ID
    - Mobile Number
 
-   Connection status:
+   Status:
    - You
    - Follow
-   - Requested   = request sent by me
-   - Request     = request received from other user
+   - Requested
+   - Request
    - Connected
+
+   DP behavior:
+   - You       -> Own profile
+   - Connected -> Other user's profile
+   - Others    -> DP viewer only
 ========================================================= */
 
 
@@ -78,9 +83,7 @@ if (searchInput) {
             const query =
                 searchInput.value.trim();
 
-            clearTimeout(
-                searchTimer
-            );
+            clearTimeout(searchTimer);
 
             if (clearSearch) {
                 clearSearch.hidden =
@@ -355,6 +358,14 @@ function createUserCard(user) {
 
 
     /* =====================================================
+       CONNECTION STATUS
+    ===================================================== */
+
+    const connectionStatus =
+        getConnectionStatus(user);
+
+
+    /* =====================================================
        AVATAR
     ===================================================== */
 
@@ -365,6 +376,14 @@ function createUserCard(user) {
 
     avatar.className =
         "search-user-avatar";
+
+
+    /*
+     * Store status on avatar.
+     */
+
+    avatar.dataset.status =
+        connectionStatus;
 
 
     if (user.profile_photo) {
@@ -409,6 +428,25 @@ function createUserCard(user) {
             );
 
     }
+
+
+    /* =====================================================
+       DP CLICK BEHAVIOR
+    ===================================================== */
+
+    avatar.addEventListener(
+        "click",
+        function (event) {
+
+            event.stopPropagation();
+
+            handleAvatarClick(
+                user,
+                connectionStatus
+            );
+
+        }
+    );
 
 
     /* =====================================================
@@ -478,10 +516,6 @@ function createUserCard(user) {
         "search-user-action-area";
 
 
-    const connectionStatus =
-        getConnectionStatus(user);
-
-
     /* =====================================================
        GO CARD / VERIFICATION
     ===================================================== */
@@ -526,6 +560,276 @@ function createUserCard(user) {
     card.appendChild(actionArea);
 
     return card;
+}
+
+
+/* =========================================================
+   HANDLE AVATAR CLICK
+========================================================= */
+
+function handleAvatarClick(
+    user,
+    status
+) {
+
+    /*
+     * Own account
+     * -> own profile page
+     */
+
+    if (status === "self") {
+
+        window.location.href =
+            "/profile";
+
+        return;
+    }
+
+
+    /*
+     * Connected user
+     * -> that user's profile
+     */
+
+    if (status === "connected") {
+
+        openUserProfile(user);
+
+        return;
+    }
+
+
+    /*
+     * Follow / Requested / Request
+     * -> only DP viewer
+     */
+
+    openDpViewer(user);
+}
+
+
+/* =========================================================
+   DP VIEWER
+========================================================= */
+
+function openDpViewer(user) {
+
+    const photo =
+        (
+            user.profile_photo ||
+            ""
+        ).trim();
+
+
+    /*
+     * If user has no profile photo,
+     * do not open an empty viewer.
+     */
+
+    if (!photo) {
+
+        return;
+
+    }
+
+
+    /*
+     * Remove an existing viewer first.
+     */
+
+    const existingViewer =
+        document.getElementById(
+            "usanexDpViewer"
+        );
+
+    if (existingViewer) {
+        existingViewer.remove();
+    }
+
+
+    const viewer =
+        document.createElement(
+            "div"
+        );
+
+    viewer.id =
+        "usanexDpViewer";
+
+    viewer.className =
+        "usanex-dp-viewer";
+
+
+    viewer.innerHTML = `
+        <div
+            class="usanex-dp-overlay"
+            aria-hidden="true"
+        ></div>
+
+        <button
+            type="button"
+            class="usanex-dp-close"
+            aria-label="Close profile photo"
+        >
+            ×
+        </button>
+
+        <div
+            class="usanex-dp-content"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Profile photo"
+        >
+
+            <img
+                class="usanex-dp-large"
+                src="${escapeHtmlAttribute(photo)}"
+                alt="${escapeHtmlAttribute(
+                    user.name || "Profile photo"
+                )}"
+            >
+
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        viewer
+    );
+
+
+    /*
+     * Prevent page scroll.
+     */
+
+    document.body.classList.add(
+        "usanex-dp-open"
+    );
+
+
+    const closeButton =
+        viewer.querySelector(
+            ".usanex-dp-close"
+        );
+
+    const overlay =
+        viewer.querySelector(
+            ".usanex-dp-overlay"
+        );
+
+    const content =
+        viewer.querySelector(
+            ".usanex-dp-content"
+        );
+
+
+    function closeViewer() {
+
+        viewer.remove();
+
+        document.body.classList.remove(
+            "usanex-dp-open"
+        );
+
+        document.removeEventListener(
+            "keydown",
+            handleEscape
+        );
+    }
+
+
+    function handleEscape(event) {
+
+        if (
+            event.key ===
+            "Escape"
+        ) {
+
+            closeViewer();
+
+        }
+
+    }
+
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            closeViewer
+        );
+
+    }
+
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            closeViewer
+        );
+
+    }
+
+
+    /*
+     * Clicking outside the image closes viewer.
+     */
+
+    if (content) {
+
+        content.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    event.target ===
+                    content
+                ) {
+
+                    closeViewer();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
+        "keydown",
+        handleEscape
+    );
+}
+
+
+/* =========================================================
+   ESCAPE HTML ATTRIBUTE
+========================================================= */
+
+function escapeHtmlAttribute(value) {
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#39;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        );
 }
 
 
@@ -606,7 +910,8 @@ function createStatusAction(
             "button"
         );
 
-    button.type = "button";
+    button.type =
+        "button";
 
     button.className =
         "search-follow-button";
@@ -625,7 +930,8 @@ function createStatusAction(
             "you"
         );
 
-        button.disabled = true;
+        button.disabled =
+            true;
 
         actionArea.appendChild(
             button
@@ -648,8 +954,14 @@ function createStatusAction(
             "connected"
         );
 
-        button.disabled = false;
+        button.disabled =
+            false;
 
+
+        /*
+         * Button click also opens
+         * connected user's profile.
+         */
 
         button.addEventListener(
             "click",
@@ -686,7 +998,8 @@ function createStatusAction(
             "requested"
         );
 
-        button.disabled = true;
+        button.disabled =
+            true;
 
         actionArea.appendChild(
             button
@@ -697,7 +1010,7 @@ function createStatusAction(
 
 
     /* =====================================================
-       REQUEST RECEIVED FROM OTHER USER
+       REQUEST RECEIVED
     ===================================================== */
 
     if (status === "pending_received") {
@@ -709,17 +1022,9 @@ function createStatusAction(
             "request"
         );
 
-        button.disabled = false;
+        button.disabled =
+            false;
 
-
-        /*
-         * Request received.
-         *
-         * Abhi click par notification page
-         * open ki ja rahi hai.
-         *
-         * Wahan Accept / Reject available hai.
-         */
 
         button.addEventListener(
             "click",
@@ -1017,7 +1322,8 @@ async function verifyConnectionCode(
 
     if (submitButton) {
 
-        submitButton.disabled = true;
+        submitButton.disabled =
+            true;
 
         submitButton.textContent =
             "Verifying...";
@@ -1141,7 +1447,8 @@ async function verifyConnectionCode(
 
         if (submitButton) {
 
-            submitButton.disabled = false;
+            submitButton.disabled =
+                false;
 
             submitButton.textContent =
                 "Verify";
@@ -1182,7 +1489,8 @@ async function sendConnectionRequest(
     }
 
 
-    button.disabled = true;
+    button.disabled =
+        true;
 
     button.textContent =
         "Sending...";
@@ -1252,7 +1560,8 @@ async function sendConnectionRequest(
                 "requested"
             );
 
-            button.disabled = true;
+            button.disabled =
+                true;
 
             return;
         }
@@ -1280,7 +1589,8 @@ async function sendConnectionRequest(
                     "connected"
                 );
 
-                button.disabled = false;
+                button.disabled =
+                    false;
 
                 return;
             }
@@ -1302,7 +1612,8 @@ async function sendConnectionRequest(
                     "requested"
                 );
 
-                button.disabled = true;
+                button.disabled =
+                    true;
 
                 return;
             }
@@ -1323,7 +1634,8 @@ async function sendConnectionRequest(
         );
 
 
-        button.disabled = false;
+        button.disabled =
+            false;
 
         button.textContent =
             "Follow";
@@ -1339,7 +1651,7 @@ async function sendConnectionRequest(
 
 
 /* =========================================================
-   OPEN USER PROFILE
+   OPEN CONNECTED USER PROFILE
 ========================================================= */
 
 function openUserProfile(user) {
@@ -1442,5 +1754,5 @@ document.addEventListener(
 
 
 console.log(
-    "Usanex Search v8 loaded."
+    "Usanex Search v9 loaded."
 );
