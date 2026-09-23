@@ -1,16 +1,183 @@
-
-// ============================================================
-// USANEX - HOME
-// Navigation + Menu + Connected People
-// ============================================================
-
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ========================================================
-    // BASIC HELPERS
-    // ========================================================
+    /* =====================================================
+       HELPERS
+    ===================================================== */
+
+    const go = (url) => {
+        window.location.href = url;
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    /* =====================================================
+       BOTTOM NAVIGATION
+    ===================================================== */
+
+    $("homeNav")?.addEventListener("click", () => {
+        go("/home");
+    });
+
+    $("reelNav")?.addEventListener("click", () => {
+        go("/reels");
+    });
+
+    $("searchNav")?.addEventListener("click", () => {
+        go("/search");
+    });
+
+    $("notificationNav")?.addEventListener("click", () => {
+        go("/notifications");
+    });
+
+    $("profileNav")?.addEventListener("click", () => {
+        go("/profile");
+    });
+
+    /* =====================================================
+       SIDE MENU
+    ===================================================== */
+
+    const menuButton = $("menuButton");
+    const menuOverlay = $("menuOverlay");
+    const closeMenu = $("closeMenu");
+
+    function openMenu() {
+        if (!menuOverlay) return;
+
+        menuOverlay.hidden = false;
+        document.body.classList.add("menu-open");
+    }
+
+    function closeSideMenu() {
+        if (!menuOverlay) return;
+
+        menuOverlay.hidden = true;
+        document.body.classList.remove("menu-open");
+    }
+
+    menuButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        openMenu();
+    });
+
+    closeMenu?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        closeSideMenu();
+    });
+
+    menuOverlay?.addEventListener("click", (event) => {
+
+        if (event.target === menuOverlay) {
+            closeSideMenu();
+        }
+
+    });
+
+    /* =====================================================
+       ESCAPE KEY
+    ===================================================== */
+
+    document.addEventListener("keydown", (event) => {
+
+        if (event.key === "Escape") {
+            closeSideMenu();
+        }
+
+    });
+
+    /* =====================================================
+       MENU BUTTONS
+    ===================================================== */
+
+    $("menuProfile")?.addEventListener("click", () => {
+        closeSideMenu();
+        go("/profile");
+    });
+
+    $("menuNotifications")?.addEventListener("click", () => {
+        closeSideMenu();
+        go("/notifications");
+    });
+
+    $("menuSettings")?.addEventListener("click", () => {
+        closeSideMenu();
+
+        alert("Settings will be available soon.");
+    });
+
+    /* =====================================================
+       LOGOUT
+    ===================================================== */
+
+    $("logoutButton")?.addEventListener("click", async () => {
+
+        const button = $("logoutButton");
+
+        if (button) {
+            button.disabled = true;
+        }
+
+        try {
+
+            const response = await fetch(
+                "/api/auth/logout",
+                {
+                    method: "POST",
+                    credentials: "include"
+                }
+            );
+
+            if (!response.ok) {
+                console.warn("Logout request failed.");
+            }
+
+        } catch (error) {
+
+            console.error("Logout error:", error);
+
+        } finally {
+
+            go("/login");
+
+        }
+
+    });
+
+    /* =====================================================
+       HEADER PLUS
+    ===================================================== */
+
+    $("headerPlus")?.addEventListener("click", () => {
+
+        alert("Create feature will be available soon.");
+
+    });
+
+    /* =====================================================
+       NEX MOMENT
+    ===================================================== */
+
+    $("momentSeeAll")?.addEventListener("click", () => {
+
+        alert("Nex Moment will be available soon.");
+
+    });
+
+    /* =====================================================
+       CONNECTED PEOPLE
+    ===================================================== */
+
+    const connectedSection = $("connectedPeopleSection");
+    const connectedList = $("connectedPeopleList");
+    const connectedCount = $("connectedPeopleCount");
 
     function escapeHtml(value) {
+
         if (value === null || value === undefined) {
             return "";
         }
@@ -21,439 +188,203 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+
     }
 
+    function getInitial(name) {
 
-    async function getJson(url, options = {}) {
-
-        const response = await fetch(url, {
-            credentials: "include",
-            ...options
-        });
-
-        if (response.status === 401) {
-            window.location.href = "/login";
-            return null;
+        if (!name) {
+            return "U";
         }
 
-        let data = null;
-
-        try {
-            data = await response.json();
-        } catch (error) {
-            data = null;
-        }
-
-        if (!response.ok) {
-
-            const message =
-                data?.detail ||
-                data?.message ||
-                "Request failed.";
-
-            throw new Error(message);
-        }
-
-        return data;
-    }
-
-
-    // ========================================================
-    // HOME NAVIGATION
-    // ========================================================
-
-    const homeNav =
-        document.getElementById("homeNav");
-
-    if (homeNav) {
-
-        homeNav.addEventListener("click", () => {
-            window.location.href = "/home";
-        });
+        return String(name)
+            .trim()
+            .charAt(0)
+            .toUpperCase();
 
     }
 
+    function getUserFromConnection(item) {
 
-    // ========================================================
-    // REEL NAVIGATION
-    // ========================================================
-
-    const reelNav =
-        document.getElementById("reelNav");
-
-    if (reelNav) {
-
-        reelNav.addEventListener("click", () => {
-            window.location.href = "/reels";
-        });
+        return (
+            item?.user ||
+            item?.connected_user ||
+            item?.person ||
+            item
+        );
 
     }
 
+    function renderConnectedPeople(users) {
 
-    // ========================================================
-    // SEARCH NAVIGATION
-    // ========================================================
-
-    const searchNav =
-        document.getElementById("searchNav");
-
-    if (searchNav) {
-
-        searchNav.addEventListener("click", () => {
-            window.location.href = "/search";
-        });
-
-    }
-
-
-    // ========================================================
-    // NOTIFICATION NAVIGATION
-    // ========================================================
-
-    const notificationNav =
-        document.getElementById("notificationNav");
-
-    if (notificationNav) {
-
-        notificationNav.addEventListener("click", () => {
-            window.location.href = "/notifications";
-        });
-
-    }
-
-
-    // ========================================================
-    // PROFILE NAVIGATION
-    // ========================================================
-
-    const profileNav =
-        document.getElementById("profileNav");
-
-    if (profileNav) {
-
-        profileNav.addEventListener("click", () => {
-            window.location.href = "/profile";
-        });
-
-    }
-
-
-    // ========================================================
-    // SIDE MENU
-    // ========================================================
-
-    const menuButton =
-        document.getElementById("menuButton");
-
-    const menuOverlay =
-        document.getElementById("menuOverlay");
-
-    const closeMenu =
-        document.getElementById("closeMenu");
-
-
-    function openMenu() {
-
-        if (!menuOverlay) {
+        if (!connectedSection || !connectedList) {
             return;
         }
 
-        menuOverlay.hidden = false;
+        connectedList.innerHTML = "";
 
-        document.body.classList.add("menu-open");
-    }
+        if (!Array.isArray(users) || users.length === 0) {
 
+            connectedSection.hidden = true;
 
-    function closeSideMenu() {
+            if (connectedCount) {
+                connectedCount.textContent = "0";
+            }
 
-        if (!menuOverlay) {
             return;
         }
 
-        menuOverlay.hidden = true;
+        connectedSection.hidden = false;
 
-        document.body.classList.remove("menu-open");
-    }
-
-
-    if (menuButton) {
-
-        menuButton.addEventListener(
-            "click",
-            openMenu
-        );
-
-    }
-
-
-    if (closeMenu) {
-
-        closeMenu.addEventListener(
-            "click",
-            closeSideMenu
-        );
-
-    }
-
-
-    if (menuOverlay) {
-
-        menuOverlay.addEventListener(
-            "click",
-            (event) => {
-
-                if (event.target === menuOverlay) {
-                    closeSideMenu();
-                }
-
-            }
-        );
-
-    }
-
-
-    // ========================================================
-    // ESCAPE KEY - CLOSE MENU
-    // ========================================================
-
-    document.addEventListener(
-        "keydown",
-        (event) => {
-
-            if (event.key === "Escape") {
-                closeSideMenu();
-            }
-
+        if (connectedCount) {
+            connectedCount.textContent = String(users.length);
         }
-    );
 
+        users.forEach((item) => {
 
-    // ========================================================
-    // MENU PROFILE
-    // ========================================================
+            const user = getUserFromConnection(item);
 
-    const menuProfile =
-        document.getElementById("menuProfile");
+            const name =
+                user.name ||
+                user.full_name ||
+                "User";
 
-    if (menuProfile) {
+            const username =
+                user.username ||
+                "";
 
-        menuProfile.addEventListener(
-            "click",
-            () => {
+            const userId =
+                user.user_id ||
+                "";
 
-                window.location.href =
-                    "/profile";
+            const photo =
+                user.profile_photo ||
+                "";
 
-            }
-        );
+            const card = document.createElement("article");
 
-    }
+            card.className = "connected-person-card";
 
+            card.setAttribute(
+                "data-user-id",
+                userId
+            );
 
-    // ========================================================
-    // MENU NOTIFICATIONS
-    // ========================================================
+            const avatar = photo
+                ? `
+                    <div class="connected-person-avatar">
+                        <img
+                            src="${escapeHtml(photo)}"
+                            alt="${escapeHtml(name)}"
+                            draggable="false"
+                        >
+                    </div>
+                `
+                : `
+                    <div class="connected-person-avatar">
+                        ${escapeHtml(getInitial(name))}
+                    </div>
+                `;
 
-    const menuNotifications =
-        document.getElementById(
-            "menuNotifications"
-        );
+            card.innerHTML = `
+                ${avatar}
 
-    if (menuNotifications) {
+                <div class="connected-person-info">
 
-        menuNotifications.addEventListener(
-            "click",
-            () => {
+                    <strong>
+                        ${escapeHtml(name)}
+                    </strong>
 
-                window.location.href =
-                    "/notifications";
+                    ${
+                        username
+                            ? `<span>@${escapeHtml(username)}</span>`
+                            : ""
+                    }
 
-            }
-        );
+                    ${
+                        userId
+                            ? `<small>${escapeHtml(userId)}</small>`
+                            : ""
+                    }
 
-    }
+                </div>
 
+                <div class="connected-person-arrow">
+                    ›
+                </div>
+            `;
 
-    // ========================================================
-    // MENU SETTINGS
-    // ========================================================
+            card.addEventListener("click", () => {
 
-    const menuSettings =
-        document.getElementById("menuSettings");
-
-    if (menuSettings) {
-
-        menuSettings.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Settings will be available soon."
-                );
-
-            }
-        );
-
-    }
-
-
-    // ========================================================
-    // LOGOUT
-    // ========================================================
-
-    const logoutButton =
-        document.getElementById("logoutButton");
-
-    if (logoutButton) {
-
-        logoutButton.addEventListener(
-            "click",
-            async () => {
-
-                logoutButton.disabled = true;
-
-                try {
-
-                    await fetch(
-                        "/api/auth/logout",
-                        {
-                            method: "POST",
-                            credentials: "include"
-                        }
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Logout error:",
-                        error
-                    );
-
+                if (!userId) {
+                    return;
                 }
 
-                window.location.href =
-                    "/login";
-
-            }
-        );
-
-    }
-
-
-    // ========================================================
-    // HEADER PLUS
-    // ========================================================
-
-    const headerPlus =
-        document.getElementById("headerPlus");
-
-    if (headerPlus) {
-
-        headerPlus.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Create feature will be available soon."
+                go(
+                    `/profile?user_id=${encodeURIComponent(userId)}`
                 );
 
-            }
-        );
+            });
+
+            connectedList.appendChild(card);
+
+        });
 
     }
 
-
-    // ========================================================
-    // NEX MOMENT
-    // ========================================================
-
-    const momentSeeAll =
-        document.getElementById("momentSeeAll");
-
-    if (momentSeeAll) {
-
-        momentSeeAll.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Nex Moment will be available soon."
-                );
-
-            }
-        );
-
-    }
-
-
-    // ========================================================
-    // CONNECTED PEOPLE
-    // ========================================================
+    /* =====================================================
+       LOAD CONNECTED PEOPLE
+    ===================================================== */
 
     async function loadConnectedPeople() {
 
         try {
 
-            const data =
-                await getJson(
-                    "/api/connections"
-                );
+            const response = await fetch(
+                "/api/connections",
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
 
-            if (data === null) {
+            if (response.status === 401) {
+                go("/login");
                 return;
             }
 
-
-            /*
-            ----------------------------------------------------
-            Backend can return:
-
-            [
-                {...}
-            ]
-
-            OR
-
-            {
-                "connections": [...]
+            if (!response.ok) {
+                throw new Error(
+                    `Connections request failed: ${response.status}`
+                );
             }
 
-            OR
+            const data = await response.json();
 
-            {
-                "users": [...]
-            }
-            ----------------------------------------------------
-            */
-
-            let connections = [];
-
+            let users = [];
 
             if (Array.isArray(data)) {
 
-                connections = data;
+                users = data;
 
-            } else if (
-                Array.isArray(data.connections)
-            ) {
+            } else if (Array.isArray(data.connections)) {
 
-                connections =
-                    data.connections;
+                users = data.connections;
 
-            } else if (
-                Array.isArray(data.users)
-            ) {
+            } else if (Array.isArray(data.users)) {
 
-                connections =
-                    data.users;
+                users = data.users;
+
+            } else if (Array.isArray(data.data)) {
+
+                users = data.data;
 
             }
 
-
-            renderConnectedPeople(
-                connections
-            );
-
+            renderConnectedPeople(users);
 
         } catch (error) {
 
@@ -468,584 +399,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
-
-    // ========================================================
-    // FIND CONNECTED PEOPLE SECTION
-    // ========================================================
-
-    function getConnectedPeopleContainer() {
-
-        let section =
-            document.getElementById(
-                "connectedPeopleSection"
-            );
-
-
-        if (section) {
-
-            return section;
-        }
-
-
-        /*
-        --------------------------------------------------------
-        Current home.html does not yet contain a connected
-        people section.
-
-        So create it automatically between Nex Moment and
-        Welcome section.
-        --------------------------------------------------------
-        */
-
-        const mainArea =
-            document.querySelector(
-                ".content-scroll"
-            );
-
-        if (!mainArea) {
-
-            return null;
-        }
-
-
-        section =
-            document.createElement("section");
-
-        section.id =
-            "connectedPeopleSection";
-
-        section.className =
-            "connected-people-section";
-
-
-        section.innerHTML = `
-
-            <div class="section-header">
-
-                <h2>
-                    Connected People
-                </h2>
-
-                <span
-                    class="connected-count"
-                    id="connectedPeopleCount"
-                >
-                    0
-                </span>
-
-            </div>
-
-
-            <div
-                class="connected-people-list"
-                id="connectedPeopleList"
-            ></div>
-
-        `;
-
-
-        const emptySection =
-            mainArea.querySelector(
-                ".home-empty-section"
-            );
-
-
-        if (emptySection) {
-
-            mainArea.insertBefore(
-                section,
-                emptySection
-            );
-
-        } else {
-
-            mainArea.appendChild(
-                section
-            );
-
-        }
-
-
-        return section;
-
-    }
-
-
-    // ========================================================
-    // RENDER CONNECTED PEOPLE
-    // ========================================================
-
-    function renderConnectedPeople(
-        connections
-    ) {
-
-        const section =
-            getConnectedPeopleContainer();
-
-        if (!section) {
-            return;
-        }
-
-
-        const list =
-            section.querySelector(
-                "#connectedPeopleList"
-            );
-
-        const count =
-            section.querySelector(
-                "#connectedPeopleCount"
-            );
-
-
-        if (!list) {
-            return;
-        }
-
-
-        list.innerHTML = "";
-
-
-        /*
-        --------------------------------------------------------
-        Remove duplicate users by user_id
-        --------------------------------------------------------
-        */
-
-        const uniqueUsers = [];
-
-        const seen =
-            new Set();
-
-
-        connections.forEach(
-            (connection) => {
-
-                /*
-                Backend may return:
-
-                connection.user
-                connection.connected_user
-                OR directly user fields
-                */
-
-                const user =
-                    connection?.user ||
-                    connection?.connected_user ||
-                    connection;
-
-
-                if (!user) {
-                    return;
-                }
-
-
-                const userId =
-                    user.user_id ||
-                    connection.user_id ||
-                    "";
-
-
-                const numericId =
-                    user.id ||
-                    connection.id ||
-                    "";
-
-
-                const uniqueKey =
-                    userId ||
-                    numericId;
-
-
-                if (!uniqueKey) {
-                    return;
-                }
-
-
-                if (seen.has(uniqueKey)) {
-                    return;
-                }
-
-
-                seen.add(uniqueKey);
-
-                uniqueUsers.push(user);
-
-            }
-        );
-
-
-        if (count) {
-
-            count.textContent =
-                String(
-                    uniqueUsers.length
-                );
-
-        }
-
-
-        /*
-        --------------------------------------------------------
-        No connected users
-        --------------------------------------------------------
-        */
-
-        if (uniqueUsers.length === 0) {
-
-            section.hidden = true;
-
-            return;
-        }
-
-
-        section.hidden = false;
-
-
-        /*
-        --------------------------------------------------------
-        Render each connected user
-        --------------------------------------------------------
-        */
-
-        uniqueUsers.forEach(
-            (user) => {
-
-                const name =
-                    user.name ||
-                    user.username ||
-                    "User";
-
-
-                const username =
-                    user.username ||
-                    "";
-
-
-                const userId =
-                    user.user_id ||
-                    "";
-
-
-                const photo =
-                    user.profile_photo ||
-                    "";
-
-
-                const card =
-                    document.createElement(
-                        "article"
-                    );
-
-
-                card.className =
-                    "connected-person-card";
-
-
-                card.tabIndex = 0;
-
-
-                /*
-                ------------------------------------------------
-                Avatar
-                ------------------------------------------------
-                */
-
-                let avatar;
-
-
-                if (photo) {
-
-                    avatar = `
-                        <img
-                            src="${escapeHtml(photo)}"
-                            class="connected-person-avatar"
-                            alt="${escapeHtml(name)}"
-                            draggable="false"
-                        >
-                    `;
-
-                } else {
-
-                    avatar = `
-                        <div
-                            class="connected-person-avatar placeholder"
-                        >
-                            ${escapeHtml(
-                                name
-                                    .charAt(0)
-                                    .toUpperCase()
-                            )}
-                        </div>
-                    `;
-
-                }
-
-
-                /*
-                ------------------------------------------------
-                Card HTML
-                ------------------------------------------------
-                */
-
-                card.innerHTML = `
-
-                    <div class="connected-person-avatar-wrap">
-                        ${avatar}
-                    </div>
-
-                    <div class="connected-person-info">
-
-                        <strong>
-                            ${escapeHtml(name)}
-                        </strong>
-
-                        ${
-                            username
-                                ? `
-                                    <span>
-                                        @${escapeHtml(username)}
-                                    </span>
-                                `
-                                : ""
-                        }
-
-                        ${
-                            userId
-                                ? `
-                                    <small>
-                                        ${escapeHtml(userId)}
-                                    </small>
-                                `
-                                : ""
-                        }
-
-                    </div>
-
-                    <div class="connected-person-arrow">
-                        ›
-                    </div>
-
-                `;
-
-
-                /*
-                ------------------------------------------------
-                Click -> Profile
-                ------------------------------------------------
-                */
-
-                function openProfile() {
-
-                    if (!userId) {
-                        return;
-                    }
-
-                    window.location.href =
-                        `/profile?user_id=${encodeURIComponent(
-                            userId
-                        )}`;
-
-                }
-
-
-                card.addEventListener(
-                    "click",
-                    openProfile
-                );
-
-
-                card.addEventListener(
-                    "keydown",
-                    (event) => {
-
-                        if (
-                            event.key === "Enter" ||
-                            event.key === " "
-                        ) {
-
-                            event.preventDefault();
-
-                            openProfile();
-
-                        }
-
-                    }
-                );
-
-
-                list.appendChild(card);
-
-            }
-        );
-
-    }
-
-
-    // ========================================================
-    // NOTIFICATION DOT
-    // ========================================================
-
-    async function loadNotificationDot() {
-
-        const dot =
-            document.getElementById(
-                "notificationDot"
-            );
-
-        if (!dot) {
-            return;
-        }
-
-
-        try {
-
-            const [
-                requestData,
-                notificationData
-            ] = await Promise.all([
-
-                getJson(
-                    "/api/connections/requests"
-                ),
-
-                getJson(
-                    "/api/connections/notifications"
-                )
-
-            ]);
-
-
-            if (
-                requestData === null ||
-                notificationData === null
-            ) {
-
-                return;
-            }
-
-
-            const requests =
-                Array.isArray(
-                    requestData?.requests
-                )
-                    ? requestData.requests
-                    : Array.isArray(
-                        requestData
-                    )
-                        ? requestData
-                        : [];
-
-
-            const notifications =
-                Array.isArray(
-                    notificationData?.notifications
-                )
-                    ? notificationData.notifications
-                    : Array.isArray(
-                        notificationData
-                    )
-                        ? notificationData
-                        : [];
-
-
-            const total =
-                requests.length +
-                notifications.length;
-
-
-            dot.hidden =
-                total <= 0;
-
-
-        } catch (error) {
-
-            console.error(
-                "Notification dot error:",
-                error
-            );
-
-            dot.hidden = true;
-
-        }
-
-    }
-
-
-    // ========================================================
-    // INITIAL HOME LOAD
-    // ========================================================
+    /* =====================================================
+       START
+    ===================================================== */
 
     loadConnectedPeople();
 
-    loadNotificationDot();
-
-
-    // ========================================================
-    // AUTO REFRESH CONNECTIONS
-    // ========================================================
-
-    /*
-    Every 15 seconds backend se connected users
-    refresh honge. Isse accept/reject ke baad
-    Home manually refresh kiye bina update ho sakta hai.
-    */
-
-    setInterval(
-        () => {
-
-            loadConnectedPeople();
-            loadNotificationDot();
-
-        },
-        15000
-    );
-
-
-    // ========================================================
-    // IMAGE PROTECTION
-    // ========================================================
-
-    document.addEventListener(
-        "contextmenu",
-        (event) => {
-
-            if (
-                event.target &&
-                event.target.tagName === "IMG"
-            ) {
-
-                event.preventDefault();
-
-            }
-
-        }
-    );
-
-
-    document.addEventListener(
-        "dragstart",
-        (event) => {
-
-            if (
-                event.target &&
-                event.target.tagName === "IMG"
-            ) {
-
-                event.preventDefault();
-
-            }
-
-        }
-    );
-
-
-    // ========================================================
-    // HOME READY
-    // ========================================================
-
-    console.log(
-        "Usanex Home loaded."
-    );
+    console.log("Usanex Home loaded successfully.");
 
 });
