@@ -69,9 +69,7 @@ button {
 
     align-items: center;
 
-    padding:
-        0
-        16px;
+    padding: 0 16px;
 
     background: rgba(
         5,
@@ -147,10 +145,6 @@ button {
 }
 
 
-/* =========================================================
-   HEADER RIGHT
-========================================================= */
-
 .header-right {
     width: 40px;
 }
@@ -194,7 +188,7 @@ button {
 
 
 /* =========================================================
-   EMPTY
+   EMPTY STATE
 ========================================================= */
 
 .notification-empty {
@@ -295,7 +289,7 @@ button {
 
 
 /* =========================================================
-   CONNECTION REQUEST LIST
+   CONNECTION REQUESTS
 ========================================================= */
 
 .connection-requests {
@@ -310,7 +304,7 @@ button {
 
 
 /* =========================================================
-   CONNECTION REQUEST CARD
+   REQUEST CARD
 ========================================================= */
 
 .connection-request-card {
@@ -322,8 +316,7 @@ button {
 
     align-items: center;
 
-    padding:
-        12px;
+    padding: 12px;
 
     background: #0d1117;
 
@@ -452,9 +445,7 @@ button {
 .request-action-button {
     height: 34px;
 
-    padding:
-        0
-        12px;
+    padding: 0 12px;
 
     border-radius: 10px;
 
@@ -524,10 +515,6 @@ button {
 }
 
 
-/* =========================================================
-   GENERIC NOTIFICATION
-========================================================= */
-
 .other-notification-card {
     width: 100%;
 
@@ -567,15 +554,95 @@ button {
 
 
 /* =========================================================
+   TOP NOTIFICATION POPUP
+========================================================= */
+
+.status-popup {
+    position: fixed;
+
+    top: calc(
+        64px + env(safe-area-inset-top)
+    );
+
+    left: 50%;
+
+    width: calc(100% - 24px);
+
+    max-width: 500px;
+
+    padding:
+        14px
+        17px;
+
+    background:
+        rgba(
+            20,
+            25,
+            34,
+            0.98
+        );
+
+    color: #ffffff;
+
+    border:
+        1px solid #273142;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 12px 35px
+        rgba(
+            0,
+            0,
+            0,
+            0.45
+        );
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    line-height: 1.4;
+
+    text-align: left;
+
+    opacity: 0;
+
+    transform:
+        translateX(-50%)
+        translateY(-140%);
+
+    pointer-events: none;
+
+    transition:
+        transform 0.30s ease,
+        opacity 0.30s ease;
+
+    z-index: 700;
+}
+
+
+/* =========================================================
+   POPUP VISIBLE
+========================================================= */
+
+.status-popup.show {
+    opacity: 1;
+
+    transform:
+        translateX(-50%)
+        translateY(0);
+}
+
+
+/* =========================================================
    DESKTOP
 ========================================================= */
 
 @media (min-width: 768px) {
 
     .notifications-header {
-        padding:
-            0
-            24px;
+        padding: 0 24px;
     }
 
 
@@ -588,8 +655,7 @@ button {
     .connection-request-card {
         min-height: 92px;
 
-        padding:
-            14px;
+        padding: 14px;
     }
 
 
@@ -612,9 +678,7 @@ button {
     .request-action-button {
         height: 36px;
 
-        padding:
-            0
-            14px;
+        padding: 0 14px;
 
         font-size: 13px;
     }
@@ -659,9 +723,7 @@ button {
     .request-action-button {
         height: 32px;
 
-        padding:
-            0
-            8px;
+        padding: 0 8px;
 
         font-size: 11px;
     }
