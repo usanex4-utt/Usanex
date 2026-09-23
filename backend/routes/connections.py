@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import secrets
 import string
 
@@ -10,10 +10,12 @@ from sqlalchemy.orm import Session
 
 from ..database.database import get_db
 from ..database.models import (
+    ConnectionNotification,
     ConnectionRequest,
     ConnectionVerification,
     User,
 )
+from ..services.connection_security import encrypt_code
 from .auth import get_current_user_from_request
 
 
@@ -32,8 +34,6 @@ router = APIRouter(
 # =========================================================
 
 VERIFICATION_CODE_LENGTH = 6
-
-VERIFICATION_EXPIRY_MINUTES = 10
 
 MAX_VERIFICATION_ATTEMPTS = 5
 
@@ -76,9 +76,7 @@ def get_authenticated_user(
 
 def generate_verification_code():
     return "".join(
-        secrets.choice(
-            string.digits
-        )
+        secrets.choice(string.digits)
         for _ in range(
             VERIFICATION_CODE_LENGTH
         )
@@ -86,21 +84,14 @@ def generate_verification_code():
 
 
 # =========================================================
-# CREATE VERIFICATION CODE
+# CREATE VERIFICATION
 # =========================================================
 
-def create_verification_code(
+def create_verification(
     db: Session,
     connection_request: ConnectionRequest,
 ):
-    """
-    Creates a short-lived verification code.
-
-    Only the Argon2 hash is stored
-    in the database.
-    """
-
-    # Remove old pending codes
+    # Remove previous pending verification
     db.query(
         ConnectionVerification
     ).filter(
@@ -114,32 +105,30 @@ def create_verification_code(
     )
 
 
-    # Generate new code
+    # Generate code
     code = generate_verification_code()
 
 
-    # Hash code
+    # Hash for verification
     code_hash = verification_hasher.hash(
         code
     )
 
 
-    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    # Expiry time
+    # Code is valid for 10 minutes
     expires_at = (
         now
-        + timedelta(
-            minutes=VERIFICATION_EXPIRY_MINUTES
+        + __import__("datetime").timedelta(
+            minutes=10
         )
     )
 
 
-    # Create database record
     verification = ConnectionVerification(
         connection_request_id=
             connection_request.id,
@@ -171,16 +160,60 @@ def create_verification_code(
         verification
     )
 
+    db.flush()
+
+
+    # Encrypt code for notification storage
+    encrypted_code = encrypt_code(
+        code
+    )
+
+
+    notification = ConnectionNotification(
+        receiver_id=
+            connection_request.sender_id,
+
+        sender_id=
+            connection_request.receiver_id,
+
+        connection_request_id=
+            connection_request.id,
+
+        verification_id=
+            verification.id,
+
+        notification_type=
+            "connection_verification",
+
+        encrypted_code=
+            encrypted_code,
+
+        is_read=0,
+
+        created_at=
+            now,
+    )
+
+
+    db.add(
+        notification
+    )
+
     db.commit()
+
 
     db.refresh(
         verification
     )
 
+    db.refresh(
+        notification
+    )
+
 
     return (
         verification,
-        code
+        notification
     )
 
 
@@ -213,7 +246,6 @@ def send_connection_request(
         )
 
 
-    # Find target user
     target_user = (
         db.query(User)
         .filter(
@@ -232,7 +264,6 @@ def send_connection_request(
         )
 
 
-    # Prevent self request
     if (
         target_user.id
         == current_user.id
@@ -244,11 +275,8 @@ def send_connection_request(
         )
 
 
-    # Check existing request
     existing_request = (
-        db.query(
-            ConnectionRequest
-        )
+        db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.sender_id
             == current_user.id,
@@ -265,7 +293,6 @@ def send_connection_request(
 
     if existing_request is not None:
 
-        # Already pending
         if (
             existing_request.status
             == "pending"
@@ -277,7 +304,6 @@ def send_connection_request(
             )
 
 
-        # Already accepted
         if (
             existing_request.status
             == "accepted"
@@ -289,7 +315,6 @@ def send_connection_request(
             )
 
 
-        # Previous request rejected
         if (
             existing_request.status
             == "rejected"
@@ -302,11 +327,8 @@ def send_connection_request(
             db.commit()
 
 
-    # Check reverse request
     reverse_request = (
-        db.query(
-            ConnectionRequest
-        )
+        db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.sender_id
             == target_user.id,
@@ -329,13 +351,11 @@ def send_connection_request(
         )
 
 
-    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    # Create request
     new_request = ConnectionRequest(
         sender_id=
             current_user.id,
@@ -387,7 +407,7 @@ def send_connection_request(
 
 
 # =========================================================
-# GET INCOMING CONNECTION REQUESTS
+# GET INCOMING REQUESTS
 # =========================================================
 
 @router.get("/requests")
@@ -402,9 +422,7 @@ def get_connection_requests(
 
 
     requests = (
-        db.query(
-            ConnectionRequest
-        )
+        db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.receiver_id
             == current_user.id,
@@ -499,11 +517,8 @@ def accept_connection_request(
     )
 
 
-    # Find pending request
     connection_request = (
-        db.query(
-            ConnectionRequest
-        )
+        db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.id
             == request_id,
@@ -526,7 +541,6 @@ def accept_connection_request(
         )
 
 
-    # Find sender
     sender = (
         db.query(User)
         .filter(
@@ -545,13 +559,11 @@ def accept_connection_request(
         )
 
 
-    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    # Mark request accepted
     connection_request.status = (
         "accepted"
     )
@@ -564,9 +576,9 @@ def accept_connection_request(
     db.commit()
 
 
-    # Create verification code
-    verification, verification_code = (
-        create_verification_code(
+    # Create verification + notification
+    verification, notification = (
+        create_verification(
             db=db,
             connection_request=
                 connection_request,
@@ -578,7 +590,7 @@ def accept_connection_request(
         "success": True,
 
         "message":
-            "Connection request accepted. Verification code created.",
+            "Connection accepted. Verification notification created.",
 
         "connection": {
             "request_id":
@@ -608,7 +620,15 @@ def accept_connection_request(
                 verification.status,
 
             "expires_in_minutes":
-                VERIFICATION_EXPIRY_MINUTES,
+                10,
+        },
+
+        "notification": {
+            "notification_id":
+                notification.id,
+
+            "type":
+                notification.notification_type,
         },
     }
 
@@ -631,11 +651,8 @@ def reject_connection_request(
     )
 
 
-    # Find pending request
     connection_request = (
-        db.query(
-            ConnectionRequest
-        )
+        db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.id
             == request_id,
@@ -658,7 +675,6 @@ def reject_connection_request(
         )
 
 
-    # Find sender
     sender = (
         db.query(User)
         .filter(
@@ -677,13 +693,11 @@ def reject_connection_request(
         )
 
 
-    # Current time
     now = datetime.now(
         timezone.utc
     )
 
 
-    # Mark rejected
     connection_request.status = (
         "rejected"
     )
