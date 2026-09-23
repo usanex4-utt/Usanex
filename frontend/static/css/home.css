@@ -1,6 +1,6 @@
 /* =========================================================
    USANEX HOME
-   COMPACT MOBILE DESIGN
+   BALANCED COMPACT DESIGN
    ========================================================= */
 
 * {
@@ -13,10 +13,8 @@ html,
 body {
     width: 100%;
     min-height: 100%;
-
     background: #05070b;
     color: #e8edf5;
-
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -27,7 +25,6 @@ body {
 }
 
 body {
-    min-height: 100vh;
     overflow-x: hidden;
 }
 
@@ -48,21 +45,22 @@ button {
 
 .top-header {
     width: 100%;
-    height: 46px;
+    height: 55px;
 
     display: flex;
     align-items: center;
 
-    padding: 0 12px;
+    padding: 0 14px;
 
     background: #05070b;
 
-    border: none;
+    /* Extra line removed */
+    border-bottom: none;
 }
 
 .menu-button {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
 
     border: none;
     background: transparent;
@@ -71,29 +69,29 @@ button {
     flex-direction: column;
     justify-content: center;
 
-    gap: 3px;
+    gap: 4px;
 
     cursor: pointer;
 }
 
 .menu-button span {
-    width: 16px;
+    width: 18px;
     height: 2px;
 
     display: block;
 
     border-radius: 2px;
 
-    background: #aeb8c6;
+    background: #b6c0ce;
 }
 
 .brand {
-    margin-left: 6px;
+    margin-left: 7px;
 
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 700;
 
-    letter-spacing: -0.3px;
+    letter-spacing: -0.4px;
 }
 
 .brand-blue {
@@ -107,15 +105,15 @@ button {
 .header-plus {
     margin-left: auto;
 
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
 
     border: none;
     background: transparent;
 
     color: #dce2ea;
 
-    font-size: 22px;
+    font-size: 25px;
     font-weight: 300;
 
     display: flex;
@@ -133,18 +131,18 @@ button {
 .main-area {
     width: 100%;
 
-    min-height: calc(100vh - 46px - 56px);
+    min-height: calc(100vh - 55px - 64px);
 
-    padding-bottom: 60px;
+    padding-bottom: 70px;
 }
 
 .content-scroll {
     width: 100%;
-    max-width: 650px;
+    max-width: 680px;
 
     margin: 0 auto;
 
-    padding: 8px 11px 20px;
+    padding: 12px 14px 28px;
 }
 
 
@@ -160,17 +158,17 @@ button {
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 5px;
+    margin-bottom: 9px;
 }
 
 .section-header h2,
 .connected-section-header h2 {
     color: #e8edf5;
 
-    font-size: 13px;
+    font-size: 17px;
     font-weight: 600;
 
-    line-height: 17px;
+    line-height: 21px;
 }
 
 .see-all {
@@ -179,7 +177,7 @@ button {
 
     color: #247cff;
 
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
 
     cursor: pointer;
@@ -196,11 +194,11 @@ button {
     display: flex;
     align-items: flex-start;
 
-    gap: 9px;
+    gap: 13px;
 
     overflow-x: auto;
 
-    padding: 1px 1px 4px;
+    padding: 1px 2px 6px;
 
     scrollbar-width: none;
 }
@@ -210,20 +208,20 @@ button {
 }
 
 .moment-item {
-    width: 45px;
+    width: 58px;
 
-    flex: 0 0 45px;
+    flex: 0 0 58px;
 
     display: flex;
     flex-direction: column;
     align-items: center;
 
-    gap: 3px;
+    gap: 5px;
 }
 
 .moment-avatar {
-    width: 39px;
-    height: 39px;
+    width: 52px;
+    height: 52px;
 
     border-radius: 50%;
 
@@ -239,7 +237,7 @@ button {
 
     color: #edf2f8;
 
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 600;
 }
 
@@ -255,7 +253,7 @@ button {
 .your-moment {
     position: relative;
 
-    border-color: #293545;
+    border-color: #35445a;
 }
 
 .moment-plus {
@@ -264,8 +262,8 @@ button {
     right: -2px;
     bottom: -1px;
 
-    width: 15px;
-    height: 15px;
+    width: 19px;
+    height: 19px;
 
     border-radius: 50%;
 
@@ -276,17 +274,17 @@ button {
     background: #247cff;
     color: #fff;
 
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 600;
 }
 
 .moment-item > span {
-    width: 45px;
+    width: 58px;
 
     color: #8994a4;
 
-    font-size: 8px;
-    line-height: 10px;
+    font-size: 11px;
+    line-height: 14px;
 
     text-align: center;
 
@@ -303,30 +301,30 @@ button {
 .connected-people-section {
     width: 100%;
 
-    margin-top: 12px;
+    margin-top: 18px;
 }
 
 .connected-section-header {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }
 
 .connected-count {
-    min-width: 17px;
-    height: 17px;
+    min-width: 21px;
+    height: 21px;
 
-    padding: 0 4px;
+    padding: 0 6px;
 
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 9px;
+    border-radius: 11px;
 
     background: #111e32;
 
     color: #3987ff;
 
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 600;
 }
 
@@ -336,7 +334,7 @@ button {
     display: flex;
     flex-direction: column;
 
-    gap: 4px;
+    gap: 7px;
 }
 
 
@@ -346,17 +344,18 @@ button {
 
 .connected-person-card {
     width: 100%;
-    min-height: 48px;
+    min-height: 64px;
 
     display: flex;
     align-items: center;
 
-    padding: 6px 8px;
+    padding: 8px 11px;
 
     background: #0a0f15;
 
     border: 1px solid #17212c;
-    border-radius: 9px;
+
+    border-radius: 12px;
 
     cursor: pointer;
 
@@ -367,14 +366,15 @@ button {
 
 .connected-person-card:active {
     transform: scale(0.985);
+
     background: #0e141c;
 }
 
 .connected-person-avatar {
-    width: 33px;
-    height: 33px;
+    width: 44px;
+    height: 44px;
 
-    flex: 0 0 33px;
+    flex: 0 0 44px;
 
     border-radius: 50%;
 
@@ -390,7 +390,7 @@ button {
 
     color: #edf2f7;
 
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -408,21 +408,21 @@ button {
 
     flex: 1;
 
-    margin-left: 7px;
+    margin-left: 10px;
 
     display: flex;
     flex-direction: column;
 
-    gap: 0;
+    gap: 1px;
 }
 
 .connected-person-info strong {
     color: #e9edf3;
 
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 600;
 
-    line-height: 14px;
+    line-height: 18px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -432,9 +432,9 @@ button {
 .connected-person-info span {
     color: #8591a1;
 
-    font-size: 8px;
+    font-size: 11px;
 
-    line-height: 10px;
+    line-height: 14px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -444,9 +444,9 @@ button {
 .connected-person-info small {
     color: #626e7e;
 
-    font-size: 7px;
+    font-size: 9px;
 
-    line-height: 9px;
+    line-height: 12px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -454,10 +454,10 @@ button {
 }
 
 .connected-person-arrow {
-    width: 21px;
-    height: 21px;
+    width: 27px;
+    height: 27px;
 
-    flex: 0 0 21px;
+    flex: 0 0 27px;
 
     display: flex;
     align-items: center;
@@ -469,12 +469,12 @@ button {
 
     color: #758397;
 
-    font-size: 14px;
+    font-size: 19px;
 }
 
 
 /* =========================================================
-   BOTTOM NAVIGATION
+   BOTTOM NAV
    ========================================================= */
 
 .bottom-nav {
@@ -487,7 +487,7 @@ button {
     z-index: 1000;
 
     width: 100%;
-    height: 56px;
+    height: 64px;
 
     display: flex;
     align-items: stretch;
@@ -502,7 +502,7 @@ button {
 
 .nav-item {
     width: 20%;
-    height: 56px;
+    height: 64px;
 
     border: none;
     outline: none;
@@ -516,19 +516,19 @@ button {
     align-items: center;
     justify-content: center;
 
-    gap: 1px;
+    gap: 3px;
 
     cursor: pointer;
 }
 
 .nav-item svg {
-    width: 18px;
-    height: 18px;
+    width: 21px;
+    height: 21px;
 }
 
 .nav-item span {
-    font-size: 8px;
-    line-height: 10px;
+    font-size: 10px;
+    line-height: 12px;
 
     font-weight: 500;
 }
@@ -545,8 +545,8 @@ button {
 .notification-icon-wrapper {
     position: relative;
 
-    width: 18px;
-    height: 18px;
+    width: 21px;
+    height: 21px;
 
     display: flex;
     align-items: center;
@@ -559,8 +559,8 @@ button {
     top: -2px;
     right: -3px;
 
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
 
     border-radius: 50%;
 
@@ -573,11 +573,6 @@ button {
 /* =========================================================
    SIDE MENU
    ========================================================= */
-
-/*
-   VERY IMPORTANT:
-   hidden attribute ke saath menu kabhi display nahi hoga.
-*/
 
 .menu-overlay[hidden] {
     display: none !important;
@@ -593,43 +588,18 @@ button {
     background: rgba(0, 0, 0, 0.58);
 
     display: flex;
-    align-items: stretch;
-
-    animation: menuFadeIn 0.15s ease;
-}
-
-@keyframes menuFadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
 }
 
 .menu-panel {
-    width: 235px;
-    max-width: 78vw;
+    width: 270px;
+    max-width: 82vw;
     height: 100%;
 
     background: #090e15;
 
     border-right: 1px solid #17212c;
 
-    padding: 13px 10px;
-
-    animation: menuSlideIn 0.18s ease;
-}
-
-@keyframes menuSlideIn {
-    from {
-        transform: translateX(-15px);
-    }
-
-    to {
-        transform: translateX(0);
-    }
+    padding: 16px 13px;
 }
 
 .menu-header {
@@ -639,17 +609,17 @@ button {
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 13px;
+    margin-bottom: 17px;
 }
 
 .menu-brand {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
 }
 
 .close-menu {
-    width: 27px;
-    height: 27px;
+    width: 31px;
+    height: 31px;
 
     border: none;
     border-radius: 50%;
@@ -658,8 +628,8 @@ button {
 
     color: #d9e1eb;
 
-    font-size: 19px;
-    line-height: 27px;
+    font-size: 21px;
+    line-height: 31px;
 
     cursor: pointer;
 }
@@ -670,25 +640,25 @@ button {
     display: flex;
     flex-direction: column;
 
-    gap: 2px;
+    gap: 4px;
 }
 
 .menu-items button {
     width: 100%;
-    height: 37px;
+    height: 42px;
 
     border: none;
-    border-radius: 7px;
+    border-radius: 8px;
 
     background: transparent;
 
     color: #bec8d5;
 
-    padding: 0 9px;
+    padding: 0 11px;
 
     text-align: left;
 
-    font-size: 12px;
+    font-size: 13px;
 
     cursor: pointer;
 }
@@ -698,7 +668,7 @@ button {
 }
 
 .menu-items button:last-child {
-    margin-top: 7px;
+    margin-top: 9px;
 
     color: #ff7184;
 }
@@ -711,63 +681,67 @@ button {
 @media (max-width: 360px) {
 
     .top-header {
-        height: 44px;
-        padding: 0 10px;
+        height: 52px;
+        padding: 0 11px;
     }
 
     .brand {
-        font-size: 15px;
+        font-size: 19px;
     }
 
     .content-scroll {
-        padding-left: 9px;
-        padding-right: 9px;
+        padding-left: 11px;
+        padding-right: 11px;
     }
 
     .moment-avatar {
-        width: 37px;
-        height: 37px;
+        width: 48px;
+        height: 48px;
     }
 
     .moment-item {
-        width: 43px;
-        flex-basis: 43px;
+        width: 54px;
+        flex-basis: 54px;
+    }
+
+    .moment-item > span {
+        width: 54px;
+        font-size: 10px;
     }
 
     .connected-person-card {
-        min-height: 45px;
-        padding: 5px 7px;
+        min-height: 59px;
     }
 
     .connected-person-avatar {
-        width: 31px;
-        height: 31px;
-        flex-basis: 31px;
+        width: 41px;
+        height: 41px;
+        flex-basis: 41px;
     }
 
     .bottom-nav,
     .nav-item {
-        height: 54px;
+        height: 62px;
     }
 }
 
 
 /* =========================================================
-   TABLET
+   TABLET / DESKTOP
    ========================================================= */
 
 @media (min-width: 700px) {
 
     .content-scroll {
-        padding-left: 18px;
-        padding-right: 18px;
+        padding-left: 20px;
+        padding-right: 20px;
     }
 
     .bottom-nav {
         left: 50%;
         right: auto;
 
-        width: min(650px, 100%);
+        width: min(680px, 100%);
 
         transform: translateX(-50%);
 
