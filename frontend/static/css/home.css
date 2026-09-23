@@ -85,6 +85,7 @@ button {
 
 /* =========================================================
    BRAND
+   STRAIGHT / HORIZONTAL
 ========================================================= */
 
 .brand {
@@ -94,7 +95,20 @@ button {
 
     letter-spacing: -1.3px;
 
-    font-style: italic;
+    /*
+       IMPORTANT:
+       Logo is straight, not italic.
+    */
+    font-style: normal;
+
+    /*
+       Prevent any accidental rotation.
+    */
+    transform: none;
+
+    writing-mode: horizontal-tb;
+
+    white-space: nowrap;
 }
 
 .brand-blue {
@@ -234,6 +248,7 @@ button {
 
 /* =========================================================
    SEARCH
+   Kept for compatibility with existing styles.
 ========================================================= */
 
 .search-section {
@@ -299,7 +314,6 @@ button {
 
 /* =========================================================
    NEX MOMENT
-   STICKY
 ========================================================= */
 
 .status-section {
@@ -789,14 +803,26 @@ button {
     border-bottom: 1px solid #1a212b;
 }
 
+
+/* =========================================================
+   MENU BRAND
+   STRAIGHT / HORIZONTAL
+========================================================= */
+
 .menu-brand {
     font-size: 24px;
 
     font-weight: 800;
 
-    font-style: italic;
+    font-style: normal;
 
     letter-spacing: -1px;
+
+    transform: none;
+
+    writing-mode: horizontal-tb;
+
+    white-space: nowrap;
 }
 
 .close-menu {
