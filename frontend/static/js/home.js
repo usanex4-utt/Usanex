@@ -772,8 +772,8 @@ if (notificationNav) {
         "click",
         function () {
 
-            alert(
-                "Notifications feature will be added next."
+            window.location.href =
+                "/notifications";
             );
 
         }
@@ -862,8 +862,8 @@ if (menuNotifications) {
 
             closeMenuPanel();
 
-            alert(
-                "Notifications feature will be added next."
+            window.location.href =
+                "/notifications";
             );
 
         }
