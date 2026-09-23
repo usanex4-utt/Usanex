@@ -39,9 +39,7 @@ router = APIRouter(
 # =========================================================
 
 VERIFICATION_CODE_LENGTH = 6
-
 VERIFICATION_EXPIRY_HOURS = 24
-
 MAX_VERIFICATION_ATTEMPTS = 5
 
 verification_hasher = PasswordHasher()
@@ -89,9 +87,7 @@ def get_authenticated_user(
 def generate_verification_code():
     return "".join(
         secrets.choice(string.digits)
-        for _ in range(
-            VERIFICATION_CODE_LENGTH
-        )
+        for _ in range(VERIFICATION_CODE_LENGTH)
     )
 
 
@@ -103,23 +99,19 @@ def create_verification(
     db: Session,
     connection_request: ConnectionRequest,
 ):
-    # Remove previous pending verification
     db.query(
         ConnectionVerification
     ).filter(
         ConnectionVerification.connection_request_id
         == connection_request.id,
-
         ConnectionVerification.status
         == "pending",
     ).delete(
         synchronize_session=False
     )
 
-    # Generate code
     code = generate_verification_code()
 
-    # Hash code
     code_hash = verification_hasher.hash(
         code
     )
@@ -128,7 +120,6 @@ def create_verification(
         timezone.utc
     )
 
-    # 24-hour expiry
     expires_at = (
         now
         + timedelta(
@@ -137,28 +128,14 @@ def create_verification(
     )
 
     verification = ConnectionVerification(
-        connection_request_id=
-            connection_request.id,
-
-        requester_id=
-            connection_request.sender_id,
-
-        receiver_id=
-            connection_request.receiver_id,
-
-        code_hash=
-            code_hash,
-
-        expires_at=
-            expires_at,
-
+        connection_request_id=connection_request.id,
+        requester_id=connection_request.sender_id,
+        receiver_id=connection_request.receiver_id,
+        code_hash=code_hash,
+        expires_at=expires_at,
         attempts=0,
-
         status="pending",
-
-        created_at=
-            now,
-
+        created_at=now,
         verified_at=None,
     )
 
@@ -168,34 +145,19 @@ def create_verification(
 
     db.flush()
 
-    # Encrypt code for notification
     encrypted_code = encrypt_code(
         code
     )
 
     notification = ConnectionNotification(
-        receiver_id=
-            connection_request.sender_id,
-
-        sender_id=
-            connection_request.receiver_id,
-
-        connection_request_id=
-            connection_request.id,
-
-        verification_id=
-            verification.id,
-
-        notification_type=
-            "connection_verification",
-
-        encrypted_code=
-            encrypted_code,
-
+        receiver_id=connection_request.sender_id,
+        sender_id=connection_request.receiver_id,
+        connection_request_id=connection_request.id,
+        verification_id=verification.id,
+        notification_type="connection_verification",
+        encrypted_code=encrypted_code,
         is_read=0,
-
-        created_at=
-            now,
+        created_at=now,
     )
 
     db.add(
@@ -212,10 +174,7 @@ def create_verification(
         notification
     )
 
-    return (
-        verification,
-        notification,
-    )
+    return verification, notification
 
 
 # =========================================================
@@ -233,9 +192,7 @@ def send_connection_request(
         db=db,
     )
 
-    target_user_id = (
-        payload.user_id.strip()
-    )
+    target_user_id = payload.user_id.strip()
 
     if not target_user_id:
         raise HTTPException(
@@ -246,8 +203,7 @@ def send_connection_request(
     target_user = (
         db.query(User)
         .filter(
-            User.user_id ==
-            target_user_id
+            User.user_id == target_user_id
         )
         .first()
     )
@@ -264,7 +220,6 @@ def send_connection_request(
             detail="You cannot send a request to yourself",
         )
 
-    # Check whether already connected
     existing_connection = (
         db.query(UserConnection)
         .filter(
@@ -306,7 +261,6 @@ def send_connection_request(
         .filter(
             ConnectionRequest.sender_id
             == current_user.id,
-
             ConnectionRequest.receiver_id
             == target_user.id,
         )
@@ -334,19 +288,15 @@ def send_connection_request(
             db.delete(
                 existing_request
             )
-
             db.commit()
 
-    # Check reverse request
     reverse_request = (
         db.query(ConnectionRequest)
         .filter(
             ConnectionRequest.sender_id
             == target_user.id,
-
             ConnectionRequest.receiver_id
             == current_user.id,
-
             ConnectionRequest.status
             == "pending",
         )
@@ -364,19 +314,11 @@ def send_connection_request(
     )
 
     new_request = ConnectionRequest(
-        sender_id=
-            current_user.id,
-
-        receiver_id=
-            target_user.id,
-
+        sender_id=current_user.id,
+        receiver_id=target_user.id,
         status="pending",
-
-        created_at=
-            now,
-
-        updated_at=
-            now,
+        created_at=now,
+        updated_at=now,
     )
 
     db.add(
@@ -391,22 +333,12 @@ def send_connection_request(
 
     return {
         "success": True,
-
-        "message":
-            "Connection request sent",
-
+        "message": "Connection request sent",
         "request": {
-            "id":
-                new_request.id,
-
-            "status":
-                new_request.status,
-
-            "receiver_user_id":
-                target_user.user_id,
-
-            "receiver_username":
-                target_user.username,
+            "id": new_request.id,
+            "status": new_request.status,
+            "receiver_user_id": target_user.user_id,
+            "receiver_username": target_user.username,
         },
     }
 
@@ -430,7 +362,6 @@ def get_connection_requests(
         .filter(
             ConnectionRequest.receiver_id
             == current_user.id,
-
             ConnectionRequest.status
             == "pending",
         )
@@ -458,43 +389,26 @@ def get_connection_requests(
 
         result.append(
             {
-                "id":
-                    connection_request.id,
-
-                "status":
-                    connection_request.status,
-
-                "created_at":
-                    (
-                        connection_request.created_at.isoformat()
-                        if connection_request.created_at
-                        else None
-                    ),
-
+                "id": connection_request.id,
+                "status": connection_request.status,
+                "created_at": (
+                    connection_request.created_at.isoformat()
+                    if connection_request.created_at
+                    else None
+                ),
                 "sender": {
-                    "user_id":
-                        sender.user_id,
-
-                    "username":
-                        sender.username,
-
-                    "name":
-                        sender.name,
-
-                    "profile_photo":
-                        sender.profile_photo,
+                    "user_id": sender.user_id,
+                    "username": sender.username,
+                    "name": sender.name,
+                    "profile_photo": sender.profile_photo,
                 },
             }
         )
 
     return {
         "success": True,
-
-        "count":
-            len(result),
-
-        "requests":
-            result,
+        "count": len(result),
+        "requests": result,
     }
 
 
@@ -518,12 +432,9 @@ def accept_connection_request(
     connection_request = (
         db.query(ConnectionRequest)
         .filter(
-            ConnectionRequest.id
-            == request_id,
-
+            ConnectionRequest.id == request_id,
             ConnectionRequest.receiver_id
             == current_user.id,
-
             ConnectionRequest.status
             == "pending",
         )
@@ -556,63 +467,39 @@ def accept_connection_request(
     )
 
     connection_request.status = "accepted"
-
     connection_request.updated_at = now
 
     db.commit()
 
-    # Create verification code
     verification, notification = (
         create_verification(
             db=db,
-            connection_request=
-                connection_request,
+            connection_request=connection_request,
         )
     )
 
     return {
         "success": True,
-
-        "message":
-            "Connection accepted. Verification code created.",
-
+        "message": (
+            "Connection accepted. "
+            "Verification code created."
+        ),
         "connection": {
-            "request_id":
-                connection_request.id,
-
-            "status":
-                connection_request.status,
-
-            "user_id":
-                sender.user_id,
-
-            "username":
-                sender.username,
-
-            "name":
-                sender.name,
-
-            "profile_photo":
-                sender.profile_photo,
+            "request_id": connection_request.id,
+            "status": connection_request.status,
+            "user_id": sender.user_id,
+            "username": sender.username,
+            "name": sender.name,
+            "profile_photo": sender.profile_photo,
         },
-
         "verification": {
-            "verification_id":
-                verification.id,
-
-            "status":
-                verification.status,
-
-            "expires_in_hours":
-                VERIFICATION_EXPIRY_HOURS,
+            "verification_id": verification.id,
+            "status": verification.status,
+            "expires_in_hours": VERIFICATION_EXPIRY_HOURS,
         },
-
         "notification": {
-            "notification_id":
-                notification.id,
-
-            "type":
-                notification.notification_type,
+            "notification_id": notification.id,
+            "type": notification.notification_type,
         },
     }
 
@@ -637,12 +524,9 @@ def reject_connection_request(
     connection_request = (
         db.query(ConnectionRequest)
         .filter(
-            ConnectionRequest.id
-            == request_id,
-
+            ConnectionRequest.id == request_id,
             ConnectionRequest.receiver_id
             == current_user.id,
-
             ConnectionRequest.status
             == "pending",
         )
@@ -675,32 +559,19 @@ def reject_connection_request(
     )
 
     connection_request.status = "rejected"
-
     connection_request.updated_at = now
 
     db.commit()
 
     return {
         "success": True,
-
-        "message":
-            "Connection request rejected",
-
+        "message": "Connection request rejected",
         "request": {
-            "request_id":
-                connection_request.id,
-
-            "status":
-                connection_request.status,
-
-            "user_id":
-                sender.user_id,
-
-            "username":
-                sender.username,
-
-            "name":
-                sender.name,
+            "request_id": connection_request.id,
+            "status": connection_request.status,
+            "user_id": sender.user_id,
+            "username": sender.username,
+            "name": sender.name,
         },
     }
 
@@ -724,7 +595,6 @@ def get_connection_notifications(
         .filter(
             ConnectionNotification.receiver_id
             == current_user.id,
-
             ConnectionNotification.notification_type
             == "connection_verification",
         )
@@ -753,7 +623,6 @@ def get_connection_notifications(
         verification = None
 
         if notification.verification_id:
-
             verification = (
                 db.query(
                     ConnectionVerification
@@ -769,21 +638,16 @@ def get_connection_notifications(
 
         if verification is not None:
 
-            expires_at = (
-                verification.expires_at
-            )
+            expires_at = verification.expires_at
 
             if expires_at.tzinfo is None:
-                expires_at = (
-                    expires_at.replace(
-                        tzinfo=timezone.utc
-                    )
+                expires_at = expires_at.replace(
+                    tzinfo=timezone.utc
                 )
 
-            if (
-                datetime.now(timezone.utc)
-                >= expires_at
-            ):
+            if datetime.now(
+                timezone.utc
+            ) >= expires_at:
                 is_expired = True
 
         verification_code = None
@@ -794,91 +658,56 @@ def get_connection_notifications(
             and verification is not None
             and verification.status == "pending"
         ):
-
             try:
-
-                verification_code = (
-                    decrypt_code(
-                        notification.encrypted_code
-                    )
+                verification_code = decrypt_code(
+                    notification.encrypted_code
                 )
-
             except ValueError:
-
                 verification_code = None
 
         result.append(
             {
-                "notification_id":
-                    notification.id,
-
-                "type":
-                    notification.notification_type,
-
-                "is_read":
-                    bool(notification.is_read),
-
-                "created_at":
-                    (
-                        notification.created_at.isoformat()
-                        if notification.created_at
+                "notification_id": notification.id,
+                "type": notification.notification_type,
+                "is_read": bool(notification.is_read),
+                "created_at": (
+                    notification.created_at.isoformat()
+                    if notification.created_at
+                    else None
+                ),
+                "verification": {
+                    "verification_id": (
+                        verification.id
+                        if verification
                         else None
                     ),
-
-                "verification": {
-                    "verification_id":
-                        (
-                            verification.id
-                            if verification
-                            else None
-                        ),
-
-                    "status":
-                        (
-                            verification.status
-                            if verification
-                            else "unknown"
-                        ),
-
-                    "is_expired":
-                        is_expired,
-
-                    "expires_at":
-                        (
-                            verification.expires_at.isoformat()
-                            if verification
-                            and verification.expires_at
-                            else None
-                        ),
-
-                    "code":
-                        verification_code,
+                    "status": (
+                        verification.status
+                        if verification
+                        else "unknown"
+                    ),
+                    "is_expired": is_expired,
+                    "expires_at": (
+                        verification.expires_at.isoformat()
+                        if verification
+                        and verification.expires_at
+                        else None
+                    ),
+                    "code": verification_code,
                 },
-
                 "user": {
-                    "user_id":
-                        sender.user_id,
-
-                    "username":
-                        sender.username,
-
-                    "name":
-                        sender.name,
-
-                    "profile_photo":
-                        sender.profile_photo,
+                    "user_id": sender.user_id,
+                    "username": sender.username,
+                    "name": sender.name,
+                    "profile_photo": sender.profile_photo,
                 },
             }
         )
 
     return {
         "success": True,
-
-        "count":
-            len(result),
-
-        "notifications":
-            result,
+        "count": len(result),
+        "notifications": result,
     }
 
 
@@ -904,7 +733,6 @@ def mark_notification_read(
         .filter(
             ConnectionNotification.id
             == notification_id,
-
             ConnectionNotification.receiver_id
             == current_user.id,
         )
@@ -923,9 +751,7 @@ def mark_notification_read(
 
     return {
         "success": True,
-
-        "message":
-            "Notification marked as read",
+        "message": "Notification marked as read",
     }
 
 
@@ -936,4 +762,263 @@ def mark_notification_read(
 @router.post("/verify")
 def verify_connection_code(
     payload: ConnectionVerifyRequest,
-    request: Request
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request=request,
+        db=db,
+    )
+
+    code = payload.code.strip()
+
+    if not code:
+        raise HTTPException(
+            status_code=400,
+            detail="Verification code is required",
+        )
+
+    if len(code) != VERIFICATION_CODE_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid verification code",
+        )
+
+    verification = (
+        db.query(ConnectionVerification)
+        .filter(
+            ConnectionVerification.id
+            == payload.verification_id,
+            ConnectionVerification.requester_id
+            == current_user.id,
+        )
+        .first()
+    )
+
+    if verification is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Verification not found",
+        )
+
+    if verification.status == "verified":
+        raise HTTPException(
+            status_code=409,
+            detail="This verification has already been completed",
+        )
+
+    if verification.status != "pending":
+        raise HTTPException(
+            status_code=409,
+            detail="Verification is no longer active",
+        )
+
+    expires_at = verification.expires_at
+
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(
+            tzinfo=timezone.utc
+        )
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    if now >= expires_at:
+
+        verification.status = "expired"
+
+        db.commit()
+
+        raise HTTPException(
+            status_code=410,
+            detail="Verification code has expired",
+        )
+
+    if verification.attempts >= MAX_VERIFICATION_ATTEMPTS:
+
+        verification.status = "blocked"
+
+        db.commit()
+
+        raise HTTPException(
+            status_code=429,
+            detail="Maximum verification attempts exceeded",
+        )
+
+    verification.attempts += 1
+
+    try:
+
+        valid = verification_hasher.verify(
+            verification.code_hash,
+            code,
+        )
+
+    except VerifyMismatchError:
+
+        valid = False
+
+    if not valid:
+
+        if (
+            verification.attempts
+            >= MAX_VERIFICATION_ATTEMPTS
+        ):
+            verification.status = "blocked"
+
+        db.commit()
+
+        remaining = max(
+            0,
+            MAX_VERIFICATION_ATTEMPTS
+            - verification.attempts,
+        )
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Invalid verification code. "
+                f"Attempts remaining: {remaining}"
+            ),
+        )
+
+    connection_request = (
+        db.query(ConnectionRequest)
+        .filter(
+            ConnectionRequest.id
+            == verification.connection_request_id,
+            ConnectionRequest.sender_id
+            == verification.requester_id,
+            ConnectionRequest.receiver_id
+            == verification.receiver_id,
+            ConnectionRequest.status
+            == "accepted",
+        )
+        .first()
+    )
+
+    if connection_request is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Connection request not found",
+        )
+
+    existing_connection = (
+        db.query(UserConnection)
+        .filter(
+            (
+                (
+                    UserConnection.user_one_id
+                    == verification.requester_id
+                )
+                &
+                (
+                    UserConnection.user_two_id
+                    == verification.receiver_id
+                )
+            )
+            |
+            (
+                (
+                    UserConnection.user_one_id
+                    == verification.receiver_id
+                )
+                &
+                (
+                    UserConnection.user_two_id
+                    == verification.requester_id
+                )
+            )
+        )
+        .first()
+    )
+
+    if existing_connection is not None:
+
+        verification.status = "verified"
+        verification.verified_at = now
+
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "You are already connected",
+            "connection": {
+                "id": existing_connection.id,
+                "status": existing_connection.status,
+            },
+        }
+
+    new_connection = UserConnection(
+        user_one_id=verification.requester_id,
+        user_two_id=verification.receiver_id,
+        status="connected",
+        created_at=now,
+        updated_at=now,
+    )
+
+    db.add(
+        new_connection
+    )
+
+    verification.status = "verified"
+    verification.verified_at = now
+
+    notification = (
+        db.query(ConnectionNotification)
+        .filter(
+            ConnectionNotification.verification_id
+            == verification.id,
+            ConnectionNotification.receiver_id
+            == current_user.id,
+        )
+        .first()
+    )
+
+    if notification is not None:
+        notification.is_read = 1
+
+    db.commit()
+
+    db.refresh(
+        new_connection
+    )
+
+    connected_user = (
+        db.query(User)
+        .filter(
+            User.id
+            == verification.receiver_id
+        )
+        .first()
+    )
+
+    return {
+        "success": True,
+        "message": "Connection verified successfully",
+        "connection": {
+            "id": new_connection.id,
+            "status": new_connection.status,
+            "user_id": (
+                connected_user.user_id
+                if connected_user
+                else None
+            ),
+            "username": (
+                connected_user.username
+                if connected_user
+                else None
+            ),
+            "name": (
+                connected_user.name
+                if connected_user
+                else None
+            ),
+            "profile_photo": (
+                connected_user.profile_photo
+                if connected_user
+                else None
+            ),
+        },
+    }
