@@ -2,6 +2,7 @@
 
 /* =========================================================
    USANEX SEARCH
+
    Search:
    - Name
    - Username
@@ -11,7 +12,8 @@
    Connection status:
    - You
    - Follow
-   - Requested
+   - Requested   = request sent by me
+   - Request     = request received from other user
    - Connected
 ========================================================= */
 
@@ -38,7 +40,6 @@ const searchStatus =
 ========================================================= */
 
 let searchTimer = null;
-
 let currentController = null;
 
 
@@ -82,34 +83,24 @@ if (searchInput) {
             );
 
             if (clearSearch) {
-
                 clearSearch.hidden =
                     query.length === 0;
-
             }
 
             if (!query) {
-
                 resetSearch();
-
                 return;
             }
 
             searchTimer =
                 setTimeout(
                     function () {
-
-                        searchPeople(
-                            query
-                        );
-
+                        searchPeople(query);
                     },
                     350
                 );
-
         }
     );
-
 }
 
 
@@ -124,25 +115,18 @@ if (clearSearch) {
         function () {
 
             if (searchInput) {
-
                 searchInput.value = "";
-
             }
 
-            clearSearch.hidden =
-                true;
+            clearSearch.hidden = true;
 
             resetSearch();
 
             if (searchInput) {
-
                 searchInput.focus();
-
             }
-
         }
     );
-
 }
 
 
@@ -155,24 +139,18 @@ function resetSearch() {
     if (currentController) {
 
         currentController.abort();
-
         currentController = null;
 
     }
 
     if (searchResults) {
-
         searchResults.innerHTML = "";
-
     }
 
     if (searchStatus) {
-
         searchStatus.textContent =
             "Search people on Usanex";
-
     }
-
 }
 
 
@@ -180,27 +158,19 @@ function resetSearch() {
    SEARCH PEOPLE
 ========================================================= */
 
-async function searchPeople(
-    query
-) {
+async function searchPeople(query) {
 
     if (currentController) {
-
         currentController.abort();
-
     }
 
     currentController =
         new AbortController();
 
-
     if (searchStatus) {
-
         searchStatus.textContent =
             "Searching...";
-
     }
-
 
     if (searchResults) {
 
@@ -211,7 +181,6 @@ async function searchPeople(
         `;
 
     }
-
 
     try {
 
@@ -237,13 +206,7 @@ async function searchPeople(
             );
 
 
-        /* =================================================
-           LOGIN REQUIRED
-        ================================================= */
-
-        if (
-            response.status === 401
-        ) {
+        if (response.status === 401) {
 
             window.location.replace(
                 "/login"
@@ -252,10 +215,6 @@ async function searchPeople(
             return;
         }
 
-
-        /* =================================================
-           API ERROR
-        ================================================= */
 
         if (!response.ok) {
 
@@ -293,25 +252,18 @@ async function searchPeople(
             error.name ===
             "AbortError"
         ) {
-
             return;
-
         }
-
 
         console.error(
             "Usanex search error:",
             error
         );
 
-
         if (searchStatus) {
-
             searchStatus.textContent =
                 "Something went wrong";
-
         }
-
 
         if (searchResults) {
 
@@ -322,9 +274,7 @@ async function searchPeople(
             `;
 
         }
-
     }
-
 }
 
 
@@ -332,19 +282,14 @@ async function searchPeople(
    RENDER RESULTS
 ========================================================= */
 
-function renderResults(
-    users
-) {
+function renderResults(users) {
 
     if (!users.length) {
 
         if (searchStatus) {
-
             searchStatus.textContent =
                 "No people found";
-
         }
-
 
         if (searchResults) {
 
@@ -369,9 +314,7 @@ function renderResults(
 
 
     if (searchResults) {
-
         searchResults.innerHTML = "";
-
     }
 
 
@@ -379,21 +322,14 @@ function renderResults(
         function (user) {
 
             const card =
-                createUserCard(
-                    user
-                );
+                createUserCard(user);
 
             if (searchResults) {
-
-                searchResults.appendChild(
-                    card
-                );
-
+                searchResults.appendChild(card);
             }
 
         }
     );
-
 }
 
 
@@ -401,9 +337,7 @@ function renderResults(
    CREATE USER CARD
 ========================================================= */
 
-function createUserCard(
-    user
-) {
+function createUserCard(user) {
 
     const card =
         document.createElement(
@@ -413,10 +347,8 @@ function createUserCard(
     card.className =
         "search-user-card";
 
-
     card.dataset.userId =
         user.user_id || "";
-
 
     card.dataset.username =
         user.username || "";
@@ -516,10 +448,6 @@ function createUserCard(
         user.username || "";
 
 
-    /*
-     * Show user ID also.
-     */
-
     const userId =
         document.createElement(
             "div"
@@ -532,17 +460,9 @@ function createUserCard(
         user.user_id || "";
 
 
-    info.appendChild(
-        name
-    );
-
-    info.appendChild(
-        username
-    );
-
-    info.appendChild(
-        userId
-    );
+    info.appendChild(name);
+    info.appendChild(username);
+    info.appendChild(userId);
 
 
     /* =====================================================
@@ -558,19 +478,13 @@ function createUserCard(
         "search-user-action-area";
 
 
-    /* =====================================================
-       CONNECTION STATUS
-    ===================================================== */
-
     const connectionStatus =
-        getConnectionStatus(
-            user
-        );
+        getConnectionStatus(user);
 
 
-    /*
-     * GO CARD / VERIFICATION
-     */
+    /* =====================================================
+       GO CARD / VERIFICATION
+    ===================================================== */
 
     const isVerificationCard =
         verificationUserId &&
@@ -607,21 +521,11 @@ function createUserCard(
        ASSEMBLE CARD
     ===================================================== */
 
-    card.appendChild(
-        avatar
-    );
-
-    card.appendChild(
-        info
-    );
-
-    card.appendChild(
-        actionArea
-    );
-
+    card.appendChild(avatar);
+    card.appendChild(info);
+    card.appendChild(actionArea);
 
     return card;
-
 }
 
 
@@ -629,23 +533,7 @@ function createUserCard(
    GET CONNECTION STATUS
 ========================================================= */
 
-function getConnectionStatus(
-    user
-) {
-
-    /*
-     * Backend should return:
-     *
-     * connection_status:
-     * self
-     * none
-     * pending_sent
-     * pending_received
-     * connected
-     *
-     * We also support common alternative names
-     * so the frontend is tolerant.
-     */
+function getConnectionStatus(user) {
 
     const status =
         String(
@@ -700,7 +588,6 @@ function getConnectionStatus(
 
 
     return "none";
-
 }
 
 
@@ -719,8 +606,7 @@ function createStatusAction(
             "button"
         );
 
-    button.type =
-        "button";
+    button.type = "button";
 
     button.className =
         "search-follow-button";
@@ -730,9 +616,7 @@ function createStatusAction(
        SELF
     ===================================================== */
 
-    if (
-        status === "self"
-    ) {
+    if (status === "self") {
 
         button.textContent =
             "You";
@@ -741,15 +625,13 @@ function createStatusAction(
             "you"
         );
 
-        button.disabled =
-            true;
+        button.disabled = true;
 
         actionArea.appendChild(
             button
         );
 
         return;
-
     }
 
 
@@ -757,9 +639,7 @@ function createStatusAction(
        CONNECTED
     ===================================================== */
 
-    if (
-        status === "connected"
-    ) {
+    if (status === "connected") {
 
         button.textContent =
             "Connected";
@@ -768,8 +648,7 @@ function createStatusAction(
             "connected"
         );
 
-        button.disabled =
-            false;
+        button.disabled = false;
 
 
         button.addEventListener(
@@ -791,17 +670,14 @@ function createStatusAction(
         );
 
         return;
-
     }
 
 
     /* =====================================================
-       REQUEST ALREADY SENT
+       REQUEST SENT BY ME
     ===================================================== */
 
-    if (
-        status === "pending_sent"
-    ) {
+    if (status === "pending_sent") {
 
         button.textContent =
             "Requested";
@@ -810,42 +686,59 @@ function createStatusAction(
             "requested"
         );
 
-        button.disabled =
-            true;
+        button.disabled = true;
 
         actionArea.appendChild(
             button
         );
 
         return;
-
     }
 
 
     /* =====================================================
-       REQUEST RECEIVED
+       REQUEST RECEIVED FROM OTHER USER
     ===================================================== */
 
-    if (
-        status === "pending_received"
-    ) {
+    if (status === "pending_received") {
 
         button.textContent =
-            "Requested";
+            "Request";
 
         button.classList.add(
-            "requested"
+            "request"
         );
 
-        button.disabled =
-            true;
+        button.disabled = false;
+
+
+        /*
+         * Request received.
+         *
+         * Abhi click par notification page
+         * open ki ja rahi hai.
+         *
+         * Wahan Accept / Reject available hai.
+         */
+
+        button.addEventListener(
+            "click",
+            function (event) {
+
+                event.stopPropagation();
+
+                window.location.href =
+                    "/notifications";
+
+            }
+        );
+
 
         actionArea.appendChild(
             button
         );
 
         return;
-
     }
 
 
@@ -855,7 +748,6 @@ function createStatusAction(
 
     button.textContent =
         "Follow";
-
 
     button.dataset.userId =
         user.user_id || "";
@@ -879,7 +771,6 @@ function createStatusAction(
     actionArea.appendChild(
         button
     );
-
 }
 
 
@@ -928,7 +819,6 @@ function createVerifyAction(
     actionArea.appendChild(
         verifyButton
     );
-
 }
 
 
@@ -946,15 +836,12 @@ function openVerificationBox(
             ".usanex-verify-box"
         )
     ) {
-
         return;
     }
 
 
     actionArea.innerHTML = `
-        <div
-            class="usanex-verify-box"
-        >
+        <div class="usanex-verify-box">
 
             <input
                 type="text"
@@ -1024,14 +911,8 @@ function openVerificationBox(
 
                 input.value =
                     input.value
-                        .replace(
-                            /\D/g,
-                            ""
-                        )
-                        .slice(
-                            0,
-                            6
-                        );
+                        .replace(/\D/g, "")
+                        .slice(0, 6);
 
             }
         );
@@ -1042,8 +923,7 @@ function openVerificationBox(
             function (event) {
 
                 if (
-                    event.key ===
-                    "Enter"
+                    event.key === "Enter"
                 ) {
 
                     event.preventDefault();
@@ -1082,7 +962,6 @@ function openVerificationBox(
         );
 
     }
-
 }
 
 
@@ -1104,9 +983,7 @@ async function verifyConnectionCode(
         ).trim();
 
 
-    if (
-        !/^\d{6}$/.test(code)
-    ) {
+    if (!/^\d{6}$/.test(code)) {
 
         if (message) {
 
@@ -1119,7 +996,6 @@ async function verifyConnectionCode(
         }
 
         return;
-
     }
 
 
@@ -1136,14 +1012,12 @@ async function verifyConnectionCode(
         }
 
         return;
-
     }
 
 
     if (submitButton) {
 
-        submitButton.disabled =
-            true;
+        submitButton.disabled = true;
 
         submitButton.textContent =
             "Verifying...";
@@ -1198,16 +1072,13 @@ async function verifyConnectionCode(
         }
 
 
-        if (
-            response.status === 401
-        ) {
+        if (response.status === 401) {
 
             window.location.replace(
                 "/login"
             );
 
             return;
-
         }
 
 
@@ -1239,7 +1110,6 @@ async function verifyConnectionCode(
             );
 
             return;
-
         }
 
 
@@ -1271,16 +1141,13 @@ async function verifyConnectionCode(
 
         if (submitButton) {
 
-            submitButton.disabled =
-                false;
+            submitButton.disabled = false;
 
             submitButton.textContent =
                 "Verify";
 
         }
-
     }
-
 }
 
 
@@ -1307,21 +1174,15 @@ async function sendConnectionRequest(
         );
 
         return;
-
     }
 
 
-    if (
-        button.disabled
-    ) {
-
+    if (button.disabled) {
         return;
-
     }
 
 
-    button.disabled =
-        true;
+    button.disabled = true;
 
     button.textContent =
         "Sending...";
@@ -1369,16 +1230,13 @@ async function sendConnectionRequest(
         }
 
 
-        if (
-            response.status === 401
-        ) {
+        if (response.status === 401) {
 
             window.location.replace(
                 "/login"
             );
 
             return;
-
         }
 
 
@@ -1394,23 +1252,13 @@ async function sendConnectionRequest(
                 "requested"
             );
 
-            button.disabled =
-                true;
+            button.disabled = true;
 
             return;
-
         }
 
 
-        /*
-         * Backend may return 409 when
-         * request already exists or user
-         * is already connected.
-         */
-
-        if (
-            response.status === 409
-        ) {
+        if (response.status === 409) {
 
             const detail =
                 String(
@@ -1432,11 +1280,9 @@ async function sendConnectionRequest(
                     "connected"
                 );
 
-                button.disabled =
-                    false;
+                button.disabled = false;
 
                 return;
-
             }
 
 
@@ -1456,13 +1302,10 @@ async function sendConnectionRequest(
                     "requested"
                 );
 
-                button.disabled =
-                    true;
+                button.disabled = true;
 
                 return;
-
             }
-
         }
 
 
@@ -1480,8 +1323,7 @@ async function sendConnectionRequest(
         );
 
 
-        button.disabled =
-            false;
+        button.disabled = false;
 
         button.textContent =
             "Follow";
@@ -1493,7 +1335,6 @@ async function sendConnectionRequest(
         );
 
     }
-
 }
 
 
@@ -1501,9 +1342,7 @@ async function sendConnectionRequest(
    OPEN USER PROFILE
 ========================================================= */
 
-function openUserProfile(
-    user
-) {
+function openUserProfile(user) {
 
     const userId =
         (
@@ -1513,22 +1352,14 @@ function openUserProfile(
 
 
     if (!userId) {
-
         return;
-
     }
 
-
-    /*
-     * Profile route will be connected
-     * when profile page is completed.
-     */
 
     window.location.href =
         `/profile?user_id=${encodeURIComponent(
             userId
         )}`;
-
 }
 
 
@@ -1536,14 +1367,10 @@ function openUserProfile(
    GET INITIAL
 ========================================================= */
 
-function getInitial(
-    name
-) {
+function getInitial(name) {
 
     if (!name) {
-
         return "U";
-
     }
 
 
@@ -1551,7 +1378,6 @@ function getInitial(
         .trim()
         .charAt(0)
         .toUpperCase();
-
 }
 
 
@@ -1565,9 +1391,7 @@ function openVerificationUser() {
         !verificationUserId ||
         !searchInput
     ) {
-
         return false;
-
     }
 
 
@@ -1576,10 +1400,7 @@ function openVerificationUser() {
 
 
     if (clearSearch) {
-
-        clearSearch.hidden =
-            false;
-
+        clearSearch.hidden = false;
     }
 
 
@@ -1589,7 +1410,6 @@ function openVerificationUser() {
 
 
     return true;
-
 }
 
 
@@ -1613,12 +1433,8 @@ document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        if (
-            verificationUserId
-        ) {
-
+        if (verificationUserId) {
             openVerificationUser();
-
         }
 
     }
@@ -1626,5 +1442,5 @@ document.addEventListener(
 
 
 console.log(
-    "Usanex Search v7 loaded."
+    "Usanex Search v8 loaded."
 );
