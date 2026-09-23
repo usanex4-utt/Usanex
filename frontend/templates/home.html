@@ -13,7 +13,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/home.css?v=8"
+        href="/static/css/home.css?v=9"
     >
 </head>
 
@@ -21,9 +21,9 @@
 
 <div class="app-shell">
 
-    <!-- =========================
+    <!-- =====================================================
          HEADER
-    ========================== -->
+    ====================================================== -->
 
     <header class="top-header">
 
@@ -38,11 +38,9 @@
             <span></span>
         </button>
 
-
         <div class="brand">
             <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
         </div>
-
 
         <button
             type="button"
@@ -56,26 +54,23 @@
     </header>
 
 
-    <!-- =========================
+    <!-- =====================================================
          MAIN CONTENT
-    ========================== -->
+    ====================================================== -->
 
     <main class="main-area">
 
         <div class="content-scroll">
 
-
-            <!-- =========================
+            <!-- =================================================
                  NEX MOMENT
-            ========================== -->
+            ================================================== -->
 
             <section class="status-section">
 
                 <div class="section-header">
 
-                    <h2>
-                        Nex Moment
-                    </h2>
+                    <h2>Nex Moment</h2>
 
                     <button
                         type="button"
@@ -90,7 +85,6 @@
 
                 <div class="moments">
 
-
                     <!-- YOU -->
 
                     <div class="moment-item">
@@ -103,9 +97,7 @@
 
                         </div>
 
-                        <span>
-                            You
-                        </span>
+                        <span>You</span>
 
                     </div>
 
@@ -118,9 +110,7 @@
                             U
                         </div>
 
-                        <span>
-                            Uttam
-                        </span>
+                        <span>Uttam</span>
 
                     </div>
 
@@ -133,9 +123,7 @@
                             A
                         </div>
 
-                        <span>
-                            Aman
-                        </span>
+                        <span>Aman</span>
 
                     </div>
 
@@ -148,9 +136,7 @@
                             R
                         </div>
 
-                        <span>
-                            Rahul
-                        </span>
+                        <span>Rahul</span>
 
                     </div>
 
@@ -163,9 +149,7 @@
                             P
                         </div>
 
-                        <span>
-                            Priya
-                        </span>
+                        <span>Priya</span>
 
                     </div>
 
@@ -178,9 +162,7 @@
                             S
                         </div>
 
-                        <span>
-                            Shiv
-                        </span>
+                        <span>Shiv</span>
 
                     </div>
 
@@ -193,13 +175,45 @@
                             K
                         </div>
 
-                        <span>
-                            Karan
-                        </span>
+                        <span>Karan</span>
 
                     </div>
 
                 </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 CONNECTED PEOPLE
+            ================================================== -->
+
+            <section
+                class="connected-people-section"
+                id="connectedPeopleSection"
+                hidden
+            >
+
+                <div class="connected-section-header">
+
+                    <h2>
+                        Connected People
+                    </h2>
+
+                    <span
+                        class="connected-count"
+                        id="connectedPeopleCount"
+                    >
+                        0
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="connected-people-list"
+                    id="connectedPeopleList"
+                ></div>
 
             </section>
 
@@ -208,12 +222,11 @@
     </main>
 
 
-    <!-- =========================
+    <!-- =====================================================
          BOTTOM NAVIGATION
-    ========================== -->
+    ====================================================== -->
 
     <nav class="bottom-nav">
-
 
         <!-- HOME -->
 
@@ -240,9 +253,7 @@
 
             </svg>
 
-            <span>
-                Home
-            </span>
+            <span>Home</span>
 
         </button>
 
@@ -270,13 +281,9 @@
                     rx="3"
                 ></rect>
 
-                <path
-                    d="M8 4l3 5"
-                ></path>
+                <path d="M8 4l3 5"></path>
 
-                <path
-                    d="M14 4l3 5"
-                ></path>
+                <path d="M14 4l3 5"></path>
 
                 <path
                     d="M10 12l5 3-5 3v-6z"
@@ -284,9 +291,7 @@
 
             </svg>
 
-            <span>
-                Reel
-            </span>
+            <span>Reel</span>
 
         </button>
 
@@ -318,9 +323,7 @@
 
             </svg>
 
-            <span>
-                Search
-            </span>
+            <span>Search</span>
 
         </button>
 
@@ -360,9 +363,7 @@
 
             </span>
 
-            <span>
-                Notification
-            </span>
+            <span>Notification</span>
 
         </button>
 
@@ -394,18 +395,16 @@
 
             </svg>
 
-            <span>
-                Profile
-            </span>
+            <span>Profile</span>
 
         </button>
 
     </nav>
 
 
-    <!-- =========================
+    <!-- =====================================================
          SIDE MENU
-    ========================== -->
+    ====================================================== -->
 
     <div
         class="menu-overlay"
@@ -415,15 +414,11 @@
 
         <div class="menu-panel">
 
-
-            <!-- MENU HEADER -->
-
             <div class="menu-header">
 
                 <div class="menu-brand">
                     <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
                 </div>
-
 
                 <button
                     type="button"
@@ -437,8 +432,6 @@
             </div>
 
 
-            <!-- MENU ITEMS -->
-
             <div class="menu-items">
 
                 <button
@@ -448,7 +441,6 @@
                     Profile
                 </button>
 
-
                 <button
                     type="button"
                     id="menuNotifications"
@@ -456,14 +448,12 @@
                     Notifications
                 </button>
 
-
                 <button
                     type="button"
                     id="menuSettings"
                 >
                     Settings
                 </button>
-
 
                 <button
                     type="button"
@@ -481,7 +471,7 @@
 </div>
 
 
-<script src="/static/js/home.js?v=13"></script>
+<script src="/static/js/home.js?v=14"></script>
 
 </body>
 </html>
