@@ -1,1215 +1,862 @@
-"use strict";
+// =========================================================
+// USANEX - NOTIFICATIONS
+// Connection Requests + Verification Notifications
+// =========================================================
 
-/* =========================================================
-   USANEX NOTIFICATIONS
-   ========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
 
-const API_BASE = "/api/connections";
+    const loading = document.getElementById(
+        "notificationLoading"
+    );
 
-let popupTimer = null;
+    const empty = document.getElementById(
+        "notificationEmpty"
+    );
 
-
-/* =========================================================
-   DOM
-   ========================================================= */
-
-const loadingElement =
-    document.getElementById("notificationLoading");
-
-const emptyElement =
-    document.getElementById("notificationEmpty");
-
-const connectionRequestsSection =
-    document.getElementById(
+    const requestsSection = document.getElementById(
         "connectionRequestsSection"
     );
 
-const connectionRequestsContainer =
-    document.getElementById(
+    const requestsContainer = document.getElementById(
         "connectionRequests"
     );
 
-const otherNotificationsSection =
-    document.getElementById(
+    const otherSection = document.getElementById(
         "otherNotificationsSection"
     );
 
-const otherNotificationsContainer =
-    document.getElementById(
+    const otherContainer = document.getElementById(
         "otherNotifications"
     );
 
-const popupElement =
-    document.getElementById(
+    const popup = document.getElementById(
         "notificationPopup"
     );
 
-const backButton =
-    document.getElementById(
+    const backButton = document.getElementById(
         "backButton"
     );
 
 
-/* =========================================================
-   POPUP
-   ========================================================= */
+    // =====================================================
+    // BACK
+    // =====================================================
 
-function showPopup(message) {
-
-    if (!popupElement) {
-        return;
+    if (backButton) {
+        backButton.addEventListener(
+            "click",
+            () => {
+                window.location.href = "/home";
+            }
+        );
     }
 
-    popupElement.textContent = message;
 
-    popupElement.hidden = false;
+    // =====================================================
+    // POPUP
+    // =====================================================
 
-    requestAnimationFrame(() => {
-        popupElement.classList.add(
-            "show"
-        );
-    });
+    function showPopup(message) {
 
-    if (popupTimer) {
-        clearTimeout(popupTimer);
-    }
+        if (!popup) {
+            return;
+        }
 
-    popupTimer = setTimeout(() => {
+        popup.textContent = message;
 
-        popupElement.classList.remove(
-            "show"
-        );
+        popup.hidden = false;
+
+        requestAnimationFrame(() => {
+            popup.classList.add("show");
+        });
 
         setTimeout(() => {
 
-            popupElement.hidden = true;
+            popup.classList.remove("show");
 
-        }, 300);
+            setTimeout(() => {
+                popup.hidden = true;
+            }, 300);
 
-    }, 3000);
-}
-
-
-/* =========================================================
-   API HELPER
-   ========================================================= */
-
-async function apiRequest(
-    url,
-    options = {}
-) {
-
-    const response = await fetch(
-        url,
-        {
-            credentials: "same-origin",
-
-            headers: {
-                "Content-Type":
-                    "application/json",
-
-                ...(options.headers || {}),
-            },
-
-            ...options,
-        }
-    );
-
-    let data = null;
-
-    try {
-        data = await response.json();
-    } catch {
-        data = null;
+        }, 2500);
     }
 
-    if (!response.ok) {
 
-        const message =
-            data?.detail ||
-            data?.message ||
-            "Something went wrong";
+    // =====================================================
+    // HTML ESCAPE
+    // =====================================================
 
-        throw new Error(message);
-    }
+    function escapeHtml(value) {
 
-    return data;
-}
-
-
-/* =========================================================
-   ESCAPE HTML
-   ========================================================= */
-
-function escapeHtml(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return "";
-    }
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-/* =========================================================
-   PROFILE IMAGE
-   ========================================================= */
-
-function getProfileImage(
-    profilePhoto,
-    name
-) {
-
-    if (profilePhoto) {
-
-        return `
-            <img
-                class="notification-avatar-image"
-                src="${escapeHtml(profilePhoto)}"
-                alt="${escapeHtml(name || "User")}"
-                loading="lazy"
-            >
-        `;
-    }
-
-    const firstLetter =
-        (name || "U")
-            .trim()
-            .charAt(0)
-            .toUpperCase();
-
-    return `
-        <div class="notification-avatar-fallback">
-            ${escapeHtml(firstLetter)}
-        </div>
-    `;
-}
-
-
-/* =========================================================
-   LOADING STATE
-   ========================================================= */
-
-function setLoading(
-    isLoading
-) {
-
-    if (!loadingElement) {
-        return;
-    }
-
-    loadingElement.hidden =
-        !isLoading;
-}
-
-
-/* =========================================================
-   EMPTY STATE
-   ========================================================= */
-
-function updateEmptyState() {
-
-    const requestVisible =
-        connectionRequestsSection &&
-        !connectionRequestsSection.hidden;
-
-    const otherVisible =
-        otherNotificationsSection &&
-        !otherNotificationsSection.hidden;
-
-    const hasContent =
-        requestVisible ||
-        otherVisible;
-
-    if (emptyElement) {
-        emptyElement.hidden =
-            hasContent;
-    }
-}
-
-
-/* =========================================================
-   REQUEST BUTTON STATE
-   ========================================================= */
-
-function setRequestButtonsDisabled(
-    requestId,
-    disabled
-) {
-
-    const buttons =
-        document.querySelectorAll(
-            `[data-request-id="${requestId}"]`
-        );
-
-    buttons.forEach(
-        (button) => {
-            button.disabled = disabled;
-        }
-    );
-}
-
-
-/* =========================================================
-   CONNECTION REQUEST CARD
-   ========================================================= */
-
-function createConnectionRequestCard(
-    item
-) {
-
-    const card =
-        document.createElement("article");
-
-    card.className =
-        "connection-request-card";
-
-    card.dataset.requestId =
-        item.id;
-
-    const sender =
-        item.sender || {};
-
-    card.innerHTML = `
-        <div class="request-card-main">
-
-            <div class="notification-avatar">
-                ${getProfileImage(
-                    sender.profile_photo,
-                    sender.name
-                )}
-            </div>
-
-            <div class="request-user-info">
-
-                <div class="request-user-name">
-                    ${escapeHtml(
-                        sender.name || "User"
-                    )}
-                </div>
-
-                <div class="request-user-username">
-                    ${escapeHtml(
-                        sender.username || ""
-                    )}
-                </div>
-
-                <div class="request-user-id">
-                    ${escapeHtml(
-                        sender.user_id || ""
-                    )}
-                </div>
-
-                <div class="request-message">
-                    wants to connect with you
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="request-actions">
-
-            <button
-                type="button"
-                class="request-action-button accept-button"
-                data-action="accept"
-                data-request-id="${item.id}"
-            >
-                Accept
-            </button>
-
-            <button
-                type="button"
-                class="request-action-button reject-button"
-                data-action="reject"
-                data-request-id="${item.id}"
-            >
-                Reject
-            </button>
-
-        </div>
-    `;
-
-    return card;
-}
-
-
-/* =========================================================
-   RENDER CONNECTION REQUESTS
-   ========================================================= */
-
-function renderConnectionRequests(
-    requests
-) {
-
-    if (!connectionRequestsContainer) {
-        return;
-    }
-
-    connectionRequestsContainer.innerHTML = "";
-
-    if (
-        !Array.isArray(requests) ||
-        requests.length === 0
-    ) {
-
-        if (connectionRequestsSection) {
-            connectionRequestsSection.hidden =
-                true;
+        if (value === null || value === undefined) {
+            return "";
         }
 
-        updateEmptyState();
-
-        return;
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-    requests.forEach(
-        (item) => {
 
-            const card =
-                createConnectionRequestCard(
-                    item
-                );
+    // =====================================================
+    // LOAD ALL NOTIFICATIONS
+    // =====================================================
 
-            connectionRequestsContainer.appendChild(
-                card
-            );
-        }
-    );
+    async function loadNotifications() {
 
-    if (connectionRequestsSection) {
-        connectionRequestsSection.hidden =
-            false;
-    }
+        try {
 
-    updateEmptyState();
-}
+            loading.hidden = false;
+            empty.hidden = true;
 
+            requestsSection.hidden = true;
+            otherSection.hidden = true;
 
-/* =========================================================
-   LOAD CONNECTION REQUESTS
-   ========================================================= */
+            requestsContainer.innerHTML = "";
+            otherContainer.innerHTML = "";
 
-async function loadConnectionRequests() {
 
-    const data =
-        await apiRequest(
-            `${API_BASE}/requests`
-        );
+            // ---------------------------------------------
+            // CONNECTION REQUESTS
+            // ---------------------------------------------
 
-    renderConnectionRequests(
-        data.requests || []
-    );
-}
-
-
-/* =========================================================
-   FORMAT VERIFICATION MESSAGE
-   ========================================================= */
-
-function getVerificationTitle(
-    notification
-) {
-
-    const user =
-        notification.user || {};
-
-    const name =
-        user.name || "User";
-
-    return `${name} accepted your connection request`;
-}
-
-
-/* =========================================================
-   CREATE VERIFICATION CARD
-   ========================================================= */
-
-function createVerificationCard(
-    notification
-) {
-
-    const card =
-        document.createElement("article");
-
-    card.className =
-        "verification-card";
-
-    card.dataset.notificationId =
-        notification.notification_id;
-
-    const user =
-        notification.user || {};
-
-    const verification =
-        notification.verification || {};
-
-    const code =
-        verification.code || "";
-
-    const verificationId =
-        verification.verification_id;
-
-    const status =
-        verification.status || "unknown";
-
-    const expired =
-        Boolean(
-            verification.is_expired
-        );
-
-    let actionHtml = "";
-
-    if (
-        !expired &&
-        status === "pending" &&
-        code
-    ) {
-
-        actionHtml = `
-            <div class="verification-code-box">
-
-                <div class="verification-code-label">
-                    Connection Code
-                </div>
-
-                <div
-                    class="verification-code"
-                    data-code="${escapeHtml(code)}"
-                >
-                    ${escapeHtml(code)}
-                </div>
-
-            </div>
-
-            <div class="verification-actions">
-
-                <button
-                    type="button"
-                    class="verification-button copy-code-button"
-                    data-code="${escapeHtml(code)}"
-                >
-                    Copy Code
-                </button>
-
-                <button
-                    type="button"
-                    class="verification-button go-card-button"
-                    data-user-id="${escapeHtml(
-                        user.user_id || ""
-                    )}"
-                    data-verification-id="${escapeHtml(
-                        verificationId || ""
-                    )}"
-                >
-                    Go Card
-                </button>
-
-            </div>
-        `;
-
-    } else if (
-        expired ||
-        status === "expired"
-    ) {
-
-        actionHtml = `
-            <div class="verification-expired">
-                This connection code has expired.
-            </div>
-        `;
-
-    } else if (
-        status === "verified"
-    ) {
-
-        actionHtml = `
-            <div class="verification-success">
-                Connection verified successfully.
-            </div>
-        `;
-
-    } else if (
-        status === "blocked"
-    ) {
-
-        actionHtml = `
-            <div class="verification-expired">
-                This verification is blocked.
-            </div>
-        `;
-
-    } else {
-
-        actionHtml = `
-            <div class="verification-expired">
-                Verification code is unavailable.
-            </div>
-        `;
-    }
-
-    card.innerHTML = `
-        <div class="verification-main">
-
-            <div class="notification-avatar">
-                ${getProfileImage(
-                    user.profile_photo,
-                    user.name
-                )}
-            </div>
-
-            <div class="verification-user-info">
-
-                <div class="verification-title">
-                    ${escapeHtml(
-                        getVerificationTitle(
-                            notification
-                        )
-                    )}
-                </div>
-
-                <div class="verification-username">
-                    ${escapeHtml(
-                        user.username || ""
-                    )}
-                </div>
-
-                <div class="verification-user-id">
-                    ${escapeHtml(
-                        user.user_id || ""
-                    )}
-                </div>
-
-            </div>
-
-        </div>
-
-        ${actionHtml}
-    `;
-
-    return card;
-}
-
-
-/* =========================================================
-   RENDER VERIFICATION NOTIFICATIONS
-   ========================================================= */
-
-function renderVerificationNotifications(
-    notifications
-) {
-
-    if (!otherNotificationsContainer) {
-        return;
-    }
-
-    otherNotificationsContainer.innerHTML = "";
-
-    const verificationNotifications =
-        Array.isArray(notifications)
-            ? notifications
-            : [];
-
-    if (
-        verificationNotifications.length === 0
-    ) {
-
-        if (otherNotificationsSection) {
-            otherNotificationsSection.hidden =
-                true;
-        }
-
-        updateEmptyState();
-
-        return;
-    }
-
-    verificationNotifications.forEach(
-        (notification) => {
-
-            const card =
-                createVerificationCard(
-                    notification
-                );
-
-            otherNotificationsContainer.appendChild(
-                card
-            );
-        }
-    );
-
-    if (otherNotificationsSection) {
-        otherNotificationsSection.hidden =
-            false;
-    }
-
-    updateEmptyState();
-}
-
-
-/* =========================================================
-   LOAD VERIFICATION NOTIFICATIONS
-   ========================================================= */
-
-async function loadVerificationNotifications() {
-
-    const data =
-        await apiRequest(
-            `${API_BASE}/notifications`
-        );
-
-    renderVerificationNotifications(
-        data.notifications || []
-    );
-}
-
-
-/* =========================================================
-   LOAD EVERYTHING
-   ========================================================= */
-
-async function loadNotifications() {
-
-    setLoading(true);
-
-    try {
-
-        await Promise.all([
-            loadConnectionRequests(),
-            loadVerificationNotifications(),
-        ]);
-
-    } catch (error) {
-
-        console.error(
-            "Notification loading error:",
-            error
-        );
-
-        showPopup(
-            error.message ||
-            "Unable to load notifications"
-        );
-
-    } finally {
-
-        setLoading(false);
-
-        updateEmptyState();
-    }
-}
-
-
-/* =========================================================
-   ACCEPT REQUEST
-   ========================================================= */
-
-async function acceptRequest(
-    requestId,
-    button
-) {
-
-    if (button) {
-        button.disabled = true;
-    }
-
-    try {
-
-        const data =
-            await apiRequest(
-                `${API_BASE}/request/${requestId}/accept`,
+            const requestResponse = await fetch(
+                "/api/connections/requests",
                 {
-                    method: "POST",
+                    method: "GET",
+                    credentials: "include"
                 }
             );
 
-        showPopup(
-            "Connection request accepted."
-        );
 
-        const card =
-            document.querySelector(
-                `.connection-request-card[data-request-id="${requestId}"]`
-            );
+            if (requestResponse.status === 401) {
 
-        if (card) {
+                window.location.href = "/login";
+                return;
+            }
 
-            card.classList.add(
-                "notification-card-removing"
-            );
 
-            setTimeout(() => {
+            let requestData = [];
 
-                card.remove();
+            if (requestResponse.ok) {
 
-                if (
-                    connectionRequestsContainer &&
-                    connectionRequestsContainer
-                        .children.length === 0
-                ) {
+                requestData =
+                    await requestResponse.json();
 
-                    if (connectionRequestsSection) {
-                        connectionRequestsSection.hidden =
-                            true;
+            }
+
+
+            // ---------------------------------------------
+            // VERIFICATION NOTIFICATIONS
+            // ---------------------------------------------
+
+            const notificationResponse =
+                await fetch(
+                    "/api/connections/notifications",
+                    {
+                        method: "GET",
+                        credentials: "include"
                     }
-
-                    updateEmptyState();
-                }
-
-            }, 250);
-        }
-
-        await loadVerificationNotifications();
-
-        /*
-         * The backend creates the verification
-         * notification immediately after accept.
-         */
-        if (
-            data &&
-            data.verification
-        ) {
-            showPopup(
-                "Verification code is ready."
-            );
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Accept request error:",
-            error
-        );
-
-        showPopup(
-            error.message ||
-            "Unable to accept request"
-        );
-
-        if (button) {
-            button.disabled = false;
-        }
-    }
-}
-
-
-/* =========================================================
-   REJECT REQUEST
-   ========================================================= */
-
-async function rejectRequest(
-    requestId,
-    button
-) {
-
-    if (button) {
-        button.disabled = true;
-    }
-
-    try {
-
-        await apiRequest(
-            `${API_BASE}/request/${requestId}/reject`,
-            {
-                method: "POST",
-            }
-        );
-
-        showPopup(
-            "Connection request rejected."
-        );
-
-        const card =
-            document.querySelector(
-                `.connection-request-card[data-request-id="${requestId}"]`
-            );
-
-        if (card) {
-
-            card.classList.add(
-                "notification-card-removing"
-            );
-
-            setTimeout(() => {
-
-                card.remove();
-
-                if (
-                    connectionRequestsContainer &&
-                    connectionRequestsContainer
-                        .children.length === 0
-                ) {
-
-                    if (connectionRequestsSection) {
-                        connectionRequestsSection.hidden =
-                            true;
-                    }
-
-                    updateEmptyState();
-                }
-
-            }, 250);
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Reject request error:",
-            error
-        );
-
-        showPopup(
-            error.message ||
-            "Unable to reject request"
-        );
-
-        if (button) {
-            button.disabled = false;
-        }
-    }
-}
-
-
-/* =========================================================
-   COPY VERIFICATION CODE
-   ========================================================= */
-
-async function copyVerificationCode(
-    code
-) {
-
-    if (!code) {
-        showPopup(
-            "Verification code is unavailable."
-        );
-        return;
-    }
-
-    try {
-
-        if (
-            navigator.clipboard &&
-            window.isSecureContext
-        ) {
-
-            await navigator.clipboard.writeText(
-                code
-            );
-
-        } else {
-
-            const textarea =
-                document.createElement(
-                    "textarea"
                 );
 
-            textarea.value = code;
-
-            textarea.style.position =
-                "fixed";
-
-            textarea.style.opacity =
-                "0";
-
-            document.body.appendChild(
-                textarea
-            );
-
-            textarea.focus();
-
-            textarea.select();
-
-            document.execCommand(
-                "copy"
-            );
-
-            textarea.remove();
-        }
-
-        showPopup(
-            "Verification code copied."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Copy code error:",
-            error
-        );
-
-        showPopup(
-            "Could not copy the code."
-        );
-    }
-}
-
-
-/* =========================================================
-   GO CARD
-   ========================================================= */
-
-function goToUserCard(
-    userId,
-    verificationId
-) {
-
-    if (!userId) {
-
-        showPopup(
-            "User card is unavailable."
-        );
-
-        return;
-    }
-
-    /*
-     * The profile/card page will use these
-     * query parameters for the verification flow.
-     */
-
-    const params =
-        new URLSearchParams();
-
-    params.set(
-        "user_id",
-        userId
-    );
-
-    if (verificationId) {
-
-        params.set(
-            "verification_id",
-            verificationId
-        );
-    }
-
-    window.location.href =
-        `/profile?${params.toString()}`;
-}
-
-
-/* =========================================================
-   MARK NOTIFICATION READ
-   ========================================================= */
-
-async function markNotificationRead(
-    notificationId
-) {
-
-    if (!notificationId) {
-        return;
-    }
-
-    try {
-
-        await apiRequest(
-            `${API_BASE}/notifications/${notificationId}/read`,
-            {
-                method: "POST",
-            }
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Mark notification read error:",
-            error
-        );
-    }
-}
-
-
-/* =========================================================
-   CLICK HANDLER
-   ========================================================= */
-
-document.addEventListener(
-    "click",
-    async (event) => {
-
-        const target =
-            event.target;
-
-        /*
-         * Accept
-         */
-
-        const acceptButton =
-            target.closest(
-                '[data-action="accept"]'
-            );
-
-        if (acceptButton) {
-
-            const requestId =
-                acceptButton.dataset.requestId;
-
-            if (requestId) {
-
-                await acceptRequest(
-                    requestId,
-                    acceptButton
-                );
-            }
-
-            return;
-        }
-
-
-        /*
-         * Reject
-         */
-
-        const rejectButton =
-            target.closest(
-                '[data-action="reject"]'
-            );
-
-        if (rejectButton) {
-
-            const requestId =
-                rejectButton.dataset.requestId;
-
-            if (requestId) {
-
-                await rejectRequest(
-                    requestId,
-                    rejectButton
-                );
-            }
-
-            return;
-        }
-
-
-        /*
-         * Copy code
-         */
-
-        const copyButton =
-            target.closest(
-                ".copy-code-button"
-            );
-
-        if (copyButton) {
-
-            const code =
-                copyButton.dataset.code;
-
-            await copyVerificationCode(
-                code
-            );
-
-            return;
-        }
-
-
-        /*
-         * Go Card
-         */
-
-        const goCardButton =
-            target.closest(
-                ".go-card-button"
-            );
-
-        if (goCardButton) {
-
-            const userId =
-                goCardButton.dataset.userId;
-
-            const verificationId =
-                goCardButton.dataset.verificationId;
-
-            const card =
-                goCardButton.closest(
-                    ".verification-card"
-                );
-
-            if (card) {
-
-                const notificationId =
-                    card.dataset.notificationId;
-
-                await markNotificationRead(
-                    notificationId
-                );
-            }
-
-            goToUserCard(
-                userId,
-                verificationId
-            );
-
-            return;
-        }
-    }
-);
-
-
-/* =========================================================
-   BACK BUTTON
-   ========================================================= */
-
-if (backButton) {
-
-    backButton.addEventListener(
-        "click",
-        () => {
 
             if (
-                window.history.length > 1
+                notificationResponse.status === 401
             ) {
 
-                window.history.back();
-
-            } else {
-
-                window.location.href =
-                    "/home";
+                window.location.href = "/login";
+                return;
             }
-        }
-    );
-}
 
 
-/* =========================================================
-   PAGE VISIBILITY
-   ========================================================= */
+            let notificationData = [];
 
-document.addEventListener(
-    "visibilitychange",
-    () => {
+            if (notificationResponse.ok) {
 
-        if (
-            document.visibilityState
-            === "visible"
-        ) {
+                notificationData =
+                    await notificationResponse.json();
 
-            loadNotifications();
+            }
+
+
+            // ---------------------------------------------
+            // NORMALIZE DATA
+            // ---------------------------------------------
+
+            if (!Array.isArray(requestData)) {
+
+                if (
+                    requestData &&
+                    Array.isArray(
+                        requestData.requests
+                    )
+                ) {
+
+                    requestData =
+                        requestData.requests;
+
+                } else {
+
+                    requestData = [];
+                }
+            }
+
+
+            if (!Array.isArray(notificationData)) {
+
+                if (
+                    notificationData &&
+                    Array.isArray(
+                        notificationData.notifications
+                    )
+                ) {
+
+                    notificationData =
+                        notificationData.notifications;
+
+                } else {
+
+                    notificationData = [];
+                }
+            }
+
+
+            // ---------------------------------------------
+            // RENDER
+            // ---------------------------------------------
+
+            renderConnectionRequests(
+                requestData
+            );
+
+            renderVerificationNotifications(
+                notificationData
+            );
+
+
+            loading.hidden = true;
+
+
+            const hasRequests =
+                requestData.length > 0;
+
+            const hasNotifications =
+                notificationData.length > 0;
+
+
+            if (
+                !hasRequests &&
+                !hasNotifications
+            ) {
+
+                empty.hidden = false;
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Notification error:",
+                error
+            );
+
+            loading.hidden = true;
+
+            empty.hidden = false;
+
+            showPopup(
+                "Unable to load notifications."
+            );
         }
     }
-);
 
 
-/* =========================================================
-   INITIAL LOAD
-   ========================================================= */
+    // =====================================================
+    // CONNECTION REQUESTS
+    // =====================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+    function renderConnectionRequests(
+        requests
+    ) {
 
-        loadNotifications();
+        requestsContainer.innerHTML = "";
 
+
+        if (!requests.length) {
+
+            requestsSection.hidden = true;
+
+            return;
+        }
+
+
+        requestsSection.hidden = false;
+
+
+        requests.forEach(
+            (request) => {
+
+                const sender =
+                    request.sender || {};
+
+
+                const requestId =
+                    request.id;
+
+
+                const name =
+                    sender.name ||
+                    request.name ||
+                    "User";
+
+
+                const username =
+                    sender.username ||
+                    request.username ||
+                    "";
+
+
+                const userId =
+                    sender.user_id ||
+                    request.user_id ||
+                    "";
+
+
+                const photo =
+                    sender.profile_photo ||
+                    request.profile_photo ||
+                    "";
+
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "notification-card";
+
+
+                card.innerHTML = `
+
+                    <div class="notification-user">
+
+                        ${
+                            photo
+                            ?
+                            `
+                            <img
+                                src="${escapeHtml(photo)}"
+                                class="notification-avatar"
+                                alt=""
+                            >
+                            `
+                            :
+                            `
+                            <div class="notification-avatar placeholder">
+                                U
+                            </div>
+                            `
+                        }
+
+                        <div class="notification-user-info">
+
+                            <strong>
+                                ${escapeHtml(name)}
+                            </strong>
+
+                            ${
+                                username
+                                ?
+                                `
+                                <span>
+                                    ${escapeHtml(username)}
+                                </span>
+                                `
+                                :
+                                ""
+                            }
+
+                            ${
+                                userId
+                                ?
+                                `
+                                <small>
+                                    ${escapeHtml(userId)}
+                                </small>
+                                `
+                                :
+                                ""
+                            }
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="notification-actions">
+
+                        <button
+                            type="button"
+                            class="accept-button"
+                            data-request-id="${requestId}"
+                            data-action="accept"
+                        >
+                            Accept
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="reject-button"
+                            data-request-id="${requestId}"
+                            data-action="reject"
+                        >
+                            Reject
+                        </button>
+
+                    </div>
+
+                `;
+
+
+                requestsContainer.appendChild(
+                    card
+                );
+            }
+        );
+
+
+        // ---------------------------------------------
+        // ACCEPT / REJECT
+        // ---------------------------------------------
+
+        requestsContainer
+            .querySelectorAll(
+                "[data-request-id]"
+            )
+            .forEach(
+                (button) => {
+
+                    button.addEventListener(
+                        "click",
+                        async () => {
+
+                            const requestId =
+                                button.dataset.requestId;
+
+                            const action =
+                                button.dataset.action;
+
+
+                            if (!requestId) {
+                                return;
+                            }
+
+
+                            button.disabled = true;
+
+
+                            try {
+
+                                const response =
+                                    await fetch(
+                                        `/api/connections/request/${requestId}/${action}`,
+                                        {
+                                            method: "POST",
+                                            credentials: "include"
+                                        }
+                                    );
+
+
+                                if (
+                                    response.status === 401
+                                ) {
+
+                                    window.location.href =
+                                        "/login";
+
+                                    return;
+                                }
+
+
+                                if (!response.ok) {
+
+                                    let message =
+                                        "Action failed.";
+
+                                    try {
+
+                                        const data =
+                                            await response.json();
+
+                                        message =
+                                            data.detail ||
+                                            message;
+
+                                    } catch (_) {}
+
+                                    showPopup(
+                                        message
+                                    );
+
+                                    button.disabled =
+                                        false;
+
+                                    return;
+                                }
+
+
+                                if (
+                                    action === "accept"
+                                ) {
+
+                                    showPopup(
+                                        "Connection request accepted."
+                                    );
+
+                                } else {
+
+                                    showPopup(
+                                        "Connection request rejected."
+                                    );
+                                }
+
+
+                                await loadNotifications();
+
+
+                            } catch (error) {
+
+                                console.error(
+                                    "Request action error:",
+                                    error
+                                );
+
+                                showPopup(
+                                    "Something went wrong."
+                                );
+
+                                button.disabled =
+                                    false;
+                            }
+
+                        }
+                    );
+
+                }
+            );
     }
-);
+
+
+    // =====================================================
+    // VERIFICATION NOTIFICATIONS
+    // =====================================================
+
+    function renderVerificationNotifications(
+        notifications
+    ) {
+
+        otherContainer.innerHTML = "";
+
+
+        if (!notifications.length) {
+
+            otherSection.hidden = true;
+
+            return;
+        }
+
+
+        otherSection.hidden = false;
+
+
+        notifications.forEach(
+            (notification) => {
+
+                const sender =
+                    notification.sender || {};
+
+
+                const notificationId =
+                    notification.id;
+
+
+                const senderName =
+                    sender.name ||
+                    notification.sender_name ||
+                    "User";
+
+
+                const senderUsername =
+                    sender.username ||
+                    notification.sender_username ||
+                    "";
+
+
+                const senderUserId =
+                    sender.user_id ||
+                    notification.sender_user_id ||
+                    notification.user_id ||
+                    "";
+
+
+                const code =
+                    notification.code ||
+                    notification.verification_code ||
+                    "";
+
+
+                const verificationId =
+                    notification.verification_id ||
+                    notification.connection_verification_id ||
+                    "";
+
+
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                card.className =
+                    "notification-card verification-card";
+
+
+                card.innerHTML = `
+
+                    <div class="notification-user">
+
+                        <div class="notification-avatar placeholder">
+                            U
+                        </div>
+
+
+                        <div class="notification-user-info">
+
+                            <strong>
+                                ${escapeHtml(senderName)}
+                            </strong>
+
+                            ${
+                                senderUsername
+                                ?
+                                `
+                                <span>
+                                    ${escapeHtml(senderUsername)}
+                                </span>
+                                `
+                                :
+                                ""
+                            }
+
+                            ${
+                                senderUserId
+                                ?
+                                `
+                                <small>
+                                    ${escapeHtml(senderUserId)}
+                                </small>
+                                `
+                                :
+                                ""
+                            }
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="verification-message">
+
+                        <div class="verification-title">
+                            Connection verification code
+                        </div>
+
+
+                        <div class="verification-code-row">
+
+                            <strong class="verification-code">
+                                ${escapeHtml(code || "------")}
+                            </strong>
+
+
+                            <button
+                                type="button"
+                                class="copy-code-button"
+                            >
+                                Copy Code
+                            </button>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            class="go-card-button"
+                        >
+                            Go Card
+                        </button>
+
+                    </div>
+
+                `;
+
+
+                otherContainer.appendChild(
+                    card
+                );
+
+
+                // -----------------------------------------
+                // COPY CODE
+                // -----------------------------------------
+
+                const copyButton =
+                    card.querySelector(
+                        ".copy-code-button"
+                    );
+
+
+                if (copyButton) {
+
+                    copyButton.addEventListener(
+                        "click",
+                        async () => {
+
+                            if (!code) {
+
+                                showPopup(
+                                    "Verification code unavailable."
+                                );
+
+                                return;
+                            }
+
+
+                            try {
+
+                                await navigator.clipboard.writeText(
+                                    code
+                                );
+
+                                showPopup(
+                                    "Code copied."
+                                );
+
+                            } catch (error) {
+
+                                console.error(
+                                    error
+                                );
+
+                                showPopup(
+                                    "Copy failed."
+                                );
+                            }
+
+                        }
+                    );
+                }
+
+
+                // -----------------------------------------
+                // GO CARD
+                // -----------------------------------------
+
+                const goCardButton =
+                    card.querySelector(
+                        ".go-card-button"
+                    );
+
+
+                if (goCardButton) {
+
+                    goCardButton.addEventListener(
+                        "click",
+                        async () => {
+
+                            if (!senderUserId) {
+
+                                showPopup(
+                                    "User information unavailable."
+                                );
+
+                                return;
+                            }
+
+
+                            if (!verificationId) {
+
+                                showPopup(
+                                    "Verification information unavailable."
+                                );
+
+                                return;
+                            }
+
+
+                            // Mark notification as read
+                            // before going to Search.
+
+                            if (notificationId) {
+
+                                try {
+
+                                    await fetch(
+                                        `/api/connections/notifications/${notificationId}/read`,
+                                        {
+                                            method: "POST",
+                                            credentials: "include"
+                                        }
+                                    );
+
+                                } catch (error) {
+
+                                    console.warn(
+                                        "Could not mark notification read:",
+                                        error
+                                    );
+                                }
+                            }
+
+
+                            // IMPORTANT:
+                            // Go Card MUST return to SEARCH,
+                            // NOT PROFILE.
+
+                            const searchUrl =
+                                "/search" +
+                                "?user_id=" +
+                                encodeURIComponent(
+                                    senderUserId
+                                ) +
+                                "&verification_id=" +
+                                encodeURIComponent(
+                                    verificationId
+                                );
+
+
+                            window.location.href =
+                                searchUrl;
+
+                        }
+                    );
+                }
+
+            }
+        );
+    }
+
+
+    // =====================================================
+    // START
+    // =====================================================
+
+    loadNotifications();
+
+});
