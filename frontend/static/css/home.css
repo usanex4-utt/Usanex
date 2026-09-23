@@ -1,8 +1,3 @@
-/* =========================================================
-   USANEX - HOME
-   Simple • Clean • Modern
-========================================================= */
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -12,211 +7,142 @@
 html,
 body {
     width: 100%;
-    height: 100%;
+    min-height: 100%;
+    background: #05070b;
+    color: #e8edf5;
+    font-family: Arial, sans-serif;
 }
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #05070b;
-    color: #f5f7fb;
-    overflow: hidden;
+    overflow-x: hidden;
 }
-
-button {
-    font: inherit;
-    -webkit-tap-highlight-color: transparent;
-}
-
-
-/* =========================================================
-   APP SHELL
-========================================================= */
 
 .app-shell {
-    width: 100%;
-    height: 100dvh;
-    position: relative;
+    min-height: 100vh;
     background: #05070b;
 }
 
-
-/* =========================================================
-   HEADER
-========================================================= */
+/* ================= HEADER ================= */
 
 .top-header {
-    position: relative;
-    z-index: 20;
-
+    height: 48px;
     width: 100%;
-    height: 72px;
 
     display: flex;
     align-items: center;
-    justify-content: space-between;
 
-    padding: 0 18px;
+    padding: 0 14px;
 
-    background: #07090e;
-    border-bottom: 1px solid #1c232e;
+    background: #05070b;
+    border: none;
 }
-
-.brand {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-
-    font-size: 35px;
-    font-weight: 800;
-    letter-spacing: -1.5px;
-
-    white-space: nowrap;
-}
-
-.brand-blue {
-    color: #1683ff;
-}
-
-.brand-white {
-    color: #f5f7fb;
-}
-
-
-/* =========================================================
-   MENU BUTTON
-========================================================= */
 
 .menu-button {
-    width: 44px;
-    height: 44px;
-
-    border: none;
-    background: transparent;
+    width: 30px;
+    height: 30px;
 
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: 4px;
 
-    gap: 6px;
-
-    cursor: pointer;
+    border: none;
+    background: transparent;
 }
 
 .menu-button span {
-    width: 30px;
-    height: 3px;
+    width: 17px;
+    height: 2px;
 
     display: block;
 
-    background: #f3f6fa;
-
-    border-radius: 3px;
+    border-radius: 2px;
+    background: #cbd3df;
 }
 
+.brand {
+    margin-left: 7px;
 
-/* =========================================================
-   HEADER PLUS
-========================================================= */
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.brand-blue {
+    color: #2380ff;
+}
+
+.brand-white {
+    color: #f1f3f6;
+}
 
 .header-plus {
-    width: 44px;
-    height: 44px;
+    margin-left: auto;
+
+    width: 30px;
+    height: 30px;
 
     border: none;
     background: transparent;
 
-    color: #f5f7fb;
+    color: #e1e6ee;
 
-    font-size: 37px;
+    font-size: 24px;
     font-weight: 300;
-
-    cursor: pointer;
 }
 
-
-/* =========================================================
-   MAIN AREA
-========================================================= */
+/* ================= MAIN ================= */
 
 .main-area {
-    position: absolute;
+    min-height: calc(100vh - 48px - 58px);
 
-    top: 72px;
-    left: 0;
-    right: 0;
-    bottom: 76px;
-
-    overflow: hidden;
+    padding-bottom: 64px;
 }
 
 .content-scroll {
     width: 100%;
-    height: 100%;
+    max-width: 650px;
 
-    overflow-x: hidden;
-    overflow-y: auto;
+    margin: 0 auto;
 
-    padding-bottom: 30px;
-
-    scrollbar-width: none;
+    padding: 10px 12px 25px;
 }
 
-.content-scroll::-webkit-scrollbar {
-    display: none;
-}
+/* ================= SECTION ================= */
 
-
-/* =========================================================
-   NEX MOMENT
-========================================================= */
-
-.status-section {
-    padding-bottom: 18px;
-
-    border-bottom: 1px solid #1a2029;
-}
-
-.section-header {
+.section-header,
+.connected-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    padding: 23px 20px 15px;
+    margin-bottom: 7px;
 }
 
-.section-header h2 {
-    color: #f5f7fb;
-
-    font-size: 27px;
-    font-weight: 750;
+.section-header h2,
+.connected-section-header h2 {
+    font-size: 15px;
+    font-weight: 600;
 }
 
 .see-all {
     border: none;
     background: transparent;
 
-    color: #1683ff;
+    color: #2580ff;
 
-    font-size: 16px;
-    font-weight: 700;
-
-    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-
-/* =========================================================
-   MOMENTS
-========================================================= */
+/* ================= NEX MOMENT ================= */
 
 .moments {
-    width: 100%;
-
     display: flex;
-    gap: 19px;
-
-    padding: 0 20px 5px;
+    gap: 11px;
 
     overflow-x: auto;
+
+    padding: 1px 2px 5px;
 
     scrollbar-width: none;
 }
@@ -226,40 +152,20 @@ button {
 }
 
 .moment-item {
-    flex: 0 0 74px;
+    width: 49px;
 
-    width: 74px;
+    flex: 0 0 49px;
 
     display: flex;
     flex-direction: column;
     align-items: center;
 
-    gap: 8px;
+    gap: 4px;
 }
-
-.moment-item > span {
-    width: 74px;
-
-    color: #b8c0cb;
-
-    font-size: 15px;
-    text-align: center;
-
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-
-/* =========================================================
-   MOMENT AVATAR
-========================================================= */
 
 .moment-avatar {
-    position: relative;
-
-    width: 70px;
-    height: 70px;
+    width: 43px;
+    height: 43px;
 
     border-radius: 50%;
 
@@ -267,210 +173,168 @@ button {
     align-items: center;
     justify-content: center;
 
-    background: #18202c;
+    background: #151d29;
 
-    border: 3px solid #1683ff;
+    border: 2px solid #247cff;
 
-    color: #f5f7fb;
+    color: #edf2f8;
 
-    font-size: 25px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.moment-avatar img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    border-radius: 50%;
 }
 
 .your-moment {
-    border-color: #303a49;
+    position: relative;
+
+    border-color: #293545;
 }
-
-.avatar-two,
-.avatar-three,
-.avatar-four,
-.avatar-five,
-.avatar-six {
-    border-color: #1683ff;
-}
-
-
-/* =========================================================
-   YOUR MOMENT PLUS
-========================================================= */
 
 .moment-plus {
     position: absolute;
 
-    right: -4px;
-    bottom: -3px;
+    right: -2px;
+    bottom: -1px;
 
-    width: 29px;
-    height: 29px;
+    width: 17px;
+    height: 17px;
+
+    border-radius: 50%;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 50%;
-
-    background: #1683ff;
-    border: 3px solid #05070b;
-
+    background: #247cff;
     color: white;
 
-    font-size: 21px;
-    font-weight: 400;
+    font-size: 14px;
 }
 
+.moment-item > span {
+    max-width: 49px;
 
-/* =========================================================
-   CONNECTED PEOPLE
-========================================================= */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    color: #929cac;
+
+    font-size: 9px;
+    line-height: 12px;
+}
+
+/* ================= CONNECTED PEOPLE ================= */
 
 .connected-people-section {
-    padding: 0 16px 30px;
+    margin-top: 15px;
 }
 
 .connected-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    padding: 20px 5px 13px;
+    margin-bottom: 7px;
 }
 
 .connected-section-header h2 {
-    color: #f5f7fb;
-
-    font-size: 24px;
-    font-weight: 750;
+    font-size: 15px;
 }
 
 .connected-count {
-    min-width: 29px;
-    height: 29px;
+    min-width: 19px;
+    height: 19px;
 
-    padding: 0 8px;
+    padding: 0 5px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 15px;
+    border-radius: 10px;
 
-    background: #162338;
+    background: #111e32;
+    color: #3687ff;
 
-    color: #1683ff;
-
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 9px;
 }
 
-
-/* =========================================================
-   CONNECTED PEOPLE LIST
-========================================================= */
+/* ================= CONNECTED CARD ================= */
 
 .connected-people-list {
-    width: 100%;
-
     display: flex;
     flex-direction: column;
-
-    gap: 10px;
+    gap: 5px;
 }
-
-
-/* =========================================================
-   CONNECTED PERSON CARD
-========================================================= */
 
 .connected-person-card {
     width: 100%;
-    min-height: 82px;
+    min-height: 55px;
 
     display: flex;
     align-items: center;
 
-    padding: 11px 12px;
+    padding: 7px 9px;
 
-    gap: 13px;
+    background: #0a0f15;
 
-    background: #0b1017;
-
-    border: 1px solid #202936;
-    border-radius: 15px;
-
-    cursor: pointer;
-
-    transition:
-        background 0.18s ease,
-        border-color 0.18s ease,
-        transform 0.12s ease;
-}
-
-.connected-person-card:hover {
-    background: #0e141d;
-    border-color: #2a3747;
-}
-
-.connected-person-card:active {
-    transform: scale(0.985);
-}
-
-
-/* =========================================================
-   CONNECTED PERSON AVATAR
-========================================================= */
-
-.connected-person-avatar-wrap {
-    flex: 0 0 auto;
+    border: 1px solid #18222e;
+    border-radius: 11px;
 }
 
 .connected-person-avatar {
-    width: 56px;
-    height: 56px;
+    width: 37px;
+    height: 37px;
 
-    display: block;
+    flex: 0 0 37px;
 
     border-radius: 50%;
 
-    object-fit: cover;
-
-    background: #18202c;
-
-    border: 2px solid #1683ff;
-}
-
-.connected-person-avatar.placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
 
-    color: #f2f5f9;
+    overflow: hidden;
 
-    font-size: 22px;
-    font-weight: 700;
+    background: #151f2c;
+
+    border: 2px solid #247cff;
+
+    color: #edf2f7;
+
+    font-size: 13px;
+    font-weight: 600;
 }
 
+.connected-person-avatar img {
+    width: 100%;
+    height: 100%;
 
-/* =========================================================
-   CONNECTED PERSON INFORMATION
-========================================================= */
+    object-fit: cover;
+}
 
 .connected-person-info {
     min-width: 0;
     flex: 1;
 
+    margin-left: 8px;
+
     display: flex;
     flex-direction: column;
 
-    gap: 3px;
+    gap: 0;
 }
 
 .connected-person-info strong {
-    color: #f5f7fb;
+    font-size: 12px;
+    line-height: 15px;
 
-    font-size: 16px;
-    font-weight: 700;
-
-    line-height: 1.25;
+    color: #e9edf3;
 
     white-space: nowrap;
     overflow: hidden;
@@ -478,11 +342,10 @@ button {
 }
 
 .connected-person-info span {
-    color: #aab4c2;
+    font-size: 9px;
+    line-height: 12px;
 
-    font-size: 14px;
-
-    line-height: 1.2;
+    color: #8995a5;
 
     white-space: nowrap;
     overflow: hidden;
@@ -490,27 +353,19 @@ button {
 }
 
 .connected-person-info small {
-    color: #707c8c;
+    font-size: 8px;
+    line-height: 11px;
 
-    font-size: 12px;
-
-    line-height: 1.2;
+    color: #667384;
 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-
-/* =========================================================
-   CONNECTED CARD ARROW
-========================================================= */
-
 .connected-person-arrow {
-    flex: 0 0 auto;
-
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
 
     display: flex;
     align-items: center;
@@ -518,303 +373,204 @@ button {
 
     border-radius: 50%;
 
-    background: #141b25;
+    background: #111925;
 
-    color: #8995a6;
+    color: #778599;
 
-    font-size: 24px;
+    font-size: 16px;
 }
 
+/* ================= BOTTOM NAV ================= */
 
-/* =========================================================
-   NOTIFICATION DOT
-========================================================= */
+.bottom-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 1000;
+
+    height: 58px;
+
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+
+    background: #070a0f;
+
+    border-top: 1px solid #121923;
+
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+    width: 20%;
+    height: 58px;
+
+    border: none;
+    background: transparent;
+
+    color: #687486;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 2px;
+}
+
+.nav-item svg {
+    width: 19px;
+    height: 19px;
+}
+
+.nav-item span {
+    font-size: 9px;
+    line-height: 11px;
+
+    font-weight: 500;
+}
+
+.nav-item.active {
+    color: #247cff;
+}
+
+/* ================= NOTIFICATION DOT ================= */
 
 .notification-icon-wrapper {
     position: relative;
 
-    display: inline-flex;
+    width: 19px;
+    height: 19px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .notification-dot {
     position: absolute;
 
     top: -2px;
-    right: -2px;
+    right: -3px;
 
-    width: 8px;
-    height: 8px;
+    width: 5px;
+    height: 5px;
 
     border-radius: 50%;
 
-    background: #1683ff;
-
-    border: 2px solid #07090e;
+    background: #ff4058;
 }
 
-
-/* =========================================================
-   BOTTOM NAVIGATION
-========================================================= */
-
-.bottom-nav {
-    position: absolute;
-
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    height: 76px;
-
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-
-    background: #07090e;
-
-    border-top: 1px solid #1c232e;
-
-    padding-bottom: env(safe-area-inset-bottom);
-
-    z-index: 30;
-}
-
-.nav-item {
-    border: none;
-    background: transparent;
-
-    color: #707b8b;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    gap: 5px;
-
-    cursor: pointer;
-}
-
-.nav-item svg {
-    width: 27px;
-    height: 27px;
-}
-
-.nav-item span {
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.nav-item.active {
-    color: #1683ff;
-}
-
-
-/* =========================================================
-   SIDE MENU
-========================================================= */
+/* ================= MENU ================= */
 
 .menu-overlay {
     position: fixed;
     inset: 0;
 
-    background: rgba(0, 0, 0, 0.62);
+    z-index: 5000;
 
-    z-index: 100;
+    background: rgba(0, 0, 0, 0.55);
+
+    display: flex;
 }
 
 .menu-panel {
-    position: absolute;
-
-    top: 0;
-    left: 0;
-
-    width: min(310px, 84vw);
+    width: 245px;
     height: 100%;
 
-    background: #0a0e15;
+    padding: 14px 12px;
 
-    border-right: 1px solid #202938;
+    background: #0a0f16;
 
-    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.45);
+    border-right: 1px solid #17202b;
 }
 
 .menu-header {
-    height: 72px;
-
-    padding: 0 18px;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    border-bottom: 1px solid #202938;
+    margin-bottom: 15px;
 }
 
 .menu-brand {
-    font-size: 27px;
-    font-weight: 800;
+    font-size: 17px;
+    font-weight: 700;
 }
 
 .close-menu {
-    width: 42px;
-    height: 42px;
+    width: 28px;
+    height: 28px;
 
     border: none;
-    background: transparent;
+    border-radius: 50%;
 
-    color: #f5f7fb;
+    background: #121a24;
+    color: #d7dee8;
 
-    font-size: 32px;
-
-    cursor: pointer;
+    font-size: 20px;
 }
 
 .menu-items {
-    padding: 12px;
-
     display: flex;
     flex-direction: column;
-
-    gap: 5px;
+    gap: 3px;
 }
 
 .menu-items button {
     width: 100%;
-
-    padding: 15px;
+    height: 38px;
 
     border: none;
-    border-radius: 11px;
+    border-radius: 8px;
 
     background: transparent;
 
-    color: #dce3ed;
+    color: #c3ccd8;
 
     text-align: left;
 
-    font-size: 16px;
+    padding: 0 10px;
 
-    cursor: pointer;
+    font-size: 12px;
 }
 
-.menu-items button:hover {
-    background: #131a24;
+.menu-items button:last-child {
+    margin-top: 7px;
+
+    color: #ff7083;
 }
 
-.menu-items button:active {
-    background: #18212e;
-}
+/* ================= SMALL SCREEN ================= */
 
-
-/* =========================================================
-   MENU OPEN
-========================================================= */
-
-body.menu-open {
-    overflow: hidden;
-}
-
-
-/* =========================================================
-   TABLET / DESKTOP
-========================================================= */
-
-@media (min-width: 700px) {
+@media (max-width: 360px) {
 
     .content-scroll {
-        max-width: 760px;
-        margin: 0 auto;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .moment-avatar {
+        width: 41px;
+        height: 41px;
+    }
+
+    .moment-item {
+        width: 47px;
+        flex-basis: 47px;
     }
 
     .connected-person-card {
-        min-height: 88px;
+        min-height: 52px;
+        padding: 6px 8px;
     }
 
     .connected-person-avatar {
-        width: 60px;
-        height: 60px;
+        width: 35px;
+        height: 35px;
+        flex-basis: 35px;
     }
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-@media (max-width: 380px) {
-
-    .top-header {
-        height: 66px;
-        padding: 0 14px;
-    }
-
-    .brand {
-        font-size: 31px;
-    }
-
-    .main-area {
-        top: 66px;
-        bottom: 72px;
-    }
-
-    .bottom-nav {
-        height: 72px;
-    }
-
-    .section-header {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    .section-header h2 {
-        font-size: 24px;
-    }
-
-    .moments {
-        gap: 15px;
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    .connected-people-section {
-        padding-left: 13px;
-        padding-right: 13px;
-    }
-
-    .connected-section-header h2 {
-        font-size: 22px;
-    }
-
-    .connected-person-card {
-        min-height: 78px;
-        padding: 9px 10px;
-    }
-
-    .connected-person-avatar {
-        width: 52px;
-        height: 52px;
-    }
-
-    .connected-person-info strong {
-        font-size: 15px;
-    }
-
-    .connected-person-info span {
-        font-size: 13px;
-    }
-
-    .connected-person-info small {
-        font-size: 11px;
-    }
-}
-
-
-/* =========================================================
-   FOCUS
-========================================================= */
-
-button:focus-visible,
-.connected-person-card:focus-visible {
-    outline: 2px solid #1683ff;
-    outline-offset: 2px;
 }
