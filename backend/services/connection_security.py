@@ -2,48 +2,60 @@ import base64
 import hashlib
 import os
 
+from cryptography.fernet import Fernet, InvalidToken
+
 
 # =========================================================
 # USANEX CONNECTION CODE SECURITY
 # =========================================================
 
-# Secret key environment variable se aayegi.
-# Production me ise Render Environment Variables me rakhenge.
-SECRET_KEY = os.getenv(
-    "USANEX_CONNECTION_SECRET"
-)
+SECRET_ENV_NAME = "USANEX_CONNECTION_SECRET"
 
 
-def get_secret_key() -> bytes:
+# =========================================================
+# GET FERNET KEY
+# =========================================================
+
+def get_fernet() -> Fernet:
     """
-    Get the encryption secret.
+    Creates a stable Fernet key from the
+    USANEX_CONNECTION_SECRET environment variable.
 
-    The application must have this secret configured.
+    The secret itself is never stored in the database.
     """
 
-    if not SECRET_KEY:
+    secret = os.getenv(
+        SECRET_ENV_NAME
+    )
+
+    if not secret:
         raise RuntimeError(
             "USANEX_CONNECTION_SECRET environment variable is not set"
         )
 
-    return hashlib.sha256(
-        SECRET_KEY.encode("utf-8")
+    # Convert environment secret into a
+    # valid 32-byte Fernet key.
+    digest = hashlib.sha256(
+        secret.encode("utf-8")
     ).digest()
+
+    key = base64.urlsafe_b64encode(
+        digest
+    )
+
+    return Fernet(key)
 
 
 # =========================================================
 # ENCRYPT
 # =========================================================
 
-def encrypt_code(code: str) -> str:
+def encrypt_code(
+    code: str,
+) -> str:
     """
-    Encrypt a verification code.
-
-    This implementation uses a keyed stream based on
-    SHA-256 and a random nonce.
-
-    The encrypted value is stored as:
-        nonce + encrypted_data
+    Encrypt a verification code using
+    authenticated Fernet encryption.
     """
 
     if not code:
@@ -51,45 +63,13 @@ def encrypt_code(code: str) -> str:
             "Verification code cannot be empty"
         )
 
+    fernet = get_fernet()
 
-    secret = get_secret_key()
-
-
-    nonce = os.urandom(16)
-
-
-    encrypted = bytearray()
-
-
-    for index, value in enumerate(
+    encrypted = fernet.encrypt(
         code.encode("utf-8")
-    ):
-
-        key_material = hashlib.sha256(
-            secret
-            + nonce
-            + index.to_bytes(
-                4,
-                "big"
-            )
-        ).digest()
-
-
-        encrypted.append(
-            value
-            ^ key_material[0]
-        )
-
-
-    payload = (
-        nonce
-        + bytes(encrypted)
     )
 
-
-    return base64.urlsafe_b64encode(
-        payload
-    ).decode("utf-8")
+    return encrypted.decode("utf-8")
 
 
 # =========================================================
@@ -109,70 +89,18 @@ def decrypt_code(
             "Encrypted code cannot be empty"
         )
 
-
-    secret = get_secret_key()
-
+    fernet = get_fernet()
 
     try:
 
-        payload = (
-            base64.urlsafe_b64decode(
-                encrypted_code.encode(
-                    "utf-8"
-                )
-            )
+        decrypted = fernet.decrypt(
+            encrypted_code.encode("utf-8")
         )
 
-    except Exception as exc:
+    except InvalidToken as exc:
 
         raise ValueError(
-            "Invalid encrypted code"
+            "Invalid or corrupted encrypted code"
         ) from exc
 
-
-    if len(payload) < 17:
-
-        raise ValueError(
-            "Invalid encrypted payload"
-        )
-
-
-    nonce = payload[:16]
-
-    encrypted_data = payload[16:]
-
-
-    decrypted = bytearray()
-
-
-    for index, value in enumerate(
-        encrypted_data
-    ):
-
-        key_material = hashlib.sha256(
-            secret
-            + nonce
-            + index.to_bytes(
-                4,
-                "big"
-            )
-        ).digest()
-
-
-        decrypted.append(
-            value
-            ^ key_material[0]
-        )
-
-
-    try:
-
-        return bytes(
-            decrypted
-        ).decode("utf-8")
-
-    except UnicodeDecodeError as exc:
-
-        raise ValueError(
-            "Unable to decrypt code"
-        ) from exc
+    return decrypted.decode("utf-8")
