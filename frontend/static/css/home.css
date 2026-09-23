@@ -1,3 +1,8 @@
+/* =========================================================
+   USANEX HOME
+   COMPACT MOBILE DESIGN
+   ========================================================= */
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -8,94 +13,129 @@ html,
 body {
     width: 100%;
     min-height: 100%;
+
     background: #05070b;
     color: #e8edf5;
-    font-family: Arial, sans-serif;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
 }
 
 body {
+    min-height: 100vh;
     overflow-x: hidden;
 }
 
+button {
+    font-family: inherit;
+}
+
 .app-shell {
+    width: 100%;
     min-height: 100vh;
     background: #05070b;
 }
 
-/* ================= HEADER ================= */
+
+/* =========================================================
+   HEADER
+   ========================================================= */
 
 .top-header {
-    height: 48px;
     width: 100%;
+    height: 46px;
 
     display: flex;
     align-items: center;
 
-    padding: 0 14px;
+    padding: 0 12px;
 
     background: #05070b;
+
     border: none;
 }
 
 .menu-button {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
+
+    border: none;
+    background: transparent;
 
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 4px;
 
-    border: none;
-    background: transparent;
+    gap: 3px;
+
+    cursor: pointer;
 }
 
 .menu-button span {
-    width: 17px;
+    width: 16px;
     height: 2px;
 
     display: block;
 
     border-radius: 2px;
-    background: #cbd3df;
+
+    background: #aeb8c6;
 }
 
 .brand {
-    margin-left: 7px;
+    margin-left: 6px;
 
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
+
+    letter-spacing: -0.3px;
 }
 
 .brand-blue {
-    color: #2380ff;
+    color: #247cff;
 }
 
 .brand-white {
-    color: #f1f3f6;
+    color: #eef2f7;
 }
 
 .header-plus {
     margin-left: auto;
 
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
 
     border: none;
     background: transparent;
 
-    color: #e1e6ee;
+    color: #dce2ea;
 
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 300;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
 }
 
-/* ================= MAIN ================= */
+
+/* =========================================================
+   MAIN
+   ========================================================= */
 
 .main-area {
-    min-height: calc(100vh - 48px - 58px);
+    width: 100%;
 
-    padding-bottom: 64px;
+    min-height: calc(100vh - 46px - 56px);
+
+    padding-bottom: 60px;
 }
 
 .content-scroll {
@@ -104,45 +144,63 @@ body {
 
     margin: 0 auto;
 
-    padding: 10px 12px 25px;
+    padding: 8px 11px 20px;
 }
 
-/* ================= SECTION ================= */
+
+/* =========================================================
+   SECTION HEADER
+   ========================================================= */
 
 .section-header,
 .connected-section-header {
+    width: 100%;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 7px;
+    margin-bottom: 5px;
 }
 
 .section-header h2,
 .connected-section-header h2 {
-    font-size: 15px;
+    color: #e8edf5;
+
+    font-size: 13px;
     font-weight: 600;
+
+    line-height: 17px;
 }
 
 .see-all {
     border: none;
     background: transparent;
 
-    color: #2580ff;
+    color: #247cff;
 
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
+
+    cursor: pointer;
 }
 
-/* ================= NEX MOMENT ================= */
+
+/* =========================================================
+   NEX MOMENT
+   ========================================================= */
 
 .moments {
+    width: 100%;
+
     display: flex;
-    gap: 11px;
+    align-items: flex-start;
+
+    gap: 9px;
 
     overflow-x: auto;
 
-    padding: 1px 2px 5px;
+    padding: 1px 1px 4px;
 
     scrollbar-width: none;
 }
@@ -152,20 +210,20 @@ body {
 }
 
 .moment-item {
-    width: 49px;
+    width: 45px;
 
-    flex: 0 0 49px;
+    flex: 0 0 45px;
 
     display: flex;
     flex-direction: column;
     align-items: center;
 
-    gap: 4px;
+    gap: 3px;
 }
 
 .moment-avatar {
-    width: 43px;
-    height: 43px;
+    width: 39px;
+    height: 39px;
 
     border-radius: 50%;
 
@@ -173,13 +231,15 @@ body {
     align-items: center;
     justify-content: center;
 
+    overflow: hidden;
+
     background: #151d29;
 
     border: 2px solid #247cff;
 
     color: #edf2f8;
 
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -204,8 +264,8 @@ body {
     right: -2px;
     bottom: -1px;
 
-    width: 17px;
-    height: 17px;
+    width: 15px;
+    height: 15px;
 
     border-radius: 50%;
 
@@ -214,84 +274,107 @@ body {
     justify-content: center;
 
     background: #247cff;
-    color: white;
+    color: #fff;
 
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .moment-item > span {
-    max-width: 49px;
+    width: 45px;
 
+    color: #8994a4;
+
+    font-size: 8px;
+    line-height: 10px;
+
+    text-align: center;
+
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-
-    color: #929cac;
-
-    font-size: 9px;
-    line-height: 12px;
 }
 
-/* ================= CONNECTED PEOPLE ================= */
+
+/* =========================================================
+   CONNECTED PEOPLE
+   ========================================================= */
 
 .connected-people-section {
-    margin-top: 15px;
+    width: 100%;
+
+    margin-top: 12px;
 }
 
 .connected-section-header {
-    margin-bottom: 7px;
-}
-
-.connected-section-header h2 {
-    font-size: 15px;
+    margin-bottom: 5px;
 }
 
 .connected-count {
-    min-width: 19px;
-    height: 19px;
+    min-width: 17px;
+    height: 17px;
 
-    padding: 0 5px;
+    padding: 0 4px;
 
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 10px;
+    border-radius: 9px;
 
     background: #111e32;
-    color: #3687ff;
 
-    font-size: 9px;
+    color: #3987ff;
+
+    font-size: 8px;
+    font-weight: 600;
 }
-
-/* ================= CONNECTED CARD ================= */
 
 .connected-people-list {
+    width: 100%;
+
     display: flex;
     flex-direction: column;
-    gap: 5px;
+
+    gap: 4px;
 }
+
+
+/* =========================================================
+   CONNECTED CARD
+   ========================================================= */
 
 .connected-person-card {
     width: 100%;
-    min-height: 55px;
+    min-height: 48px;
 
     display: flex;
     align-items: center;
 
-    padding: 7px 9px;
+    padding: 6px 8px;
 
     background: #0a0f15;
 
-    border: 1px solid #18222e;
-    border-radius: 11px;
+    border: 1px solid #17212c;
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+.connected-person-card:active {
+    transform: scale(0.985);
+    background: #0e141c;
 }
 
 .connected-person-avatar {
-    width: 37px;
-    height: 37px;
+    width: 33px;
+    height: 33px;
 
-    flex: 0 0 37px;
+    flex: 0 0 33px;
 
     border-radius: 50%;
 
@@ -307,7 +390,7 @@ body {
 
     color: #edf2f7;
 
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -316,13 +399,16 @@ body {
     height: 100%;
 
     object-fit: cover;
+
+    border-radius: 50%;
 }
 
 .connected-person-info {
     min-width: 0;
+
     flex: 1;
 
-    margin-left: 8px;
+    margin-left: 7px;
 
     display: flex;
     flex-direction: column;
@@ -331,10 +417,12 @@ body {
 }
 
 .connected-person-info strong {
-    font-size: 12px;
-    line-height: 15px;
-
     color: #e9edf3;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    line-height: 14px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -342,10 +430,11 @@ body {
 }
 
 .connected-person-info span {
-    font-size: 9px;
-    line-height: 12px;
+    color: #8591a1;
 
-    color: #8995a5;
+    font-size: 8px;
+
+    line-height: 10px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -353,10 +442,11 @@ body {
 }
 
 .connected-person-info small {
-    font-size: 8px;
-    line-height: 11px;
+    color: #626e7e;
 
-    color: #667384;
+    font-size: 7px;
+
+    line-height: 9px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -364,8 +454,10 @@ body {
 }
 
 .connected-person-arrow {
-    width: 24px;
-    height: 24px;
+    width: 21px;
+    height: 21px;
+
+    flex: 0 0 21px;
 
     display: flex;
     align-items: center;
@@ -375,12 +467,15 @@ body {
 
     background: #111925;
 
-    color: #778599;
+    color: #758397;
 
-    font-size: 16px;
+    font-size: 14px;
 }
 
-/* ================= BOTTOM NAV ================= */
+
+/* =========================================================
+   BOTTOM NAVIGATION
+   ========================================================= */
 
 .bottom-nav {
     position: fixed;
@@ -391,11 +486,12 @@ body {
 
     z-index: 1000;
 
-    height: 58px;
+    width: 100%;
+    height: 56px;
 
     display: flex;
-    justify-content: space-around;
     align-items: stretch;
+    justify-content: space-around;
 
     background: #070a0f;
 
@@ -406,9 +502,11 @@ body {
 
 .nav-item {
     width: 20%;
-    height: 58px;
+    height: 56px;
 
     border: none;
+    outline: none;
+
     background: transparent;
 
     color: #687486;
@@ -418,17 +516,19 @@ body {
     align-items: center;
     justify-content: center;
 
-    gap: 2px;
+    gap: 1px;
+
+    cursor: pointer;
 }
 
 .nav-item svg {
-    width: 19px;
-    height: 19px;
+    width: 18px;
+    height: 18px;
 }
 
 .nav-item span {
-    font-size: 9px;
-    line-height: 11px;
+    font-size: 8px;
+    line-height: 10px;
 
     font-weight: 500;
 }
@@ -437,13 +537,16 @@ body {
     color: #247cff;
 }
 
-/* ================= NOTIFICATION DOT ================= */
+
+/* =========================================================
+   NOTIFICATION DOT
+   ========================================================= */
 
 .notification-icon-wrapper {
     position: relative;
 
-    width: 19px;
-    height: 19px;
+    width: 18px;
+    height: 18px;
 
     display: flex;
     align-items: center;
@@ -462,115 +565,213 @@ body {
     border-radius: 50%;
 
     background: #ff4058;
+
+    border: 1px solid #070a0f;
 }
 
-/* ================= MENU ================= */
+
+/* =========================================================
+   SIDE MENU
+   ========================================================= */
+
+/*
+   VERY IMPORTANT:
+   hidden attribute ke saath menu kabhi display nahi hoga.
+*/
+
+.menu-overlay[hidden] {
+    display: none !important;
+}
 
 .menu-overlay {
     position: fixed;
+
     inset: 0;
 
     z-index: 5000;
 
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.58);
 
     display: flex;
+    align-items: stretch;
+
+    animation: menuFadeIn 0.15s ease;
+}
+
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .menu-panel {
-    width: 245px;
+    width: 235px;
+    max-width: 78vw;
     height: 100%;
 
-    padding: 14px 12px;
+    background: #090e15;
 
-    background: #0a0f16;
+    border-right: 1px solid #17212c;
 
-    border-right: 1px solid #17202b;
+    padding: 13px 10px;
+
+    animation: menuSlideIn 0.18s ease;
+}
+
+@keyframes menuSlideIn {
+    from {
+        transform: translateX(-15px);
+    }
+
+    to {
+        transform: translateX(0);
+    }
 }
 
 .menu-header {
+    width: 100%;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 15px;
+    margin-bottom: 13px;
 }
 
 .menu-brand {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
 }
 
 .close-menu {
-    width: 28px;
-    height: 28px;
+    width: 27px;
+    height: 27px;
 
     border: none;
     border-radius: 50%;
 
-    background: #121a24;
-    color: #d7dee8;
+    background: #111b27;
 
-    font-size: 20px;
+    color: #d9e1eb;
+
+    font-size: 19px;
+    line-height: 27px;
+
+    cursor: pointer;
 }
 
 .menu-items {
+    width: 100%;
+
     display: flex;
     flex-direction: column;
-    gap: 3px;
+
+    gap: 2px;
 }
 
 .menu-items button {
     width: 100%;
-    height: 38px;
+    height: 37px;
 
     border: none;
-    border-radius: 8px;
+    border-radius: 7px;
 
     background: transparent;
 
-    color: #c3ccd8;
+    color: #bec8d5;
+
+    padding: 0 9px;
 
     text-align: left;
 
-    padding: 0 10px;
-
     font-size: 12px;
+
+    cursor: pointer;
+}
+
+.menu-items button:active {
+    background: #121a24;
 }
 
 .menu-items button:last-child {
     margin-top: 7px;
 
-    color: #ff7083;
+    color: #ff7184;
 }
 
-/* ================= SMALL SCREEN ================= */
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
 
 @media (max-width: 360px) {
 
+    .top-header {
+        height: 44px;
+        padding: 0 10px;
+    }
+
+    .brand {
+        font-size: 15px;
+    }
+
     .content-scroll {
-        padding-left: 10px;
-        padding-right: 10px;
+        padding-left: 9px;
+        padding-right: 9px;
     }
 
     .moment-avatar {
-        width: 41px;
-        height: 41px;
+        width: 37px;
+        height: 37px;
     }
 
     .moment-item {
-        width: 47px;
-        flex-basis: 47px;
+        width: 43px;
+        flex-basis: 43px;
     }
 
     .connected-person-card {
-        min-height: 52px;
-        padding: 6px 8px;
+        min-height: 45px;
+        padding: 5px 7px;
     }
 
     .connected-person-avatar {
-        width: 35px;
-        height: 35px;
-        flex-basis: 35px;
+        width: 31px;
+        height: 31px;
+        flex-basis: 31px;
+    }
+
+    .bottom-nav,
+    .nav-item {
+        height: 54px;
+    }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 700px) {
+
+    .content-scroll {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .bottom-nav {
+        left: 50%;
+        right: auto;
+
+        width: min(650px, 100%);
+
+        transform: translateX(-50%);
+
+        border-left: 1px solid #121923;
+        border-right: 1px solid #121923;
     }
 }
