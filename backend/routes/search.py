@@ -32,6 +32,7 @@ router = APIRouter(
 # - pending_sent
 # - pending_received
 # - connected
+# - rejected
 # =========================================================
 
 @router.get("/people")
@@ -62,8 +63,16 @@ def search_people(
         - user_id
         - mobile
 
-    Every returned user also contains their real
-    connection status with the logged-in user.
+    Every returned user contains the connection status
+    relative to the currently logged-in user.
+
+    Possible statuses:
+        self
+        none
+        pending_sent
+        pending_received
+        connected
+        rejected
     """
 
     # =====================================================
@@ -98,18 +107,10 @@ def search_people(
             },
         }
 
-    # =====================================================
-    # SEARCH PATTERN
-    # =====================================================
-
     search_pattern = f"%{search_text}%"
 
     # =====================================================
     # FIND USERS
-    #
-    # We intentionally search ALL users matching the query.
-    # Current user's own account is also allowed here so the
-    # frontend can show "You".
     # =====================================================
 
     users = (
@@ -130,11 +131,11 @@ def search_people(
         .all()
     )
 
+    result_users = []
+
     # =====================================================
     # BUILD RESULT
     # =====================================================
-
-    result_users = []
 
     for user in users:
 
@@ -163,7 +164,7 @@ def search_people(
             continue
 
         # =================================================
-        # DEFAULT STATUS
+        # DEFAULT VALUES
         # =================================================
 
         connection_status = "none"
@@ -173,10 +174,8 @@ def search_people(
         request_received = False
 
         # =================================================
-        # CHECK EXISTING CONNECTION
-        #
-        # user_one/user_two order can be either direction,
-        # therefore both combinations are checked.
+        # STEP 1
+        # CHECK REAL CONNECTION
         # =================================================
 
         connection = (
@@ -202,6 +201,9 @@ def search_people(
                     ),
                 ),
             )
+            .order_by(
+                UserConnection.id.desc()
+            )
             .first()
         )
 
@@ -213,10 +215,11 @@ def search_people(
         else:
 
             # =============================================
-            # CHECK REQUEST SENT BY CURRENT USER
+            # STEP 2
+            # CHECK CURRENT USER'S LATEST REQUEST
             # =============================================
 
-            sent_request = (
+            outgoing_request = (
                 db.query(ConnectionRequest)
                 .filter(
                     ConnectionRequest.sender_id
@@ -224,9 +227,6 @@ def search_people(
 
                     ConnectionRequest.receiver_id
                     == user.id,
-
-                    ConnectionRequest.status
-                    == "pending",
                 )
                 .order_by(
                     ConnectionRequest.id.desc()
@@ -234,45 +234,100 @@ def search_people(
                 .first()
             )
 
-            if sent_request is not None:
+            # =============================================
+            # STEP 3
+            # CHECK OTHER USER'S LATEST REQUEST
+            # =============================================
+
+            incoming_request = (
+                db.query(ConnectionRequest)
+                .filter(
+                    ConnectionRequest.sender_id
+                    == user.id,
+
+                    ConnectionRequest.receiver_id
+                    == current_user.id,
+                )
+                .order_by(
+                    ConnectionRequest.id.desc()
+                )
+                .first()
+            )
+
+            # =================================================
+            # PRIORITY:
+            #
+            # pending incoming/outgoing
+            # > rejected
+            # > none
+            #
+            # This prevents an old rejected request from
+            # overriding a new active request.
+            # =================================================
+
+            if (
+                outgoing_request is not None
+                and outgoing_request.status == "pending"
+            ):
 
                 request_sent = True
                 connection_status = "pending_sent"
 
+            elif (
+                incoming_request is not None
+                and incoming_request.status == "pending"
+            ):
+
+                request_received = True
+                connection_status = "pending_received"
+
             else:
 
-                # =========================================
-                # CHECK REQUEST RECEIVED FROM THIS USER
-                # =========================================
+                # =============================================
+                # CHECK LATEST REJECTION
+                #
+                # If either side has a latest rejected request,
+                # Search will show Rejected.
+                # =============================================
 
-                received_request = (
-                    db.query(ConnectionRequest)
-                    .filter(
-                        ConnectionRequest.sender_id
-                        == user.id,
+                rejected_request = None
 
-                        ConnectionRequest.receiver_id
-                        == current_user.id,
+                candidates = []
 
-                        ConnectionRequest.status
-                        == "pending",
-                    )
-                    .order_by(
-                        ConnectionRequest.id.desc()
-                    )
-                    .first()
-                )
-
-                if received_request is not None:
-
-                    request_received = True
-                    connection_status = (
-                        "pending_received"
+                if (
+                    outgoing_request is not None
+                    and outgoing_request.status == "rejected"
+                ):
+                    candidates.append(
+                        outgoing_request
                     )
 
-        # =================================================
+                if (
+                    incoming_request is not None
+                    and incoming_request.status == "rejected"
+                ):
+                    candidates.append(
+                        incoming_request
+                    )
+
+                if candidates:
+
+                    rejected_request = max(
+                        candidates,
+                        key=lambda item: item.id,
+                    )
+
+                if rejected_request is not None:
+
+                    connection_status = "rejected"
+
+                else:
+
+                    connection_status = "none"
+
+        # =====================================================
         # APPEND USER
-        # =================================================
+        # =====================================================
 
         result_users.append(
             {
