@@ -1,57 +1,76 @@
 "use strict";
 
+/* =========================================================
+   USANEX HOME
+   Version 9
+========================================================= */
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function goTo(url) {
+    window.location.href = url;
+}
+
+
+function getElement(id) {
+    return document.getElementById(id);
+}
+
 
 /* =========================================================
    ELEMENTS
 ========================================================= */
 
 const menuButton =
-    document.getElementById("menuButton");
+    getElement("menuButton");
 
 const menuOverlay =
-    document.getElementById("menuOverlay");
+    getElement("menuOverlay");
 
 const closeMenu =
-    document.getElementById("closeMenu");
+    getElement("closeMenu");
 
 const headerPlus =
-    document.getElementById("headerPlus");
+    getElement("headerPlus");
 
 const homeSearch =
-    document.getElementById("homeSearch");
+    getElement("homeSearch");
 
 const homeNav =
-    document.getElementById("homeNav");
+    getElement("homeNav");
 
 const reelNav =
-    document.getElementById("reelNav");
+    getElement("reelNav");
 
 const searchNav =
-    document.getElementById("searchNav");
+    getElement("searchNav");
 
 const notificationNav =
-    document.getElementById("notificationNav");
+    getElement("notificationNav");
 
 const profileNav =
-    document.getElementById("profileNav");
+    getElement("profileNav");
 
 const logoutButton =
-    document.getElementById("logoutButton");
+    getElement("logoutButton");
 
 const menuProfile =
-    document.getElementById("menuProfile");
+    getElement("menuProfile");
 
 const menuNotifications =
-    document.getElementById("menuNotifications");
+    getElement("menuNotifications");
 
 const menuSettings =
-    document.getElementById("menuSettings");
+    getElement("menuSettings");
 
 const momentSeeAll =
-    document.getElementById("momentSeeAll");
+    getElement("momentSeeAll");
 
 const peopleSeeAll =
-    document.getElementById("peopleSeeAll");
+    getElement("peopleSeeAll");
 
 
 /* =========================================================
@@ -66,7 +85,9 @@ function openMenu() {
 
     menuOverlay.hidden = false;
 
-    document.body.style.overflow = "hidden";
+    document.body.classList.add(
+        "menu-open"
+    );
 }
 
 
@@ -78,7 +99,9 @@ function closeMenuPanel() {
 
     menuOverlay.hidden = true;
 
-    document.body.style.overflow = "";
+    document.body.classList.remove(
+        "menu-open"
+    );
 }
 
 
@@ -86,8 +109,15 @@ if (menuButton) {
 
     menuButton.addEventListener(
         "click",
-        openMenu
+        function (event) {
+
+            event.preventDefault();
+
+            openMenu();
+
+        }
     );
+
 }
 
 
@@ -95,8 +125,15 @@ if (closeMenu) {
 
     closeMenu.addEventListener(
         "click",
-        closeMenuPanel
+        function (event) {
+
+            event.preventDefault();
+
+            closeMenuPanel();
+
+        }
     );
+
 }
 
 
@@ -107,25 +144,31 @@ if (menuOverlay) {
         function (event) {
 
             if (
-                event.target === menuOverlay
+                event.target ===
+                menuOverlay
             ) {
+
                 closeMenuPanel();
+
             }
 
         }
     );
+
 }
 
 
 /* =========================================================
-   TOP PLUS
+   HEADER PLUS
 ========================================================= */
 
 if (headerPlus) {
 
     headerPlus.addEventListener(
         "click",
-        function () {
+        function (event) {
+
+            event.preventDefault();
 
             alert(
                 "Create feature will be added next."
@@ -133,6 +176,7 @@ if (headerPlus) {
 
         }
     );
+
 }
 
 
@@ -140,73 +184,104 @@ if (headerPlus) {
    HOME SEARCH
 ========================================================= */
 
-/*
- * Home search box is only a quick entry point.
- *
- * Tapping / pressing Enter opens the dedicated
- * Search page.
- *
- * We intentionally use normal browser navigation
- * so the phone Back button can return to Home.
- */
-
 function openSearchPage() {
 
-    window.location.href = "/search";
+    goTo("/search");
+
 }
 
 
 if (homeSearch) {
 
-    /* -----------------------------------------
-       Tap / focus
-    ----------------------------------------- */
-
     homeSearch.addEventListener(
-        "focus",
+        "click",
         function () {
 
-            /*
-             * On mobile, focusing the Home search
-             * should open the real Search page.
-             *
-             * Small delay prevents the current
-             * input from behaving unexpectedly.
-             */
-
-            setTimeout(
-                function () {
-
-                    if (
-                        document.activeElement ===
-                        homeSearch
-                    ) {
-
-                        openSearchPage();
-
-                    }
-
-                },
-                50
-            );
+            openSearchPage();
 
         }
     );
 
 
-    /* -----------------------------------------
-       Enter
-    ----------------------------------------- */
+    homeSearch.addEventListener(
+        "focus",
+        function () {
+
+            openSearchPage();
+
+        }
+    );
+
 
     homeSearch.addEventListener(
         "keydown",
         function (event) {
 
             if (
-                event.key !== "Enter"
+                event.key === "Enter"
             ) {
-                return;
+
+                event.preventDefault();
+
+                openSearchPage();
+
             }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   BOTTOM HOME
+========================================================= */
+
+if (homeNav) {
+
+    homeNav.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            const contentScroll =
+                document.querySelector(
+                    ".content-scroll"
+                );
+
+
+            if (contentScroll) {
+
+                contentScroll.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+
+            } else {
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SEARCH NAVIGATION
+========================================================= */
+
+if (searchNav) {
+
+    searchNav.addEventListener(
+        "click",
+        function (event) {
 
             event.preventDefault();
 
@@ -219,49 +294,364 @@ if (homeSearch) {
 
 
 /* =========================================================
-   BOTTOM SEARCH
+   NOTIFICATION NAVIGATION
 ========================================================= */
 
-if (searchNav) {
+function openNotifications() {
 
-    searchNav.addEventListener(
+    goTo(
+        "/notifications"
+    );
+
+}
+
+
+if (notificationNav) {
+
+    notificationNav.addEventListener(
         "click",
-        function () {
+        function (event) {
+
+            event.preventDefault();
+
+            openNotifications();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+function openProfile() {
+
+    goTo(
+        "/profile"
+    );
+
+}
+
+
+if (profileNav) {
+
+    profileNav.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            openProfile();
+
+        }
+    );
+
+}
+
+
+if (menuProfile) {
+
+    menuProfile.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            closeMenuPanel();
+
+            openProfile();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MENU NOTIFICATIONS
+========================================================= */
+
+if (menuNotifications) {
+
+    menuNotifications.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            closeMenuPanel();
+
+            openNotifications();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MENU SETTINGS
+========================================================= */
+
+if (menuSettings) {
+
+    menuSettings.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            closeMenuPanel();
+
+            alert(
+                "Settings feature will be added next."
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   REELS
+========================================================= */
+
+if (reelNav) {
+
+    reelNav.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            alert(
+                "Reels feature will be added next."
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+async function logoutUser() {
+
+    if (logoutButton) {
+
+        logoutButton.disabled =
+            true;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/auth/logout",
+                {
+                    method: "POST",
+
+                    credentials:
+                        "same-origin",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+
+                    cache: "no-store"
+                }
+            );
+
+
+        let data = {};
+
+
+        try {
+
+            data =
+                await response.json();
+
+        } catch {
+
+            data = {};
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Logout failed."
+            );
+
+        }
+
+
+        localStorage.removeItem(
+            "usanex_user"
+        );
+
+        localStorage.removeItem(
+            "usanex_logged_in"
+        );
+
+
+        window.location.replace(
+            "/login"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Usanex logout error:",
+            error
+        );
+
+
+        if (logoutButton) {
+
+            logoutButton.disabled =
+                false;
+
+        }
+
+
+        alert(
+            error.message ||
+            "Unable to logout. Please try again."
+        );
+
+    }
+
+}
+
+
+if (logoutButton) {
+
+    logoutButton.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+
+            const confirmed =
+                window.confirm(
+                    "Are you sure you want to logout?"
+                );
+
+
+            if (!confirmed) {
+                return;
+            }
+
+
+            logoutUser();
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   NEX MOMENT
+========================================================= */
+
+if (momentSeeAll) {
+
+    momentSeeAll.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
+
+            alert(
+                "All moments will be added next."
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   PEOPLE SEE ALL
+========================================================= */
+
+if (peopleSeeAll) {
+
+    peopleSeeAll.addEventListener(
+        "click",
+        function (event) {
+
+            event.preventDefault();
 
             openSearchPage();
 
         }
     );
+
 }
 
 
 /* =========================================================
-   PEOPLE - REAL DATABASE USERS
+   PEOPLE DATABASE
 ========================================================= */
 
 function findPeopleContainer() {
 
     return (
-        document.getElementById("peopleList") ||
-        document.querySelector(".people-list") ||
-        document.querySelector(".people-cards") ||
-        document.querySelector(".people-container")
+        getElement("peopleList") ||
+        document.querySelector(
+            ".people-list"
+        ) ||
+        document.querySelector(
+            ".people-cards"
+        ) ||
+        document.querySelector(
+            ".people-container"
+        )
     );
+
 }
 
 
-function findPersonCard(container) {
+function findPersonCard(
+    container
+) {
 
     if (!container) {
         return null;
     }
 
     return (
-        container.querySelector(".person-card") ||
-        container.querySelector(".people-card") ||
-        container.querySelector(".user-card") ||
-        container.querySelector(".person-item")
+        container.querySelector(
+            ".person-card"
+        ) ||
+        container.querySelector(
+            ".people-card"
+        ) ||
+        container.querySelector(
+            ".user-card"
+        ) ||
+        container.querySelector(
+            ".person-item"
+        )
     );
+
 }
 
 
@@ -275,12 +665,16 @@ function setText(
         return;
     }
 
+
     for (
         const selector of selectors
     ) {
 
         const target =
-            element.querySelector(selector);
+            element.querySelector(
+                selector
+            );
+
 
         if (target) {
 
@@ -288,9 +682,11 @@ function setText(
                 value || "";
 
             return;
+
         }
 
     }
+
 }
 
 
@@ -303,15 +699,18 @@ function setAvatar(
         return;
     }
 
+
     const image =
         element.querySelector(
             "img"
         );
 
+
     const avatar =
         element.querySelector(
             ".avatar, .profile-avatar, .person-avatar, .user-avatar"
         );
+
 
     const firstLetter =
         (
@@ -332,12 +731,18 @@ function setAvatar(
                 user.profile_photo;
 
             image.alt =
-                user.name || "User";
+                user.name ||
+                "User";
 
-            image.hidden = false;
+            image.hidden =
+                false;
+
 
             if (avatar) {
-                avatar.textContent = "";
+
+                avatar.textContent =
+                    "";
+
             }
 
         } else {
@@ -346,16 +751,21 @@ function setAvatar(
                 "src"
             );
 
-            image.hidden = true;
+            image.hidden =
+                true;
+
 
             if (avatar) {
+
                 avatar.textContent =
                     firstLetter;
+
             }
 
         }
 
         return;
+
     }
 
 
@@ -372,7 +782,8 @@ function setAvatar(
             avatar.style.backgroundPosition =
                 "center";
 
-            avatar.textContent = "";
+            avatar.textContent =
+                "";
 
         } else {
 
@@ -385,6 +796,7 @@ function setAvatar(
         }
 
     }
+
 }
 
 
@@ -396,38 +808,149 @@ function attachFollowButton(
         return;
     }
 
+
     button.addEventListener(
         "click",
-        function () {
+        async function (event) {
 
-            const isFollowing =
-                button.classList.contains(
-                    "following"
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            const userId =
+                (
+                    button.dataset.userId ||
+                    ""
+                ).trim();
+
+
+            if (!userId) {
+
+                alert(
+                    "User ID is missing."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                button.disabled
+            ) {
+
+                return;
+
+            }
+
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Sending...";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/connections/request",
+                        {
+                            method: "POST",
+
+                            credentials:
+                                "same-origin",
+
+                            headers: {
+                                "Accept":
+                                    "application/json",
+
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    user_id:
+                                        userId
+                                })
+                        }
+                    );
+
+
+                let data = {};
+
+
+                try {
+
+                    data =
+                        await response.json();
+
+                } catch {
+
+                    data = {};
+
+                }
+
+
+                if (
+                    response.status === 401
+                ) {
+
+                    goTo(
+                        "/login"
+                    );
+
+                    return;
+
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.detail ||
+                        "Unable to send request."
+                    );
+
+                }
+
+
+                button.textContent =
+                    "Request Sent";
+
+                button.classList.add(
+                    "requested"
                 );
 
 
-            if (isFollowing) {
+            } catch (error) {
 
-                button.classList.remove(
-                    "following"
+                console.error(
+                    "Usanex follow error:",
+                    error
                 );
+
+
+                button.disabled =
+                    false;
 
                 button.textContent =
                     "Follow";
 
-            } else {
 
-                button.classList.add(
-                    "following"
+                alert(
+                    error.message ||
+                    "Unable to send request."
                 );
-
-                button.textContent =
-                    "Unfollow";
 
             }
 
         }
     );
+
 }
 
 
@@ -438,35 +961,25 @@ function renderPeople(
     const container =
         findPeopleContainer();
 
+
     if (!container) {
-
-        console.warn(
-            "Usanex: People container not found."
-        );
-
         return;
     }
 
 
     const template =
-        findPersonCard(container);
-
-    if (!template) {
-
-        console.warn(
-            "Usanex: People card template not found."
+        findPersonCard(
+            container
         );
 
+
+    if (!template) {
         return;
     }
 
 
-    /*
-     * Existing HTML card is used as a template.
-     * This keeps the current UI/CSS unchanged.
-     */
-
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     if (
@@ -474,22 +987,27 @@ function renderPeople(
         users.length === 0
     ) {
 
-        const emptyMessage =
+        const empty =
             document.createElement(
                 "div"
             );
 
-        emptyMessage.className =
+
+        empty.className =
             "people-empty";
 
-        emptyMessage.textContent =
+
+        empty.textContent =
             "No people found.";
 
+
         container.appendChild(
-            emptyMessage
+            empty
         );
 
+
         return;
+
     }
 
 
@@ -497,12 +1015,10 @@ function renderPeople(
         function (user) {
 
             const card =
-                template.cloneNode(true);
+                template.cloneNode(
+                    true
+                );
 
-
-            /* -----------------------------------------
-               USER NAME
-            ----------------------------------------- */
 
             setText(
                 card,
@@ -516,10 +1032,6 @@ function renderPeople(
             );
 
 
-            /* -----------------------------------------
-               USERNAME
-            ----------------------------------------- */
-
             setText(
                 card,
                 [
@@ -531,10 +1043,6 @@ function renderPeople(
                 user.username
             );
 
-
-            /* -----------------------------------------
-               USER ID
-            ----------------------------------------- */
 
             setText(
                 card,
@@ -548,19 +1056,11 @@ function renderPeople(
             );
 
 
-            /* -----------------------------------------
-               PROFILE PHOTO / AVATAR
-            ----------------------------------------- */
-
             setAvatar(
                 card,
                 user
             );
 
-
-            /* -----------------------------------------
-               FOLLOW BUTTON
-            ----------------------------------------- */
 
             const followButton =
                 card.querySelector(
@@ -570,34 +1070,35 @@ function renderPeople(
 
             if (followButton) {
 
-                followButton.classList.remove(
-                    "following"
-                );
+                followButton.disabled =
+                    false;
 
                 followButton.textContent =
                     "Follow";
 
-                followButton.dataset.userId =
-                    user.user_id;
+                followButton.classList.remove(
+                    "following",
+                    "requested"
+                );
 
-                followButton.dataset.username =
-                    user.username;
+
+                followButton.dataset.userId =
+                    user.user_id || "";
+
 
                 attachFollowButton(
                     followButton
                 );
+
             }
 
 
-            /* -----------------------------------------
-               USER DATA
-            ----------------------------------------- */
-
             card.dataset.userId =
-                user.user_id;
+                user.user_id || "";
+
 
             card.dataset.username =
-                user.username;
+                user.username || "";
 
 
             container.appendChild(
@@ -606,6 +1107,7 @@ function renderPeople(
 
         }
     );
+
 }
 
 
@@ -614,38 +1116,10 @@ async function loadPeople() {
     const container =
         findPeopleContainer();
 
+
     if (!container) {
-
-        console.warn(
-            "Usanex: People container not found."
-        );
-
         return;
     }
-
-
-    const template =
-        findPersonCard(container);
-
-    if (!template) {
-
-        console.warn(
-            "Usanex: People card template not found."
-        );
-
-        return;
-    }
-
-
-    /*
-     * Loading state
-     */
-
-    const originalHTML =
-        container.innerHTML;
-
-    container.dataset.loading =
-        "true";
 
 
     try {
@@ -656,6 +1130,9 @@ async function loadPeople() {
                 {
                     method: "GET",
 
+                    credentials:
+                        "same-origin",
+
                     headers: {
                         "Accept":
                             "application/json"
@@ -664,6 +1141,19 @@ async function loadPeople() {
                     cache: "no-store"
                 }
             );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            goTo(
+                "/login"
+            );
+
+            return;
+
+        }
 
 
         if (!response.ok) {
@@ -685,7 +1175,7 @@ async function loadPeople() {
         ) {
 
             throw new Error(
-                "Invalid people API response"
+                "Invalid people response"
             );
 
         }
@@ -696,346 +1186,15 @@ async function loadPeople() {
         );
 
 
-        console.log(
-            "Usanex: Real users loaded:",
-            data.users?.length || 0
-        );
-
-
     } catch (error) {
 
         console.error(
-            "Usanex: Failed to load people.",
+            "Usanex people error:",
             error
         );
 
-
-        /*
-         * Keep the existing UI if API fails.
-         */
-
-        container.innerHTML =
-            originalHTML;
-
-
-        const buttons =
-            container.querySelectorAll(
-                ".follow-button"
-            );
-
-
-        buttons.forEach(
-            attachFollowButton
-        );
-
-    } finally {
-
-        container.dataset.loading =
-            "false";
     }
-}
 
-
-/* =========================================================
-   INITIAL LOAD OF REAL USERS
-========================================================= */
-
-loadPeople();
-
-
-/* =========================================================
-   REEL
-========================================================= */
-
-if (reelNav) {
-
-    reelNav.addEventListener(
-        "click",
-        function () {
-
-            alert(
-                "Reels feature will be added next."
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   NOTIFICATION
-========================================================= */
-
-if (notificationNav) {
-
-    notificationNav.addEventListener(
-        "click",
-        function () {
-
-            window.location.href =
-                "/notifications";
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   PROFILE
-========================================================= */
-
-if (profileNav) {
-
-    profileNav.addEventListener(
-        "click",
-        function () {
-
-            alert(
-                "Profile feature will be added next."
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   HOME
-========================================================= */
-
-if (homeNav) {
-
-    homeNav.addEventListener(
-        "click",
-        function () {
-
-            const contentScroll =
-                document.querySelector(
-                    ".content-scroll"
-                );
-
-            if (contentScroll) {
-
-                contentScroll.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
-
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   MENU PROFILE
-========================================================= */
-
-if (menuProfile) {
-
-    menuProfile.addEventListener(
-        "click",
-        function () {
-
-            closeMenuPanel();
-
-            alert(
-                "Profile feature will be added next."
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   MENU NOTIFICATIONS
-========================================================= */
-
-if (menuNotifications) {
-
-    menuNotifications.addEventListener(
-        "click",
-        function () {
-
-            closeMenuPanel();
-
-            window.location.href =
-                "/notifications";
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   MENU SETTINGS
-========================================================= */
-
-if (menuSettings) {
-
-    menuSettings.addEventListener(
-        "click",
-        function () {
-
-            closeMenuPanel();
-
-            alert(
-                "Settings feature will be added next."
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   REAL SERVER LOGOUT
-========================================================= */
-
-async function logoutUser() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/auth/logout",
-                {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        let data = {};
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch {
-
-            data = {};
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.detail ||
-                "Logout failed."
-            );
-        }
-
-
-        /* -----------------------------------------
-           REMOVE OLD LOCAL LOGIN DATA
-        ----------------------------------------- */
-
-        localStorage.removeItem(
-            "usanex_user"
-        );
-
-        localStorage.removeItem(
-            "usanex_logged_in"
-        );
-
-
-        /* -----------------------------------------
-           GO TO LOGIN
-        ----------------------------------------- */
-
-        window.location.replace(
-            "/login"
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Usanex logout error:",
-            error
-        );
-
-
-        alert(
-            "Unable to logout right now. Please try again."
-        );
-    }
-}
-
-
-if (logoutButton) {
-
-    logoutButton.addEventListener(
-        "click",
-        async function () {
-
-            const confirmed =
-                window.confirm(
-                    "Are you sure you want to logout?"
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            logoutButton.disabled = true;
-
-            await logoutUser();
-
-            logoutButton.disabled = false;
-        }
-    );
-}
-
-
-/* =========================================================
-   NEX MOMENT SEE ALL
-========================================================= */
-
-if (momentSeeAll) {
-
-    momentSeeAll.addEventListener(
-        "click",
-        function () {
-
-            alert(
-                "All moments will be added next."
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   PEOPLE SEE ALL
-========================================================= */
-
-if (peopleSeeAll) {
-
-    peopleSeeAll.addEventListener(
-        "click",
-        function () {
-
-            alert(
-                "All people will be added next."
-            );
-
-        }
-    );
 }
 
 
@@ -1045,14 +1204,39 @@ if (peopleSeeAll) {
 
 if (menuOverlay) {
 
-    menuOverlay.hidden = true;
+    menuOverlay.hidden =
+        true;
+
 }
 
 
+loadPeople();
+
+
 /* =========================================================
-   VERSION
+   DEBUG
 ========================================================= */
 
 console.log(
-    "Usanex Home v8 - search navigation + secure server logout loaded successfully."
+    "Usanex Home v9 loaded."
+);
+
+console.log(
+    "Search:",
+    !!homeSearch
+);
+
+console.log(
+    "Notification:",
+    !!notificationNav
+);
+
+console.log(
+    "Logout:",
+    !!logoutButton
+);
+
+console.log(
+    "Profile:",
+    !!profileNav
 );
