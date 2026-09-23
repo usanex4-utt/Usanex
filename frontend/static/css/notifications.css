@@ -1,7 +1,7 @@
 /* =========================================================
    USANEX - NOTIFICATIONS
    Clean Dark Mobile UI
-   ========================================================= */
+========================================================= */
 
 * {
     box-sizing: border-box;
@@ -9,16 +9,16 @@
     padding: 0;
 }
 
-html {
-    min-height: 100%;
-    background: #070b12;
-}
-
+html,
 body {
-    min-height: 100vh;
+    width: 100%;
+    min-height: 100%;
+
     background: #070b12;
     color: #ffffff;
+
     font-family:
+        Inter,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
@@ -27,13 +27,33 @@ body {
         sans-serif;
 }
 
+body {
+    overflow-x: hidden;
+    padding-bottom: 72px;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    border: 0;
+    outline: none;
+    cursor: pointer;
+}
+
 
 /* =========================================================
    PAGE
-   ========================================================= */
+========================================================= */
 
 .notifications-page {
+    position: relative;
+
+    width: 100%;
     min-height: 100vh;
+
     background:
         radial-gradient(
             circle at top,
@@ -46,17 +66,29 @@ body {
 
 /* =========================================================
    HEADER
-   ========================================================= */
+========================================================= */
 
 .notifications-header {
     position: sticky;
+
     top: 0;
+
     z-index: 100;
 
     height: 64px;
 
     display: grid;
-    grid-template-columns: 64px 1fr 64px;
+
+    /*
+       Left side empty,
+       title center,
+       delete icon right.
+    */
+    grid-template-columns:
+        1fr
+        auto
+        1fr;
+
     align-items: center;
 
     background: rgba(7, 11, 18, 0.96);
@@ -68,18 +100,13 @@ body {
 }
 
 
-.header-left,
-.header-right {
-    width: 64px;
-    height: 64px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
+/* =========================================================
+   HEADER TITLE
+========================================================= */
 
 .header-title {
+    grid-column: 2;
+
     text-align: center;
 
     font-size: 18px;
@@ -88,10 +115,34 @@ body {
     color: #ffffff;
 
     letter-spacing: 0.1px;
+
+    white-space: nowrap;
 }
 
 
-.back-button {
+/* =========================================================
+   HEADER RIGHT
+========================================================= */
+
+.header-right {
+    grid-column: 3;
+
+    width: 64px;
+    height: 64px;
+
+    justify-self: end;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* =========================================================
+   DELETE BUTTON
+========================================================= */
+
+.delete-notifications {
     width: 42px;
     height: 42px;
 
@@ -99,39 +150,39 @@ body {
     align-items: center;
     justify-content: center;
 
-    border: 0;
     border-radius: 50%;
 
     background: transparent;
+
     color: #ffffff;
 
     cursor: pointer;
 
     transition:
         background 0.2s ease,
-        transform 0.2s ease;
+        transform 0.2s ease,
+        color 0.2s ease;
 }
 
-
-.back-button:hover {
+.delete-notifications:hover {
     background: rgba(255, 255, 255, 0.07);
 }
 
-
-.back-button:active {
-    transform: scale(0.92);
+.delete-notifications:active {
+    transform: scale(0.90);
 }
 
+.delete-notifications svg {
+    width: 22px;
+    height: 22px;
 
-.back-button svg {
-    width: 23px;
-    height: 23px;
+    display: block;
 }
 
 
 /* =========================================================
    MAIN
-   ========================================================= */
+========================================================= */
 
 .notifications-main {
     width: 100%;
@@ -142,13 +193,13 @@ body {
     padding:
         18px
         14px
-        calc(30px + env(safe-area-inset-bottom));
+        100px;
 }
 
 
 /* =========================================================
    LOADING
-   ========================================================= */
+========================================================= */
 
 .notification-loading {
     padding: 40px 15px;
@@ -163,13 +214,14 @@ body {
 
 /* =========================================================
    EMPTY STATE
-   ========================================================= */
+========================================================= */
 
 .notification-empty {
     min-height: 65vh;
 
     display: flex;
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
 
@@ -178,11 +230,9 @@ body {
     padding: 30px 20px;
 }
 
-
 .notification-empty[hidden] {
     display: none;
 }
-
 
 .empty-icon {
     width: 70px;
@@ -203,12 +253,10 @@ body {
     color: #718096;
 }
 
-
 .empty-icon svg {
     width: 32px;
     height: 32px;
 }
-
 
 .notification-empty h2 {
     margin-bottom: 8px;
@@ -218,7 +266,6 @@ body {
 
     color: #ffffff;
 }
-
 
 .notification-empty p {
     max-width: 300px;
@@ -232,18 +279,17 @@ body {
 
 /* =========================================================
    SECTIONS
-   ========================================================= */
+========================================================= */
 
 .notification-section {
     width: 100%;
+
     margin-bottom: 25px;
 }
-
 
 .notification-section[hidden] {
     display: none;
 }
-
 
 .section-title-row {
     display: flex;
@@ -251,7 +297,6 @@ body {
 
     margin-bottom: 12px;
 }
-
 
 .section-title-row h2 {
     font-size: 14px;
@@ -265,12 +310,13 @@ body {
 
 /* =========================================================
    NOTIFICATION CARD
-   ========================================================= */
+========================================================= */
 
 .notification-card {
     width: 100%;
 
     margin-bottom: 10px;
+
     padding: 14px;
 
     background: #0d131c;
@@ -288,12 +334,11 @@ body {
         transform 0.2s ease;
 }
 
-
 .notification-card:hover {
     border-color: #273547;
+
     background: #101720;
 }
-
 
 .notification-card:active {
     transform: scale(0.995);
@@ -302,7 +347,7 @@ body {
 
 /* =========================================================
    USER AREA
-   ========================================================= */
+========================================================= */
 
 .notification-user {
     min-width: 0;
@@ -312,7 +357,6 @@ body {
 
     gap: 12px;
 }
-
 
 .notification-avatar {
     width: 48px;
@@ -328,7 +372,6 @@ body {
 
     border: 1px solid #263244;
 }
-
 
 .notification-avatar.placeholder {
     display: flex;
@@ -348,7 +391,6 @@ body {
     font-weight: 700;
 }
 
-
 .notification-user-info {
     min-width: 0;
 
@@ -357,7 +399,6 @@ body {
 
     gap: 3px;
 }
-
 
 .notification-user-info strong {
     overflow: hidden;
@@ -371,7 +412,6 @@ body {
     text-overflow: ellipsis;
 }
 
-
 .notification-user-info span {
     overflow: hidden;
 
@@ -382,7 +422,6 @@ body {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-
 
 .notification-user-info small {
     overflow: hidden;
@@ -398,7 +437,7 @@ body {
 
 /* =========================================================
    ACTION BUTTONS
-   ========================================================= */
+========================================================= */
 
 .notification-actions {
     display: flex;
@@ -407,7 +446,6 @@ body {
 
     margin-top: 13px;
 }
-
 
 .notification-actions button {
     min-height: 40px;
@@ -429,38 +467,35 @@ body {
         background 0.2s ease;
 }
 
-
 .notification-actions button:active {
     transform: scale(0.97);
 }
 
-
 .notification-actions button:disabled {
     opacity: 0.55;
+
     cursor: not-allowed;
 }
-
 
 .accept-button {
     border: 1px solid #315d47;
 
     background: #173526;
+
     color: #7ee2a8;
 }
-
 
 .accept-button:hover {
     background: #1c4230;
 }
 
-
 .reject-button {
     border: 1px solid #343e4c;
 
     background: #151c25;
+
     color: #aeb8c5;
 }
-
 
 .reject-button:hover {
     background: #1b232e;
@@ -469,12 +504,11 @@ body {
 
 /* =========================================================
    VERIFICATION CARD
-   ========================================================= */
+========================================================= */
 
 .verification-card {
     overflow: hidden;
 }
-
 
 .verification-message {
     margin-top: 15px;
@@ -483,7 +517,6 @@ body {
 
     border-top: 1px solid #1a2533;
 }
-
 
 .verification-title {
     margin-bottom: 10px;
@@ -494,14 +527,12 @@ body {
     font-weight: 600;
 }
 
-
 .verification-code-row {
     display: flex;
     align-items: center;
 
     gap: 9px;
 }
-
 
 .verification-code {
     min-width: 0;
@@ -537,7 +568,6 @@ body {
     overflow: hidden;
 }
 
-
 .copy-code-button {
     height: 46px;
 
@@ -563,11 +593,9 @@ body {
         transform 0.15s ease;
 }
 
-
 .copy-code-button:hover {
     background: #182d48;
 }
-
 
 .copy-code-button:active {
     transform: scale(0.96);
@@ -576,7 +604,7 @@ body {
 
 /* =========================================================
    GO CARD
-   ========================================================= */
+========================================================= */
 
 .go-card-button {
     width: 100%;
@@ -603,11 +631,9 @@ body {
         transform 0.15s ease;
 }
 
-
 .go-card-button:hover {
     background: #1a304d;
 }
-
 
 .go-card-button:active {
     transform: scale(0.98);
@@ -616,7 +642,7 @@ body {
 
 /* =========================================================
    TOP POPUP
-   ========================================================= */
+========================================================= */
 
 .status-popup {
     position: fixed;
@@ -631,6 +657,7 @@ body {
     left: 50%;
 
     width: calc(100% - 28px);
+
     max-width: 520px;
 
     padding: 13px 16px;
@@ -668,7 +695,6 @@ body {
     z-index: 700;
 }
 
-
 .status-popup.show {
     opacity: 1;
 
@@ -679,8 +705,152 @@ body {
 
 
 /* =========================================================
+   BOTTOM NAVIGATION
+========================================================= */
+
+.bottom-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    z-index: 1000;
+
+    width: 100%;
+    height: 72px;
+
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        1fr
+        1fr
+        1.15fr
+        1fr;
+
+    align-items: center;
+
+    padding:
+        7px
+        max(7px, env(safe-area-inset-right))
+        calc(7px + env(safe-area-inset-bottom))
+        max(7px, env(safe-area-inset-left));
+
+    background: rgba(7, 9, 13, 0.98);
+
+    border-top: 1px solid #171d26;
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+
+/* =========================================================
+   NAV ITEMS
+========================================================= */
+
+.nav-item {
+    height: 58px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    background: transparent;
+
+    color: #697482;
+
+    font-size: 10px;
+
+    font-weight: 500;
+
+    transition:
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.nav-item svg {
+    width: 22px;
+    height: 22px;
+
+    flex: 0 0 auto;
+}
+
+.nav-item.active {
+    color: #1683ff;
+}
+
+.nav-item:active {
+    transform: scale(0.94);
+}
+
+
+/* =========================================================
+   NOTIFICATION DOT
+========================================================= */
+
+.notification-icon-wrapper {
+    position: relative;
+
+    width: 22px;
+    height: 22px;
+}
+
+.notification-icon-wrapper svg {
+    width: 22px;
+    height: 22px;
+}
+
+.notification-dot {
+    position: absolute;
+
+    top: -1px;
+    right: -2px;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #1683ff;
+
+    border: 1px solid #07090d;
+}
+
+
+/* =========================================================
+   DESKTOP
+========================================================= */
+
+@media (min-width: 768px) {
+
+    .notifications-main {
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+
+    .bottom-nav {
+        left: 50%;
+        right: auto;
+
+        width: 680px;
+
+        transform: translateX(-50%);
+
+        border-left: 1px solid #171d26;
+        border-right: 1px solid #171d26;
+    }
+}
+
+
+/* =========================================================
    MOBILE
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 430px) {
 
@@ -688,38 +858,42 @@ body {
         height: 60px;
 
         grid-template-columns:
-            58px
             1fr
-            58px;
+            auto
+            1fr;
     }
 
-
-    .header-left,
     .header-right {
         width: 58px;
         height: 60px;
     }
 
-
     .header-title {
         font-size: 17px;
     }
 
+    .delete-notifications {
+        width: 40px;
+        height: 40px;
+    }
+
+    .delete-notifications svg {
+        width: 21px;
+        height: 21px;
+    }
 
     .notifications-main {
         padding:
             14px
             12px
-            calc(25px + env(safe-area-inset-bottom));
+            100px;
     }
-
 
     .notification-card {
         padding: 13px;
 
         border-radius: 16px;
     }
-
 
     .notification-avatar {
         width: 46px;
@@ -728,12 +902,11 @@ body {
         flex-basis: 46px;
     }
 
-
     .verification-code {
         font-size: 17px;
+
         letter-spacing: 2.5px;
     }
-
 
     .copy-code-button {
         padding: 0 11px;
@@ -743,7 +916,7 @@ body {
 
 /* =========================================================
    VERY SMALL SCREENS
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 350px) {
 
@@ -751,19 +924,28 @@ body {
         flex-direction: column;
     }
 
-
     .verification-code-row {
         flex-direction: column;
+
         align-items: stretch;
     }
-
 
     .verification-code {
         width: 100%;
     }
 
-
     .copy-code-button {
         width: 100%;
+    }
+
+    .nav-item {
+        font-size: 9px;
+    }
+
+    .nav-item svg,
+    .notification-icon-wrapper,
+    .notification-icon-wrapper svg {
+        width: 21px;
+        height: 21px;
     }
 }
