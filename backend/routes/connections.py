@@ -116,21 +116,17 @@ def create_verification(
         synchronize_session=False
     )
 
-
     # Generate code
     code = generate_verification_code()
-
 
     # Hash code
     code_hash = verification_hasher.hash(
         code
     )
 
-
     now = datetime.now(
         timezone.utc
     )
-
 
     # 24-hour expiry
     expires_at = (
@@ -139,7 +135,6 @@ def create_verification(
             hours=VERIFICATION_EXPIRY_HOURS
         )
     )
-
 
     verification = ConnectionVerification(
         connection_request_id=
@@ -167,19 +162,16 @@ def create_verification(
         verified_at=None,
     )
 
-
     db.add(
         verification
     )
 
     db.flush()
 
-
     # Encrypt code for notification
     encrypted_code = encrypt_code(
         code
     )
-
 
     notification = ConnectionNotification(
         receiver_id=
@@ -206,13 +198,11 @@ def create_verification(
             now,
     )
 
-
     db.add(
         notification
     )
 
     db.commit()
-
 
     db.refresh(
         verification
@@ -221,7 +211,6 @@ def create_verification(
     db.refresh(
         notification
     )
-
 
     return (
         verification,
@@ -244,18 +233,15 @@ def send_connection_request(
         db=db,
     )
 
-
     target_user_id = (
         payload.user_id.strip()
     )
-
 
     if not target_user_id:
         raise HTTPException(
             status_code=400,
             detail="User ID is required",
         )
-
 
     target_user = (
         db.query(User)
@@ -266,20 +252,17 @@ def send_connection_request(
         .first()
     )
 
-
     if target_user is None:
         raise HTTPException(
             status_code=404,
             detail="User not found",
         )
 
-
     if target_user.id == current_user.id:
         raise HTTPException(
             status_code=400,
             detail="You cannot send a request to yourself",
         )
-
 
     # Check whether already connected
     existing_connection = (
@@ -312,13 +295,11 @@ def send_connection_request(
         .first()
     )
 
-
     if existing_connection is not None:
         raise HTTPException(
             status_code=409,
             detail="You are already connected",
         )
-
 
     existing_request = (
         db.query(ConnectionRequest)
@@ -335,7 +316,6 @@ def send_connection_request(
         .first()
     )
 
-
     if existing_request is not None:
 
         if existing_request.status == "pending":
@@ -344,13 +324,11 @@ def send_connection_request(
                 detail="Connection request already pending",
             )
 
-
         if existing_request.status == "accepted":
             raise HTTPException(
                 status_code=409,
                 detail="You are already connected",
             )
-
 
         if existing_request.status == "rejected":
             db.delete(
@@ -358,7 +336,6 @@ def send_connection_request(
             )
 
             db.commit()
-
 
     # Check reverse request
     reverse_request = (
@@ -376,18 +353,15 @@ def send_connection_request(
         .first()
     )
 
-
     if reverse_request is not None:
         raise HTTPException(
             status_code=409,
             detail="This user has already sent you a request",
         )
 
-
     now = datetime.now(
         timezone.utc
     )
-
 
     new_request = ConnectionRequest(
         sender_id=
@@ -405,7 +379,6 @@ def send_connection_request(
             now,
     )
 
-
     db.add(
         new_request
     )
@@ -415,7 +388,6 @@ def send_connection_request(
     db.refresh(
         new_request
     )
-
 
     return {
         "success": True,
@@ -453,7 +425,6 @@ def get_connection_requests(
         db=db,
     )
 
-
     requests = (
         db.query(ConnectionRequest)
         .filter(
@@ -469,9 +440,7 @@ def get_connection_requests(
         .all()
     )
 
-
     result = []
-
 
     for connection_request in requests:
 
@@ -484,10 +453,8 @@ def get_connection_requests(
             .first()
         )
 
-
         if sender is None:
             continue
-
 
         result.append(
             {
@@ -520,7 +487,6 @@ def get_connection_requests(
             }
         )
 
-
     return {
         "success": True,
 
@@ -549,7 +515,6 @@ def accept_connection_request(
         db=db,
     )
 
-
     connection_request = (
         db.query(ConnectionRequest)
         .filter(
@@ -565,13 +530,11 @@ def accept_connection_request(
         .first()
     )
 
-
     if connection_request is None:
         raise HTTPException(
             status_code=404,
             detail="Pending connection request not found",
         )
-
 
     sender = (
         db.query(User)
@@ -582,26 +545,21 @@ def accept_connection_request(
         .first()
     )
 
-
     if sender is None:
         raise HTTPException(
             status_code=404,
             detail="Request sender not found",
         )
 
-
     now = datetime.now(
         timezone.utc
     )
-
 
     connection_request.status = "accepted"
 
     connection_request.updated_at = now
 
-
     db.commit()
-
 
     # Create verification code
     verification, notification = (
@@ -611,7 +569,6 @@ def accept_connection_request(
                 connection_request,
         )
     )
-
 
     return {
         "success": True,
@@ -677,7 +634,6 @@ def reject_connection_request(
         db=db,
     )
 
-
     connection_request = (
         db.query(ConnectionRequest)
         .filter(
@@ -693,13 +649,11 @@ def reject_connection_request(
         .first()
     )
 
-
     if connection_request is None:
         raise HTTPException(
             status_code=404,
             detail="Pending connection request not found",
         )
-
 
     sender = (
         db.query(User)
@@ -710,26 +664,21 @@ def reject_connection_request(
         .first()
     )
 
-
     if sender is None:
         raise HTTPException(
             status_code=404,
             detail="Request sender not found",
         )
 
-
     now = datetime.now(
         timezone.utc
     )
-
 
     connection_request.status = "rejected"
 
     connection_request.updated_at = now
 
-
     db.commit()
-
 
     return {
         "success": True,
@@ -770,7 +719,6 @@ def get_connection_notifications(
         db=db,
     )
 
-
     notifications = (
         db.query(ConnectionNotification)
         .filter(
@@ -786,9 +734,7 @@ def get_connection_notifications(
         .all()
     )
 
-
     result = []
-
 
     for notification in notifications:
 
@@ -801,13 +747,10 @@ def get_connection_notifications(
             .first()
         )
 
-
         if sender is None:
             continue
 
-
         verification = None
-
 
         if notification.verification_id:
 
@@ -822,16 +765,13 @@ def get_connection_notifications(
                 .first()
             )
 
-
         is_expired = False
-
 
         if verification is not None:
 
             expires_at = (
                 verification.expires_at
             )
-
 
             if expires_at.tzinfo is None:
                 expires_at = (
@@ -840,16 +780,13 @@ def get_connection_notifications(
                     )
                 )
 
-
             if (
                 datetime.now(timezone.utc)
                 >= expires_at
             ):
                 is_expired = True
 
-
         verification_code = None
-
 
         if (
             notification.encrypted_code
@@ -869,7 +806,6 @@ def get_connection_notifications(
             except ValueError:
 
                 verification_code = None
-
 
         result.append(
             {
@@ -935,7 +871,6 @@ def get_connection_notifications(
             }
         )
 
-
     return {
         "success": True,
 
@@ -964,7 +899,6 @@ def mark_notification_read(
         db=db,
     )
 
-
     notification = (
         db.query(ConnectionNotification)
         .filter(
@@ -977,18 +911,15 @@ def mark_notification_read(
         .first()
     )
 
-
     if notification is None:
         raise HTTPException(
             status_code=404,
             detail="Notification not found",
         )
 
-
     notification.is_read = 1
 
     db.commit()
-
 
     return {
         "success": True,
@@ -1003,4 +934,6 @@ def mark_notification_read(
 # =========================================================
 
 @router.post("/verify")
-def verify_connec
+def verify_connection_code(
+    payload: ConnectionVerifyRequest,
+    request: Request
