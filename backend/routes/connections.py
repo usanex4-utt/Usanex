@@ -13,6 +13,7 @@ from ..database.models import (
     ConnectionVerification,
     ConnectionNotification,
     UserConnection,
+    UserConnectionCategory,
 )
 from .auth import get_current_user_from_request
 
@@ -27,10 +28,9 @@ router = APIRouter(
 # CONSTANTS
 # ============================================================
 
-VALID_CATEGORIES = {
+VALID_PERSONAL_CATEGORIES = {
     "friend",
     "family",
-    "couple",
 }
 
 
@@ -52,7 +52,6 @@ class LegacyFollowBody(BaseModel):
 class ActionBody(BaseModel):
     notification_id: int
     user_id: Optional[str] = None
-    category: Optional[str] = "friend"
 
 
 class NotificationReadBody(BaseModel):
@@ -60,8 +59,9 @@ class NotificationReadBody(BaseModel):
     user_id: Optional[str] = None
 
 
-class AcceptConnectionBody(BaseModel):
-    category: Optional[str] = "friend"
+class PersonalCategoryBody(BaseModel):
+    connected_user_id: str
+    category: str
 
 
 # ============================================================
@@ -86,31 +86,21 @@ def get_authenticated_user(
     return user
 
 
-def normalize_category(
-    category: Optional[str],
+def normalize_personal_category(
+    category: str,
 ) -> str:
-    """
-    Convert category into one of:
-        friend
-        family
-        couple
-    """
-
     if not category:
-        return "friend"
+        raise HTTPException(
+            status_code=400,
+            detail="Category is required",
+        )
 
     value = category.strip().lower()
 
     aliases = {
-        "friends": "friend",
         "friend": "friend",
-
+        "friends": "friend",
         "family": "family",
-
-        "couple": "couple",
-        "couple_chat": "couple",
-        "couple-chat": "couple",
-        "couple chat": "couple",
     }
 
     normalized = aliases.get(value)
@@ -119,8 +109,8 @@ def normalize_category(
         raise HTTPException(
             status_code=400,
             detail=(
-                "Invalid connection category. "
-                "Allowed categories: friend, family, couple"
+                "Invalid personal category. "
+                "Allowed categories: friend, family"
             ),
         )
 
@@ -193,6 +183,22 @@ def get_latest_notification_for_request(
     )
 
 
+def get_personal_category(
+    db: Session,
+    user_id: int,
+    connected_user_id: int,
+):
+    return (
+        db.query(UserConnectionCategory)
+        .filter(
+            UserConnectionCategory.user_id == user_id,
+            UserConnectionCategory.connected_user_id
+            == connected_user_id,
+        )
+        .first()
+    )
+
+
 # ============================================================
 # SEND CONNECTION REQUEST
 # ============================================================
@@ -239,13 +245,20 @@ def send_connection_request(
     )
 
     if existing_connection:
+        personal_category = get_personal_category(
+            db,
+            current_user.id,
+            target_user.id,
+        )
+
         return {
             "success": True,
             "status": "connected",
             "message": "Already connected",
             "category": (
-                existing_connection.category
-                or "friend"
+                personal_category.category
+                if personal_category
+                else None
             ),
         }
 
@@ -279,7 +292,9 @@ def send_connection_request(
         return {
             "success": True,
             "status": "pending_received",
-            "message": "This user has already sent you a request",
+            "message": (
+                "This user has already sent you a request"
+            ),
             "request_id": incoming.id,
         }
 
@@ -376,19 +391,10 @@ def accept_connection_request(
     request_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    body: Optional[AcceptConnectionBody] = None,
 ):
     current_user = get_authenticated_user(
         request,
         db,
-    )
-
-    # --------------------------------------------------------
-    # Category
-    # --------------------------------------------------------
-
-    selected_category = normalize_category(
-        body.category if body else "friend"
     )
 
     # --------------------------------------------------------
@@ -432,22 +438,19 @@ def accept_connection_request(
 
         if existing_connection:
 
-            # Allow category update when already connected
-            existing_connection.category = selected_category
-            existing_connection.updated_at = datetime.utcnow()
-
-            db.commit()
-
             return {
                 "success": True,
                 "status": "connected",
                 "message": "Connection already accepted",
-                "category": selected_category,
+                "connection": True,
             }
 
         raise HTTPException(
             status_code=400,
-            detail="Request was accepted but connection was not found",
+            detail=(
+                "Request was accepted but "
+                "connection was not found"
+            ),
         )
 
     # --------------------------------------------------------
@@ -481,7 +484,6 @@ def accept_connection_request(
             user_one_id=connection_request.sender_id,
             user_two_id=connection_request.receiver_id,
             status="connected",
-            category=selected_category,
             created_at=now,
             updated_at=now,
         )
@@ -490,7 +492,6 @@ def accept_connection_request(
 
     else:
 
-        existing_connection.category = selected_category
         existing_connection.updated_at = now
 
     # --------------------------------------------------------
@@ -531,7 +532,6 @@ def accept_connection_request(
         "status": "connected",
         "message": "Connection accepted",
         "connection": True,
-        "category": selected_category,
     }
 
 
@@ -631,15 +631,10 @@ def accept_compatibility(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    accept_body = AcceptConnectionBody(
-        category=body.category or "friend"
-    )
-
     return accept_connection_request(
         body.notification_id,
         request,
         db,
-        accept_body,
     )
 
 
@@ -925,6 +920,146 @@ def mark_read_compatibility(
 
 
 # ============================================================
+# SET PERSONAL FRIEND / FAMILY CATEGORY
+# ============================================================
+
+@router.post("/category")
+def set_personal_category(
+    body: PersonalCategoryBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    connected_user = (
+        db.query(User)
+        .filter(
+            User.user_id == body.connected_user_id.strip()
+        )
+        .first()
+    )
+
+    if connected_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Connected user not found",
+        )
+
+    if connected_user.id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot categorize yourself",
+        )
+
+    # --------------------------------------------------------
+    # Must actually be connected
+    # --------------------------------------------------------
+
+    connection = get_pair_connection(
+        db,
+        current_user.id,
+        connected_user.id,
+    )
+
+    if connection is None:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "You can categorize only a connected user"
+            ),
+        )
+
+    category = normalize_personal_category(
+        body.category
+    )
+
+    now = datetime.utcnow()
+
+    existing_category = get_personal_category(
+        db,
+        current_user.id,
+        connected_user.id,
+    )
+
+    if existing_category:
+
+        existing_category.category = category
+        existing_category.updated_at = now
+
+    else:
+
+        existing_category = UserConnectionCategory(
+            user_id=current_user.id,
+            connected_user_id=connected_user.id,
+            category=category,
+            created_at=now,
+            updated_at=now,
+        )
+
+        db.add(existing_category)
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Personal category updated",
+        "connected_user_id": connected_user.user_id,
+        "category": category,
+    }
+
+
+# ============================================================
+# REMOVE PERSONAL CATEGORY
+# ============================================================
+
+@router.delete("/category/{connected_user_id}")
+def remove_personal_category(
+    connected_user_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    connected_user = (
+        db.query(User)
+        .filter(
+            User.user_id == connected_user_id.strip()
+        )
+        .first()
+    )
+
+    if connected_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    existing_category = get_personal_category(
+        db,
+        current_user.id,
+        connected_user.id,
+    )
+
+    if existing_category:
+
+        db.delete(existing_category)
+        db.commit()
+
+    return {
+        "success": True,
+        "message": "Personal category removed",
+        "connected_user_id": connected_user.user_id,
+        "category": None,
+    }
+
+
+# ============================================================
 # HOME CONNECTIONS
 # ============================================================
 
@@ -981,10 +1116,22 @@ def get_connections(
         if user is None:
             continue
 
+        # ----------------------------------------------------
+        # IMPORTANT:
+        # Category belongs to CURRENT USER only.
+        # It is NOT stored on UserConnection.
+        # ----------------------------------------------------
+
+        personal_category = get_personal_category(
+            db,
+            current_user.id,
+            user.id,
+        )
+
         category = (
-            row.category
-            if row.category
-            else "friend"
+            personal_category.category
+            if personal_category
+            else None
         )
 
         users.append({
@@ -993,7 +1140,7 @@ def get_connections(
             "name": user.name,
             "profile_photo": user.profile_photo,
 
-            # Category information
+            # Personal category of current user
             "category": category,
             "connection_category": category,
             "connection_type": category,
