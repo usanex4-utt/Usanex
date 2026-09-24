@@ -1,0 +1,506 @@
+/* =========================================================
+   USANEX - OTHER USER PROFILE
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    background: #05070b;
+    color: #e8edf5;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+
+    overflow-x: hidden;
+}
+
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.profile-page {
+    width: 100%;
+    min-height: 100vh;
+    background: #05070b;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.profile-header {
+    width: 100%;
+    height: 56px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 14px;
+
+    background: #05070b;
+
+    border-bottom: 1px solid #121923;
+
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.back-button {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    background: transparent;
+
+    color: #e6ebf2;
+
+    font-size: 28px;
+    font-weight: 300;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+.back-button:active {
+    opacity: 0.6;
+}
+
+.profile-header-title {
+    flex: 1;
+
+    text-align: center;
+
+    color: #eef2f7;
+
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.header-space {
+    width: 36px;
+    height: 36px;
+}
+
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.profile-content {
+    width: 100%;
+    max-width: 620px;
+
+    margin: 0 auto;
+
+    padding: 28px 16px 50px;
+}
+
+
+/* =========================================================
+   PROFILE PHOTO
+   ========================================================= */
+
+.profile-photo-wrapper {
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+
+    margin-bottom: 15px;
+}
+
+.profile-photo {
+    width: 96px;
+    height: 96px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    background: #151f2c;
+
+    border: 2px solid #247cff;
+
+    color: #eef3f8;
+
+    font-size: 30px;
+    font-weight: 600;
+
+    user-select: none;
+}
+
+.profile-photo img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    border-radius: 50%;
+}
+
+
+/* =========================================================
+   NAME
+   ========================================================= */
+
+.profile-name {
+    width: 100%;
+
+    color: #eef2f7;
+
+    font-size: 22px;
+    font-weight: 700;
+
+    line-height: 28px;
+
+    text-align: center;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   USERNAME
+   ========================================================= */
+
+.profile-username {
+    margin-top: 4px;
+
+    color: #8995a5;
+
+    font-size: 14px;
+    line-height: 20px;
+
+    text-align: center;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   USER ID
+   ========================================================= */
+
+.profile-user-id {
+    margin-top: 3px;
+
+    color: #5f6b7b;
+
+    font-size: 11px;
+    line-height: 16px;
+
+    text-align: center;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   CONNECTION STATUS
+   ========================================================= */
+
+.connection-status {
+    width: fit-content;
+
+    margin: 14px auto 0;
+
+    padding: 6px 13px;
+
+    border-radius: 20px;
+
+    background: #101d2d;
+
+    color: #4e9aff;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    line-height: 16px;
+}
+
+.connection-status.hidden {
+    display: none;
+}
+
+
+/* =========================================================
+   BIO
+   ========================================================= */
+
+.bio-section {
+    width: 100%;
+
+    margin-top: 25px;
+
+    padding: 16px;
+
+    background: #0a0f15;
+
+    border: 1px solid #17212c;
+
+    border-radius: 13px;
+}
+
+.bio-section h2 {
+    color: #dfe6ee;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    line-height: 19px;
+
+    margin-bottom: 7px;
+}
+
+.bio-section p {
+    color: #8995a5;
+
+    font-size: 13px;
+    font-weight: 400;
+
+    line-height: 20px;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+}
+
+
+/* =========================================================
+   PROFILE INFORMATION
+   ========================================================= */
+
+.profile-info {
+    width: 100%;
+
+    margin-top: 10px;
+
+    background: #0a0f15;
+
+    border: 1px solid #17212c;
+
+    border-radius: 13px;
+
+    overflow: hidden;
+}
+
+.info-row {
+    width: 100%;
+
+    min-height: 52px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 10px 16px;
+}
+
+.info-row + .info-row {
+    border-top: 1px solid #17212c;
+}
+
+.info-label {
+    color: #7e8998;
+
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.info-value {
+    color: #dfe6ee;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    line-height: 18px;
+
+    text-align: right;
+}
+
+.info-value.friend {
+    color: #4e9aff;
+}
+
+.info-value.family {
+    color: #dfe6ee;
+}
+
+
+/* =========================================================
+   USER CONTENT
+   ========================================================= */
+
+.user-content-section {
+    width: 100%;
+
+    margin-top: 25px;
+}
+
+.user-content-section h2 {
+    color: #e5ebf2;
+
+    font-size: 17px;
+    font-weight: 600;
+
+    line-height: 22px;
+
+    margin-bottom: 10px;
+}
+
+.empty-content {
+    width: 100%;
+
+    min-height: 120px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: #0a0f15;
+
+    border: 1px solid #17212c;
+
+    border-radius: 13px;
+
+    color: #657181;
+
+    font-size: 13px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.profile-loading {
+    color: #788494;
+}
+
+.profile-error {
+    color: #ff7184;
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    .profile-header {
+        height: 53px;
+
+        padding: 0 10px;
+    }
+
+    .profile-content {
+        padding: 23px 11px 40px;
+    }
+
+    .profile-photo {
+        width: 88px;
+        height: 88px;
+
+        font-size: 27px;
+    }
+
+    .profile-name {
+        font-size: 20px;
+        line-height: 26px;
+    }
+
+    .profile-username {
+        font-size: 13px;
+    }
+
+    .bio-section,
+    .profile-info,
+    .empty-content {
+        border-radius: 11px;
+    }
+}
+
+
+/* =========================================================
+   TABLET / DESKTOP
+   ========================================================= */
+
+@media (min-width: 700px) {
+
+    .profile-content {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .profile-photo {
+        width: 108px;
+        height: 108px;
+
+        font-size: 34px;
+    }
+
+    .profile-name {
+        font-size: 24px;
+        line-height: 31px;
+    }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+button:focus-visible {
+    outline: 2px solid #247cff;
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   REDUCE MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+    }
+}
