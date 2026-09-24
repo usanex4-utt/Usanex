@@ -282,11 +282,6 @@ class ConnectionNotification(Base):
         nullable=False,
     )
 
-    # The verification code will NOT be stored
-    # as plain text.
-    #
-    # This field stores an encrypted/recoverable
-    # version for the notification flow.
     encrypted_code = Column(
         String(500),
         nullable=True,
@@ -334,6 +329,25 @@ class UserConnection(Base):
         index=True,
         nullable=False,
         default="connected",
+    )
+
+    # -----------------------------------------------------
+    # CONNECTION CATEGORY
+    #
+    # Possible values:
+    #   friend
+    #   family
+    #   couple
+    #
+    # Default:
+    #   friend
+    # -----------------------------------------------------
+
+    category = Column(
+        String(20),
+        index=True,
+        nullable=False,
+        default="friend",
     )
 
     created_at = Column(
