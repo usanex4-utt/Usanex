@@ -301,6 +301,11 @@ class ConnectionNotification(Base):
 
 # =========================================================
 # ACTUAL USER CONNECTIONS
+#
+# This table only stores the actual connection.
+#
+# IMPORTANT:
+# No Friend / Family category is stored here.
 # =========================================================
 
 class UserConnection(Base):
@@ -331,17 +336,57 @@ class UserConnection(Base):
         default="connected",
     )
 
-    # -----------------------------------------------------
-    # CONNECTION CATEGORY
-    #
-    # Possible values:
-    #   friend
-    #   family
-    #   couple
-    #
-    # Default:
-    #   friend
-    # -----------------------------------------------------
+    created_at = Column(
+        DateTime,
+        nullable=False,
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+    )
+
+
+# =========================================================
+# PERSONAL CONNECTION CATEGORIES
+#
+# Each user can independently decide how they classify
+# another connected person.
+#
+# Example:
+#
+# User A -> User B = friend
+# User B -> User A = family
+#
+# Both are independent.
+#
+# Allowed categories:
+#   friend
+#   family
+#
+# Couple is intentionally NOT included here.
+# =========================================================
+
+class UserConnectionCategory(Base):
+    __tablename__ = "user_connection_categories"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    connected_user_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
 
     category = Column(
         String(20),
