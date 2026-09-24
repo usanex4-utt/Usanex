@@ -1,6 +1,7 @@
 /* =========================================================
    USANEX HOME
    BALANCED COMPACT DESIGN
+   + LONG PRESS CATEGORY MENU
    ========================================================= */
 
 * {
@@ -26,6 +27,11 @@ body {
 
 body {
     overflow-x: hidden;
+}
+
+body.menu-open,
+body.category-popup-open {
+    overflow: hidden;
 }
 
 button {
@@ -54,7 +60,6 @@ button {
 
     background: #05070b;
 
-    /* Extra line removed */
     border-bottom: none;
 }
 
@@ -359,15 +364,31 @@ button {
 
     cursor: pointer;
 
+    position: relative;
+
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
+
     transition:
         background 0.15s ease,
-        transform 0.15s ease;
+        transform 0.15s ease,
+        border-color 0.15s ease;
 }
 
 .connected-person-card:active {
     transform: scale(0.985);
 
     background: #0e141c;
+}
+
+.connected-person-card.long-press-active {
+    background: #101a27;
+
+    border-color: #247cff;
+
+    transform: scale(0.985);
 }
 
 .connected-person-avatar {
@@ -470,6 +491,186 @@ button {
     color: #758397;
 
     font-size: 19px;
+}
+
+
+/* =========================================================
+   LONG PRESS CATEGORY POPUP
+   ========================================================= */
+
+.personal-category-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 99999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0, 0, 0, 0.68);
+
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+
+    animation:
+        categoryOverlayIn 0.16s ease-out;
+}
+
+.personal-category-popup {
+    width: min(360px, 100%);
+
+    padding: 20px;
+
+    background: #0c121a;
+
+    border: 1px solid #202d3d;
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.55);
+
+    animation:
+        categoryPopupIn 0.18s ease-out;
+
+    color: #e8edf5;
+}
+
+.personal-category-popup > div:first-child {
+    color: #eef3f8;
+
+    font-size: 18px;
+    font-weight: 700;
+
+    line-height: 23px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.personal-category-popup > div:nth-child(2) {
+    color: #8491a2;
+
+    font-size: 13px;
+
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+.personal-category-popup button {
+    width: 100%;
+    min-height: 48px;
+
+    border: 1px solid #1c2837;
+
+    border-radius: 13px;
+
+    background: #121a24;
+
+    color: #e6ebf2;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.12s ease;
+}
+
+.personal-category-popup button + button {
+    margin-top: 9px;
+}
+
+.personal-category-popup button:active {
+    transform: scale(0.98);
+
+    background: #1a2635;
+
+    border-color: #2b4059;
+}
+
+
+/* Friend */
+
+.personal-category-popup button:nth-of-type(1) {
+    background: #101d2d;
+
+    border-color: #1e3d64;
+
+    color: #4e9aff;
+}
+
+
+/* Family */
+
+.personal-category-popup button:nth-of-type(2) {
+    background: #141c22;
+
+    border-color: #28343d;
+
+    color: #dce5ed;
+}
+
+
+/* Remove category */
+
+.personal-category-popup button:nth-of-type(3) {
+    background: #211317;
+
+    border-color: #452027;
+
+    color: #ff7384;
+}
+
+
+/* Cancel */
+
+.personal-category-popup button:last-child {
+    background: #0b1016;
+
+    border-color: #1a2531;
+
+    color: #8f9bab;
+}
+
+
+/* =========================================================
+   POPUP ANIMATION
+   ========================================================= */
+
+@keyframes categoryOverlayIn {
+
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes categoryPopupIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 
@@ -719,6 +920,16 @@ button {
         flex-basis: 41px;
     }
 
+    .personal-category-popup {
+        padding: 17px;
+
+        border-radius: 18px;
+    }
+
+    .personal-category-popup button {
+        min-height: 46px;
+    }
+
     .bottom-nav,
     .nav-item {
         height: 62px;
@@ -747,5 +958,27 @@ button {
 
         border-left: 1px solid #121923;
         border-right: 1px solid #121923;
+    }
+
+    .personal-category-popup {
+        width: 360px;
+    }
+}
+
+
+/* =========================================================
+   REDUCE MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .personal-category-overlay,
+    .personal-category-popup {
+        animation: none;
+    }
+
+    .connected-person-card,
+    .personal-category-popup button {
+        transition: none;
     }
 }
