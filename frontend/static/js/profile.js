@@ -18,9 +18,6 @@ const profileHeaderTitle =
 const profilePhoto =
     document.getElementById("profilePhoto");
 
-const profileName =
-    document.getElementById("profileName");
-
 const profileUsername =
     document.getElementById("profileUsername");
 
@@ -105,7 +102,10 @@ function normalizeCategory(category) {
         return "friend";
     }
 
-    if (value === "family") {
+    if (
+        value === "family" ||
+        value === "families"
+    ) {
         return "family";
     }
 
@@ -318,11 +318,19 @@ function renderPersonalCategory(user) {
 
 function renderProfile(user) {
 
+    /* -----------------------------------------------------
+       NAME
+       ----------------------------------------------------- */
+
     const name =
         user.name ||
         user.full_name ||
         "Unknown User";
 
+
+    /* -----------------------------------------------------
+       USERNAME
+       ----------------------------------------------------- */
 
     const username =
         user.username ||
@@ -331,6 +339,10 @@ function renderProfile(user) {
         "";
 
 
+    /* -----------------------------------------------------
+       USER ID
+       ----------------------------------------------------- */
+
     const returnedUserId =
         user.user_id ||
         user.userId ||
@@ -338,14 +350,18 @@ function renderProfile(user) {
         userId;
 
 
+    /* -----------------------------------------------------
+       BIO
+       ----------------------------------------------------- */
+
     const bio =
         user.bio ||
         "No bio available.";
 
 
-    /* -----------------------------------------------------
-       HEADER TITLE
-       ----------------------------------------------------- */
+    /* =====================================================
+       HEADER = ONLY NAME
+       ===================================================== */
 
     if (profileHeaderTitle) {
 
@@ -354,20 +370,9 @@ function renderProfile(user) {
     }
 
 
-    /* -----------------------------------------------------
-       PAGE NAME
-       ----------------------------------------------------- */
-
-    if (profileName) {
-
-        profileName.textContent =
-            name;
-    }
-
-
-    /* -----------------------------------------------------
+    /* =====================================================
        USERNAME
-       ----------------------------------------------------- */
+       ===================================================== */
 
     if (profileUsername) {
 
@@ -386,9 +391,9 @@ function renderProfile(user) {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        USER ID
-       ----------------------------------------------------- */
+       ===================================================== */
 
     if (profileUserId) {
 
@@ -399,9 +404,9 @@ function renderProfile(user) {
     }
 
 
-    /* -----------------------------------------------------
+    /* =====================================================
        BIO
-       ----------------------------------------------------- */
+       ===================================================== */
 
     if (profileBio) {
 
@@ -410,9 +415,9 @@ function renderProfile(user) {
     }
 
 
-    /* -----------------------------------------------------
-       OTHER PROFILE DATA
-       ----------------------------------------------------- */
+    /* =====================================================
+       OTHER DATA
+       ===================================================== */
 
     renderProfilePhoto(user);
 
@@ -431,13 +436,6 @@ function showLoading() {
     if (profileHeaderTitle) {
 
         profileHeaderTitle.textContent =
-            "Loading...";
-    }
-
-
-    if (profileName) {
-
-        profileName.textContent =
             "Loading...";
     }
 
@@ -474,17 +472,6 @@ function showError(message) {
 
         profileHeaderTitle.textContent =
             "Profile";
-    }
-
-
-    if (profileName) {
-
-        profileName.textContent =
-            "Profile unavailable";
-
-        profileName.classList.add(
-            "profile-error"
-        );
     }
 
 
@@ -595,16 +582,6 @@ async function loadProfile() {
         const data =
             await response.json();
 
-
-        /*
-         * Supports:
-         *
-         * {
-         *   profile: {
-         *      ...
-         *   }
-         * }
-         */
 
         const user =
             data.user ||
