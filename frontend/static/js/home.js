@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const $ = (id) => document.getElementById(id);
 
+
     function go(url) {
         window.location.href = url;
     }
@@ -180,28 +181,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       CATEGORY DETECTION
+       PERSONAL CATEGORY
+       
+       IMPORTANT:
+       This category belongs to the CURRENT USER.
+       It is not a shared connection category.
+       
+       Allowed:
+       - friend
+       - family
+       - null
+       
+       Couple is intentionally NOT handled here.
     ===================================================== */
 
     function getUserCategory(item) {
+
+        if (!item) {
+            return "";
+        }
 
         const user =
             getConnectionUser(item);
 
 
         const category =
-            user.connection_type ||
-            user.category ||
-            user.connection_category ||
-            user.relationship_type ||
-            item.connection_type ||
-            item.category ||
-            item.connection_category ||
-            item.relationship_type ||
+            item.category ??
+            item.connection_category ??
+            item.personal_category ??
+            user.category ??
+            user.connection_category ??
+            user.personal_category ??
             "";
 
 
-        return String(category)
+        return String(category || "")
             .trim()
             .toLowerCase();
     }
@@ -245,6 +259,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
+
+            /*
+             * Couple filtering is intentionally left
+             * compatible with the existing frontend.
+             *
+             * We are NOT adding or changing any
+             * couple database/category system here.
+             */
 
             if (
                 currentCategory === "couple"
@@ -355,6 +377,369 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       PERSONAL CATEGORY API
+    ===================================================== */
+
+    async function savePersonalCategory(
+        connectedUserId,
+        category
+    ) {
+
+        if (!connectedUserId) {
+            return false;
+        }
+
+
+        try {
+
+            /*
+             * Remove personal category
+             */
+
+            if (
+                !category ||
+                category === "all" ||
+                category === "none"
+            ) {
+
+                const response =
+                    await fetch(
+                        "/api/connections/category/" +
+                        encodeURIComponent(
+                            connectedUserId
+                        ),
+                        {
+                            method: "DELETE",
+                            credentials: "include",
+                            headers: {
+                                "Accept":
+                                    "application/json"
+                            }
+                        }
+                    );
+
+
+                if (response.status === 401) {
+
+                    go("/login");
+
+                    return false;
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Category remove failed: " +
+                        response.status
+                    );
+                }
+
+
+                return true;
+            }
+
+
+            /*
+             * Save Friend / Family
+             */
+
+            const response =
+                await fetch(
+                    "/api/connections/category",
+                    {
+                        method: "POST",
+                        credentials: "include",
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "Accept":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            connected_user_id:
+                                connectedUserId,
+
+                            category:
+                                category
+                        })
+                    }
+                );
+
+
+            if (response.status === 401) {
+
+                go("/login");
+
+                return false;
+            }
+
+
+            if (!response.ok) {
+
+                let errorMessage =
+                    "Unable to update category";
+
+
+                try {
+
+                    const errorData =
+                        await response.json();
+
+
+                    if (
+                        errorData &&
+                        errorData.detail
+                    ) {
+
+                        errorMessage =
+                            errorData.detail;
+                    }
+
+                } catch (error) {
+                    // Ignore JSON parsing error.
+                }
+
+
+                throw new Error(
+                    errorMessage
+                );
+            }
+
+
+            return true;
+
+        } catch (error) {
+
+            console.error(
+                "Personal category error:",
+                error
+            );
+
+
+            alert(
+                error.message ||
+                "Unable to update category."
+            );
+
+
+            return false;
+        }
+    }
+
+
+    /* =====================================================
+       UPDATE LOCAL USER CATEGORY
+    ===================================================== */
+
+    function updateLocalUserCategory(
+        connectedUserId,
+        category
+    ) {
+
+        allConnectedUsers =
+            allConnectedUsers.map((item) => {
+
+                const user =
+                    getConnectionUser(item);
+
+
+                const itemUserId =
+                    user.user_id ||
+                    item.user_id ||
+                    "";
+
+
+                if (
+                    String(itemUserId) !==
+                    String(connectedUserId)
+                ) {
+
+                    return item;
+                }
+
+
+                /*
+                 * Keep category at top level because
+                 * backend /api/connections returns it there.
+                 */
+
+                return {
+                    ...item,
+                    category:
+                        category || null,
+
+                    connection_category:
+                        category || null,
+
+                    personal_category:
+                        category || null
+                };
+            });
+    }
+
+
+    /* =====================================================
+       CATEGORY SELECTOR
+    ===================================================== */
+
+    function createCategorySelector(
+        userId,
+        currentCategoryValue
+    ) {
+
+        const wrapper =
+            document.createElement("div");
+
+
+        wrapper.className =
+            "connected-person-category";
+
+
+        const select =
+            document.createElement("select");
+
+
+        select.className =
+            "connected-category-select";
+
+
+        select.setAttribute(
+            "aria-label",
+            "Personal connection category"
+        );
+
+
+        const current =
+            String(
+                currentCategoryValue || ""
+            )
+                .trim()
+                .toLowerCase();
+
+
+        const options = [
+            {
+                value: "",
+                label: "All Connected"
+            },
+            {
+                value: "friend",
+                label: "Friend"
+            },
+            {
+                value: "family",
+                label: "Family"
+            }
+        ];
+
+
+        options.forEach((optionData) => {
+
+            const option =
+                document.createElement("option");
+
+
+            option.value =
+                optionData.value;
+
+
+            option.textContent =
+                optionData.label;
+
+
+            if (
+                optionData.value === current
+            ) {
+
+                option.selected =
+                    true;
+            }
+
+
+            select.appendChild(option);
+        });
+
+
+        select.addEventListener(
+            "click",
+            (event) => {
+
+                /*
+                 * Do not open profile when
+                 * category selector is clicked.
+                 */
+
+                event.stopPropagation();
+            }
+        );
+
+
+        select.addEventListener(
+            "change",
+            async (event) => {
+
+                event.stopPropagation();
+
+
+                const newCategory =
+                    select.value;
+
+
+                const oldCategory =
+                    current || "";
+
+
+                select.disabled =
+                    true;
+
+
+                const success =
+                    await savePersonalCategory(
+                        userId,
+                        newCategory
+                    );
+
+
+                select.disabled =
+                    false;
+
+
+                if (!success) {
+
+                    select.value =
+                        oldCategory;
+
+                    return;
+                }
+
+
+                updateLocalUserCategory(
+                    userId,
+                    newCategory
+                );
+
+
+                /*
+                 * Re-render so Friend / Family
+                 * lists immediately update.
+                 */
+
+                renderConnectedPeople();
+            }
+        );
+
+
+        wrapper.appendChild(select);
+
+
+        return wrapper;
+    }
+
+
+    /* =====================================================
        RENDER CONNECTED PEOPLE
     ===================================================== */
 
@@ -387,7 +772,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        connectedSection.hidden = false;
+        connectedSection.hidden =
+            false;
 
 
         if (users.length === 0) {
@@ -417,12 +803,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const userId =
                 user.user_id ||
+                item.user_id ||
                 "";
 
 
             const photo =
                 user.profile_photo ||
+                item.profile_photo ||
                 "";
+
+
+            const personalCategory =
+                getUserCategory(item);
 
 
             const card =
@@ -475,9 +867,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            card.innerHTML = `
-
-                ${avatarHtml}
+            const infoHtml = `
 
                 <div class="connected-person-info">
 
@@ -507,12 +897,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 </div>
 
-                <div class="connected-person-arrow">
+            `;
+
+
+            const arrowHtml = `
+
+                <div class="connected-person-arrow"
+                     aria-hidden="true">
+
                     ›
+
                 </div>
 
             `;
 
+
+            card.innerHTML =
+                avatarHtml +
+                infoHtml +
+                arrowHtml;
+
+
+            /*
+             * Add personal category selector.
+             *
+             * Only Friend / Family are offered.
+             * Couple is intentionally not included.
+             */
+
+            if (userId) {
+
+                const selector =
+                    createCategorySelector(
+                        userId,
+                        personalCategory
+                    );
+
+
+                card.appendChild(
+                    selector
+                );
+            }
+
+
+            /* =================================================
+               OPEN CONNECTED PROFILE
+            ================================================= */
 
             card.addEventListener(
                 "click",
@@ -531,7 +961,9 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-            connectedList.appendChild(card);
+            connectedList.appendChild(
+                card
+            );
 
         });
     }
@@ -617,6 +1049,11 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuCoupleChat")?.addEventListener(
         "click",
         () => {
+
+            /*
+             * Existing Couple Chat navigation/filter
+             * remains untouched.
+             */
 
             showCategory("couple");
         }
@@ -803,9 +1240,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /*
-               Default Home:
-               All Connected
-            */
+             * Default Home:
+             * All Connected
+             */
 
             currentCategory =
                 "all";
@@ -842,7 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home v22 loaded."
+        "Usanex Home personal category system loaded."
     );
 
 });
