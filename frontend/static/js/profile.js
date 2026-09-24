@@ -9,12 +9,23 @@
    DOM
    ========================================================= */
 
-const backButton = document.getElementById("backButton");
+const backButton =
+    document.getElementById("backButton");
 
-const profilePhoto = document.getElementById("profilePhoto");
-const profileName = document.getElementById("profileName");
-const profileUsername = document.getElementById("profileUsername");
-const profileUserId = document.getElementById("profileUserId");
+const profileHeaderTitle =
+    document.getElementById("profileHeaderTitle");
+
+const profilePhoto =
+    document.getElementById("profilePhoto");
+
+const profileName =
+    document.getElementById("profileName");
+
+const profileUsername =
+    document.getElementById("profileUsername");
+
+const profileUserId =
+    document.getElementById("profileUserId");
 
 const connectionStatus =
     document.getElementById("connectionStatus");
@@ -33,7 +44,10 @@ const personalCategory =
    GET USER ID FROM URL
    ========================================================= */
 
-const params = new URLSearchParams(window.location.search);
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
 
 const userId =
     params.get("user_id");
@@ -45,7 +59,10 @@ const userId =
 
 function escapeHtml(value) {
 
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
         return "";
     }
 
@@ -81,7 +98,10 @@ function normalizeCategory(category) {
             .trim()
             .toLowerCase();
 
-    if (value === "friend" || value === "friends") {
+    if (
+        value === "friend" ||
+        value === "friends"
+    ) {
         return "friend";
     }
 
@@ -99,17 +119,23 @@ function normalizeCategory(category) {
 
 if (backButton) {
 
-    backButton.addEventListener("click", () => {
+    backButton.addEventListener(
+        "click",
+        () => {
 
-        if (window.history.length > 1) {
+            if (
+                window.history.length > 1
+            ) {
 
-            window.history.back();
+                window.history.back();
 
-        } else {
+            } else {
 
-            window.location.href = "/home";
+                window.location.href =
+                    "/home";
+            }
         }
-    });
+    );
 }
 
 
@@ -134,6 +160,7 @@ function renderProfilePhoto(user) {
         user.full_name ||
         "U";
 
+
     if (photo) {
 
         profilePhoto.innerHTML = "";
@@ -149,7 +176,9 @@ function renderProfilePhoto(user) {
         img.onerror = () => {
 
             profilePhoto.innerHTML =
-                escapeHtml(getInitial(name));
+                escapeHtml(
+                    getInitial(name)
+                );
         };
 
         profilePhoto.appendChild(img);
@@ -179,20 +208,26 @@ function renderConnectionStatus(user) {
         user.is_connected === true ||
         status === "connected";
 
+
     if (!connectionStatus) {
         return;
     }
+
 
     if (connected) {
 
         connectionStatus.textContent =
             "Connected";
 
-        connectionStatus.classList.remove("hidden");
+        connectionStatus.classList.remove(
+            "hidden"
+        );
 
     } else {
 
-        connectionStatus.classList.add("hidden");
+        connectionStatus.classList.add(
+            "hidden"
+        );
     }
 
 
@@ -244,10 +279,12 @@ function renderPersonalCategory(user) {
             user.connection_category
         );
 
+
     personalCategory.classList.remove(
         "friend",
         "family"
     );
+
 
     if (category === "friend") {
 
@@ -286,11 +323,13 @@ function renderProfile(user) {
         user.full_name ||
         "Unknown User";
 
+
     const username =
         user.username ||
         user.user_name ||
         user.handle ||
         "";
+
 
     const returnedUserId =
         user.user_id ||
@@ -298,10 +337,26 @@ function renderProfile(user) {
         user.id ||
         userId;
 
+
     const bio =
         user.bio ||
         "No bio available.";
 
+
+    /* -----------------------------------------------------
+       HEADER TITLE
+       ----------------------------------------------------- */
+
+    if (profileHeaderTitle) {
+
+        profileHeaderTitle.textContent =
+            name;
+    }
+
+
+    /* -----------------------------------------------------
+       PAGE NAME
+       ----------------------------------------------------- */
 
     if (profileName) {
 
@@ -309,6 +364,10 @@ function renderProfile(user) {
             name;
     }
 
+
+    /* -----------------------------------------------------
+       USERNAME
+       ----------------------------------------------------- */
 
     if (profileUsername) {
 
@@ -327,6 +386,10 @@ function renderProfile(user) {
     }
 
 
+    /* -----------------------------------------------------
+       USER ID
+       ----------------------------------------------------- */
+
     if (profileUserId) {
 
         profileUserId.textContent =
@@ -336,12 +399,20 @@ function renderProfile(user) {
     }
 
 
+    /* -----------------------------------------------------
+       BIO
+       ----------------------------------------------------- */
+
     if (profileBio) {
 
         profileBio.textContent =
             bio;
     }
 
+
+    /* -----------------------------------------------------
+       OTHER PROFILE DATA
+       ----------------------------------------------------- */
 
     renderProfilePhoto(user);
 
@@ -357,22 +428,36 @@ function renderProfile(user) {
 
 function showLoading() {
 
+    if (profileHeaderTitle) {
+
+        profileHeaderTitle.textContent =
+            "Loading...";
+    }
+
+
     if (profileName) {
+
         profileName.textContent =
             "Loading...";
     }
 
+
     if (profileUsername) {
+
         profileUsername.textContent =
             "";
     }
 
+
     if (profileUserId) {
+
         profileUserId.textContent =
             "";
     }
 
+
     if (profileBio) {
+
         profileBio.textContent =
             "Loading profile...";
     }
@@ -385,6 +470,13 @@ function showLoading() {
 
 function showError(message) {
 
+    if (profileHeaderTitle) {
+
+        profileHeaderTitle.textContent =
+            "Profile";
+    }
+
+
     if (profileName) {
 
         profileName.textContent =
@@ -395,15 +487,20 @@ function showError(message) {
         );
     }
 
+
     if (profileUsername) {
+
         profileUsername.textContent =
             "";
     }
 
+
     if (profileUserId) {
+
         profileUserId.textContent =
             "";
     }
+
 
     if (profileBio) {
 
@@ -416,7 +513,9 @@ function showError(message) {
         );
     }
 
+
     if (connectionStatus) {
+
         connectionStatus.classList.add(
             "hidden"
         );
@@ -439,7 +538,9 @@ async function loadProfile() {
         return;
     }
 
+
     showLoading();
+
 
     try {
 
@@ -448,15 +549,42 @@ async function loadProfile() {
                 `/api/profile/${encodeURIComponent(userId)}`,
                 {
                     method: "GET",
+
                     credentials: "include",
+
                     headers: {
-                        "Accept": "application/json"
+                        "Accept":
+                            "application/json"
                     }
                 }
             );
 
 
         if (!response.ok) {
+
+            if (response.status === 403) {
+
+                throw new Error(
+                    "This profile is available only to connected users."
+                );
+            }
+
+
+            if (response.status === 404) {
+
+                throw new Error(
+                    "User profile not found."
+                );
+            }
+
+
+            if (response.status === 401) {
+
+                throw new Error(
+                    "Please login again."
+                );
+            }
+
 
             throw new Error(
                 `Profile request failed: ${response.status}`
@@ -469,17 +597,11 @@ async function loadProfile() {
 
 
         /*
-         * Supports both:
+         * Supports:
          *
          * {
-         *   ...user
-         * }
-         *
-         * and:
-         *
-         * {
-         *   user: {
-         *      ...user
+         *   profile: {
+         *      ...
          *   }
          * }
          */
@@ -490,7 +612,10 @@ async function loadProfile() {
             data;
 
 
-        if (!user || typeof user !== "object") {
+        if (
+            !user ||
+            typeof user !== "object"
+        ) {
 
             throw new Error(
                 "Invalid profile response."
@@ -508,7 +633,9 @@ async function loadProfile() {
             error
         );
 
+
         showError(
+            error.message ||
             "Unable to load this profile."
         );
     }
