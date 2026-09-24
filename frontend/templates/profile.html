@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Profile - Usanex</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/profile.css?v=1"
+    >
+</head>
+
+<body>
+
+    <main class="profile-page">
+
+        <!-- HEADER -->
+        <header class="profile-header">
+
+            <button
+                id="backButton"
+                class="back-button"
+                type="button"
+                aria-label="Go back"
+            >
+                ←
+            </button>
+
+            <div class="profile-header-title">
+                Profile
+            </div>
+
+            <div class="header-space"></div>
+
+        </header>
+
+
+        <!-- PROFILE CONTENT -->
+        <section class="profile-content">
+
+            <!-- PROFILE PHOTO -->
+            <div class="profile-photo-wrapper">
+
+                <div
+                    id="profilePhoto"
+                    class="profile-photo"
+                >
+                    U
+                </div>
+
+            </div>
+
+
+            <!-- NAME -->
+            <h1
+                id="profileName"
+                class="profile-name"
+            >
+                Loading...
+            </h1>
+
+
+            <!-- USERNAME -->
+            <div
+                id="profileUsername"
+                class="profile-username"
+            >
+                @username
+            </div>
+
+
+            <!-- USER ID -->
+            <div
+                id="profileUserId"
+                class="profile-user-id"
+            >
+                User ID
+            </div>
+
+
+            <!-- CONNECTION STATUS -->
+            <div
+                id="connectionStatus"
+                class="connection-status hidden"
+            >
+                Connected
+            </div>
+
+
+            <!-- BIO -->
+            <div class="bio-section">
+
+                <h2>Bio</h2>
+
+                <p id="profileBio">
+                    No bio available.
+                </p>
+
+            </div>
+
+
+            <!-- PROFILE INFORMATION -->
+            <div class="profile-info">
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Connection
+                    </span>
+
+                    <span
+                        id="connectionType"
+                        class="info-value"
+                    >
+                        Connected
+                    </span>
+
+                </div>
+
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Category
+                    </span>
+
+                    <span
+                        id="personalCategory"
+                        class="info-value"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- USER CONTENT PLACEHOLDER -->
+            <section class="user-content-section">
+
+                <h2>
+                    Posts
+                </h2>
+
+                <div
+                    id="emptyPosts"
+                    class="empty-content"
+                >
+                    No posts yet.
+                </div>
+
+            </section>
+
+        </section>
+
+    </main>
+
+
+    <script src="/static/js/profile.js?v=1"></script>
+
+</body>
+</html>
