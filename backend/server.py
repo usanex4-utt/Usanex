@@ -14,7 +14,7 @@ from .routes.pages import router as pages_router
 from .routes.users import router as users_router
 from .routes.search import router as search_router
 from .routes.connections import router as connections_router
-
+from .routes.profile import router as profile_router
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -79,7 +79,9 @@ app.include_router(
 app.include_router(
     connections_router
 )
-
+app.include_router(
+    profile_router
+)
 
 # =========================================================
 # DATABASE STARTUP
