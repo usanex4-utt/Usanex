@@ -24,6 +24,17 @@ router = APIRouter(
 
 
 # ============================================================
+# CONSTANTS
+# ============================================================
+
+VALID_CATEGORIES = {
+    "friend",
+    "family",
+    "couple",
+}
+
+
+# ============================================================
 # REQUEST MODELS
 # ============================================================
 
@@ -41,11 +52,16 @@ class LegacyFollowBody(BaseModel):
 class ActionBody(BaseModel):
     notification_id: int
     user_id: Optional[str] = None
+    category: Optional[str] = "friend"
 
 
 class NotificationReadBody(BaseModel):
     notification_id: int
     user_id: Optional[str] = None
+
+
+class AcceptConnectionBody(BaseModel):
+    category: Optional[str] = "friend"
 
 
 # ============================================================
@@ -68,6 +84,47 @@ def get_authenticated_user(
         )
 
     return user
+
+
+def normalize_category(
+    category: Optional[str],
+) -> str:
+    """
+    Convert category into one of:
+        friend
+        family
+        couple
+    """
+
+    if not category:
+        return "friend"
+
+    value = category.strip().lower()
+
+    aliases = {
+        "friends": "friend",
+        "friend": "friend",
+
+        "family": "family",
+
+        "couple": "couple",
+        "couple_chat": "couple",
+        "couple-chat": "couple",
+        "couple chat": "couple",
+    }
+
+    normalized = aliases.get(value)
+
+    if normalized is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Invalid connection category. "
+                "Allowed categories: friend, family, couple"
+            ),
+        )
+
+    return normalized
 
 
 def get_pair_connection(
@@ -93,6 +150,9 @@ def get_pair_connection(
                     UserConnection.user_two_id == user_a_id
                 ),
             ),
+        )
+        .order_by(
+            UserConnection.id.desc()
         )
         .first()
     )
@@ -168,7 +228,10 @@ def send_connection_request(
             detail="You cannot connect with yourself",
         )
 
+    # --------------------------------------------------------
     # Already connected
+    # --------------------------------------------------------
+
     existing_connection = get_pair_connection(
         db,
         current_user.id,
@@ -180,9 +243,16 @@ def send_connection_request(
             "success": True,
             "status": "connected",
             "message": "Already connected",
+            "category": (
+                existing_connection.category
+                or "friend"
+            ),
         }
 
-    # Check latest request in both directions
+    # --------------------------------------------------------
+    # Check latest requests in both directions
+    # --------------------------------------------------------
+
     outgoing = get_latest_request(
         db,
         current_user.id,
@@ -201,25 +271,33 @@ def send_connection_request(
             "success": True,
             "status": "pending_sent",
             "message": "Connection request already sent",
+            "request_id": outgoing.id,
         }
 
-    # Target already sent a request to current user
+    # Target already sent request
     if incoming and incoming.status == "pending":
         return {
             "success": True,
             "status": "pending_received",
             "message": "This user has already sent you a request",
+            "request_id": incoming.id,
         }
 
     now = datetime.utcnow()
 
-    # Reuse previous rejected request if possible
+    # --------------------------------------------------------
+    # Reuse previously rejected outgoing request
+    # --------------------------------------------------------
+
     if outgoing and outgoing.status == "rejected":
+
         outgoing.status = "pending"
         outgoing.updated_at = now
+
         request_row = outgoing
 
     else:
+
         request_row = ConnectionRequest(
             sender_id=current_user.id,
             receiver_id=target_user.id,
@@ -231,7 +309,10 @@ def send_connection_request(
         db.add(request_row)
         db.flush()
 
+    # --------------------------------------------------------
     # Create notification
+    # --------------------------------------------------------
+
     notification = ConnectionNotification(
         receiver_id=target_user.id,
         sender_id=current_user.id,
@@ -295,11 +376,24 @@ def accept_connection_request(
     request_id: int,
     request: Request,
     db: Session = Depends(get_db),
+    body: Optional[AcceptConnectionBody] = None,
 ):
     current_user = get_authenticated_user(
         request,
         db,
     )
+
+    # --------------------------------------------------------
+    # Category
+    # --------------------------------------------------------
+
+    selected_category = normalize_category(
+        body.category if body else "friend"
+    )
+
+    # --------------------------------------------------------
+    # Find request
+    # --------------------------------------------------------
 
     connection_request = (
         db.query(ConnectionRequest)
@@ -324,12 +418,41 @@ def accept_connection_request(
             detail="You cannot accept this request",
         )
 
+    # --------------------------------------------------------
+    # Already accepted
+    # --------------------------------------------------------
+
     if connection_request.status == "accepted":
-        return {
-            "success": True,
-            "status": "connected",
-            "message": "Already accepted",
-        }
+
+        existing_connection = get_pair_connection(
+            db,
+            connection_request.sender_id,
+            connection_request.receiver_id,
+        )
+
+        if existing_connection:
+
+            # Allow category update when already connected
+            existing_connection.category = selected_category
+            existing_connection.updated_at = datetime.utcnow()
+
+            db.commit()
+
+            return {
+                "success": True,
+                "status": "connected",
+                "message": "Connection already accepted",
+                "category": selected_category,
+            }
+
+        raise HTTPException(
+            status_code=400,
+            detail="Request was accepted but connection was not found",
+        )
+
+    # --------------------------------------------------------
+    # Request must be pending
+    # --------------------------------------------------------
 
     if connection_request.status != "pending":
         raise HTTPException(
@@ -342,7 +465,10 @@ def accept_connection_request(
     connection_request.status = "accepted"
     connection_request.updated_at = now
 
-    # Create connection immediately after Accept
+    # --------------------------------------------------------
+    # Create actual connection
+    # --------------------------------------------------------
+
     existing_connection = get_pair_connection(
         db,
         connection_request.sender_id,
@@ -350,17 +476,27 @@ def accept_connection_request(
     )
 
     if existing_connection is None:
+
         user_connection = UserConnection(
             user_one_id=connection_request.sender_id,
             user_two_id=connection_request.receiver_id,
             status="connected",
+            category=selected_category,
             created_at=now,
             updated_at=now,
         )
 
         db.add(user_connection)
 
-    # Find original request notification
+    else:
+
+        existing_connection.category = selected_category
+        existing_connection.updated_at = now
+
+    # --------------------------------------------------------
+    # Mark original request notification as read
+    # --------------------------------------------------------
+
     original_notification = (
         get_latest_notification_for_request(
             db,
@@ -371,7 +507,10 @@ def accept_connection_request(
     if original_notification:
         original_notification.is_read = 1
 
+    # --------------------------------------------------------
     # Notify requester
+    # --------------------------------------------------------
+
     accepted_notification = ConnectionNotification(
         receiver_id=connection_request.sender_id,
         sender_id=current_user.id,
@@ -392,6 +531,7 @@ def accept_connection_request(
         "status": "connected",
         "message": "Connection accepted",
         "connection": True,
+        "category": selected_category,
     }
 
 
@@ -455,7 +595,10 @@ def reject_connection_request(
     if original_notification:
         original_notification.is_read = 1
 
+    # --------------------------------------------------------
     # Notify original sender
+    # --------------------------------------------------------
+
     rejected_notification = ConnectionNotification(
         receiver_id=connection_request.sender_id,
         sender_id=current_user.id,
@@ -488,10 +631,15 @@ def accept_compatibility(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    accept_body = AcceptConnectionBody(
+        category=body.category or "friend"
+    )
+
     return accept_connection_request(
         body.notification_id,
         request,
         db,
+        accept_body,
     )
 
 
@@ -542,6 +690,7 @@ def get_connection_requests(
     result = []
 
     for row in rows:
+
         sender = (
             db.query(User)
             .filter(
@@ -563,8 +712,11 @@ def get_connection_requests(
             "sender_profile_photo": sender.profile_photo,
             "receiver_user_id": current_user.user_id,
             "status": row.status,
-            "created_at": row.created_at.isoformat()
-            if row.created_at else None,
+            "created_at": (
+                row.created_at.isoformat()
+                if row.created_at
+                else None
+            ),
         })
 
     return {
@@ -603,6 +755,7 @@ def get_connection_notifications(
     result = []
 
     for row in rows:
+
         sender = (
             db.query(User)
             .filter(
@@ -623,49 +776,67 @@ def get_connection_notifications(
             .first()
         )
 
+        # ----------------------------------------------------
+        # Message
+        # ----------------------------------------------------
+
         if row.notification_type == "connection_request":
+
             message = (
                 f"Request sent by @{sender.username} "
                 f"({sender.user_id})"
             )
 
         elif row.notification_type == "connection_accepted":
+
             message = (
                 f"@{sender.username} accepted your "
                 f"connection request."
             )
 
         elif row.notification_type == "connection_rejected":
+
             message = (
                 f"@{sender.username} rejected your "
                 f"connection request."
             )
 
         else:
+
             message = "You have a new notification."
 
         result.append({
             "id": row.id,
             "notification_id": row.id,
+
             "type": row.notification_type,
             "notification_type": row.notification_type,
+
             "sender_id": sender.id,
             "sender_user_id": sender.user_id,
             "sender_username": sender.username,
             "sender_name": sender.name,
-            "sender_profile_picture": sender.profile_photo,
+
+            "sender_profile_picture": (
+                sender.profile_photo
+            ),
+
             "message": message,
+
             "connection_request_id": (
                 request_row.id
                 if request_row
                 else row.connection_request_id
             ),
+
             "request_id": (
                 request_row.id
                 if request_row
                 else row.connection_request_id
             ),
+
             "is_read": bool(row.is_read),
+
             "created_at": (
                 row.created_at.isoformat()
                 if row.created_at
@@ -810,11 +981,25 @@ def get_connections(
         if user is None:
             continue
 
+        category = (
+            row.category
+            if row.category
+            else "friend"
+        )
+
         users.append({
             "user_id": user.user_id,
             "username": user.username,
             "name": user.name,
             "profile_photo": user.profile_photo,
+
+            # Category information
+            "category": category,
+            "connection_category": category,
+            "connection_type": category,
+
+            "connection_status": "connected",
+            "is_connected": True,
         })
 
     return {
