@@ -134,7 +134,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("keydown", (event) => {
 
         if (event.key === "Escape") {
+
             closeSideMenu();
+
             closeCategoryPopup();
         }
     });
@@ -184,14 +186,14 @@ document.addEventListener("DOMContentLoaded", () => {
     /* =====================================================
        PERSONAL CATEGORY
        
-       This category belongs ONLY to the
-       current logged-in user.
-       
+       This category belongs ONLY to
+       the current logged-in user.
+
        Allowed:
        - friend
        - family
        - null
-       
+
        Couple is NOT handled here.
     ===================================================== */
 
@@ -223,20 +225,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        FILTER USERS
-       
-       IMPORTANT:
-       
-       ALL CONNECTED
-       = only users without Friend/Family category.
-       
-       FRIENDS
-       = users personally marked Friend.
-       
-       FAMILY
-       = users personally marked Family.
     ===================================================== */
 
     function getFilteredUsers() {
+
+        /*
+         * ALL CONNECTED
+         *
+         * Only uncategorized people.
+         */
 
         if (currentCategory === "all") {
 
@@ -245,12 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const category =
                         getUserCategory(item);
-
-                    /*
-                     * Once user is placed into
-                     * Friend or Family, remove
-                     * them from All Connected.
-                     */
 
                     return (
                         category !== "friend" &&
@@ -261,6 +252,10 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
+
+        /*
+         * FRIENDS
+         */
 
         if (currentCategory === "friend") {
 
@@ -279,6 +274,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
+        /*
+         * FAMILY
+         */
+
         if (currentCategory === "family") {
 
             return allConnectedUsers.filter(
@@ -294,10 +293,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /*
-         * Couple Chat remains compatible
-         * with the existing frontend.
+         * COUPLE CHAT
          *
-         * No new Couple category is created.
+         * Existing Couple Chat compatibility
+         * remains untouched.
          */
 
         if (currentCategory === "couple") {
@@ -414,9 +413,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       CATEGORY POPUP
+       SIMPLE CATEGORY POPUP
        
-       Long press opens this menu.
+       IMPORTANT:
+       No colored buttons.
+       No circles.
+       No icons.
+       No borders around options.
+       No glass effect.
     ===================================================== */
 
     let categoryPopup = null;
@@ -431,6 +435,10 @@ document.addEventListener("DOMContentLoaded", () => {
         categoryPopup.remove();
 
         categoryPopup = null;
+
+        document.body.classList.remove(
+            "category-popup-open"
+        );
     }
 
 
@@ -464,34 +472,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /*
-         * Inline base styling so the popup
-         * works even before home.css is updated.
+         * Overlay only.
+         *
+         * The actual popup styling is
+         * controlled by home.css.
          */
-
-        overlay.style.position =
-            "fixed";
-
-        overlay.style.inset =
-            "0";
-
-        overlay.style.zIndex =
-            "99999";
-
-        overlay.style.display =
-            "flex";
-
-        overlay.style.alignItems =
-            "center";
-
-        overlay.style.justifyContent =
-            "center";
-
-        overlay.style.background =
-            "rgba(0,0,0,0.55)";
-
-        overlay.style.padding =
-            "20px";
-
 
         const box =
             document.createElement("div");
@@ -501,121 +486,53 @@ document.addEventListener("DOMContentLoaded", () => {
             "personal-category-popup";
 
 
-        box.style.width =
-            "min(360px, 100%)";
-
-        box.style.background =
-            "#ffffff";
-
-        box.style.borderRadius =
-            "20px";
-
-        box.style.padding =
-            "20px";
-
-        box.style.boxSizing =
-            "border-box";
-
-        box.style.boxShadow =
-            "0 20px 60px rgba(0,0,0,0.30)";
-
+        /*
+         * Title
+         */
 
         const title =
             document.createElement("div");
 
 
+        title.className =
+            "simple-category-title";
+
+
         title.textContent =
-            userName || "Connected Person";
-
-
-        title.style.fontSize =
-            "18px";
-
-        title.style.fontWeight =
-            "700";
-
-        title.style.marginBottom =
-            "6px";
-
-
-        const subtitle =
-            document.createElement("div");
-
-
-        subtitle.textContent =
             "Choose category";
 
 
-        subtitle.style.fontSize =
-            "14px";
-
-        subtitle.style.opacity =
-            "0.65";
-
-        subtitle.style.marginBottom =
-            "16px";
+        box.appendChild(
+            title
+        );
 
 
-        box.appendChild(title);
-        box.appendChild(subtitle);
-
-
-        /* =================================================
-           FRIEND BUTTON
-        ================================================= */
+        /*
+         * FRIEND
+         */
 
         const friendButton =
-            document.createElement("button");
+            document.createElement("div");
 
 
-        friendButton.type =
-            "button";
+        friendButton.className =
+            "simple-category-option friend-option";
 
 
         friendButton.textContent =
             "Friend";
 
 
-        friendButton.style.width =
-            "100%";
-
-        friendButton.style.border =
-            "0";
-
-        friendButton.style.borderRadius =
-            "12px";
-
-        friendButton.style.padding =
-            "13px";
-
-        friendButton.style.marginBottom =
-            "10px";
-
-        friendButton.style.fontSize =
-            "15px";
-
-        friendButton.style.fontWeight =
-            "600";
-
-        friendButton.style.cursor =
-            "pointer";
+        friendButton.setAttribute(
+            "role",
+            "button"
+        );
 
 
-        if (
-            currentUserCategory ===
-            "friend" ||
-            currentUserCategory ===
-            "friends"
-        ) {
-
-            friendButton.style.background =
-                "#e8f0ff";
-
-        } else {
-
-            friendButton.style.background =
-                "#f2f2f2";
-        }
+        friendButton.setAttribute(
+            "tabindex",
+            "0"
+        );
 
 
         friendButton.addEventListener(
@@ -632,65 +549,57 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
+        friendButton.addEventListener(
+            "keydown",
+            async (event) => {
+
+                if (
+                    event.key === "Enter" ||
+                    event.key === " "
+                ) {
+
+                    event.preventDefault();
+
+                    await handleCategorySelection(
+                        userId,
+                        "friend"
+                    );
+                }
+            }
+        );
+
+
         box.appendChild(
             friendButton
         );
 
 
-        /* =================================================
-           FAMILY BUTTON
-        ================================================= */
+        /*
+         * FAMILY
+         */
 
         const familyButton =
-            document.createElement("button");
+            document.createElement("div");
 
 
-        familyButton.type =
-            "button";
+        familyButton.className =
+            "simple-category-option family-option";
 
 
         familyButton.textContent =
             "Family";
 
 
-        familyButton.style.width =
-            "100%";
-
-        familyButton.style.border =
-            "0";
-
-        familyButton.style.borderRadius =
-            "12px";
-
-        familyButton.style.padding =
-            "13px";
-
-        familyButton.style.marginBottom =
-            "10px";
-
-        familyButton.style.fontSize =
-            "15px";
-
-        familyButton.style.fontWeight =
-            "600";
-
-        familyButton.style.cursor =
-            "pointer";
+        familyButton.setAttribute(
+            "role",
+            "button"
+        );
 
 
-        if (
-            currentUserCategory ===
-            "family"
-        ) {
-
-            familyButton.style.background =
-                "#e8f0ff";
-
-        } else {
-
-            familyButton.style.background =
-                "#f2f2f2";
-        }
+        familyButton.setAttribute(
+            "tabindex",
+            "0"
+        );
 
 
         familyButton.addEventListener(
@@ -707,16 +616,37 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
+        familyButton.addEventListener(
+            "keydown",
+            async (event) => {
+
+                if (
+                    event.key === "Enter" ||
+                    event.key === " "
+                ) {
+
+                    event.preventDefault();
+
+                    await handleCategorySelection(
+                        userId,
+                        "family"
+                    );
+                }
+            }
+        );
+
+
         box.appendChild(
             familyButton
         );
 
 
-        /* =================================================
-           REMOVE CATEGORY
-           
-           Only show if already categorized.
-        ================================================= */
+        /*
+         * REMOVE
+         *
+         * Only show if user currently
+         * has Friend or Family category.
+         */
 
         if (
             currentUserCategory === "friend" ||
@@ -725,43 +655,27 @@ document.addEventListener("DOMContentLoaded", () => {
         ) {
 
             const removeButton =
-                document.createElement("button");
+                document.createElement("div");
 
 
-            removeButton.type =
-                "button";
+            removeButton.className =
+                "simple-category-option remove-option";
 
 
             removeButton.textContent =
-                "Remove from category";
+                "Remove";
 
 
-            removeButton.style.width =
-                "100%";
+            removeButton.setAttribute(
+                "role",
+                "button"
+            );
 
-            removeButton.style.border =
-                "0";
 
-            removeButton.style.borderRadius =
-                "12px";
-
-            removeButton.style.padding =
-                "13px";
-
-            removeButton.style.marginBottom =
-                "10px";
-
-            removeButton.style.fontSize =
-                "15px";
-
-            removeButton.style.cursor =
-                "pointer";
-
-            removeButton.style.background =
-                "#fff0f0";
-
-            removeButton.style.color =
-                "#c62828";
+            removeButton.setAttribute(
+                "tabindex",
+                "0"
+            );
 
 
             removeButton.addEventListener(
@@ -778,48 +692,58 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
+            removeButton.addEventListener(
+                "keydown",
+                async (event) => {
+
+                    if (
+                        event.key === "Enter" ||
+                        event.key === " "
+                    ) {
+
+                        event.preventDefault();
+
+                        await handleCategorySelection(
+                            userId,
+                            ""
+                        );
+                    }
+                }
+            );
+
+
             box.appendChild(
                 removeButton
             );
         }
 
 
-        /* =================================================
-           CANCEL
-        ================================================= */
+        /*
+         * CANCEL
+         */
 
         const cancelButton =
-            document.createElement("button");
+            document.createElement("div");
 
 
-        cancelButton.type =
-            "button";
+        cancelButton.className =
+            "simple-category-option cancel-option";
 
 
         cancelButton.textContent =
             "Cancel";
 
 
-        cancelButton.style.width =
-            "100%";
+        cancelButton.setAttribute(
+            "role",
+            "button"
+        );
 
-        cancelButton.style.border =
-            "0";
 
-        cancelButton.style.borderRadius =
-            "12px";
-
-        cancelButton.style.padding =
-            "13px";
-
-        cancelButton.style.fontSize =
-            "15px";
-
-        cancelButton.style.cursor =
-            "pointer";
-
-        cancelButton.style.background =
-            "#eeeeee";
+        cancelButton.setAttribute(
+            "tabindex",
+            "0"
+        );
 
 
         cancelButton.addEventListener(
@@ -833,13 +757,41 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
+        cancelButton.addEventListener(
+            "keydown",
+            (event) => {
+
+                if (
+                    event.key === "Enter" ||
+                    event.key === " "
+                ) {
+
+                    event.preventDefault();
+
+                    closeCategoryPopup();
+                }
+            }
+        );
+
+
         box.appendChild(
             cancelButton
         );
 
 
-        overlay.appendChild(box);
+        /*
+         * Add popup to overlay.
+         */
 
+        overlay.appendChild(
+            box
+        );
+
+
+        /*
+         * Tap outside popup
+         * closes popup.
+         */
 
         overlay.addEventListener(
             "click",
@@ -863,6 +815,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         categoryPopup =
             overlay;
+
+
+        document.body.classList.add(
+            "category-popup-open"
+        );
+
+
+        /*
+         * Focus first option.
+         */
+
+        setTimeout(() => {
+
+            friendButton.focus();
+
+        }, 50);
     }
 
 
@@ -882,9 +850,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
 
-            /* =============================================
-               REMOVE PERSONAL CATEGORY
-            ============================================= */
+            /*
+             * REMOVE CATEGORY
+             */
 
             if (
                 !category ||
@@ -936,9 +904,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            /* =============================================
-               SAVE FRIEND / FAMILY
-            ============================================= */
+            /*
+             * SAVE FRIEND / FAMILY
+             */
 
             const response =
                 await fetch(
@@ -1072,15 +1040,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /*
          * Re-render immediately.
-         *
-         * If Friend selected:
-         * user disappears from All Connected.
-         *
-         * If Family selected:
-         * user disappears from All Connected.
-         *
-         * If Remove selected:
-         * user returns to All Connected.
          */
 
         renderConnectedPeople();
@@ -1136,13 +1095,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        LONG PRESS HANDLER
-       
-       Works with:
-       - Android touch
-       - iPhone touch
-       - Mouse
-       
-       Long press = about 600ms.
     ===================================================== */
 
     function addLongPressToCard(
@@ -1186,10 +1138,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            /*
-             * Only primary mouse button.
-             */
-
             if (
                 event.pointerType ===
                 "mouse" &&
@@ -1222,11 +1170,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         longPressTriggered =
                             true;
 
-
-                        /*
-                         * Stop browser text
-                         * selection after long press.
-                         */
 
                         if (
                             window.getSelection
@@ -1286,13 +1229,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "pointerleave",
             (event) => {
 
-                /*
-                 * For mouse, leaving card
-                 * cancels the long press.
-                 *
-                 * Touch is handled by pointercancel/up.
-                 */
-
                 if (
                     event.pointerType ===
                     "mouse"
@@ -1308,20 +1244,10 @@ document.addEventListener("DOMContentLoaded", () => {
             "contextmenu",
             (event) => {
 
-                /*
-                 * Prevent normal browser
-                 * context menu on long press.
-                 */
-
                 event.preventDefault();
             }
         );
 
-
-        /*
-         * Prevent accidental profile opening
-         * after a long press.
-         */
 
         card.addEventListener(
             "click",
@@ -1358,7 +1284,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       GET CURRENT CATEGORY OF USER
+       GET CURRENT CATEGORY
     ===================================================== */
 
     function getCurrentCategoryForUser(
@@ -1466,10 +1392,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 "";
 
 
-            const personalCategory =
-                getUserCategory(item);
-
-
             const card =
                 document.createElement(
                     "article"
@@ -1488,8 +1410,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /*
-             * Make long press feel natural
-             * on mobile.
+             * Mobile long press behavior.
              */
 
             card.style.userSelect =
@@ -1608,12 +1529,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 arrowHtml;
 
 
-            /*
-             * Long press:
-             *
-             * Friend / Family / Remove
-             */
-
             if (userId) {
 
                 addLongPressToCard(
@@ -1715,11 +1630,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuCoupleChat")?.addEventListener(
         "click",
         () => {
-
-            /*
-             * Existing Couple Chat navigation/filter
-             * remains untouched.
-             */
 
             showCategory("couple");
         }
@@ -1911,11 +1821,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 users;
 
 
-            /*
-             * Home starts with
-             * uncategorized connected people.
-             */
-
             currentCategory =
                 "all";
 
@@ -1950,7 +1855,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home long-press Friend/Family system loaded."
+        "Usanex Home simple Friend/Family category system loaded."
     );
 
 });
