@@ -1,7 +1,7 @@
 /* =========================================================
    USANEX HOME
    BALANCED COMPACT DESIGN
-   + LONG PRESS CATEGORY MENU
+   + SIMPLE LONG PRESS CATEGORY MENU
    ========================================================= */
 
 * {
@@ -59,7 +59,6 @@ button {
     padding: 0 14px;
 
     background: #05070b;
-
     border-bottom: none;
 }
 
@@ -495,7 +494,8 @@ button {
 
 
 /* =========================================================
-   LONG PRESS CATEGORY POPUP
+   SIMPLE CATEGORY POPUP
+   Friend / Family / Remove / Cancel
    ========================================================= */
 
 .personal-category-overlay {
@@ -511,137 +511,178 @@ button {
 
     padding: 20px;
 
-    background:
-        rgba(0, 0, 0, 0.68);
+    background: rgba(0, 0, 0, 0.68);
 
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-
-    animation:
-        categoryOverlayIn 0.16s ease-out;
+    animation: categoryOverlayIn 0.16s ease-out;
 }
 
-.personal-category-popup {
-    width: min(360px, 100%);
 
-    padding: 20px;
+/*
+   ONLY THE POPUP ITSELF HAS A BOX.
+   OPTIONS INSIDE ARE COMPLETELY PLAIN TEXT.
+*/
+
+.personal-category-popup {
+    width: min(300px, 100%);
+
+    padding: 22px 24px;
 
     background: #0c121a;
 
     border: 1px solid #202d3d;
 
-    border-radius: 20px;
+    border-radius: 16px;
 
-    box-shadow:
-        0 24px 70px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
 
-    animation:
-        categoryPopupIn 0.18s ease-out;
+    animation: categoryPopupIn 0.18s ease-out;
 
     color: #e8edf5;
+
+    text-align: center;
 }
 
-.personal-category-popup > div:first-child {
+
+/* =========================================================
+   POPUP TITLE
+   ========================================================= */
+
+.simple-category-title {
+    margin-bottom: 20px;
+
     color: #eef3f8;
 
-    font-size: 18px;
-    font-weight: 700;
-
-    line-height: 23px;
-
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.personal-category-popup > div:nth-child(2) {
-    color: #8491a2;
-
-    font-size: 13px;
-
-    margin-top: 4px;
-    margin-bottom: 16px;
-}
-
-.personal-category-popup button {
-    width: 100%;
-    min-height: 48px;
-
-    border: 1px solid #1c2837;
-
-    border-radius: 13px;
-
-    background: #121a24;
-
-    color: #e6ebf2;
-
-    font-size: 14px;
+    font-size: 17px;
     font-weight: 600;
+
+    line-height: 22px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   SIMPLE TEXT OPTIONS
+   ========================================================= */
+
+.simple-category-option {
+    width: 100%;
+
+    min-height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent !important;
+
+    border: none !important;
+
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+
+    color: #e7edf5;
+
+    font-size: 15px;
+    font-weight: 500;
+
+    line-height: 20px;
 
     cursor: pointer;
 
     -webkit-tap-highlight-color: transparent;
 
+    user-select: none;
+
     transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.12s ease;
-}
-
-.personal-category-popup button + button {
-    margin-top: 9px;
-}
-
-.personal-category-popup button:active {
-    transform: scale(0.98);
-
-    background: #1a2635;
-
-    border-color: #2b4059;
+        color 0.12s ease,
+        opacity 0.12s ease;
 }
 
 
 /* Friend */
 
-.personal-category-popup button:nth-of-type(1) {
-    background: #101d2d;
-
-    border-color: #1e3d64;
-
-    color: #4e9aff;
+.simple-category-option.friend-option {
+    color: #e7edf5;
 }
 
 
 /* Family */
 
-.personal-category-popup button:nth-of-type(2) {
-    background: #141c22;
-
-    border-color: #28343d;
-
-    color: #dce5ed;
+.simple-category-option.family-option {
+    color: #e7edf5;
 }
 
 
-/* Remove category */
+/* Remove */
 
-.personal-category-popup button:nth-of-type(3) {
-    background: #211317;
-
-    border-color: #452027;
-
-    color: #ff7384;
+.simple-category-option.remove-option {
+    color: #e7edf5;
 }
 
 
 /* Cancel */
 
-.personal-category-popup button:last-child {
-    background: #0b1016;
-
-    border-color: #1a2531;
-
+.simple-category-option.cancel-option {
     color: #8f9bab;
+}
+
+
+/* Touch / hover */
+
+.simple-category-option:hover {
+    background: transparent !important;
+
+    border: none !important;
+
+    box-shadow: none !important;
+
+    color: #247cff;
+}
+
+.simple-category-option:active {
+    background: transparent !important;
+
+    border: none !important;
+
+    box-shadow: none !important;
+
+    transform: none;
+
+    opacity: 0.65;
+}
+
+
+/* =========================================================
+   IMPORTANT OVERRIDE
+   Removes any old popup button styling
+   ========================================================= */
+
+.personal-category-popup button,
+.personal-category-popup button:nth-of-type(1),
+.personal-category-popup button:nth-of-type(2),
+.personal-category-popup button:nth-of-type(3),
+.personal-category-popup button:last-child {
+    width: auto;
+
+    min-height: unset;
+
+    margin: 0;
+
+    padding: 0;
+
+    background: transparent !important;
+
+    border: none !important;
+
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+
+    color: inherit;
+
+    font-size: inherit;
 }
 
 
@@ -650,7 +691,6 @@ button {
    ========================================================= */
 
 @keyframes categoryOverlayIn {
-
     from {
         opacity: 0;
     }
@@ -661,7 +701,6 @@ button {
 }
 
 @keyframes categoryPopupIn {
-
     from {
         opacity: 0;
         transform: translateY(12px) scale(0.97);
@@ -921,13 +960,17 @@ button {
     }
 
     .personal-category-popup {
-        padding: 17px;
+        width: min(280px, 100%);
 
-        border-radius: 18px;
+        padding: 20px 18px;
+
+        border-radius: 15px;
     }
 
-    .personal-category-popup button {
-        min-height: 46px;
+    .simple-category-option {
+        min-height: 40px;
+
+        font-size: 14px;
     }
 
     .bottom-nav,
@@ -961,7 +1004,7 @@ button {
     }
 
     .personal-category-popup {
-        width: 360px;
+        width: 300px;
     }
 }
 
@@ -978,7 +1021,7 @@ button {
     }
 
     .connected-person-card,
-    .personal-category-popup button {
+    .simple-category-option {
         transition: none;
     }
 }
