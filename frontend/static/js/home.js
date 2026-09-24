@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /*
-       Android back / Escape style keyboard
+       Escape key
     */
 
     document.addEventListener("keydown", (event) => {
@@ -147,67 +147,101 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       MENU ITEMS
+       HOME MENU NAVIGATION
        ===================================================== */
 
-    $("menuProfile")?.addEventListener("click", () => {
+    $("menuAllConnected")?.addEventListener(
+        "click",
+        () => {
 
-        closeSideMenu();
+            closeSideMenu();
 
-        go("/profile");
-    });
-
-
-    $("menuNotifications")?.addEventListener("click", () => {
-
-        closeSideMenu();
-
-        go("/notifications");
-    });
+            go("/all-connected");
+        }
+    );
 
 
-    $("menuSettings")?.addEventListener("click", () => {
+    $("menuFamily")?.addEventListener(
+        "click",
+        () => {
 
-        closeSideMenu();
+            closeSideMenu();
 
-        alert("Settings will be available soon.");
-    });
+            go("/family");
+        }
+    );
+
+
+    $("menuFriends")?.addEventListener(
+        "click",
+        () => {
+
+            closeSideMenu();
+
+            go("/friends");
+        }
+    );
+
+
+    $("menuCoupleChat")?.addEventListener(
+        "click",
+        () => {
+
+            closeSideMenu();
+
+            go("/couple-chat");
+        }
+    );
+
+
+    $("menuSettings")?.addEventListener(
+        "click",
+        () => {
+
+            closeSideMenu();
+
+            go("/settings");
+        }
+    );
 
 
     /* =====================================================
        LOGOUT
        ===================================================== */
 
-    $("logoutButton")?.addEventListener("click", async () => {
+    $("logoutButton")?.addEventListener(
+        "click",
+        async () => {
 
-        const button = $("logoutButton");
+            const button = $("logoutButton");
 
-        if (button) {
-            button.disabled = true;
+            if (button) {
+                button.disabled = true;
+            }
+
+            try {
+
+                await fetch(
+                    "/api/auth/logout",
+                    {
+                        method: "POST",
+                        credentials: "include"
+                    }
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+            } finally {
+
+                go("/login");
+            }
         }
-
-        try {
-
-            await fetch(
-                "/api/auth/logout",
-                {
-                    method: "POST",
-                    credentials: "include"
-                }
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Logout error:",
-                error
-            );
-
-        } finally {
-
-            go("/login");
-        }
-    });
+    );
 
 
     /* =====================================================
@@ -525,7 +559,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home v20 loaded."
+        "Usanex Home v21 loaded."
     );
 
 });
