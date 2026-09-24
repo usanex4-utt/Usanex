@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        BASIC HELPERS
-       ===================================================== */
+    ===================================================== */
 
     const $ = (id) => document.getElementById(id);
 
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        BOTTOM NAVIGATION
-       ===================================================== */
+    ===================================================== */
 
     $("homeNav")?.addEventListener("click", () => {
         go("/home");
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        SIDE MENU
-       ===================================================== */
+    ===================================================== */
 
     const menuButton = $("menuButton");
     const menuOverlay = $("menuOverlay");
@@ -122,10 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 
-    /*
-       Menu ke bahar click
-    */
-
     menuOverlay?.addEventListener("click", (event) => {
 
         if (event.target === menuOverlay) {
@@ -133,10 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-
-    /*
-       Escape key
-    */
 
     document.addEventListener("keydown", (event) => {
 
@@ -147,130 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       HOME MENU NAVIGATION
-       ===================================================== */
-
-    $("menuAllConnected")?.addEventListener(
-        "click",
-        () => {
-
-            closeSideMenu();
-
-            go("/all-connected");
-        }
-    );
-
-
-    $("menuFamily")?.addEventListener(
-        "click",
-        () => {
-
-            closeSideMenu();
-
-            go("/family");
-        }
-    );
-
-
-    $("menuFriends")?.addEventListener(
-        "click",
-        () => {
-
-            closeSideMenu();
-
-            go("/friends");
-        }
-    );
-
-
-    $("menuCoupleChat")?.addEventListener(
-        "click",
-        () => {
-
-            closeSideMenu();
-
-            go("/couple-chat");
-        }
-    );
-
-
-    $("menuSettings")?.addEventListener(
-        "click",
-        () => {
-
-            closeSideMenu();
-
-            go("/settings");
-        }
-    );
-
-
-    /* =====================================================
-       LOGOUT
-       ===================================================== */
-
-    $("logoutButton")?.addEventListener(
-        "click",
-        async () => {
-
-            const button = $("logoutButton");
-
-            if (button) {
-                button.disabled = true;
-            }
-
-            try {
-
-                await fetch(
-                    "/api/auth/logout",
-                    {
-                        method: "POST",
-                        credentials: "include"
-                    }
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Logout error:",
-                    error
-                );
-
-            } finally {
-
-                go("/login");
-            }
-        }
-    );
-
-
-    /* =====================================================
-       HEADER PLUS
-       ===================================================== */
-
-    $("headerPlus")?.addEventListener("click", () => {
-
-        alert(
-            "Create feature will be available soon."
-        );
-    });
-
-
-    /* =====================================================
-       NEX MOMENT
-       ===================================================== */
-
-    $("momentSeeAll")?.addEventListener("click", () => {
-
-        alert(
-            "Nex Moment will be available soon."
-        );
-    });
-
-
-    /* =====================================================
-       CONNECTED PEOPLE
-       ===================================================== */
+       CONNECTION SECTION
+    ===================================================== */
 
     const connectedSection =
         $("connectedPeopleSection");
@@ -281,6 +151,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const connectedCount =
         $("connectedPeopleCount");
 
+    const connectedTitle =
+        $("connectedSectionTitle");
+
+
+    let allConnectedUsers = [];
+
+    let currentCategory = "all";
+
+
+    /* =====================================================
+       CONNECTION USER
+    ===================================================== */
 
     function getConnectionUser(item) {
 
@@ -297,7 +179,186 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    function renderConnectedPeople(users) {
+    /* =====================================================
+       CATEGORY DETECTION
+    ===================================================== */
+
+    function getUserCategory(item) {
+
+        const user =
+            getConnectionUser(item);
+
+
+        const category =
+            user.connection_type ||
+            user.category ||
+            user.connection_category ||
+            user.relationship_type ||
+            item.connection_type ||
+            item.category ||
+            item.connection_category ||
+            item.relationship_type ||
+            "";
+
+
+        return String(category)
+            .trim()
+            .toLowerCase();
+    }
+
+
+    /* =====================================================
+       FILTER USERS
+    ===================================================== */
+
+    function getFilteredUsers() {
+
+        if (currentCategory === "all") {
+
+            return allConnectedUsers;
+        }
+
+
+        return allConnectedUsers.filter((item) => {
+
+            const category =
+                getUserCategory(item);
+
+
+            if (
+                currentCategory === "friend"
+            ) {
+
+                return (
+                    category === "friend" ||
+                    category === "friends"
+                );
+            }
+
+
+            if (
+                currentCategory === "family"
+            ) {
+
+                return (
+                    category === "family"
+                );
+            }
+
+
+            if (
+                currentCategory === "couple"
+            ) {
+
+                return (
+                    category === "couple" ||
+                    category === "couple_chat" ||
+                    category === "couple-chat" ||
+                    category === "couple chat"
+                );
+            }
+
+
+            return false;
+        });
+    }
+
+
+    /* =====================================================
+       SECTION TITLE
+    ===================================================== */
+
+    function updateSectionTitle() {
+
+        if (!connectedTitle) {
+            return;
+        }
+
+
+        if (currentCategory === "all") {
+
+            connectedTitle.textContent =
+                "All Connected";
+
+        } else if (
+            currentCategory === "friend"
+        ) {
+
+            connectedTitle.textContent =
+                "Friends";
+
+        } else if (
+            currentCategory === "family"
+        ) {
+
+            connectedTitle.textContent =
+                "Family";
+
+        } else if (
+            currentCategory === "couple"
+        ) {
+
+            connectedTitle.textContent =
+                "Couple Chat";
+        }
+    }
+
+
+    /* =====================================================
+       EMPTY MESSAGE
+    ===================================================== */
+
+    function renderEmptyMessage() {
+
+        if (!connectedList) {
+            return;
+        }
+
+
+        let message =
+            "No connected people yet.";
+
+
+        if (
+            currentCategory === "friend"
+        ) {
+
+            message =
+                "No friends added yet.";
+
+        } else if (
+            currentCategory === "family"
+        ) {
+
+            message =
+                "No family members added yet.";
+
+        } else if (
+            currentCategory === "couple"
+        ) {
+
+            message =
+                "No couple chat connection yet.";
+        }
+
+
+        connectedList.innerHTML = `
+
+            <div class="connected-empty">
+
+                ${escapeHtml(message)}
+
+            </div>
+
+        `;
+    }
+
+
+    /* =====================================================
+       RENDER CONNECTED PEOPLE
+    ===================================================== */
+
+    function renderConnectedPeople() {
 
         if (
             !connectedSection ||
@@ -306,30 +367,34 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+
+        updateSectionTitle();
+
+
+        const users =
+            getFilteredUsers();
+
+
         connectedList.innerHTML = "";
 
 
         if (
-            !Array.isArray(users) ||
-            users.length === 0
+            connectedCount
         ) {
 
-            connectedSection.hidden = true;
-
-            if (connectedCount) {
-                connectedCount.textContent = "0";
-            }
-
-            return;
+            connectedCount.textContent =
+                String(users.length);
         }
 
 
         connectedSection.hidden = false;
 
 
-        if (connectedCount) {
-            connectedCount.textContent =
-                String(users.length);
+        if (users.length === 0) {
+
+            renderEmptyMessage();
+
+            return;
         }
 
 
@@ -381,21 +446,31 @@ document.addEventListener("DOMContentLoaded", () => {
             if (photo) {
 
                 avatarHtml = `
+
                     <div class="connected-person-avatar">
+
                         <img
                             src="${escapeHtml(photo)}"
                             alt="${escapeHtml(name)}"
                             draggable="false"
                         >
+
                     </div>
+
                 `;
 
             } else {
 
                 avatarHtml = `
+
                     <div class="connected-person-avatar">
-                        ${escapeHtml(getInitial(name))}
+
+                        ${escapeHtml(
+                            getInitial(name)
+                        )}
+
                     </div>
+
                 `;
             }
 
@@ -435,6 +510,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="connected-person-arrow">
                     ›
                 </div>
+
             `;
 
 
@@ -445,6 +521,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!userId) {
                         return;
                     }
+
 
                     go(
                         "/profile?user_id=" +
@@ -461,8 +538,183 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       SHOW CATEGORY ON HOME
+    ===================================================== */
+
+    function showCategory(category) {
+
+        currentCategory =
+            category;
+
+
+        closeSideMenu();
+
+
+        renderConnectedPeople();
+
+
+        if (connectedSection) {
+
+            connectedSection.hidden =
+                false;
+
+
+            setTimeout(() => {
+
+                connectedSection.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+            }, 50);
+        }
+    }
+
+
+    /* =====================================================
+       ALL CONNECTED
+    ===================================================== */
+
+    $("menuAllConnected")?.addEventListener(
+        "click",
+        () => {
+
+            showCategory("all");
+        }
+    );
+
+
+    /* =====================================================
+       FAMILY
+    ===================================================== */
+
+    $("menuFamily")?.addEventListener(
+        "click",
+        () => {
+
+            showCategory("family");
+        }
+    );
+
+
+    /* =====================================================
+       FRIENDS
+    ===================================================== */
+
+    $("menuFriends")?.addEventListener(
+        "click",
+        () => {
+
+            showCategory("friend");
+        }
+    );
+
+
+    /* =====================================================
+       COUPLE CHAT
+    ===================================================== */
+
+    $("menuCoupleChat")?.addEventListener(
+        "click",
+        () => {
+
+            showCategory("couple");
+        }
+    );
+
+
+    /* =====================================================
+       SETTINGS
+    ===================================================== */
+
+    $("menuSettings")?.addEventListener(
+        "click",
+        () => {
+
+            closeSideMenu();
+
+            go("/settings");
+        }
+    );
+
+
+    /* =====================================================
+       LOGOUT
+    ===================================================== */
+
+    $("logoutButton")?.addEventListener(
+        "click",
+        async () => {
+
+            const button =
+                $("logoutButton");
+
+
+            if (button) {
+
+                button.disabled =
+                    true;
+            }
+
+
+            try {
+
+                await fetch(
+                    "/api/auth/logout",
+                    {
+                        method: "POST",
+                        credentials: "include"
+                    }
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Logout error:",
+                    error
+                );
+
+            } finally {
+
+                go("/login");
+            }
+        }
+    );
+
+
+    /* =====================================================
+       HEADER PLUS
+    ===================================================== */
+
+    $("headerPlus")?.addEventListener(
+        "click",
+        () => {
+
+            alert(
+                "Create feature will be available soon."
+            );
+        }
+    );
+
+
+    /* =====================================================
+       NEX MOMENT
+    ===================================================== */
+
+    $("momentSeeAll")?.addEventListener(
+        "click",
+        () => {
+
+            alert(
+                "Nex Moment will be available soon."
+            );
+        }
+    );
+
+
+    /* =====================================================
        LOAD CONNECTED PEOPLE
-       ===================================================== */
+    ===================================================== */
 
     async function loadConnectedPeople() {
 
@@ -473,7 +725,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     "/api/connections",
                     {
                         method: "GET",
-                        credentials: "include",
+
+                        credentials:
+                            "include",
 
                         headers: {
                             "Accept":
@@ -483,7 +737,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            if (response.status === 401) {
+            if (
+                response.status === 401
+            ) {
 
                 go("/login");
 
@@ -507,36 +763,55 @@ document.addEventListener("DOMContentLoaded", () => {
             let users = [];
 
 
-            /*
-               Backend ke different possible
-               response formats handle kar rahe hain.
-            */
-
-            if (Array.isArray(data)) {
+            if (
+                Array.isArray(data)
+            ) {
 
                 users = data;
 
             } else if (
-                Array.isArray(data.connections)
+                Array.isArray(
+                    data.connections
+                )
             ) {
 
-                users = data.connections;
+                users =
+                    data.connections;
 
             } else if (
-                Array.isArray(data.users)
+                Array.isArray(
+                    data.users
+                )
             ) {
 
-                users = data.users;
+                users =
+                    data.users;
 
             } else if (
-                Array.isArray(data.data)
+                Array.isArray(
+                    data.data
+                )
             ) {
 
-                users = data.data;
+                users =
+                    data.data;
             }
 
 
-            renderConnectedPeople(users);
+            allConnectedUsers =
+                users;
+
+
+            /*
+               Default Home:
+               All Connected
+            */
+
+            currentCategory =
+                "all";
+
+
+            renderConnectedPeople();
 
 
         } catch (error) {
@@ -546,20 +821,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-            renderConnectedPeople([]);
+
+            allConnectedUsers =
+                [];
+
+            currentCategory =
+                "all";
+
+
+            renderConnectedPeople();
         }
     }
 
 
     /* =====================================================
        START
-       ===================================================== */
+    ===================================================== */
 
     loadConnectedPeople();
 
 
     console.log(
-        "Usanex Home v21 loaded."
+        "Usanex Home v22 loaded."
     );
 
 });
