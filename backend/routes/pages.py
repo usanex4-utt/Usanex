@@ -105,12 +105,10 @@ def home_page(
     )
 
     if current_user is None:
-
         return RedirectResponse(
             url="/login",
             status_code=307,
         )
-
 
     return templates.TemplateResponse(
         request=request,
@@ -140,12 +138,10 @@ def reels_page(
     )
 
     if current_user is None:
-
         return RedirectResponse(
             url="/login",
             status_code=307,
         )
-
 
     return templates.TemplateResponse(
         request=request,
@@ -175,12 +171,10 @@ def search_page(
     )
 
     if current_user is None:
-
         return RedirectResponse(
             url="/login",
             status_code=307,
         )
-
 
     return templates.TemplateResponse(
         request=request,
@@ -210,16 +204,56 @@ def notifications_page(
     )
 
     if current_user is None:
-
         return RedirectResponse(
             url="/login",
             status_code=307,
         )
 
-
     return templates.TemplateResponse(
         request=request,
         name="notifications.html",
+        context={
+            "user": current_user,
+        },
+    )
+
+
+# =========================================================
+# PROFILE
+#
+# /profile
+# /profile?user_id=u_xxxxx
+#
+# The frontend profile.js reads user_id from the URL
+# and calls:
+#
+# GET /api/profile/{user_id}
+#
+# =========================================================
+
+@router.get(
+    "/profile",
+    include_in_schema=False,
+)
+def profile_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    current_user = get_current_user_from_request(
+        request=request,
+        db=db,
+    )
+
+    if current_user is None:
+        return RedirectResponse(
+            url="/login",
+            status_code=307,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
         context={
             "user": current_user,
         },
