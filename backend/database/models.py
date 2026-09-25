@@ -1,6 +1,10 @@
-from sqlalchemy import Column, DateTime, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Column, DateTime, Integer, String
 from .database import Base
 
+
+# =========================================================
+# USERS
+# =========================================================
 
 class User(Base):
     __tablename__ = "users"
@@ -43,16 +47,43 @@ class User(Base):
         nullable=True
     )
 
+    # =====================================================
+    # PROFILE INFORMATION
+    # =====================================================
+
     bio = Column(
         String(500),
         nullable=True
     )
 
+    website = Column(
+        String(500),
+        nullable=True
+    )
+
+    instagram = Column(
+        String(500),
+        nullable=True
+    )
+
+    social_link = Column(
+        String(500),
+        nullable=True
+    )
+
+
+# =========================================================
+# OTP VERIFICATION
+# =========================================================
 
 class OTPVerification(Base):
     __tablename__ = "otp_verifications"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     identifier = Column(
         String(100),
@@ -82,10 +113,18 @@ class OTPVerification(Base):
     )
 
 
+# =========================================================
+# USER SESSION
+# =========================================================
+
 class UserSession(Base):
     __tablename__ = "user_sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     session_token = Column(
         String(128),
@@ -111,10 +150,18 @@ class UserSession(Base):
     )
 
 
+# =========================================================
+# CONNECTION REQUEST
+# =========================================================
+
 class ConnectionRequest(Base):
     __tablename__ = "connection_requests"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     sender_id = Column(
         Integer,
@@ -146,10 +193,18 @@ class ConnectionRequest(Base):
     )
 
 
+# =========================================================
+# CONNECTION VERIFICATION
+# =========================================================
+
 class ConnectionVerification(Base):
     __tablename__ = "connection_verifications"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     connection_request_id = Column(
         Integer,
@@ -203,10 +258,18 @@ class ConnectionVerification(Base):
     )
 
 
+# =========================================================
+# CONNECTION NOTIFICATION
+# =========================================================
+
 class ConnectionNotification(Base):
     __tablename__ = "connection_notifications"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     receiver_id = Column(
         Integer,
@@ -255,10 +318,18 @@ class ConnectionNotification(Base):
     )
 
 
+# =========================================================
+# USER CONNECTION
+# =========================================================
+
 class UserConnection(Base):
     __tablename__ = "user_connections"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     user_one_id = Column(
         Integer,
@@ -290,10 +361,18 @@ class UserConnection(Base):
     )
 
 
+# =========================================================
+# PERSONAL CONNECTION CATEGORY
+# =========================================================
+
 class UserConnectionCategory(Base):
     __tablename__ = "user_connection_categories"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     user_id = Column(
         Integer,
@@ -321,78 +400,5 @@ class UserConnectionCategory(Base):
 
     updated_at = Column(
         DateTime,
-        nullable=False
-    )
-
-
-class UserFollow(Base):
-    __tablename__ = "user_follows"
-
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
-
-    follower_id = Column(
-        Integer,
-        index=True,
-        nullable=False
-    )
-
-    following_id = Column(
-        Integer,
-        index=True,
-        nullable=False
-    )
-
-    created_at = Column(
-        DateTime,
-        nullable=False
-    )
-
-    __table_args__ = (
-        UniqueConstraint(
-            "follower_id",
-            "following_id",
-            name="uq_user_follows_pair"
-        ),
-    )
-
-
-class Post(Base):
-    __tablename__ = "posts"
-
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
-
-    user_id = Column(
-        Integer,
-        index=True,
-        nullable=False
-    )
-
-    content = Column(
-        Text,
-        nullable=True
-    )
-
-    media_url = Column(
-        String(500),
-        nullable=True
-    )
-
-    media_type = Column(
-        String(30),
-        index=True,
-        nullable=False
-    )
-
-    created_at = Column(
-        DateTime,
-        index=True,
         nullable=False
     )
