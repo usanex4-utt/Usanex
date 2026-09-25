@@ -6,18 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const $ = (id) => document.getElementById(id);
 
-
     function go(url) {
         window.location.href = url;
     }
 
-
     function escapeHtml(value) {
-
-        if (
-            value === null ||
-            value === undefined
-        ) {
+        if (value === null || value === undefined) {
             return "";
         }
 
@@ -29,9 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/'/g, "&#039;");
     }
 
-
     function getInitial(name) {
-
         if (!name) {
             return "U";
         }
@@ -51,24 +43,26 @@ document.addEventListener("DOMContentLoaded", () => {
         go("/home");
     });
 
-
     $("reelNav")?.addEventListener("click", () => {
         go("/reels");
     });
-
 
     $("searchNav")?.addEventListener("click", () => {
         go("/search");
     });
 
-
     $("notificationNav")?.addEventListener("click", () => {
         go("/notifications");
     });
 
+    /*
+     * IMPORTANT:
+     * Own profile opens ONLY from the Profile
+     * bottom navigation.
+     */
 
     $("profileNav")?.addEventListener("click", () => {
-        go("/profile");
+        go("/my-profile");
     });
 
 
@@ -80,63 +74,45 @@ document.addEventListener("DOMContentLoaded", () => {
     const menuOverlay = $("menuOverlay");
     const closeMenu = $("closeMenu");
 
-
     function openMenu() {
-
         if (!menuOverlay) {
             return;
         }
 
         menuOverlay.hidden = false;
-
         document.body.classList.add("menu-open");
     }
 
-
     function closeSideMenu() {
-
         if (!menuOverlay) {
             return;
         }
 
         menuOverlay.hidden = true;
-
         document.body.classList.remove("menu-open");
     }
 
-
     menuButton?.addEventListener("click", (event) => {
-
         event.preventDefault();
         event.stopPropagation();
-
         openMenu();
     });
 
-
     closeMenu?.addEventListener("click", (event) => {
-
         event.preventDefault();
         event.stopPropagation();
-
         closeSideMenu();
     });
 
-
     menuOverlay?.addEventListener("click", (event) => {
-
         if (event.target === menuOverlay) {
             closeSideMenu();
         }
     });
 
-
     document.addEventListener("keydown", (event) => {
-
         if (event.key === "Escape") {
-
             closeSideMenu();
-
             closeCategoryPopup();
         }
     });
@@ -158,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const connectedTitle =
         $("connectedSectionTitle");
 
-
     let allConnectedUsers = [];
 
     let currentCategory = "all";
@@ -169,7 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function getConnectionUser(item) {
-
         if (!item) {
             return {};
         }
@@ -184,28 +158,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       PERSONAL CATEGORY
+       CHECK ACTUAL CONNECTION
        
-       This category belongs ONLY to
-       the current logged-in user.
+       Profile opening is allowed ONLY when the
+       relationship is connected.
 
-       Allowed:
-       - friend
-       - family
-       - null
+       This is an additional frontend protection.
+       Backend protection remains authoritative.
+    ===================================================== */
 
-       Couple is NOT handled here.
+    function isConnectedUser(item) {
+        if (!item) {
+            return false;
+        }
+
+        const user = getConnectionUser(item);
+
+        const status = String(
+            item.connection_status ??
+            item.status ??
+            user.connection_status ??
+            user.status ??
+            "connected"
+        )
+            .trim()
+            .toLowerCase();
+
+        /*
+         * /api/connections normally returns only connected
+         * users. Therefore when status is absent we treat
+         * the returned connection record as connected.
+         */
+
+        if (!status) {
+            return true;
+        }
+
+        return (
+            status === "connected" ||
+            status === "accepted"
+        );
+    }
+
+
+    /* =====================================================
+       PERSONAL CATEGORY
     ===================================================== */
 
     function getUserCategory(item) {
-
         if (!item) {
             return "";
         }
 
         const user =
             getConnectionUser(item);
-
 
         const category =
             item.category ??
@@ -215,7 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
             user.connection_category ??
             user.personal_category ??
             "";
-
 
         return String(category || "")
             .trim()
@@ -228,12 +233,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function getFilteredUsers() {
-
-        /*
-         * ALL CONNECTED
-         *
-         * Only uncategorized people.
-         */
 
         if (currentCategory === "all") {
 
@@ -253,10 +252,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        /*
-         * FRIENDS
-         */
-
         if (currentCategory === "friend") {
 
             return allConnectedUsers.filter(
@@ -274,10 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        /*
-         * FAMILY
-         */
-
         if (currentCategory === "family") {
 
             return allConnectedUsers.filter(
@@ -293,10 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         /*
-         * COUPLE CHAT
-         *
-         * Existing Couple Chat compatibility
-         * remains untouched.
+         * Existing Couple Chat compatibility.
          */
 
         if (currentCategory === "couple") {
@@ -317,7 +305,6 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
-
         return [];
     }
 
@@ -332,29 +319,22 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         if (currentCategory === "all") {
 
             connectedTitle.textContent =
                 "All Connected";
 
-        } else if (
-            currentCategory === "friend"
-        ) {
+        } else if (currentCategory === "friend") {
 
             connectedTitle.textContent =
                 "Friends";
 
-        } else if (
-            currentCategory === "family"
-        ) {
+        } else if (currentCategory === "family") {
 
             connectedTitle.textContent =
                 "Family";
 
-        } else if (
-            currentCategory === "couple"
-        ) {
+        } else if (currentCategory === "couple") {
 
             connectedTitle.textContent =
                 "Couple Chat";
@@ -372,59 +352,38 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         let message =
             "No connected people yet.";
 
-
-        if (
-            currentCategory === "friend"
-        ) {
+        if (currentCategory === "friend") {
 
             message =
                 "No friends added yet.";
 
-        } else if (
-            currentCategory === "family"
-        ) {
+        } else if (currentCategory === "family") {
 
             message =
                 "No family members added yet.";
 
-        } else if (
-            currentCategory === "couple"
-        ) {
+        } else if (currentCategory === "couple") {
 
             message =
                 "No couple chat connection yet.";
         }
 
-
         connectedList.innerHTML = `
-
             <div class="connected-empty">
-
                 ${escapeHtml(message)}
-
             </div>
-
         `;
     }
 
 
     /* =====================================================
-       SIMPLE CATEGORY POPUP
-       
-       IMPORTANT:
-       No colored buttons.
-       No circles.
-       No icons.
-       No borders around options.
-       No glass effect.
+       CATEGORY POPUP
     ===================================================== */
 
     let categoryPopup = null;
-
 
     function closeCategoryPopup() {
 
@@ -433,7 +392,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         categoryPopup.remove();
-
         categoryPopup = null;
 
         document.body.classList.remove(
@@ -450,61 +408,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
         closeCategoryPopup();
 
-
         const overlay =
             document.createElement("div");
 
-
         overlay.className =
             "personal-category-overlay";
-
 
         overlay.setAttribute(
             "role",
             "dialog"
         );
 
-
         overlay.setAttribute(
             "aria-modal",
             "true"
         );
 
-
-        /*
-         * Overlay only.
-         *
-         * The actual popup styling is
-         * controlled by home.css.
-         */
-
         const box =
             document.createElement("div");
-
 
         box.className =
             "personal-category-popup";
 
 
-        /*
-         * Title
-         */
-
         const title =
             document.createElement("div");
-
 
         title.className =
             "simple-category-title";
 
-
         title.textContent =
             "Choose category";
 
-
-        box.appendChild(
-            title
-        );
+        box.appendChild(title);
 
 
         /*
@@ -514,26 +450,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const friendButton =
             document.createElement("div");
 
-
         friendButton.className =
             "simple-category-option friend-option";
 
-
         friendButton.textContent =
             "Friend";
-
 
         friendButton.setAttribute(
             "role",
             "button"
         );
 
-
         friendButton.setAttribute(
             "tabindex",
             "0"
         );
-
 
         friendButton.addEventListener(
             "click",
@@ -547,7 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
         );
-
 
         friendButton.addEventListener(
             "keydown",
@@ -568,10 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
-        box.appendChild(
-            friendButton
-        );
+        box.appendChild(friendButton);
 
 
         /*
@@ -581,26 +508,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const familyButton =
             document.createElement("div");
 
-
         familyButton.className =
             "simple-category-option family-option";
 
-
         familyButton.textContent =
             "Family";
-
 
         familyButton.setAttribute(
             "role",
             "button"
         );
 
-
         familyButton.setAttribute(
             "tabindex",
             "0"
         );
-
 
         familyButton.addEventListener(
             "click",
@@ -614,7 +536,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
         );
-
 
         familyButton.addEventListener(
             "keydown",
@@ -635,17 +556,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
-        box.appendChild(
-            familyButton
-        );
+        box.appendChild(familyButton);
 
 
         /*
          * REMOVE
-         *
-         * Only show if user currently
-         * has Friend or Family category.
          */
 
         if (
@@ -657,26 +572,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const removeButton =
                 document.createElement("div");
 
-
             removeButton.className =
                 "simple-category-option remove-option";
 
-
             removeButton.textContent =
                 "Remove";
-
 
             removeButton.setAttribute(
                 "role",
                 "button"
             );
 
-
             removeButton.setAttribute(
                 "tabindex",
                 "0"
             );
-
 
             removeButton.addEventListener(
                 "click",
@@ -690,7 +600,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
-
 
             removeButton.addEventListener(
                 "keydown",
@@ -711,10 +620,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             );
 
-
-            box.appendChild(
-                removeButton
-            );
+            box.appendChild(removeButton);
         }
 
 
@@ -725,26 +631,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const cancelButton =
             document.createElement("div");
 
-
         cancelButton.className =
             "simple-category-option cancel-option";
 
-
         cancelButton.textContent =
             "Cancel";
-
 
         cancelButton.setAttribute(
             "role",
             "button"
         );
 
-
         cancelButton.setAttribute(
             "tabindex",
             "0"
         );
-
 
         cancelButton.addEventListener(
             "click",
@@ -755,7 +656,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 closeCategoryPopup();
             }
         );
-
 
         cancelButton.addEventListener(
             "keydown",
@@ -773,33 +673,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
-        box.appendChild(
-            cancelButton
-        );
+        box.appendChild(cancelButton);
 
 
-        /*
-         * Add popup to overlay.
-         */
+        overlay.appendChild(box);
 
-        overlay.appendChild(
-            box
-        );
-
-
-        /*
-         * Tap outside popup
-         * closes popup.
-         */
 
         overlay.addEventListener(
             "click",
             (event) => {
 
                 if (
-                    event.target ===
-                    overlay
+                    event.target === overlay
                 ) {
 
                     closeCategoryPopup();
@@ -812,24 +697,16 @@ document.addEventListener("DOMContentLoaded", () => {
             overlay
         );
 
-
         categoryPopup =
             overlay;
-
 
         document.body.classList.add(
             "category-popup-open"
         );
 
 
-        /*
-         * Focus first option.
-         */
-
         setTimeout(() => {
-
             friendButton.focus();
-
         }, 50);
     }
 
@@ -847,12 +724,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return false;
         }
 
-
         try {
-
-            /*
-             * REMOVE CATEGORY
-             */
 
             if (
                 !category ||
@@ -868,10 +740,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ),
                         {
                             method: "DELETE",
-
-                            credentials:
-                                "include",
-
+                            credentials: "include",
                             headers: {
                                 "Accept":
                                     "application/json"
@@ -879,17 +748,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     );
 
-
-                if (
-                    response.status ===
-                    401
-                ) {
+                if (response.status === 401) {
 
                     go("/login");
 
                     return false;
                 }
-
 
                 if (!response.ok) {
 
@@ -899,26 +763,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
 
-
                 return true;
             }
 
-
-            /*
-             * SAVE FRIEND / FAMILY
-             */
 
             const response =
                 await fetch(
                     "/api/connections/category",
                     {
                         method: "POST",
-
-                        credentials:
-                            "include",
+                        credentials: "include",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json",
 
@@ -926,23 +782,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                 "application/json"
                         },
 
-                        body:
-                            JSON.stringify({
+                        body: JSON.stringify({
+                            connected_user_id:
+                                connectedUserId,
 
-                                connected_user_id:
-                                    connectedUserId,
-
-                                category:
-                                    category
-                            })
+                            category:
+                                category
+                        })
                     }
                 );
 
 
-            if (
-                response.status ===
-                401
-            ) {
+            if (response.status === 401) {
 
                 go("/login");
 
@@ -955,12 +806,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 let errorMessage =
                     "Unable to update category";
 
-
                 try {
 
                     const errorData =
                         await response.json();
-
 
                     if (
                         errorData &&
@@ -975,12 +824,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Ignore JSON parsing error.
                 }
 
-
                 throw new Error(
                     errorMessage
                 );
             }
-
 
             return true;
 
@@ -991,12 +838,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-
             alert(
                 error.message ||
                 "Unable to update category."
             );
-
 
             return false;
         }
@@ -1016,31 +861,22 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         const success =
             await savePersonalCategory(
                 userId,
                 newCategory
             );
 
-
         if (!success) {
             return;
         }
-
 
         updateLocalUserCategory(
             userId,
             newCategory
         );
 
-
         closeCategoryPopup();
-
-
-        /*
-         * Re-render immediately.
-         */
 
         renderConnectedPeople();
     }
@@ -1061,12 +897,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const user =
                     getConnectionUser(item);
 
-
                 const itemUserId =
                     user.user_id ||
                     item.user_id ||
                     "";
-
 
                 if (
                     String(itemUserId) !==
@@ -1075,7 +909,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     return item;
                 }
-
 
                 return {
                     ...item,
@@ -1100,21 +933,19 @@ document.addEventListener("DOMContentLoaded", () => {
     function addLongPressToCard(
         card,
         userId,
-        userName
+        userName,
+        isConnected
     ) {
 
-        let pressTimer =
-            null;
+        if (!isConnected) {
+            return;
+        }
 
-        let longPressTriggered =
-            false;
+        let pressTimer = null;
+        let longPressTriggered = false;
+        let pointerDown = false;
 
-        let pointerDown =
-            false;
-
-
-        const LONG_PRESS_TIME =
-            600;
+        const LONG_PRESS_TIME = 600;
 
 
         function clearPressTimer() {
@@ -1125,83 +956,63 @@ document.addEventListener("DOMContentLoaded", () => {
                     pressTimer
                 );
 
-                pressTimer =
-                    null;
+                pressTimer = null;
             }
         }
 
 
         function startLongPress(event) {
 
-            if (!userId) {
+            if (!userId || !isConnected) {
                 return;
             }
-
 
             if (
-                event.pointerType ===
-                "mouse" &&
+                event.pointerType === "mouse" &&
                 event.button !== 0
             ) {
-
                 return;
             }
 
-
-            pointerDown =
-                true;
-
-            longPressTriggered =
-                false;
-
+            pointerDown = true;
+            longPressTriggered = false;
 
             clearPressTimer();
 
-
             pressTimer =
-                setTimeout(
-                    () => {
+                setTimeout(() => {
 
-                        if (!pointerDown) {
-                            return;
+                    if (!pointerDown) {
+                        return;
+                    }
+
+                    longPressTriggered = true;
+
+                    if (window.getSelection) {
+
+                        const selection =
+                            window.getSelection();
+
+                        if (selection) {
+                            selection.removeAllRanges();
                         }
+                    }
 
+                    createCategoryPopup(
+                        userId,
+                        userName,
+                        getCurrentCategoryForUser(
+                            userId
+                        )
+                    );
 
-                        longPressTriggered =
-                            true;
-
-
-                        if (
-                            window.getSelection
-                        ) {
-
-                            const selection =
-                                window.getSelection();
-
-                            if (selection) {
-                                selection.removeAllRanges();
-                            }
-                        }
-
-
-                        createCategoryPopup(
-                            userId,
-                            userName,
-                            getCurrentCategoryForUser(
-                                userId
-                            )
-                        );
-
-                    },
-                    LONG_PRESS_TIME
-                );
+                }, LONG_PRESS_TIME);
         }
 
 
         function endLongPress() {
 
-            pointerDown =
-                false;
+            pointerDown = false;
 
             clearPressTimer();
         }
@@ -1212,33 +1023,28 @@ document.addEventListener("DOMContentLoaded", () => {
             startLongPress
         );
 
-
         card.addEventListener(
             "pointerup",
             endLongPress
         );
-
 
         card.addEventListener(
             "pointercancel",
             endLongPress
         );
 
-
         card.addEventListener(
             "pointerleave",
             (event) => {
 
                 if (
-                    event.pointerType ===
-                    "mouse"
+                    event.pointerType === "mouse"
                 ) {
 
                     endLongPress();
                 }
             }
         );
-
 
         card.addEventListener(
             "contextmenu",
@@ -1249,28 +1055,30 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
+        /*
+         * SHORT TAP
+         *
+         * Only connected users can open
+         * another user's profile.
+         */
+
         card.addEventListener(
             "click",
             (event) => {
 
-                if (
-                    longPressTriggered
-                ) {
+                if (longPressTriggered) {
 
                     event.preventDefault();
                     event.stopPropagation();
 
-                    longPressTriggered =
-                        false;
+                    longPressTriggered = false;
 
                     return;
                 }
 
-
-                if (!userId) {
+                if (!userId || !isConnected) {
                     return;
                 }
-
 
                 go(
                     "/profile?user_id=" +
@@ -1300,12 +1108,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             connection
                         );
 
-
                     const currentUserId =
                         user.user_id ||
                         connection.user_id ||
                         "";
-
 
                     return (
                         String(currentUserId) ===
@@ -1313,7 +1119,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
-
 
         return getUserCategory(item);
     }
@@ -1332,17 +1137,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         updateSectionTitle();
-
 
         const users =
             getFilteredUsers();
 
-
-        connectedList.innerHTML =
-            "";
-
+        connectedList.innerHTML = "";
 
         if (connectedCount) {
 
@@ -1350,9 +1150,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 String(users.length);
         }
 
-
-        connectedSection.hidden =
-            false;
+        connectedSection.hidden = false;
 
 
         if (users.length === 0) {
@@ -1365,26 +1163,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
         users.forEach((item) => {
 
+            /*
+             * Only actual connected users are allowed
+             * in this section.
+             */
+
+            if (!isConnectedUser(item)) {
+                return;
+            }
+
+
             const user =
                 getConnectionUser(item);
-
 
             const name =
                 user.name ||
                 user.full_name ||
                 "User";
 
-
             const username =
                 user.username ||
                 "";
-
 
             const userId =
                 user.user_id ||
                 item.user_id ||
                 "";
-
 
             const photo =
                 user.profile_photo ||
@@ -1397,10 +1201,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     "article"
                 );
 
-
             card.className =
                 "connected-person-card";
-
 
             if (userId) {
 
@@ -1408,10 +1210,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     userId;
             }
 
-
-            /*
-             * Mobile long press behavior.
-             */
 
             card.style.userSelect =
                 "none";
@@ -1433,35 +1231,27 @@ document.addEventListener("DOMContentLoaded", () => {
             if (photo) {
 
                 avatarHtml = `
-
                     <div
                         class="connected-person-avatar"
                     >
-
                         <img
                             src="${escapeHtml(photo)}"
                             alt="${escapeHtml(name)}"
                             draggable="false"
                         >
-
                     </div>
-
                 `;
 
             } else {
 
                 avatarHtml = `
-
                     <div
                         class="connected-person-avatar"
                     >
-
                         ${escapeHtml(
                             getInitial(name)
                         )}
-
                     </div>
-
                 `;
             }
 
@@ -1471,7 +1261,6 @@ document.addEventListener("DOMContentLoaded", () => {
             ============================================= */
 
             const infoHtml = `
-
                 <div
                     class="connected-person-info"
                 >
@@ -1501,7 +1290,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
 
                 </div>
-
             `;
 
 
@@ -1510,16 +1298,12 @@ document.addEventListener("DOMContentLoaded", () => {
             ============================================= */
 
             const arrowHtml = `
-
                 <div
                     class="connected-person-arrow"
                     aria-hidden="true"
                 >
-
                     ›
-
                 </div>
-
             `;
 
 
@@ -1529,14 +1313,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 arrowHtml;
 
 
-            if (userId) {
-
-                addLongPressToCard(
-                    card,
-                    userId,
-                    name
-                );
-            }
+            addLongPressToCard(
+                card,
+                userId,
+                name,
+                true
+            );
 
 
             connectedList.appendChild(
@@ -1556,27 +1338,20 @@ document.addEventListener("DOMContentLoaded", () => {
         currentCategory =
             category;
 
-
         closeSideMenu();
 
-
         renderConnectedPeople();
-
 
         if (connectedSection) {
 
             connectedSection.hidden =
                 false;
 
-
             setTimeout(() => {
 
                 connectedSection.scrollIntoView({
-                    behavior:
-                        "smooth",
-
-                    block:
-                        "start"
+                    behavior: "smooth",
+                    block: "start"
                 });
 
             }, 50);
@@ -1585,52 +1360,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       ALL CONNECTED
+       MENU - ALL CONNECTED
     ===================================================== */
 
     $("menuAllConnected")?.addEventListener(
         "click",
         () => {
-
             showCategory("all");
         }
     );
 
 
     /* =====================================================
-       FAMILY
+       MENU - FAMILY
     ===================================================== */
 
     $("menuFamily")?.addEventListener(
         "click",
         () => {
-
             showCategory("family");
         }
     );
 
 
     /* =====================================================
-       FRIENDS
+       MENU - FRIENDS
     ===================================================== */
 
     $("menuFriends")?.addEventListener(
         "click",
         () => {
-
             showCategory("friend");
         }
     );
 
 
     /* =====================================================
-       COUPLE CHAT
+       MENU - COUPLE CHAT
     ===================================================== */
 
     $("menuCoupleChat")?.addEventListener(
         "click",
         () => {
-
             showCategory("couple");
         }
     );
@@ -1662,24 +1433,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const button =
                 $("logoutButton");
 
-
             if (button) {
-
-                button.disabled =
-                    true;
+                button.disabled = true;
             }
-
 
             try {
 
                 await fetch(
                     "/api/auth/logout",
                     {
-                        method:
-                            "POST",
-
-                        credentials:
-                            "include"
+                        method: "POST",
+                        credentials: "include"
                     }
                 );
 
@@ -1740,11 +1504,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 await fetch(
                     "/api/connections",
                     {
-                        method:
-                            "GET",
+                        method: "GET",
 
-                        credentials:
-                            "include",
+                        credentials: "include",
 
                         headers: {
                             "Accept":
@@ -1754,10 +1516,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            if (
-                response.status ===
-                401
-            ) {
+            if (response.status === 401) {
 
                 go("/login");
 
@@ -1777,48 +1536,42 @@ document.addEventListener("DOMContentLoaded", () => {
             const data =
                 await response.json();
 
-
             let users = [];
 
 
-            if (
-                Array.isArray(data)
-            ) {
+            if (Array.isArray(data)) {
 
-                users =
-                    data;
+                users = data;
 
             } else if (
-                Array.isArray(
-                    data.connections
-                )
+                Array.isArray(data.connections)
             ) {
 
-                users =
-                    data.connections;
+                users = data.connections;
 
             } else if (
-                Array.isArray(
-                    data.users
-                )
+                Array.isArray(data.users)
             ) {
 
-                users =
-                    data.users;
+                users = data.users;
 
             } else if (
-                Array.isArray(
-                    data.data
-                )
+                Array.isArray(data.data)
             ) {
 
-                users =
-                    data.data;
+                users = data.data;
             }
 
 
+            /*
+             * Keep ONLY actual connections.
+             */
+
             allConnectedUsers =
-                users;
+                users.filter(
+                    (item) =>
+                        isConnectedUser(item)
+                );
 
 
             currentCategory =
@@ -1834,13 +1587,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
+            allConnectedUsers = [];
 
-            allConnectedUsers =
-                [];
-
-            currentCategory =
-                "all";
-
+            currentCategory = "all";
 
             renderConnectedPeople();
         }
@@ -1855,7 +1604,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home simple Friend/Family category system loaded."
+        "Usanex Home loaded."
     );
 
 });
