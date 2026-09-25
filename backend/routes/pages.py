@@ -26,7 +26,6 @@ TEMPLATES_DIR = (
     / "templates"
 )
 
-
 templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR)
 )
@@ -219,13 +218,54 @@ def notifications_page(
 
 
 # =========================================================
-# PROFILE
+# MY PROFILE
 #
+# Bottom navigation -> Profile
+#
+# URL:
+# /my-profile
+#
+# This page always shows the currently logged-in
+# user's own profile.
+# =========================================================
+
+@router.get(
+    "/my-profile",
+    include_in_schema=False,
+)
+def my_profile_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    current_user = get_current_user_from_request(
+        request=request,
+        db=db,
+    )
+
+    if current_user is None:
+        return RedirectResponse(
+            url="/login",
+            status_code=307,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="my-profile.html",
+        context={
+            "user": current_user,
+        },
+    )
+
+
+# =========================================================
+# OTHER USER PROFILE
+#
+# URL:
 # /profile
 # /profile?user_id=u_xxxxx
 #
-# The frontend profile.js reads user_id from the URL
-# and calls:
+# profile.js reads user_id and calls:
 #
 # GET /api/profile/{user_id}
 #
