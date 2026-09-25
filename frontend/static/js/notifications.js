@@ -175,6 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("profileNav");
 
 
+    // =====================================================
+    // HOME
+    // =====================================================
+
     if (homeNav) {
 
         homeNav.addEventListener(
@@ -186,6 +190,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+
+    // =====================================================
+    // REEL
+    // =====================================================
 
     if (reelNav) {
 
@@ -199,6 +207,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    // =====================================================
+    // SEARCH
+    // =====================================================
+
     if (searchNav) {
 
         searchNav.addEventListener(
@@ -210,6 +222,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+
+    // =====================================================
+    // NOTIFICATION
+    // =====================================================
 
     if (notificationNav) {
 
@@ -223,12 +239,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    // =====================================================
+    // PROFILE
+    // ALWAYS OPENS MY PROFILE
+    // =====================================================
+
     if (profileNav) {
 
         profileNav.addEventListener(
             "click",
             () => {
-                window.location.href = "/profile";
+
+                window.location.href =
+                    "/my-profile";
+
             }
         );
 
@@ -512,9 +536,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // ---------------------------------------------
             // Reload notifications
-            // ---------------------------------------------
 
             await loadNotifications();
 
