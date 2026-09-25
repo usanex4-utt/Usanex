@@ -4,6 +4,11 @@
 
 "use strict";
 
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+
 document.addEventListener("DOMContentLoaded", () => {
     initMyProfile();
 });
@@ -15,12 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const profileState = {
     user: null,
+
     stats: {
         followers: 0,
         connected: 0,
         following: 0,
         posts: 0
     },
+
     activeTab: "reels",
 
     content: {
@@ -40,11 +47,13 @@ function $(id) {
     return document.getElementById(id);
 }
 
+
 function show(element) {
     if (element) {
         element.classList.remove("hidden");
     }
 }
+
 
 function hide(element) {
     if (element) {
@@ -52,13 +61,18 @@ function hide(element) {
     }
 }
 
+
 function safeText(value, fallback = "") {
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
         return fallback;
     }
 
     return String(value);
 }
+
 
 function escapeHtml(value) {
     return safeText(value)
@@ -69,6 +83,7 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
+
 function getPhotoUrl(photo) {
     if (!photo) {
         return "/static/images/default-profile.png";
@@ -76,6 +91,7 @@ function getPhotoUrl(photo) {
 
     return String(photo);
 }
+
 
 function formatViews(value) {
     const views = Number(value || 0);
@@ -101,11 +117,17 @@ function formatViews(value) {
    ========================================================= */
 
 async function initMyProfile() {
+
     setupHeader();
+
     setupMenu();
+
     setupPhotoViewer();
+
     setupEditProfile();
+
     setupTabs();
+
     setupBottomNavigation();
 
     await loadMyProfile();
@@ -117,26 +139,39 @@ async function initMyProfile() {
    ========================================================= */
 
 async function loadMyProfile() {
+
     try {
+
         const response = await fetch(
             "/api/profile/me",
             {
                 method: "GET",
+
                 credentials: "include",
+
                 headers: {
-                    "Accept": "application/json"
+                    "Accept":
+                        "application/json"
                 }
             }
         );
 
+
         if (response.status === 401) {
-            window.location.href = "/login";
+
+            window.location.href =
+                "/login";
+
             return;
         }
 
+
         if (!response.ok) {
+
             const errorData =
-                await response.json().catch(() => null);
+                await response
+                    .json()
+                    .catch(() => null);
 
             throw new Error(
                 errorData?.detail ||
@@ -144,56 +179,78 @@ async function loadMyProfile() {
             );
         }
 
-        const data = await response.json();
 
-        if (!data || !data.success) {
+        const data =
+            await response.json();
+
+
+        if (
+            !data ||
+            !data.success
+        ) {
+
             throw new Error(
                 "Invalid profile response."
             );
         }
 
-        profileState.user = data.user || {};
+
+        profileState.user =
+            data.user || {};
+
 
         profileState.stats = {
-            followers: Number(
-                data.stats?.followers || 0
-            ),
 
-            connected: Number(
-                data.stats?.connected || 0
-            ),
+            followers:
+                Number(
+                    data.stats?.followers || 0
+                ),
 
-            following: Number(
-                data.stats?.following || 0
-            ),
+            connected:
+                Number(
+                    data.stats?.connected || 0
+                ),
 
-            posts: Number(
-                data.stats?.posts || 0
-            )
+            following:
+                Number(
+                    data.stats?.following || 0
+                ),
+
+            posts:
+                Number(
+                    data.stats?.posts || 0
+                )
         };
 
+
         /*
-         * Backend currently returns unified public
-         * content in data.content.
+         * Unified Posts system.
          *
-         * Reels and Photos are filtered from the
-         * same Posts system.
+         * Same posts table:
+         *
+         * video/reel -> Reels
+         * image/photo -> Photos
          */
+
         processUnifiedContent(
             data.content || []
         );
+
 
         renderProfile(
             profileState.user
         );
 
+
         renderActiveTab();
 
     } catch (error) {
+
         console.error(
             "My Profile:",
             error
         );
+
 
         renderProfileError(
             error.message ||
@@ -208,42 +265,60 @@ async function loadMyProfile() {
    ========================================================= */
 
 function processUnifiedContent(posts) {
+
     profileState.content.reels = [];
+
     profileState.content.photos = [];
 
+
     posts.forEach((post) => {
-        const mediaType = safeText(
-            post.media_type
-        ).toLowerCase();
+
+        const mediaType =
+            safeText(
+                post.media_type
+            ).toLowerCase();
+
 
         /*
-         * Unified Posts system:
-         *
-         * video / reel -> Reels
-         * image / photo -> Photos
+         * Video / Reel
          */
 
         if (
             mediaType === "video" ||
             mediaType === "reel"
         ) {
-            profileState.content.reels.push(post);
+
+            profileState.content.reels.push(
+                post
+            );
+
             return;
         }
+
+
+        /*
+         * Image / Photo
+         */
 
         if (
             mediaType === "image" ||
             mediaType === "photo"
         ) {
-            profileState.content.photos.push(post);
+
+            profileState.content.photos.push(
+                post
+            );
         }
+
     });
 
+
     /*
-     * Saved and Private are intentionally empty
-     * until their dedicated system is implemented.
+     * These systems will be implemented later.
      */
+
     profileState.content.saved = [];
+
     profileState.content.private = [];
 }
 
@@ -253,89 +328,126 @@ function processUnifiedContent(posts) {
    ========================================================= */
 
 function renderProfile(user) {
-    const name = safeText(
-        user.name,
-        "Usanex User"
-    );
 
-    const username = safeText(
-        user.username,
-        ""
-    );
+    const name =
+        safeText(
+            user.name,
+            "Usanex User"
+        );
 
-    const userId = safeText(
-        user.user_id,
-        ""
-    );
 
-    const photo = getPhotoUrl(
-        user.profile_photo
-    );
+    const username =
+        safeText(
+            user.username,
+            ""
+        );
 
-    const bio = safeText(
-        user.bio,
-        ""
-    );
+
+    const userId =
+        safeText(
+            user.user_id,
+            ""
+        );
+
+
+    const photo =
+        getPhotoUrl(
+            user.profile_photo
+        );
+
+
+    const bio =
+        safeText(
+            user.bio,
+            ""
+        );
+
 
     if ($("profileName")) {
-        $("profileName").textContent = name;
+
+        $("profileName").textContent =
+            name;
     }
+
 
     if ($("profileDisplayName")) {
-        $("profileDisplayName").textContent = name;
+
+        $("profileDisplayName").textContent =
+            name;
     }
 
+
     if ($("profileUsername")) {
+
         $("profileUsername").textContent =
             username
                 ? `@${username.replace(/^@/, "")}`
                 : "@username";
     }
 
+
     if ($("profileUserId")) {
+
         $("profileUserId").textContent =
-            userId || "u_xxxxxxxx";
+            userId ||
+            "u_xxxxxxxx";
     }
+
 
     if ($("profilePhoto")) {
-        $("profilePhoto").src = photo;
+
+        $("profilePhoto").src =
+            photo;
     }
+
 
     if ($("editProfilePhotoPreview")) {
-        $("editProfilePhotoPreview").src = photo;
+
+        $("editProfilePhotoPreview").src =
+            photo;
     }
 
+
     if ($("profileBio")) {
+
         $("profileBio").textContent =
             bio.trim()
                 ? bio
                 : "No bio available.";
     }
 
+
     /*
-     * Stats now come directly from
-     * /api/profile/me.
+     * Profile statistics
      */
 
     if ($("followersCount")) {
+
         $("followersCount").textContent =
             profileState.stats.followers;
     }
 
+
     if ($("connectedCount")) {
+
         $("connectedCount").textContent =
             profileState.stats.connected;
     }
 
+
     if ($("followingCount")) {
+
         $("followingCount").textContent =
             profileState.stats.following;
     }
 
+
     if ($("postsCount")) {
+
         $("postsCount").textContent =
             profileState.stats.posts;
     }
+
 
     renderProfileLinks(user);
 }
@@ -346,76 +458,111 @@ function renderProfile(user) {
    ========================================================= */
 
 function renderProfileLinks(user) {
-    const container = $("profileLinks");
+
+    const container =
+        $("profileLinks");
+
 
     if (!container) {
         return;
     }
 
+
     container.innerHTML = "";
+
 
     const links = [];
 
+
     if (user.website) {
+
         links.push({
             label: "Website",
             url: user.website
         });
     }
 
+
     if (user.instagram) {
+
         links.push({
             label: "Instagram",
             url: user.instagram
         });
     }
 
+
     if (user.social_link) {
+
         links.push({
             label: "Social Link",
             url: user.social_link
         });
     }
 
+
     if (!links.length) {
+
         hide(container);
+
         return;
     }
 
+
     links.forEach((link) => {
+
         const anchor =
             document.createElement("a");
 
-        anchor.className = "profile-link";
+
+        anchor.className =
+            "profile-link";
+
 
         anchor.href =
             normalizeUrl(link.url);
 
-        anchor.target = "_blank";
+
+        anchor.target =
+            "_blank";
+
 
         anchor.rel =
             "noopener noreferrer";
 
+
         anchor.textContent =
             link.label;
 
-        container.appendChild(anchor);
+
+        container.appendChild(
+            anchor
+        );
     });
+
 
     show(container);
 }
 
+
 function normalizeUrl(url) {
+
     const value =
         safeText(url).trim();
+
 
     if (!value) {
         return "#";
     }
 
-    if (/^https?:\/\//i.test(value)) {
+
+    if (
+        /^https?:\/\//i.test(value)
+    ) {
+
         return value;
     }
+
 
     return `https://${value}`;
 }
@@ -426,16 +573,20 @@ function normalizeUrl(url) {
    ========================================================= */
 
 function setupHeader() {
+
     const addButton =
         $("profileAddButton");
+
 
     if (!addButton) {
         return;
     }
 
+
     addButton.addEventListener(
         "click",
         () => {
+
             console.log(
                 "Profile quick actions"
             );
@@ -449,19 +600,28 @@ function setupHeader() {
    ========================================================= */
 
 function setupMenu() {
+
     const menuButton =
         $("profileMenuButton");
+
 
     const menu =
         $("profileMenu");
 
-    if (!menuButton || !menu) {
+
+    if (
+        !menuButton ||
+        !menu
+    ) {
+
         return;
     }
+
 
     menuButton.addEventListener(
         "click",
         (event) => {
+
             event.stopPropagation();
 
             menu.classList.toggle(
@@ -470,13 +630,20 @@ function setupMenu() {
         }
     );
 
+
     document.addEventListener(
         "click",
         (event) => {
+
             if (
-                !menu.contains(event.target) &&
-                !menuButton.contains(event.target)
+                !menu.contains(
+                    event.target
+                ) &&
+                !menuButton.contains(
+                    event.target
+                )
             ) {
+
                 hide(menu);
             }
         }
@@ -486,11 +653,15 @@ function setupMenu() {
     const editButton =
         $("editProfileButton");
 
+
     if (editButton) {
+
         editButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
+
                 openEditProfile();
             }
         );
@@ -500,10 +671,13 @@ function setupMenu() {
     const privacyButton =
         $("privacyButton");
 
+
     if (privacyButton) {
+
         privacyButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
 
                 alert(
@@ -517,10 +691,13 @@ function setupMenu() {
     const securityButton =
         $("securityButton");
 
+
     if (securityButton) {
+
         securityButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
 
                 alert(
@@ -534,10 +711,13 @@ function setupMenu() {
     const blockedUsersButton =
         $("blockedUsersButton");
 
+
     if (blockedUsersButton) {
+
         blockedUsersButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
 
                 alert(
@@ -551,10 +731,13 @@ function setupMenu() {
     const accountButton =
         $("accountButton");
 
+
     if (accountButton) {
+
         accountButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
 
                 alert(
@@ -568,10 +751,13 @@ function setupMenu() {
     const helpButton =
         $("helpButton");
 
+
     if (helpButton) {
+
         helpButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
 
                 alert(
@@ -585,13 +771,18 @@ function setupMenu() {
     const aboutButton =
         $("aboutButton");
 
+
     if (aboutButton) {
+
         aboutButton.addEventListener(
             "click",
             () => {
+
                 hide(menu);
 
-                alert("Usanex");
+                alert(
+                    "Usanex"
+                );
             }
         );
     }
@@ -600,10 +791,13 @@ function setupMenu() {
     const logoutButton =
         $("logoutButton");
 
+
     if (logoutButton) {
+
         logoutButton.addEventListener(
             "click",
             async () => {
+
                 hide(menu);
 
                 await logout();
@@ -618,40 +812,52 @@ function setupMenu() {
    ========================================================= */
 
 function setupPhotoViewer() {
+
     const photoButton =
         $("profilePhotoButton");
+
 
     const viewer =
         $("profilePhotoViewer");
 
+
     const viewerPhoto =
         $("viewerPhoto");
 
+
     const closeButton =
         $("closePhotoViewer");
+
 
     if (
         !photoButton ||
         !viewer ||
         !viewerPhoto
     ) {
+
         return;
     }
+
 
     photoButton.addEventListener(
         "click",
         () => {
+
             const photo =
                 $("profilePhoto")?.src;
+
 
             if (!photo) {
                 return;
             }
 
+
             viewerPhoto.src =
                 photo;
 
+
             show(viewer);
+
 
             document.body.style.overflow =
                 "hidden";
@@ -660,6 +866,7 @@ function setupPhotoViewer() {
 
 
     if (closeButton) {
+
         closeButton.addEventListener(
             "click",
             closePhotoViewer
@@ -670,7 +877,11 @@ function setupPhotoViewer() {
     viewer.addEventListener(
         "click",
         (event) => {
-            if (event.target === viewer) {
+
+            if (
+                event.target === viewer
+            ) {
+
                 closePhotoViewer();
             }
         }
@@ -680,22 +891,31 @@ function setupPhotoViewer() {
     document.addEventListener(
         "keydown",
         (event) => {
-            if (event.key === "Escape") {
+
+            if (
+                event.key === "Escape"
+            ) {
+
                 closePhotoViewer();
             }
         }
     );
 }
 
+
 function closePhotoViewer() {
+
     const viewer =
         $("profilePhotoViewer");
+
 
     if (!viewer) {
         return;
     }
 
+
     hide(viewer);
+
 
     document.body.style.overflow =
         "";
@@ -707,10 +927,13 @@ function closePhotoViewer() {
    ========================================================= */
 
 function setupEditProfile() {
+
     const closeButton =
         $("closeEditProfile");
 
+
     if (closeButton) {
+
         closeButton.addEventListener(
             "click",
             closeEditProfile
@@ -721,13 +944,17 @@ function setupEditProfile() {
     const modal =
         $("editProfileModal");
 
+
     if (modal) {
+
         modal.addEventListener(
             "click",
             (event) => {
+
                 if (
                     event.target === modal
                 ) {
+
                     closeEditProfile();
                 }
             }
@@ -738,19 +965,24 @@ function setupEditProfile() {
     const changePhotoButton =
         $("changeProfilePhotoButton");
 
+
     const photoInput =
         $("profilePhotoInput");
+
 
     if (
         changePhotoButton &&
         photoInput
     ) {
+
         changePhotoButton.addEventListener(
             "click",
             () => {
+
                 photoInput.click();
             }
         );
+
 
         photoInput.addEventListener(
             "change",
@@ -762,7 +994,9 @@ function setupEditProfile() {
     const saveButton =
         $("saveProfileButton");
 
+
     if (saveButton) {
+
         saveButton.addEventListener(
             "click",
             saveProfile
@@ -773,7 +1007,11 @@ function setupEditProfile() {
     document.addEventListener(
         "keydown",
         (event) => {
-            if (event.key === "Escape") {
+
+            if (
+                event.key === "Escape"
+            ) {
+
                 closeEditProfile();
             }
         }
@@ -786,64 +1024,87 @@ function setupEditProfile() {
    ========================================================= */
 
 function openEditProfile() {
+
     const modal =
         $("editProfileModal");
+
 
     if (!modal) {
         return;
     }
 
+
     const user =
         profileState.user || {};
 
+
     if ($("editName")) {
+
         $("editName").value =
             safeText(user.name);
     }
 
+
     if ($("editUsername")) {
+
         $("editUsername").value =
             safeText(user.username);
     }
 
+
     if ($("editUserId")) {
+
         $("editUserId").value =
             safeText(user.user_id);
     }
 
+
     if ($("editBio")) {
+
         $("editBio").value =
             safeText(user.bio);
     }
 
+
     if ($("editWebsite")) {
+
         $("editWebsite").value =
             safeText(user.website);
     }
 
+
     if ($("editInstagram")) {
+
         $("editInstagram").value =
             safeText(user.instagram);
     }
 
+
     if ($("editSocialLink")) {
+
         $("editSocialLink").value =
             safeText(user.social_link);
     }
 
+
     if ($("editProfilePhotoPreview")) {
+
         $("editProfilePhotoPreview").src =
             getPhotoUrl(
                 user.profile_photo
             );
     }
 
+
     if ($("editProfileMessage")) {
+
         $("editProfileMessage").textContent =
             "";
     }
 
+
     show(modal);
+
 
     document.body.style.overflow =
         "hidden";
@@ -855,14 +1116,18 @@ function openEditProfile() {
    ========================================================= */
 
 function closeEditProfile() {
+
     const modal =
         $("editProfileModal");
+
 
     if (!modal) {
         return;
     }
 
+
     hide(modal);
+
 
     document.body.style.overflow =
         "";
@@ -874,50 +1139,69 @@ function closeEditProfile() {
    ========================================================= */
 
 function handleProfilePhotoSelection(event) {
+
     const file =
         event.target.files?.[0];
+
 
     if (!file) {
         return;
     }
 
-    if (!file.type.startsWith("image/")) {
+
+    if (
+        !file.type.startsWith("image/")
+    ) {
+
         alert(
             "Please select an image file."
         );
 
+
         event.target.value = "";
+
 
         return;
     }
+
 
     const maxSize =
         10 * 1024 * 1024;
 
+
     if (file.size > maxSize) {
+
         alert(
             "Profile photo must be 10 MB or smaller."
         );
 
+
         event.target.value = "";
+
 
         return;
     }
 
+
     const preview =
         $("editProfilePhotoPreview");
+
 
     if (!preview) {
         return;
     }
 
+
     const objectUrl =
         URL.createObjectURL(file);
+
 
     preview.src =
         objectUrl;
 
+
     preview.onload = () => {
+
         URL.revokeObjectURL(
             objectUrl
         );
@@ -930,30 +1214,38 @@ function handleProfilePhotoSelection(event) {
    ========================================================= */
 
 async function saveProfile() {
+
     const saveButton =
         $("saveProfileButton");
+
 
     const name =
         $("editName")?.value.trim() ||
         "";
 
+
     const bio =
         $("editBio")?.value.trim() ||
         "";
+
 
     const website =
         $("editWebsite")?.value.trim() ||
         "";
 
+
     const instagram =
         $("editInstagram")?.value.trim() ||
         "";
+
 
     const socialLink =
         $("editSocialLink")?.value.trim() ||
         "";
 
+
     if (!name) {
+
         setEditMessage(
             "Name cannot be empty."
         );
@@ -961,7 +1253,9 @@ async function saveProfile() {
         return;
     }
 
+
     if (name.length > 100) {
+
         setEditMessage(
             "Name must be 100 characters or less."
         );
@@ -969,7 +1263,9 @@ async function saveProfile() {
         return;
     }
 
+
     if (bio.length > 500) {
+
         setEditMessage(
             "Bio must be 500 characters or less."
         );
@@ -977,23 +1273,31 @@ async function saveProfile() {
         return;
     }
 
+
     if (saveButton) {
-        saveButton.disabled = true;
+
+        saveButton.disabled =
+            true;
+
 
         saveButton.textContent =
             "Saving...";
     }
 
+
     setEditMessage("");
 
+
     try {
+
         const response =
             await fetch(
                 "/api/profile/me",
                 {
                     method: "PUT",
 
-                    credentials: "include",
+                    credentials:
+                        "include",
 
                     headers: {
                         "Content-Type":
@@ -1003,29 +1307,37 @@ async function saveProfile() {
                             "application/json"
                     },
 
-                    body: JSON.stringify({
-                        name,
-                        bio,
-                        website,
-                        instagram,
-                        social_link:
-                            socialLink
-                    })
+                    body:
+                        JSON.stringify({
+                            name,
+                            bio,
+                            website,
+                            instagram,
+                            social_link:
+                                socialLink
+                        })
                 }
             );
 
-        if (response.status === 401) {
+
+        if (
+            response.status === 401
+        ) {
+
             window.location.href =
                 "/login";
 
             return;
         }
 
+
         if (!response.ok) {
+
             const errorData =
                 await response
                     .json()
                     .catch(() => null);
+
 
             throw new Error(
                 errorData?.detail ||
@@ -1033,37 +1345,47 @@ async function saveProfile() {
             );
         }
 
+
         const data =
             await response.json();
 
+
         const updatedUser =
             data.user || {};
+
 
         profileState.user = {
             ...profileState.user,
             ...updatedUser
         };
 
+
         renderProfile(
             profileState.user
         );
+
 
         setEditMessage(
             "Profile saved successfully."
         );
 
+
         setTimeout(
             () => {
+
                 closeEditProfile();
+
             },
             700
         );
 
     } catch (error) {
+
         console.error(
             "Save profile:",
             error
         );
+
 
         setEditMessage(
             error.message ||
@@ -1071,9 +1393,12 @@ async function saveProfile() {
         );
 
     } finally {
+
         if (saveButton) {
+
             saveButton.disabled =
                 false;
+
 
             saveButton.textContent =
                 "Save Changes";
@@ -1081,11 +1406,15 @@ async function saveProfile() {
     }
 }
 
+
 function setEditMessage(message) {
+
     const element =
         $("editProfileMessage");
 
+
     if (element) {
+
         element.textContent =
             message;
     }
@@ -1097,21 +1426,27 @@ function setEditMessage(message) {
    ========================================================= */
 
 function setupTabs() {
+
     const tabs =
         document.querySelectorAll(
             ".profile-content-tab"
         );
 
+
     tabs.forEach((tab) => {
+
         tab.addEventListener(
             "click",
             () => {
+
                 const tabName =
                     tab.dataset.tab;
+
 
                 if (!tabName) {
                     return;
                 }
+
 
                 setActiveTab(
                     tabName
@@ -1121,7 +1456,9 @@ function setupTabs() {
     });
 }
 
+
 function setActiveTab(tabName) {
+
     const validTabs = [
         "reels",
         "photos",
@@ -1129,24 +1466,32 @@ function setActiveTab(tabName) {
         "private"
     ];
 
-    if (!validTabs.includes(tabName)) {
+
+    if (
+        !validTabs.includes(tabName)
+    ) {
+
         return;
     }
 
+
     profileState.activeTab =
         tabName;
+
 
     document
         .querySelectorAll(
             ".profile-content-tab"
         )
         .forEach((tab) => {
+
             tab.classList.toggle(
                 "active",
                 tab.dataset.tab ===
                     tabName
             );
         });
+
 
     renderActiveTab();
 }
@@ -1157,50 +1502,65 @@ function setActiveTab(tabName) {
    ========================================================= */
 
 function renderActiveTab() {
+
     const container =
         $("profileContentContainer");
+
 
     if (!container) {
         return;
     }
+
 
     const items =
         profileState.content[
             profileState.activeTab
         ] || [];
 
+
     container.innerHTML = "";
 
+
     if (!items.length) {
+
         const empty =
             document.createElement(
                 "div"
             );
 
+
         empty.className =
             "empty-content";
+
 
         empty.textContent =
             getEmptyMessage(
                 profileState.activeTab
             );
 
+
         container.appendChild(
             empty
         );
 
+
         return;
     }
 
+
     items.forEach((item) => {
+
         container.appendChild(
             createContentCard(item)
         );
     });
 }
 
+
 function getEmptyMessage(tab) {
+
     switch (tab) {
+
         case "reels":
             return "No reels yet.";
 
@@ -1224,23 +1584,28 @@ function getEmptyMessage(tab) {
    ========================================================= */
 
 function createContentCard(item) {
+
     const card =
         document.createElement(
             "article"
         );
 
+
     card.className =
         "content-card";
+
 
     const mediaType =
         safeText(
             item.media_type
         ).toLowerCase();
 
+
     const mediaUrl =
         safeText(
             item.media_url
         );
+
 
     const views =
         Number(
@@ -1248,6 +1613,7 @@ function createContentCard(item) {
             item.view_count ??
             0
         );
+
 
     /*
      * Video / Reel
@@ -1257,26 +1623,33 @@ function createContentCard(item) {
         mediaType === "video" ||
         mediaType === "reel"
     ) {
+
         const video =
             document.createElement(
                 "video"
             );
 
+
         video.src =
             mediaUrl;
+
 
         video.muted =
             true;
 
+
         video.playsInline =
             true;
+
 
         video.preload =
             "metadata";
 
+
         card.appendChild(
             video
         );
+
 
     /*
      * Image / Photo
@@ -1286,42 +1659,52 @@ function createContentCard(item) {
         mediaType === "image" ||
         mediaType === "photo"
     ) {
+
         const image =
             document.createElement(
                 "img"
             );
 
+
         image.src =
             mediaUrl;
+
 
         image.alt =
             "Usanex content";
 
+
         image.loading =
             "lazy";
+
 
         card.appendChild(
             image
         );
+
 
     /*
      * Text
      */
 
     } else {
+
         const placeholder =
             document.createElement(
                 "div"
             );
 
+
         placeholder.className =
             "content-text-preview";
+
 
         placeholder.textContent =
             safeText(
                 item.content,
                 "Content"
             );
+
 
         card.appendChild(
             placeholder
@@ -1338,27 +1721,34 @@ function createContentCard(item) {
             "div"
         );
 
+
     overlay.className =
         "content-card-overlay";
+
 
     const viewCount =
         document.createElement(
             "span"
         );
 
+
     viewCount.className =
         "content-view-count";
 
+
     viewCount.textContent =
         `▶ ${formatViews(views)}`;
+
 
     overlay.appendChild(
         viewCount
     );
 
+
     card.appendChild(
         overlay
     );
+
 
     return card;
 }
@@ -1366,29 +1756,53 @@ function createContentCard(item) {
 
 /* =========================================================
    BOTTOM NAVIGATION
+   =========================================================
+   
+   IMPORTANT:
+   Home page is the master navigation structure.
+
+   Home IDs:
+   homeNav
+   reelNav
+   searchNav
+   notificationNav
+   profileNav
+
+   My Profile uses the SAME IDs.
    ========================================================= */
 
 function setupBottomNavigation() {
+
     const home =
-        $("navHome");
+        $("homeNav");
+
 
     const reels =
-        $("navReels");
+        $("reelNav");
+
 
     const search =
-        $("navSearch");
+        $("searchNav");
+
 
     const notifications =
-        $("navNotifications");
+        $("notificationNav");
+
 
     const profile =
-        $("navProfile");
+        $("profileNav");
 
+
+    /*
+     * Home
+     */
 
     if (home) {
+
         home.addEventListener(
             "click",
             () => {
+
                 window.location.href =
                     "/home";
             }
@@ -1396,10 +1810,16 @@ function setupBottomNavigation() {
     }
 
 
+    /*
+     * Reels
+     */
+
     if (reels) {
+
         reels.addEventListener(
             "click",
             () => {
+
                 window.location.href =
                     "/reels";
             }
@@ -1407,10 +1827,16 @@ function setupBottomNavigation() {
     }
 
 
+    /*
+     * Search
+     */
+
     if (search) {
+
         search.addEventListener(
             "click",
             () => {
+
                 window.location.href =
                     "/search";
             }
@@ -1418,10 +1844,16 @@ function setupBottomNavigation() {
     }
 
 
+    /*
+     * Notifications
+     */
+
     if (notifications) {
+
         notifications.addEventListener(
             "click",
             () => {
+
                 window.location.href =
                     "/notifications";
             }
@@ -1429,10 +1861,18 @@ function setupBottomNavigation() {
     }
 
 
+    /*
+     * My Profile
+     *
+     * Already on My Profile.
+     */
+
     if (profile) {
+
         profile.addEventListener(
             "click",
             () => {
+
                 window.location.href =
                     "/my-profile";
             }
@@ -1446,22 +1886,29 @@ function setupBottomNavigation() {
    ========================================================= */
 
 async function logout() {
+
     const confirmed =
         window.confirm(
             "Do you want to logout?"
         );
 
+
     if (!confirmed) {
         return;
     }
 
+
     try {
+
         const response =
             await fetch(
                 "/api/auth/logout",
                 {
                     method: "POST",
-                    credentials: "include",
+
+                    credentials:
+                        "include",
+
                     headers: {
                         "Accept":
                             "application/json"
@@ -1469,7 +1916,9 @@ async function logout() {
                 }
             );
 
+
         if (!response.ok) {
+
             console.warn(
                 "Logout endpoint returned:",
                 response.status
@@ -1477,12 +1926,14 @@ async function logout() {
         }
 
     } catch (error) {
+
         console.error(
             "Logout:",
             error
         );
 
     } finally {
+
         window.location.href =
             "/login";
     }
@@ -1494,25 +1945,32 @@ async function logout() {
    ========================================================= */
 
 function renderProfileError(message) {
+
     const container =
         $("profileContentContainer");
+
 
     if (!container) {
         return;
     }
 
+
     container.innerHTML = "";
+
 
     const error =
         document.createElement(
             "div"
         );
 
+
     error.className =
         "empty-content";
 
+
     error.textContent =
         message;
+
 
     container.appendChild(
         error
