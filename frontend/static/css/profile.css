@@ -1,100 +1,170 @@
+/* =========================================================
+   USANEX PROFILE
+   Home UI matched design
+========================================================= */
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 html,
 body {
-    margin: 0;
-    padding: 0;
+    width: 100%;
     min-height: 100%;
-    background: #080b12;
-    color: #ffffff;
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
 }
 
 body {
-    min-height: 100vh;
+    background: #050b18;
+    color: #ffffff;
+
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    overflow-x: hidden;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    border: 0;
+}
+
+button:focus-visible {
+    outline: 2px solid #1685ff;
+    outline-offset: 2px;
 }
 
 
 /* =========================================================
    PROFILE PAGE
-   ========================================================= */
+========================================================= */
 
 .profile-page {
+    width: 100%;
     min-height: 100vh;
-    background: #080b12;
+
+    background: #050b18;
+
+    padding-bottom: 95px;
 }
 
 
 /* =========================================================
    HEADER
-   ========================================================= */
+========================================================= */
 
 .profile-header {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
 
-    height: 64px;
+    width: 100%;
+    height: 68px;
 
     display: grid;
     grid-template-columns: 48px 1fr 48px;
+
     align-items: center;
 
-    padding: 0 8px;
+    padding: 0 14px;
 
-    background: rgba(8, 11, 18, 0.96);
-    border-bottom: 1px solid #202532;
+    background: rgba(5, 11, 24, 0.96);
 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.06);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
-.back-button,
-.profile-menu-button {
-    width: 44px;
-    height: 44px;
+
+/* =========================================================
+   BACK BUTTON
+========================================================= */
+
+.back-button {
+    width: 42px;
+    height: 42px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    border: 0;
-    border-radius: 50%;
+    border-radius: 13px;
 
-    background: transparent;
+    background: #0d1729;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
+
     color: #ffffff;
 
-    font-size: 30px;
+    font-size: 25px;
+    line-height: 1;
+
     cursor: pointer;
 
-    -webkit-tap-highlight-color: transparent;
+    transition:
+        background 0.18s ease,
+        transform 0.15s ease;
 }
 
-.back-button:active,
-.profile-menu-button:active {
-    background: #171c27;
+.back-button:hover {
+    background: #101c31;
 }
+
+.back-button:active {
+    transform: scale(0.92);
+}
+
+
+/* =========================================================
+   HEADER TITLE
+========================================================= */
 
 .profile-header-title {
     min-width: 0;
 
-    text-align: center;
+    padding: 0 8px;
 
-    font-size: 18px;
-    font-weight: 600;
+    color: #ffffff;
+
+    font-size: 19px;
+    font-weight: 800;
+
+    letter-spacing: -0.3px;
+
+    text-align: center;
 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+
+/* =========================================================
+   MENU
+========================================================= */
 
 .profile-menu-wrapper {
     position: relative;
@@ -103,27 +173,64 @@ body {
     justify-content: flex-end;
 }
 
+.profile-menu-button {
+    width: 42px;
+    height: 42px;
 
-/* =========================================================
-   MENU
-   ========================================================= */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    background: #0d1729;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
+
+    color: #ffffff;
+
+    font-size: 24px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.18s ease,
+        transform 0.15s ease;
+}
+
+.profile-menu-button:hover {
+    background: #101c31;
+}
+
+.profile-menu-button:active {
+    transform: scale(0.92);
+}
 
 .profile-menu {
     position: absolute;
+
     top: 50px;
-    right: 4px;
+    right: 0;
 
-    min-width: 150px;
+    width: 175px;
 
-    padding: 6px 0;
+    padding: 7px;
 
-    background: #111722;
-    border: 1px solid #293140;
-    border-radius: 12px;
+    border-radius: 17px;
 
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    background: #0b1424;
 
-    overflow: hidden;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.5);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
 .profile-menu.hidden {
@@ -133,69 +240,98 @@ body {
 .profile-menu-item {
     width: 100%;
 
-    padding: 12px 16px;
+    min-height: 42px;
 
-    border: 0;
+    padding: 0 13px;
+
+    display: flex;
+    align-items: center;
+
+    border-radius: 11px;
 
     background: transparent;
-    color: #ffffff;
+
+    color: #e8edf5;
+
+    font-size: 13px;
 
     text-align: left;
-    font-size: 15px;
 
     cursor: pointer;
 }
 
-.profile-menu-item:hover,
+.profile-menu-item:hover {
+    background: #101c31;
+}
+
 .profile-menu-item:active {
-    background: #1a202c;
+    background: #14213a;
 }
 
 
 /* =========================================================
    PROFILE CONTENT
-   ========================================================= */
+========================================================= */
 
 .profile-content {
-    width: 100%;
-    max-width: 760px;
+    width: min(760px, calc(100% - 24px));
 
     margin: 0 auto;
-
-    padding-bottom: 40px;
 }
 
 
 /* =========================================================
    PROFILE TOP
-   ========================================================= */
+========================================================= */
 
 .profile-top {
+    margin-top: 15px;
+
+    padding: 18px;
+
     display: flex;
     align-items: center;
 
-    gap: 22px;
+    gap: 20px;
 
-    padding: 24px 18px 20px;
+    border-radius: 18px;
+
+    background: #0a1424;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
+
+    box-shadow:
+        0 10px 35px
+        rgba(0, 0, 0, 0.18);
 }
 
 
 /* =========================================================
    PROFILE PHOTO
-   ========================================================= */
+========================================================= */
 
 .profile-photo-wrapper {
     flex: 0 0 auto;
 
-    width: 108px;
-    height: 108px;
+    width: 105px;
+    height: 105px;
+
+    padding: 2px;
 
     border-radius: 50%;
 
-    overflow: hidden;
+    background:
+        linear-gradient(
+            145deg,
+            #1685ff,
+            #0757b8
+        );
 
-    background: #151b26;
-    border: 2px solid #2a3240;
+    box-shadow:
+        0 7px 22px
+        rgba(22, 133, 255, 0.18);
 }
 
 .profile-photo {
@@ -205,12 +341,18 @@ body {
     display: block;
 
     object-fit: cover;
+
+    border-radius: 50%;
+
+    background: #0d1729;
+
+    border: 3px solid #0a1424;
 }
 
 
 /* =========================================================
    USER INFORMATION
-   ========================================================= */
+========================================================= */
 
 .profile-user-info {
     min-width: 0;
@@ -222,18 +364,20 @@ body {
 }
 
 .profile-username {
-    font-size: 20px;
-    font-weight: 600;
-
     color: #ffffff;
+
+    font-size: 20px;
+    font-weight: 800;
+
+    letter-spacing: -0.3px;
 
     word-break: break-word;
 }
 
 .profile-user-id {
-    font-size: 14px;
+    color: #71809a;
 
-    color: #929aaa;
+    font-size: 13px;
 
     word-break: break-word;
 }
@@ -241,18 +385,25 @@ body {
 
 /* =========================================================
    STATS
-   ========================================================= */
+========================================================= */
 
 .profile-stats {
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 16px 8px;
+
     display: grid;
     grid-template-columns: repeat(4, 1fr);
 
-    margin: 0 14px;
+    border-radius: 17px;
 
-    padding: 14px 4px;
+    background: #0a1424;
 
-    border-top: 1px solid #202532;
-    border-bottom: 1px solid #202532;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
 }
 
 .profile-stat {
@@ -260,23 +411,25 @@ body {
 
     display: flex;
     flex-direction: column;
+
     align-items: center;
     justify-content: center;
 
-    gap: 4px;
+    gap: 5px;
 }
 
 .profile-stat-number {
-    font-size: 18px;
-    font-weight: 700;
-
     color: #ffffff;
+
+    font-size: 18px;
+    font-weight: 800;
 }
 
 .profile-stat-label {
-    font-size: 12px;
+    color: #71809a;
 
-    color: #8d95a5;
+    font-size: 11px;
+    font-weight: 500;
 
     text-align: center;
 
@@ -286,27 +439,35 @@ body {
 
 /* =========================================================
    BIO
-   ========================================================= */
+========================================================= */
 
 .bio-section {
-    padding: 20px 18px 18px;
+    margin-top: 10px;
+
+    padding: 17px 18px;
+
+    border-radius: 17px;
+
+    background: #0a1424;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
 }
 
 .section-title {
-    margin: 0 0 8px;
-
-    font-size: 16px;
-    font-weight: 650;
+    margin-bottom: 8px;
 
     color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 800;
 }
 
 .profile-bio {
-    margin: 0;
+    color: #9aa7bb;
 
-    color: #aab1bf;
-
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.55;
 
     white-space: pre-wrap;
@@ -316,45 +477,64 @@ body {
 
 /* =========================================================
    CONTENT SECTION
-   ========================================================= */
+========================================================= */
 
 .profile-content-section {
-    width: 100%;
+    margin-top: 10px;
+
+    overflow: hidden;
+
+    border-radius: 17px;
+
+    background: #0a1424;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
 }
 
 
 /* =========================================================
    TABS
-   ========================================================= */
+========================================================= */
 
 .profile-tabs {
+    width: 100%;
+    height: 54px;
+
     display: grid;
     grid-template-columns: repeat(2, 1fr);
 
-    height: 52px;
-
-    border-top: 1px solid #202532;
-    border-bottom: 1px solid #202532;
+    border-bottom:
+        1px solid
+        rgba(255, 255, 255, 0.07);
 }
 
 .profile-tab {
     position: relative;
 
-    border: 0;
+    height: 54px;
 
     background: transparent;
-    color: #777f90;
 
-    font-size: 14px;
-    font-weight: 600;
+    color: #64748a;
+
+    font-size: 13px;
+    font-weight: 700;
 
     cursor: pointer;
 
-    -webkit-tap-highlight-color: transparent;
+    transition:
+        color 0.18s ease,
+        background 0.18s ease;
+}
+
+.profile-tab:hover {
+    background: rgba(255, 255, 255, 0.025);
 }
 
 .profile-tab.active {
-    color: #ffffff;
+    color: #1685ff;
 }
 
 .profile-tab.active::after {
@@ -362,40 +542,49 @@ body {
 
     position: absolute;
 
-    left: 25%;
-    right: 25%;
+    left: 22%;
+    right: 22%;
     bottom: 0;
 
     height: 2px;
 
-    background: #ffffff;
+    border-radius: 20px;
 
-    border-radius: 2px;
+    background: #1685ff;
+
+    box-shadow:
+        0 0 12px
+        rgba(22, 133, 255, 0.45);
 }
 
 
 /* =========================================================
-   POSTS / CONTENT GRID
-   ========================================================= */
+   POSTS GRID
+========================================================= */
 
 .posts-container {
+    width: 100%;
+
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
 
-    gap: 2px;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
 
-    padding-top: 2px;
+    gap: 3px;
+
+    padding: 3px;
 }
 
 .post-item {
     position: relative;
 
     width: 100%;
+
     aspect-ratio: 1 / 1;
 
     overflow: hidden;
 
-    background: #111722;
+    background: #0d1729;
 
     cursor: pointer;
 }
@@ -408,23 +597,37 @@ body {
     display: block;
 
     object-fit: cover;
+
+    transition:
+        transform 0.25s ease;
 }
+
+.post-item:hover img,
+.post-item:hover video {
+    transform: scale(1.03);
+}
+
+
+/* =========================================================
+   TEXT POST
+========================================================= */
 
 .post-item-text {
     width: 100%;
     height: 100%;
 
-    padding: 14px;
+    padding: 15px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    background: #111722;
-    color: #dfe3eb;
+    background: #0d1729;
 
-    font-size: 13px;
-    line-height: 1.45;
+    color: #dce5f2;
+
+    font-size: 12px;
+    line-height: 1.5;
 
     text-align: center;
 
@@ -433,45 +636,58 @@ body {
 
 
 /* =========================================================
-   VIDEO INDICATOR
-   ========================================================= */
+   REEL INDICATOR
+========================================================= */
 
 .post-video-indicator {
     position: absolute;
 
-    top: 8px;
-    right: 8px;
+    top: 7px;
+    right: 7px;
 
-    padding: 4px 7px;
+    min-width: 28px;
+    height: 25px;
 
-    border-radius: 6px;
-
-    background: rgba(0, 0, 0, 0.65);
-    color: #ffffff;
-
-    font-size: 11px;
-    font-weight: 600;
-}
-
-
-/* =========================================================
-   EMPTY CONTENT
-   ========================================================= */
-
-.empty-posts {
-    grid-column: 1 / -1;
-
-    min-height: 180px;
+    padding: 0 7px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
+    border-radius: 8px;
+
+    background:
+        rgba(5, 11, 24, 0.82);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.09);
+
+    color: #ffffff;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   EMPTY POSTS
+========================================================= */
+
+.empty-posts {
+    grid-column: 1 / -1;
+
+    min-height: 190px;
+
     padding: 30px 20px;
 
-    color: #777f90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    font-size: 14px;
+    color: #64748a;
+
+    font-size: 13px;
 
     text-align: center;
 }
@@ -479,17 +695,22 @@ body {
 
 /* =========================================================
    ERROR
-   ========================================================= */
+========================================================= */
 
 .profile-error {
-    min-height: calc(100vh - 64px);
+    width: min(520px, calc(100% - 30px));
 
-    padding: 50px 24px;
+    margin: 45px auto;
 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    padding: 28px 20px;
+
+    border-radius: 18px;
+
+    background: #0a1424;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.07);
 
     text-align: center;
 }
@@ -501,111 +722,132 @@ body {
 .profile-error-title {
     margin-bottom: 8px;
 
-    font-size: 20px;
-    font-weight: 700;
+    color: #ffffff;
+
+    font-size: 18px;
+    font-weight: 800;
 }
 
 .profile-error-message {
-    max-width: 340px;
+    margin-bottom: 18px;
 
-    margin-bottom: 20px;
+    color: #71809a;
 
-    color: #929aaa;
-
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1.5;
 }
 
 .profile-error-button {
-    padding: 10px 18px;
+    min-height: 40px;
 
-    border: 0;
-    border-radius: 10px;
+    padding: 0 18px;
 
-    background: #ffffff;
-    color: #080b12;
+    border-radius: 12px;
 
-    font-size: 14px;
-    font-weight: 600;
+    background: #1685ff;
+
+    color: #ffffff;
+
+    font-size: 13px;
+    font-weight: 700;
 
     cursor: pointer;
+
+    box-shadow:
+        0 7px 22px
+        rgba(22, 133, 255, 0.20);
+}
+
+.profile-error-button:active {
+    transform: scale(0.97);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1c2b42;
+
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2b3e5b;
 }
 
 
 /* =========================================================
    MOBILE
-   ========================================================= */
+========================================================= */
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
+
+    .profile-page {
+        padding-bottom: 88px;
+    }
 
     .profile-header {
-        height: 58px;
+        height: 62px;
+
+        padding: 0 10px;
+    }
+
+    .back-button,
+    .profile-menu-button {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 12px;
+    }
+
+    .profile-header-title {
+        font-size: 17px;
     }
 
     .profile-content {
-        max-width: 100%;
+        width: calc(100% - 22px);
     }
 
     .profile-top {
-        gap: 16px;
+        margin-top: 13px;
 
-        padding: 20px 14px 18px;
+        padding: 15px;
+
+        gap: 15px;
+
+        border-radius: 15px;
     }
 
     .profile-photo-wrapper {
-        width: 92px;
-        height: 92px;
+        width: 88px;
+        height: 88px;
     }
 
     .profile-username {
-        font-size: 18px;
-    }
-
-    .profile-user-id {
-        font-size: 13px;
-    }
-
-    .profile-stats {
-        margin: 0 8px;
-    }
-
-    .profile-stat-number {
         font-size: 17px;
     }
 
-    .profile-stat-label {
+    .profile-user-id {
         font-size: 11px;
     }
 
-    .bio-section {
-        padding: 18px 14px 16px;
-    }
-}
+    .profile-stats {
+        margin-top: 9px;
 
+        padding: 14px 3px;
 
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 360px) {
-
-    .profile-photo-wrapper {
-        width: 82px;
-        height: 82px;
-    }
-
-    .profile-top {
-        gap: 13px;
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
-    .profile-username {
-        font-size: 17px;
-    }
-
-    .profile-user-id {
-        font-size: 12px;
+        border-radius: 15px;
     }
 
     .profile-stat-number {
@@ -615,27 +857,110 @@ body {
     .profile-stat-label {
         font-size: 10px;
     }
+
+    .bio-section {
+        margin-top: 9px;
+
+        padding: 15px;
+
+        border-radius: 15px;
+    }
+
+    .profile-content-section {
+        margin-top: 9px;
+
+        border-radius: 15px;
+    }
+
+    .profile-tabs,
+    .profile-tab {
+        height: 50px;
+    }
+
+    .profile-tab {
+        font-size: 12px;
+    }
+
+    .posts-container {
+        gap: 2px;
+        padding: 2px;
+    }
 }
 
 
 /* =========================================================
-   LARGE SCREENS
-   ========================================================= */
+   VERY SMALL MOBILE
+========================================================= */
 
-@media (min-width: 761px) {
+@media (max-width: 380px) {
 
     .profile-content {
-        border-left: 1px solid #202532;
-        border-right: 1px solid #202532;
+        width: calc(100% - 18px);
     }
 
     .profile-top {
-        padding-left: 28px;
-        padding-right: 28px;
+        padding: 13px;
+        gap: 12px;
     }
 
-    .bio-section {
-        padding-left: 28px;
-        padding-right: 28px;
+    .profile-photo-wrapper {
+        width: 78px;
+        height: 78px;
+    }
+
+    .profile-username {
+        font-size: 16px;
+    }
+
+    .profile-user-id {
+        font-size: 10px;
+    }
+
+    .profile-stat-number {
+        font-size: 15px;
+    }
+
+    .profile-stat-label {
+        font-size: 9px;
+    }
+
+    .profile-bio {
+        font-size: 12px;
+    }
+}
+
+
+/* =========================================================
+   TABLET / DESKTOP
+========================================================= */
+
+@media (min-width: 801px) {
+
+    .profile-content {
+        width: min(760px, calc(100% - 40px));
+    }
+
+    .profile-top {
+        margin-top: 20px;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+
+        transition-duration: 0.01ms !important;
+
+        animation-duration: 0.01ms !important;
+
+        animation-iteration-count: 1 !important;
     }
 }
