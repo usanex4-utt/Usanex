@@ -2,199 +2,186 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Profile - Usanex</title>
 
-    <link
-        rel="stylesheet"
-        href="/static/css/profile.css?v=6"
-    >
+    <link rel="stylesheet" href="/static/css/profile.css?v=7">
 </head>
 
 <body>
 
-    <main class="profile-page">
+<main class="profile-page">
 
-        <!-- ================= HEADER ================= -->
-        <header class="profile-header">
+    <!-- HEADER -->
+    <header class="profile-header">
+
+        <button
+            id="backButton"
+            class="back-button"
+            type="button"
+            aria-label="Go back"
+        >
+            ←
+        </button>
+
+        <div
+            id="profileHeaderTitle"
+            class="profile-header-title"
+        >
+            Loading...
+        </div>
+
+        <div class="profile-menu-wrapper">
 
             <button
-                id="backButton"
-                class="back-button"
+                id="profileMenuButton"
+                class="profile-menu-button"
                 type="button"
-                aria-label="Go back"
+                aria-label="Profile menu"
             >
-                ←
+                ⋮
             </button>
 
             <div
-                id="profileHeaderTitle"
-                class="profile-header-title"
+                id="profileMenu"
+                class="profile-menu hidden"
             >
-                Loading...
-            </div>
-
-            <div class="profile-menu-wrapper">
 
                 <button
-                    id="profileMenuButton"
-                    class="profile-menu-button"
+                    id="blockButton"
+                    class="profile-menu-item"
                     type="button"
-                    aria-label="Profile menu"
                 >
-                    ⋮
+                    Block
                 </button>
 
-                <div
-                    id="profileMenu"
-                    class="profile-menu hidden"
+                <button
+                    id="shareButton"
+                    class="profile-menu-item"
+                    type="button"
                 >
-                    <button
-                        id="blockButton"
-                        class="profile-menu-item"
-                        type="button"
-                    >
-                        Block
-                    </button>
+                    Share
+                </button>
 
-                    <button
-                        id="shareButton"
-                        class="profile-menu-item"
-                        type="button"
-                    >
-                        Share
-                    </button>
-
-                    <button
-                        id="qrButton"
-                        class="profile-menu-item"
-                        type="button"
-                    >
-                        QR Code
-                    </button>
-
-                    <button
-                        id="reportButton"
-                        class="profile-menu-item"
-                        type="button"
-                    >
-                        Report
-                    </button>
-                </div>
-
-            </div>
-
-        </header>
-
-
-        <!-- ================= PROFILE CONTENT ================= -->
-        <section class="profile-content">
-
-            <!-- Profile Photo -->
-            <div class="profile-photo-wrapper">
-
-                <img
-                    id="profilePhoto"
-                    class="profile-photo"
-                    src="/static/images/default-profile.png"
-                    alt="Profile photo"
+                <button
+                    id="qrButton"
+                    class="profile-menu-item"
+                    type="button"
                 >
+                    QR Code
+                </button>
+
+                <button
+                    id="reportButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Report
+                </button>
 
             </div>
 
+        </div>
 
-            <!-- Username -->
-            <div
-                id="profileUsername"
-                class="profile-username"
+    </header>
+
+
+    <!-- PROFILE -->
+    <section class="profile-content">
+
+        <!-- PROFILE PHOTO -->
+        <div class="profile-photo-wrapper">
+
+            <img
+                id="profilePhoto"
+                class="profile-photo"
+                src="/static/images/default-profile.png"
+                alt="Profile photo"
             >
-                @username
-            </div>
+
+        </div>
 
 
-            <!-- User ID -->
-            <div
-                id="profileUserId"
-                class="profile-user-id"
-            >
-                user_id
-            </div>
+        <!-- USERNAME -->
+        <div
+            id="profileUsername"
+            class="profile-username"
+        >
+            @username
+        </div>
 
 
-            <!-- Connection Status -->
-            <div
-                id="connectionStatus"
-                class="connection-status hidden"
-            >
+        <!-- USER ID -->
+        <div
+            id="profileUserId"
+            class="profile-user-id"
+        >
+            user_id
+        </div>
+
+
+        <!-- CONNECTION -->
+        <div
+            id="connectionStatus"
+            class="connection-status hidden"
+        >
+
+            <span id="connectionStatusText">
                 Connected
-            </div>
+            </span>
+
+            <span
+                id="connectionCategory"
+                class="connection-category hidden"
+            ></span>
+
+        </div>
 
 
-            <!-- ================= BIO ================= -->
-            <section class="bio-section">
+        <!-- BIO -->
+        <section class="bio-section">
 
-                <h2 class="section-title">
-                    Bio
-                </h2>
+            <h2 class="section-title">
+                Bio
+            </h2>
 
-                <p
-                    id="profileBio"
-                    class="profile-bio"
-                >
-                    No bio available.
-                </p>
-
-
-                <!-- Category inside Bio -->
-                <div class="bio-category">
-
-                    <span class="bio-category-label">
-                        Category
-                    </span>
-
-                    <span
-                        id="personalCategory"
-                        class="bio-category-value"
-                    >
-                        —
-                    </span>
-
-                </div>
-
-            </section>
-
-
-            <!-- ================= POSTS ================= -->
-            <section class="posts-section">
-
-                <h2 class="section-title">
-                    Posts
-                </h2>
-
-                <div
-                    id="postsContainer"
-                    class="posts-container"
-                >
-                    <div class="empty-posts">
-                        No posts yet.
-                    </div>
-                </div>
-
-            </section>
+            <p
+                id="profileBio"
+                class="profile-bio"
+            >
+                No bio available.
+            </p>
 
         </section>
 
-    </main>
+
+        <!-- POSTS -->
+        <section class="posts-section">
+
+            <h2 class="section-title">
+                Posts
+            </h2>
+
+            <div
+                id="postsContainer"
+                class="posts-container"
+            >
+
+                <div class="empty-posts">
+                    No posts yet.
+                </div>
+
+            </div>
+
+        </section>
+
+    </section>
+
+</main>
 
 
-    <script
-        src="/static/js/profile.js?v=6"
-        defer
-    ></script>
+<script src="/static/js/profile.js?v=7" defer></script>
 
 </body>
 </html>
