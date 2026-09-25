@@ -1,83 +1,51 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..database.database import get_db
 from ..database.models import (
+    Post,
     User,
     UserConnection,
-    UserConnectionCategory,
+    UserFollow,
 )
 from .auth import get_current_user_from_request
 
 
-# =========================================================
-# ROUTER
-# =========================================================
-
 router = APIRouter(
     prefix="/api/profile",
-    tags=["Profile"],
+    tags=["profile"],
 )
 
 
 # =========================================================
-# HELPERS
+# CONNECTION CHECK
 # =========================================================
 
-def normalize_category(category):
-    """
-    Only personal Friend / Family categories are supported.
-    Couple is intentionally not handled here.
-    """
-
-    if category is None:
-        return None
-
-    value = str(category).strip().lower()
-
-    if value in {"friend", "friends"}:
-        return "friend"
-
-    if value in {"family", "families"}:
-        return "family"
-
-    return None
-
-
-def check_connection(
+def is_connected(
     db: Session,
-    current_user_id: int,
-    target_user_id: int,
-):
-    """
-    Check whether two users have an actual connection.
-
-    UserConnection stores the two users as:
-        user_one_id
-        user_two_id
-
-    Order does not matter.
-    """
-
-    if current_user_id == target_user_id:
-        return True
-
+    user_one_id: int,
+    user_two_id: int,
+) -> bool:
     connection = (
         db.query(UserConnection)
         .filter(
             UserConnection.status == "connected",
-            (
+            or_(
                 (
-                    (UserConnection.user_one_id == current_user_id)
-                    &
-                    (UserConnection.user_two_id == target_user_id)
+                    UserConnection.user_one_id == user_one_id
                 )
-                |
+                & (
+                    UserConnection.user_two_id == user_two_id
+                ),
                 (
-                    (UserConnection.user_one_id == target_user_id)
-                    &
-                    (UserConnection.user_two_id == current_user_id)
+                    UserConnection.user_one_id == user_two_id
                 )
+                & (
+                    UserConnection.user_two_id == user_one_id
+                ),
             ),
         )
         .first()
@@ -86,42 +54,43 @@ def check_connection(
     return connection is not None
 
 
-def get_personal_category(
+# =========================================================
+# CONNECTED COUNT
+# =========================================================
+
+def get_connected_count(
     db: Session,
-    current_user_id: int,
-    target_user_id: int,
-):
-    """
-    Get the category assigned by the CURRENT user.
+    user_id: int,
+) -> int:
 
-    Example:
-
-        A -> B = friend
-        B -> A = family
-
-    These are independent records.
-    """
-
-    if current_user_id == target_user_id:
-        return None
-
-    category_record = (
-        db.query(UserConnectionCategory)
-        .filter(
-            UserConnectionCategory.user_id == current_user_id,
-            UserConnectionCategory.connected_user_id == target_user_id,
+    rows = (
+        db.query(
+            UserConnection.user_one_id,
+            UserConnection.user_two_id,
         )
-        .first()
+        .filter(
+            UserConnection.status == "connected",
+            or_(
+                UserConnection.user_one_id == user_id,
+                UserConnection.user_two_id == user_id,
+            ),
+        )
+        .all()
     )
 
-    if category_record is None:
-        return None
+    connected_user_ids = set()
 
-    return normalize_category(category_record.category)
+    for row in rows:
+        if row.user_one_id == user_id:
+            connected_user_ids.add(row.user_two_id)
+        elif row.user_two_id == user_id:
+            connected_user_ids.add(row.user_one_id)
+
+    return len(connected_user_ids)
 
 
 # =========================================================
-# GET OTHER USER PROFILE
+# PROFILE
 # =========================================================
 
 @router.get("/{user_id}")
@@ -130,17 +99,8 @@ def get_profile(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """
-    Get another user's profile.
-
-    Authentication:
-        HTTP-only usanex_session cookie
-
-    Private authentication information is never returned.
-    """
-
     # -----------------------------------------------------
-    # CURRENT LOGGED-IN USER
+    # CURRENT USER
     # -----------------------------------------------------
 
     current_user = get_current_user_from_request(
@@ -151,7 +111,7 @@ def get_profile(
     if current_user is None:
         raise HTTPException(
             status_code=401,
-            detail="Authentication required.",
+            detail="Authentication required",
         )
 
     # -----------------------------------------------------
@@ -160,121 +120,164 @@ def get_profile(
 
     target_user = (
         db.query(User)
-        .filter(
-            User.user_id == user_id
-        )
+        .filter(User.user_id == user_id)
         .first()
     )
 
     if target_user is None:
         raise HTTPException(
             status_code=404,
-            detail="User not found.",
+            detail="User not found",
         )
 
     # -----------------------------------------------------
-    # SELF / CONNECTION
+    # SELF PROFILE
     # -----------------------------------------------------
 
     is_self = (
         current_user.id == target_user.id
     )
 
-    is_connected = check_connection(
-        db=db,
-        current_user_id=current_user.id,
-        target_user_id=target_user.id,
-    )
-
     # -----------------------------------------------------
-    # CONNECTION STATUS
+    # CONNECTION ACCESS
     # -----------------------------------------------------
 
-    if is_self:
-        connection_status = "self"
+    connected = False
 
-    elif is_connected:
-        connection_status = "connected"
-
-    else:
-        connection_status = "not_connected"
-
-    # -----------------------------------------------------
-    # PERSONAL CATEGORY
-    # -----------------------------------------------------
-
-    personal_category = None
-
-    if is_connected and not is_self:
-        personal_category = get_personal_category(
+    if not is_self:
+        connected = is_connected(
             db=db,
-            current_user_id=current_user.id,
-            target_user_id=target_user.id,
+            user_one_id=current_user.id,
+            user_two_id=target_user.id,
         )
 
-    # -----------------------------------------------------
-    # BIO
-    #
-    # Current User model may not have a bio column yet.
-    # getattr() safely returns None if it doesn't exist.
-    # -----------------------------------------------------
+        # Only self or connected users can open profile
+        if not connected:
+            raise HTTPException(
+                status_code=403,
+                detail="Profile available only to connected users",
+            )
 
-    bio = getattr(
-        target_user,
-        "bio",
-        None,
+    # =====================================================
+    # FOLLOWERS
+    # =====================================================
+
+    followers_count = (
+        db.query(func.count(UserFollow.id))
+        .filter(
+            UserFollow.following_id == target_user.id
+        )
+        .scalar()
+        or 0
     )
 
-    # -----------------------------------------------------
-    # RESPONSE
+    # =====================================================
+    # FOLLOWING
+    # =====================================================
+
+    following_count = (
+        db.query(func.count(UserFollow.id))
+        .filter(
+            UserFollow.follower_id == target_user.id
+        )
+        .scalar()
+        or 0
+    )
+
+    # =====================================================
+    # CONNECTED
+    # =====================================================
+
+    connected_count = get_connected_count(
+        db=db,
+        user_id=target_user.id,
+    )
+
+    # =====================================================
+    # TOTAL POSTS
+    # =====================================================
+
+    posts_count = (
+        db.query(func.count(Post.id))
+        .filter(
+            Post.user_id == target_user.id
+        )
+        .scalar()
+        or 0
+    )
+
+    # =====================================================
+    # ALL CONTENT
+    # =====================================================
     #
-    # IMPORTANT:
-    # Do NOT return:
-    # - password_hash
-    # - mobile
-    # - session information
-    # - OTP information
-    # -----------------------------------------------------
+    # One unified posts table.
+    #
+    # Reels:
+    #     media_type = reel
+    #     media_type = video
+    #
+    # Photos:
+    #     media_type = photo
+    #
+    # =====================================================
+
+    posts = (
+        db.query(Post)
+        .filter(
+            Post.user_id == target_user.id
+        )
+        .order_by(
+            Post.created_at.desc(),
+            Post.id.desc(),
+        )
+        .all()
+    )
+
+    content = []
+
+    for post in posts:
+
+        content.append(
+            {
+                "id": post.id,
+                "content": post.content,
+                "media_url": post.media_url,
+                "media_type": post.media_type,
+                "created_at": (
+                    post.created_at.isoformat()
+                    if post.created_at
+                    else None
+                ),
+            }
+        )
+
+    # =====================================================
+    # RESPONSE
+    # =====================================================
 
     return {
-        "ok": True,
+        "success": True,
 
-        "profile": {
+        "user": {
+            "id": target_user.id,
             "user_id": target_user.user_id,
-
-            "username": getattr(
-                target_user,
-                "username",
-                None,
-            ),
-
-            "name": getattr(
-                target_user,
-                "name",
-                None,
-            ),
-
-            "profile_photo": getattr(
-                target_user,
-                "profile_photo",
-                None,
-            ),
-
-            "bio": bio,
-
-            "is_self": is_self,
-
-            "is_connected": is_connected,
-
-            "connection_status": connection_status,
-
-            # Personal category of the CURRENT user
-            # toward this connected user.
-            "personal_category": personal_category,
-
-            # Compatibility fields for frontend.
-            "category": personal_category,
-
-            "connection_category": personal_category,
+            "username": target_user.username,
+            "name": target_user.name,
+            "profile_photo": target_user.profile_photo,
+            "bio": target_user.bio,
         },
+
+        "relationship": {
+            "is_self": is_self,
+            "is_connected": connected if not is_self else True,
+        },
+
+        "stats": {
+            "followers": followers_count,
+            "connected": connected_count,
+            "following": following_count,
+            "posts": posts_count,
+        },
+
+        "content": content,
     }
