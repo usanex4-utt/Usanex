@@ -17,6 +17,7 @@ body {
 body {
     background: #05070b;
     color: #eef2f7;
+
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -62,7 +63,9 @@ body {
 }
 
 
-/* Back button */
+/* =========================================================
+   BACK
+   ========================================================= */
 
 .back-button {
     width: 44px;
@@ -91,7 +94,9 @@ body {
 }
 
 
-/* Header title */
+/* =========================================================
+   HEADER TITLE
+   ========================================================= */
 
 .profile-header-title {
     min-width: 0;
@@ -127,7 +132,6 @@ body {
     justify-content: flex-end;
 }
 
-
 .profile-menu-button {
     width: 44px;
     height: 44px;
@@ -155,7 +159,9 @@ body {
 }
 
 
-/* Popup */
+/* =========================================================
+   MENU POPUP
+   ========================================================= */
 
 .profile-menu {
     position: absolute;
@@ -184,9 +190,6 @@ body {
     display: none;
 }
 
-
-/* Popup item */
-
 .profile-menu-item {
     width: 100%;
     min-height: 42px;
@@ -204,8 +207,8 @@ body {
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
-    line-height: 20px;
 
+    line-height: 20px;
     text-align: left;
 
     cursor: pointer;
@@ -310,7 +313,7 @@ body {
 
 
 /* =========================================================
-   CONNECTION STATUS
+   CONNECTION + CATEGORY
    ========================================================= */
 
 .connection-status {
@@ -318,6 +321,12 @@ body {
 
     margin: 10px auto 0;
     padding: 5px 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
 
     border-radius: 999px;
 
@@ -339,14 +348,34 @@ body {
 }
 
 
+/* Category */
+
+.connection-category {
+    color: #c7d2dc;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.connection-category.hidden {
+    display: none;
+}
+
+.connection-category::before {
+    content: "·";
+
+    margin-right: 7px;
+
+    color: #64717e;
+}
+
+
 /* =========================================================
-   SECTIONS
+   BIO
    ========================================================= */
 
-.bio-section,
-.posts-section {
+.bio-section {
     width: 100%;
-
     margin-top: 32px;
 }
 
@@ -360,11 +389,6 @@ body {
 
     line-height: 22px;
 }
-
-
-/* =========================================================
-   BIO
-   ========================================================= */
 
 .profile-bio {
     width: 100%;
@@ -382,54 +406,13 @@ body {
 
 
 /* =========================================================
-   CATEGORY INSIDE BIO
-   ========================================================= */
-
-.bio-category {
-    width: 100%;
-
-    margin-top: 16px;
-    padding-top: 13px;
-
-    border-top: 1px solid #151d27;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 15px;
-}
-
-
-.bio-category-label {
-    color: #8995a3;
-
-    font-size: 13px;
-    font-weight: 500;
-
-    line-height: 20px;
-}
-
-
-.bio-category-value {
-    color: #dce3ea;
-
-    font-size: 14px;
-    font-weight: 600;
-
-    line-height: 20px;
-
-    text-transform: capitalize;
-
-    text-align: right;
-
-    overflow-wrap: anywhere;
-}
-
-
-/* =========================================================
    POSTS
    ========================================================= */
+
+.posts-section {
+    width: 100%;
+    margin-top: 32px;
+}
 
 .posts-container {
     width: 100%;
@@ -440,7 +423,6 @@ body {
     align-items: center;
     justify-content: center;
 }
-
 
 .empty-posts {
     width: 100%;
@@ -496,7 +478,7 @@ body {
 
 
 /* =========================================================
-   LARGER SCREENS
+   LARGE SCREEN
    ========================================================= */
 
 @media (min-width: 721px) {
