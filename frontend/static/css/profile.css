@@ -1,5 +1,5 @@
 /* =========================================================
-   USANEX - OTHER USER PROFILE
+   USANEX PROFILE
    ========================================================= */
 
 * {
@@ -16,17 +16,15 @@ body {
 
 body {
     background: #05070b;
-    color: #e8edf5;
-
+    color: #eef2f7;
     font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         Roboto,
+        Helvetica,
         Arial,
         sans-serif;
-
-    overflow-x: hidden;
 }
 
 
@@ -50,31 +48,25 @@ body {
     height: 56px;
 
     display: grid;
-
     grid-template-columns: 44px minmax(0, 1fr) 44px;
-
     align-items: center;
 
     padding: 0 10px;
 
     background: #05070b;
-
     border-bottom: 1px solid #121923;
 
     position: sticky;
     top: 0;
-
     z-index: 100;
 }
 
 
-/* =========================================================
-   BACK BUTTON
-   ========================================================= */
+/* Back button */
 
 .back-button {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
 
     display: flex;
     align-items: center;
@@ -83,11 +75,10 @@ body {
     border: none;
     background: transparent;
 
-    color: #e6ebf2;
+    color: #eef2f7;
 
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 300;
-
     line-height: 1;
 
     cursor: pointer;
@@ -100,9 +91,7 @@ body {
 }
 
 
-/* =========================================================
-   HEADER NAME
-   ========================================================= */
+/* Header title */
 
 .profile-header-title {
     min-width: 0;
@@ -113,21 +102,18 @@ body {
 
     font-size: 17px;
     font-weight: 600;
-
     line-height: 22px;
 
     text-align: center;
 
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
 }
 
 
 /* =========================================================
-   MENU WRAPPER
+   THREE DOT MENU
    ========================================================= */
 
 .profile-menu-wrapper {
@@ -142,13 +128,9 @@ body {
 }
 
 
-/* =========================================================
-   THREE DOT BUTTON
-   ========================================================= */
-
 .profile-menu-button {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
 
     display: flex;
     align-items: center;
@@ -157,11 +139,10 @@ body {
     border: none;
     background: transparent;
 
-    color: #e6ebf2;
+    color: #eef2f7;
 
-    font-size: 27px;
-    font-weight: 500;
-
+    font-size: 28px;
+    font-weight: 600;
     line-height: 1;
 
     cursor: pointer;
@@ -174,9 +155,7 @@ body {
 }
 
 
-/* =========================================================
-   SMALL POPUP MENU
-   ========================================================= */
+/* Popup */
 
 .profile-menu {
     position: absolute;
@@ -191,7 +170,6 @@ body {
     background: #10151d;
 
     border: 1px solid #202a36;
-
     border-radius: 10px;
 
     box-shadow:
@@ -202,23 +180,15 @@ body {
     overflow: hidden;
 }
 
-
-/* =========================================================
-   HIDDEN
-   ========================================================= */
-
 .profile-menu.hidden {
     display: none;
 }
 
 
-/* =========================================================
-   MENU ITEM
-   ========================================================= */
+/* Popup item */
 
 .profile-menu-item {
     width: 100%;
-
     min-height: 42px;
 
     display: flex;
@@ -227,16 +197,13 @@ body {
     padding: 0 15px;
 
     border: none;
-
     background: transparent;
 
     color: #e5ebf2;
 
     font-family: inherit;
-
     font-size: 14px;
     font-weight: 500;
-
     line-height: 20px;
 
     text-align: left;
@@ -256,16 +223,16 @@ body {
 
 
 /* =========================================================
-   CONTENT
+   PROFILE CONTENT
    ========================================================= */
 
 .profile-content {
     width: 100%;
-    max-width: 620px;
+    max-width: 720px;
 
     margin: 0 auto;
 
-    padding: 28px 16px 50px;
+    padding: 28px 18px 50px;
 }
 
 
@@ -274,47 +241,29 @@ body {
    ========================================================= */
 
 .profile-photo-wrapper {
-    width: 100%;
+    width: 110px;
+    height: 110px;
 
-    display: flex;
-    justify-content: center;
-
-    margin-bottom: 15px;
-}
-
-.profile-photo {
-    width: 96px;
-    height: 96px;
-
-    border-radius: 50%;
+    margin: 0 auto 16px;
 
     display: flex;
     align-items: center;
     justify-content: center;
-
-    overflow: hidden;
-
-    background: #151f2c;
-
-    border: 2px solid #247cff;
-
-    color: #eef3f8;
-
-    font-size: 30px;
-    font-weight: 600;
-
-    user-select: none;
 }
 
-.profile-photo img {
-    width: 100%;
-    height: 100%;
+.profile-photo {
+    width: 110px;
+    height: 110px;
 
     display: block;
 
     object-fit: cover;
 
     border-radius: 50%;
+
+    background: #111820;
+
+    border: 1px solid #26313e;
 }
 
 
@@ -323,16 +272,18 @@ body {
    ========================================================= */
 
 .profile-username {
-    margin-top: 4px;
+    width: 100%;
 
-    color: #8995a5;
+    color: #f3f6fa;
 
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 17px;
+    font-weight: 600;
+
+    line-height: 24px;
 
     text-align: center;
 
-    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 
@@ -341,16 +292,20 @@ body {
    ========================================================= */
 
 .profile-user-id {
-    margin-top: 3px;
+    width: 100%;
 
-    color: #5f6b7b;
+    margin-top: 4px;
 
-    font-size: 11px;
-    line-height: 16px;
+    color: #8995a3;
+
+    font-size: 14px;
+    font-weight: 400;
+
+    line-height: 20px;
 
     text-align: center;
 
-    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 
@@ -361,20 +316,22 @@ body {
 .connection-status {
     width: fit-content;
 
-    margin: 14px auto 0;
+    margin: 10px auto 0;
+    padding: 5px 12px;
 
-    padding: 6px 13px;
+    border-radius: 999px;
 
-    border-radius: 20px;
+    background: #162019;
+    border: 1px solid #263c2b;
 
-    background: #101d2d;
-
-    color: #4e9aff;
+    color: #9fe0ad;
 
     font-size: 12px;
     font-weight: 600;
 
-    line-height: 16px;
+    line-height: 18px;
+
+    text-align: center;
 }
 
 .connection-status.hidden {
@@ -383,248 +340,174 @@ body {
 
 
 /* =========================================================
-   BIO
+   SECTIONS
    ========================================================= */
 
-.bio-section {
+.bio-section,
+.posts-section {
     width: 100%;
 
-    margin-top: 25px;
-
-    padding: 16px;
-
-    background: #0a0f15;
-
-    border: 1px solid #17212c;
-
-    border-radius: 13px;
+    margin-top: 32px;
 }
 
-.bio-section h2 {
-    color: #dfe6ee;
+.section-title {
+    margin-bottom: 12px;
 
-    font-size: 14px;
+    color: #f0f3f7;
+
+    font-size: 16px;
     font-weight: 600;
 
-    line-height: 19px;
-
-    margin-bottom: 7px;
-}
-
-.bio-section p {
-    color: #8995a5;
-
-    font-size: 13px;
-    font-weight: 400;
-
-    line-height: 20px;
-
-    white-space: pre-wrap;
-
-    word-break: break-word;
+    line-height: 22px;
 }
 
 
 /* =========================================================
-   PROFILE INFORMATION
+   BIO
    ========================================================= */
 
-.profile-info {
+.profile-bio {
     width: 100%;
 
-    margin-top: 10px;
+    color: #aeb8c4;
 
-    background: #0a0f15;
+    font-size: 14px;
+    font-weight: 400;
 
-    border: 1px solid #17212c;
+    line-height: 21px;
 
-    border-radius: 13px;
-
-    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
-.info-row {
+
+/* =========================================================
+   CATEGORY INSIDE BIO
+   ========================================================= */
+
+.bio-category {
     width: 100%;
 
-    min-height: 52px;
+    margin-top: 16px;
+    padding-top: 13px;
+
+    border-top: 1px solid #151d27;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    padding: 10px 16px;
+    gap: 15px;
 }
 
-.info-row + .info-row {
-    border-top: 1px solid #17212c;
-}
 
-.info-label {
-    color: #7e8998;
-
-    font-size: 13px;
-    line-height: 18px;
-}
-
-.info-value {
-    color: #dfe6ee;
+.bio-category-label {
+    color: #8995a3;
 
     font-size: 13px;
     font-weight: 500;
 
-    line-height: 18px;
+    line-height: 20px;
+}
+
+
+.bio-category-value {
+    color: #dce3ea;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    line-height: 20px;
+
+    text-transform: capitalize;
 
     text-align: right;
-}
 
-.info-value.friend {
-    color: #4e9aff;
-}
-
-.info-value.family {
-    color: #dfe6ee;
+    overflow-wrap: anywhere;
 }
 
 
 /* =========================================================
-   USER CONTENT
+   POSTS
    ========================================================= */
 
-.user-content-section {
+.posts-container {
     width: 100%;
 
-    margin-top: 25px;
-}
-
-.user-content-section h2 {
-    color: #e5ebf2;
-
-    font-size: 17px;
-    font-weight: 600;
-
-    line-height: 22px;
-
-    margin-bottom: 10px;
-}
-
-.empty-content {
-    width: 100%;
-
-    min-height: 120px;
+    min-height: 100px;
 
     display: flex;
     align-items: center;
     justify-content: center;
+}
 
-    padding: 20px;
 
-    background: #0a0f15;
+.empty-posts {
+    width: 100%;
 
-    border: 1px solid #17212c;
+    padding: 30px 15px;
 
-    border-radius: 13px;
+    color: #687482;
 
-    color: #657181;
+    font-size: 14px;
+    font-weight: 400;
 
-    font-size: 13px;
+    line-height: 20px;
 
     text-align: center;
+
+    border-top: 1px solid #151d27;
+    border-bottom: 1px solid #151d27;
 }
 
 
 /* =========================================================
-   LOADING / ERROR
+   MOBILE
    ========================================================= */
 
-.profile-loading {
-    color: #788494;
-}
-
-.profile-error {
-    color: #ff7184;
-}
-
-
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 360px) {
-
-    .profile-header {
-        height: 53px;
-
-        grid-template-columns: 40px minmax(0, 1fr) 40px;
-
-        padding: 0 7px;
-    }
+@media (max-width: 480px) {
 
     .profile-content {
-        padding: 23px 11px 40px;
+        padding:
+            24px
+            15px
+            45px;
     }
 
+    .profile-photo-wrapper,
     .profile-photo {
-        width: 88px;
-        height: 88px;
-
-        font-size: 27px;
+        width: 100px;
+        height: 100px;
     }
 
     .profile-username {
+        font-size: 16px;
+    }
+
+    .profile-user-id {
         font-size: 13px;
     }
 
     .bio-section,
-    .profile-info,
-    .empty-content {
-        border-radius: 11px;
-    }
-
-    .profile-menu {
-        width: 145px;
+    .posts-section {
+        margin-top: 28px;
     }
 }
 
 
 /* =========================================================
-   TABLET / DESKTOP
+   LARGER SCREENS
    ========================================================= */
 
-@media (min-width: 700px) {
+@media (min-width: 721px) {
 
     .profile-content {
-        padding-left: 20px;
-        padding-right: 20px;
+        padding-top: 34px;
     }
 
+    .profile-photo-wrapper,
     .profile-photo {
-        width: 108px;
-        height: 108px;
-
-        font-size: 34px;
-    }
-}
-
-
-/* =========================================================
-   ACCESSIBILITY
-   ========================================================= */
-
-button:focus-visible {
-    outline: 2px solid #247cff;
-    outline-offset: 2px;
-}
-
-
-/* =========================================================
-   REDUCE MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    * {
-        scroll-behavior: auto !important;
-        transition: none !important;
-        animation: none !important;
+        width: 120px;
+        height: 120px;
     }
 }
