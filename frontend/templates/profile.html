@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -12,7 +11,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/profile.css?v=4"
+        href="/static/css/profile.css?v=6"
     >
 </head>
 
@@ -20,7 +19,7 @@
 
     <main class="profile-page">
 
-        <!-- HEADER -->
+        <!-- ================= HEADER ================= -->
         <header class="profile-header">
 
             <button
@@ -32,7 +31,6 @@
                 ←
             </button>
 
-
             <div
                 id="profileHeaderTitle"
                 class="profile-header-title"
@@ -40,26 +38,21 @@
                 Loading...
             </div>
 
-
             <div class="profile-menu-wrapper">
 
                 <button
                     id="profileMenuButton"
                     class="profile-menu-button"
                     type="button"
-                    aria-label="More options"
-                    aria-expanded="false"
+                    aria-label="Profile menu"
                 >
                     ⋮
                 </button>
 
-
-                <!-- SMALL POPUP MENU -->
                 <div
                     id="profileMenu"
                     class="profile-menu hidden"
                 >
-
                     <button
                         id="blockButton"
                         class="profile-menu-item"
@@ -67,7 +60,6 @@
                     >
                         Block
                     </button>
-
 
                     <button
                         id="shareButton"
@@ -77,7 +69,6 @@
                         Share
                     </button>
 
-
                     <button
                         id="qrButton"
                         class="profile-menu-item"
@@ -86,7 +77,6 @@
                         QR Code
                     </button>
 
-
                     <button
                         id="reportButton"
                         class="profile-menu-item"
@@ -94,7 +84,6 @@
                     >
                         Report
                     </button>
-
                 </div>
 
             </div>
@@ -102,23 +91,23 @@
         </header>
 
 
-        <!-- PROFILE CONTENT -->
+        <!-- ================= PROFILE CONTENT ================= -->
         <section class="profile-content">
 
-            <!-- PROFILE PHOTO -->
+            <!-- Profile Photo -->
             <div class="profile-photo-wrapper">
 
-                <div
+                <img
                     id="profilePhoto"
                     class="profile-photo"
+                    src="/static/images/default-profile.png"
+                    alt="Profile photo"
                 >
-                    U
-                </div>
 
             </div>
 
 
-            <!-- USERNAME -->
+            <!-- Username -->
             <div
                 id="profileUsername"
                 class="profile-username"
@@ -127,16 +116,16 @@
             </div>
 
 
-            <!-- USER ID -->
+            <!-- User ID -->
             <div
                 id="profileUserId"
                 class="profile-user-id"
             >
-                User ID
+                user_id
             </div>
 
 
-            <!-- CONNECTION STATUS -->
+            <!-- Connection Status -->
             <div
                 id="connectionStatus"
                 class="connection-status hidden"
@@ -145,67 +134,54 @@
             </div>
 
 
-            <!-- BIO -->
-            <div class="bio-section">
+            <!-- ================= BIO ================= -->
+            <section class="bio-section">
 
-                <h2>Bio</h2>
+                <h2 class="section-title">
+                    Bio
+                </h2>
 
-                <p id="profileBio">
+                <p
+                    id="profileBio"
+                    class="profile-bio"
+                >
                     No bio available.
                 </p>
 
-            </div>
 
+                <!-- Category inside Bio -->
+                <div class="bio-category">
 
-            <!-- PROFILE INFORMATION -->
-            <div class="profile-info">
-
-                <div class="info-row">
-
-                    <span class="info-label">
-                        Connection
-                    </span>
-
-                    <span
-                        id="connectionType"
-                        class="info-value"
-                    >
-                        Connected
-                    </span>
-
-                </div>
-
-
-                <div class="info-row">
-
-                    <span class="info-label">
+                    <span class="bio-category-label">
                         Category
                     </span>
 
                     <span
                         id="personalCategory"
-                        class="info-value"
+                        class="bio-category-value"
                     >
                         —
                     </span>
 
                 </div>
 
-            </div>
+            </section>
 
 
-            <!-- USER CONTENT -->
-            <section class="user-content-section">
+            <!-- ================= POSTS ================= -->
+            <section class="posts-section">
 
-                <h2>
+                <h2 class="section-title">
                     Posts
                 </h2>
 
                 <div
-                    id="emptyPosts"
-                    class="empty-content"
+                    id="postsContainer"
+                    class="posts-container"
                 >
-                    No posts yet.
+                    <div class="empty-posts">
+                        No posts yet.
+                    </div>
                 </div>
 
             </section>
@@ -215,7 +191,10 @@
     </main>
 
 
-    <script src="/static/js/profile.js?v=4"></script>
+    <script
+        src="/static/js/profile.js?v=6"
+        defer
+    ></script>
 
 </body>
 </html>
