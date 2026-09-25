@@ -49,10 +49,13 @@ body {
     width: 100%;
     height: 56px;
 
-    display: flex;
+    display: grid;
+
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+
     align-items: center;
 
-    padding: 0 14px;
+    padding: 0 10px;
 
     background: #05070b;
 
@@ -60,8 +63,14 @@ body {
 
     position: sticky;
     top: 0;
+
     z-index: 100;
 }
+
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
 
 .back-button {
     width: 36px;
@@ -90,20 +99,159 @@ body {
     opacity: 0.6;
 }
 
-.profile-header-title {
-    flex: 1;
 
-    text-align: center;
+/* =========================================================
+   HEADER NAME
+   ========================================================= */
+
+.profile-header-title {
+    min-width: 0;
+
+    padding: 0 8px;
 
     color: #eef2f7;
 
     font-size: 17px;
     font-weight: 600;
+
+    line-height: 22px;
+
+    text-align: center;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
-.header-space {
+
+/* =========================================================
+   MENU WRAPPER
+   ========================================================= */
+
+.profile-menu-wrapper {
+    width: 44px;
+    height: 56px;
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+
+/* =========================================================
+   THREE DOT BUTTON
+   ========================================================= */
+
+.profile-menu-button {
     width: 36px;
     height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    background: transparent;
+
+    color: #e6ebf2;
+
+    font-size: 27px;
+    font-weight: 500;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+.profile-menu-button:active {
+    opacity: 0.6;
+}
+
+
+/* =========================================================
+   SMALL POPUP MENU
+   ========================================================= */
+
+.profile-menu {
+    position: absolute;
+
+    top: 48px;
+    right: 0;
+
+    width: 155px;
+
+    padding: 5px 0;
+
+    background: #10151d;
+
+    border: 1px solid #202a36;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.45);
+
+    z-index: 300;
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   HIDDEN
+   ========================================================= */
+
+.profile-menu.hidden {
+    display: none;
+}
+
+
+/* =========================================================
+   MENU ITEM
+   ========================================================= */
+
+.profile-menu-item {
+    width: 100%;
+
+    min-height: 42px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 15px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #e5ebf2;
+
+    font-family: inherit;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    line-height: 20px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+.profile-menu-item:hover {
+    background: #171e28;
+}
+
+.profile-menu-item:active {
+    background: #1c2530;
 }
 
 
@@ -167,26 +315,6 @@ body {
     object-fit: cover;
 
     border-radius: 50%;
-}
-
-
-/* =========================================================
-   NAME
-   ========================================================= */
-
-.profile-name {
-    width: 100%;
-
-    color: #eef2f7;
-
-    font-size: 22px;
-    font-weight: 700;
-
-    line-height: 28px;
-
-    text-align: center;
-
-    word-break: break-word;
 }
 
 
@@ -405,7 +533,7 @@ body {
 
 
 /* =========================================================
-   LOADING
+   LOADING / ERROR
    ========================================================= */
 
 .profile-loading {
@@ -426,7 +554,9 @@ body {
     .profile-header {
         height: 53px;
 
-        padding: 0 10px;
+        grid-template-columns: 40px minmax(0, 1fr) 40px;
+
+        padding: 0 7px;
     }
 
     .profile-content {
@@ -440,11 +570,6 @@ body {
         font-size: 27px;
     }
 
-    .profile-name {
-        font-size: 20px;
-        line-height: 26px;
-    }
-
     .profile-username {
         font-size: 13px;
     }
@@ -453,6 +578,10 @@ body {
     .profile-info,
     .empty-content {
         border-radius: 11px;
+    }
+
+    .profile-menu {
+        width: 145px;
     }
 }
 
@@ -473,11 +602,6 @@ body {
         height: 108px;
 
         font-size: 34px;
-    }
-
-    .profile-name {
-        font-size: 24px;
-        line-height: 31px;
     }
 }
 
