@@ -12,7 +12,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/profile.css?v=3"
+        href="/static/css/profile.css?v=4"
     >
 </head>
 
@@ -32,7 +32,7 @@
                 ←
             </button>
 
-            <!-- USER NAME ONLY -->
+
             <div
                 id="profileHeaderTitle"
                 class="profile-header-title"
@@ -40,7 +40,64 @@
                 Loading...
             </div>
 
-            <div class="header-space"></div>
+
+            <div class="profile-menu-wrapper">
+
+                <button
+                    id="profileMenuButton"
+                    class="profile-menu-button"
+                    type="button"
+                    aria-label="More options"
+                    aria-expanded="false"
+                >
+                    ⋮
+                </button>
+
+
+                <!-- SMALL POPUP MENU -->
+                <div
+                    id="profileMenu"
+                    class="profile-menu hidden"
+                >
+
+                    <button
+                        id="blockButton"
+                        class="profile-menu-item"
+                        type="button"
+                    >
+                        Block
+                    </button>
+
+
+                    <button
+                        id="shareButton"
+                        class="profile-menu-item"
+                        type="button"
+                    >
+                        Share
+                    </button>
+
+
+                    <button
+                        id="qrButton"
+                        class="profile-menu-item"
+                        type="button"
+                    >
+                        QR Code
+                    </button>
+
+
+                    <button
+                        id="reportButton"
+                        class="profile-menu-item"
+                        type="button"
+                    >
+                        Report
+                    </button>
+
+                </div>
+
+            </div>
 
         </header>
 
@@ -158,7 +215,7 @@
     </main>
 
 
-    <script src="/static/js/profile.js?v=3"></script>
+    <script src="/static/js/profile.js?v=4"></script>
 
 </body>
 </html>
