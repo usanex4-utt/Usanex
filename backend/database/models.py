@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer, String, Text
 from .database import Base
 
 
@@ -400,5 +400,91 @@ class UserConnectionCategory(Base):
 
     updated_at = Column(
         DateTime,
+        nullable=False
+    )
+
+
+# =========================================================
+# USER FOLLOWS
+# =========================================================
+
+class UserFollow(Base):
+    __tablename__ = "user_follows"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    follower_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    following_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+
+# =========================================================
+# POSTS
+# =========================================================
+#
+# IMPORTANT:
+# Reels, photos and normal public posts
+# are all stored in this ONE posts table.
+#
+# media_type examples:
+#   text
+#   image
+#   video
+#   reel
+#
+# Saved and Private content are handled separately
+# and are NOT counted as public posts.
+# =========================================================
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    content = Column(
+        Text,
+        nullable=True
+    )
+
+    media_url = Column(
+        String(500),
+        nullable=True
+    )
+
+    media_type = Column(
+        String(30),
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
         nullable=False
     )
