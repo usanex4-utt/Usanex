@@ -45,11 +45,14 @@ const profileUserId =
 const connectionStatus =
     document.getElementById("connectionStatus");
 
+const connectionStatusText =
+    document.getElementById("connectionStatusText");
+
+const connectionCategory =
+    document.getElementById("connectionCategory");
+
 const profileBio =
     document.getElementById("profileBio");
-
-const personalCategory =
-    document.getElementById("personalCategory");
 
 
 /* =========================================================
@@ -57,7 +60,9 @@ const personalCategory =
    ========================================================= */
 
 const params =
-    new URLSearchParams(window.location.search);
+    new URLSearchParams(
+        window.location.search
+    );
 
 const targetUserId =
     params.get("user_id");
@@ -66,15 +71,6 @@ const targetUserId =
 /* =========================================================
    HELPERS
    ========================================================= */
-
-function escapeText(value) {
-    if (value === null || value === undefined) {
-        return "";
-    }
-
-    return String(value);
-}
-
 
 function getProfilePhoto(photo) {
 
@@ -164,7 +160,7 @@ document.addEventListener(
 
 
 /* =========================================================
-   BACK BUTTON
+   BACK
    ========================================================= */
 
 if (backButton) {
@@ -174,12 +170,40 @@ if (backButton) {
         function () {
 
             if (window.history.length > 1) {
+
                 window.history.back();
+
             } else {
-                window.location.href = "/home";
+
+                window.location.href =
+                    "/home";
             }
         }
     );
+}
+
+
+/* =========================================================
+   CATEGORY NORMALIZATION
+   ========================================================= */
+
+function getCategory(profile) {
+
+    if (!profile) {
+        return "";
+    }
+
+
+    const category =
+        profile.personal_category ||
+        profile.category ||
+        profile.connection_category ||
+        "";
+
+
+    return String(category)
+        .trim()
+        .toLowerCase();
 }
 
 
@@ -193,15 +217,37 @@ function renderConnectionStatus(profile) {
         return;
     }
 
-    connectionStatus.classList.add("hidden");
-    connectionStatus.textContent = "";
+
+    connectionStatus.classList.add(
+        "hidden"
+    );
+
+
+    if (connectionStatusText) {
+
+        connectionStatusText.textContent =
+            "Connected";
+    }
+
+
+    if (connectionCategory) {
+
+        connectionCategory.textContent = "";
+
+        connectionCategory.classList.add(
+            "hidden"
+        );
+    }
+
 
     if (!profile) {
         return;
     }
 
 
-    if (profile.is_self) {
+    /* Own profile */
+
+    if (profile.is_self === true) {
         return;
     }
 
@@ -209,15 +255,45 @@ function renderConnectionStatus(profile) {
     const status =
         String(
             profile.connection_status || ""
-        ).toLowerCase();
+        )
+        .trim()
+        .toLowerCase();
 
 
-    if (status === "connected") {
+    const isConnected =
+        status === "connected" ||
+        profile.is_connected === true;
 
-        connectionStatus.textContent =
-            "Connected";
 
-        connectionStatus.classList.remove(
+    if (!isConnected) {
+        return;
+    }
+
+
+    /* Show Connected */
+
+    connectionStatus.classList.remove(
+        "hidden"
+    );
+
+
+    /* Category */
+
+    const category =
+        getCategory(profile);
+
+
+    if (!connectionCategory) {
+        return;
+    }
+
+
+    if (category === "friend") {
+
+        connectionCategory.textContent =
+            "Friends";
+
+        connectionCategory.classList.remove(
             "hidden"
         );
 
@@ -225,95 +301,37 @@ function renderConnectionStatus(profile) {
     }
 
 
-    if (profile.is_connected === true) {
+    if (category === "family") {
 
-        connectionStatus.textContent =
-            "Connected";
-
-        connectionStatus.classList.remove(
-            "hidden"
-        );
-    }
-}
-
-
-/* =========================================================
-   PERSONAL CATEGORY
-   ========================================================= */
-
-function renderPersonalCategory(profile) {
-
-    if (!personalCategory) {
-        return;
-    }
-
-    let category = null;
-
-
-    if (
-        profile &&
-        profile.personal_category
-    ) {
-        category =
-            profile.personal_category;
-    }
-
-
-    if (
-        !category &&
-        profile &&
-        profile.category
-    ) {
-        category =
-            profile.category;
-    }
-
-
-    if (
-        !category &&
-        profile &&
-        profile.connection_category
-    ) {
-        category =
-            profile.connection_category;
-    }
-
-
-    if (!category) {
-
-        personalCategory.textContent =
-            "—";
-
-        return;
-    }
-
-
-    const normalized =
-        String(category)
-            .trim()
-            .toLowerCase();
-
-
-    if (normalized === "friend") {
-
-        personalCategory.textContent =
-            "Friend";
-
-        return;
-    }
-
-
-    if (normalized === "family") {
-
-        personalCategory.textContent =
+        connectionCategory.textContent =
             "Family";
 
+        connectionCategory.classList.remove(
+            "hidden"
+        );
+
         return;
     }
 
 
-    personalCategory.textContent =
-        category;
+    if (category === "couple") {
+
+        connectionCategory.textContent =
+            "Couple";
+
+        connectionCategory.classList.remove(
+            "hidden"
+        );
+
+        return;
+    }
+
+
+    /*
+       No category = All Connected
+
+       Only "Connected" remains visible.
+    */
 }
 
 
@@ -326,6 +344,7 @@ function renderProfilePhoto(profile) {
     if (!profilePhoto) {
         return;
     }
+
 
     profilePhoto.src =
         getProfilePhoto(
@@ -355,14 +374,13 @@ function renderProfile(profile) {
     }
 
 
-    /* Header name */
+    /* Header Name */
 
     if (profileHeaderTitle) {
 
         profileHeaderTitle.textContent =
-            escapeText(
-                profile.name || "Profile"
-            );
+            profile.name ||
+            "Profile";
     }
 
 
@@ -373,10 +391,17 @@ function renderProfile(profile) {
         const username =
             profile.username || "";
 
-        profileUsername.textContent =
-            username
-                ? `@${username}`
-                : "@username";
+
+        if (username) {
+
+            profileUsername.textContent =
+                `@${username}`;
+
+        } else {
+
+            profileUsername.textContent =
+                "@username";
+        }
     }
 
 
@@ -385,9 +410,7 @@ function renderProfile(profile) {
     if (profileUserId) {
 
         profileUserId.textContent =
-            escapeText(
-                profile.user_id || ""
-            );
+            profile.user_id || "";
     }
 
 
@@ -396,7 +419,7 @@ function renderProfile(profile) {
     renderProfilePhoto(profile);
 
 
-    /* Connection */
+    /* Connected + Category */
 
     renderConnectionStatus(profile);
 
@@ -407,6 +430,7 @@ function renderProfile(profile) {
 
         const bio =
             profile.bio;
+
 
         if (
             bio !== null &&
@@ -423,11 +447,6 @@ function renderProfile(profile) {
                 "No bio available.";
         }
     }
-
-
-    /* Category */
-
-    renderPersonalCategory(profile);
 }
 
 
@@ -460,7 +479,7 @@ async function shareProfile() {
     closeProfileMenu();
 
 
-    /* Native share */
+    /* Native mobile share */
 
     if (
         navigator.share &&
@@ -489,7 +508,7 @@ async function shareProfile() {
     }
 
 
-    /* Clipboard fallback */
+    /* Clipboard */
 
     if (
         navigator.clipboard &&
@@ -509,7 +528,7 @@ async function shareProfile() {
             return;
 
         } catch (error) {
-            // Continue to final fallback.
+            // Continue to fallback.
         }
     }
 
@@ -598,14 +617,18 @@ async function loadProfile() {
     if (!targetUserId) {
 
         if (profileHeaderTitle) {
+
             profileHeaderTitle.textContent =
                 "Profile";
         }
 
+
         if (profileBio) {
+
             profileBio.textContent =
                 "Profile not found.";
         }
+
 
         return;
     }
@@ -618,13 +641,18 @@ async function loadProfile() {
                 `/api/profile/${encodeURIComponent(targetUserId)}`,
                 {
                     method: "GET",
+
                     credentials: "include",
+
                     headers: {
-                        "Accept": "application/json"
+                        "Accept":
+                            "application/json"
                     }
                 }
             );
 
+
+        /* Login required */
 
         if (response.status === 401) {
 
@@ -635,39 +663,52 @@ async function loadProfile() {
         }
 
 
+        /* Profile unavailable */
+
         if (response.status === 403) {
 
             if (profileHeaderTitle) {
+
                 profileHeaderTitle.textContent =
                     "Profile";
             }
 
+
             if (profileBio) {
+
                 profileBio.textContent =
                     "This profile is not available.";
             }
+
 
             return;
         }
 
 
+        /* Not found */
+
         if (response.status === 404) {
 
             if (profileHeaderTitle) {
+
                 profileHeaderTitle.textContent =
                     "Profile";
             }
 
+
             if (profileBio) {
+
                 profileBio.textContent =
                     "Profile not found.";
             }
+
 
             return;
         }
 
 
         if (!response.ok) {
+
             throw new Error(
                 `Profile request failed: ${response.status}`
             );
@@ -683,6 +724,7 @@ async function loadProfile() {
             data.ok !== true ||
             !data.profile
         ) {
+
             throw new Error(
                 "Invalid profile response."
             );
