@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Profile - Usanex</title>
+
+    <link rel="stylesheet" href="/static/css/my-profile.css?v=1">
+</head>
+
+<body>
+
+<main class="my-profile-page">
+
+    <!-- =====================================================
+         PROFILE HEADER
+         ===================================================== -->
+    <header class="my-profile-header">
+
+        <button
+            id="profileAddButton"
+            class="header-button"
+            type="button"
+            aria-label="Profile actions"
+        >
+            +
+        </button>
+
+        <div id="profileName" class="profile-header-name">
+            Loading...
+        </div>
+
+        <div class="profile-menu-wrapper">
+
+            <button
+                id="profileMenuButton"
+                class="header-button"
+                type="button"
+                aria-label="Profile menu"
+            >
+                ⋮
+            </button>
+
+            <!-- Profile menu -->
+            <div id="profileMenu" class="profile-menu hidden">
+
+                <button
+                    id="editProfileButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Edit Profile
+                </button>
+
+                <button
+                    id="privacyButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Privacy
+                </button>
+
+                <button
+                    id="securityButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Security
+                </button>
+
+                <button
+                    id="blockedUsersButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Blocked Users
+                </button>
+
+                <button
+                    id="accountButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Account
+                </button>
+
+                <button
+                    id="helpButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    Help
+                </button>
+
+                <button
+                    id="aboutButton"
+                    class="profile-menu-item"
+                    type="button"
+                >
+                    About Usanex
+                </button>
+
+                <button
+                    id="logoutButton"
+                    class="profile-menu-item logout-item"
+                    type="button"
+                >
+                    Logout
+                </button>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         PROFILE CONTENT
+         ===================================================== -->
+    <section class="my-profile-content">
+
+        <!-- Profile top -->
+        <section class="profile-top-section">
+
+            <!-- Profile photo -->
+            <div class="profile-photo-area">
+
+                <button
+                    id="profilePhotoButton"
+                    class="profile-photo-button"
+                    type="button"
+                    aria-label="View profile photo"
+                >
+
+                    <img
+                        id="profilePhoto"
+                        class="profile-photo"
+                        src="/static/images/default-profile.png"
+                        alt="Profile photo"
+                    >
+
+                </button>
+
+            </div>
+
+
+            <!-- User information -->
+            <div class="profile-user-information">
+
+                <h1 id="profileDisplayName">
+                    Loading...
+                </h1>
+
+                <div
+                    id="profileUsername"
+                    class="profile-username"
+                >
+                    @username
+                </div>
+
+                <div
+                    id="profileUserId"
+                    class="profile-user-id"
+                >
+                    u_xxxxxxxx
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PROFILE STATS
+             ================================================= -->
+        <section class="profile-stats">
+
+            <button
+                class="profile-stat"
+                id="followersStat"
+                type="button"
+            >
+                <span
+                    id="followersCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </span>
+
+                <span class="profile-stat-label">
+                    Followers
+                </span>
+            </button>
+
+
+            <button
+                class="profile-stat"
+                id="connectedStat"
+                type="button"
+            >
+                <span
+                    id="connectedCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </span>
+
+                <span class="profile-stat-label">
+                    Connected
+                </span>
+            </button>
+
+
+            <button
+                class="profile-stat"
+                id="followingStat"
+                type="button"
+            >
+                <span
+                    id="followingCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </span>
+
+                <span class="profile-stat-label">
+                    Following
+                </span>
+            </button>
+
+
+            <button
+                class="profile-stat"
+                id="postsStat"
+                class="profile-stat"
+                type="button"
+            >
+                <span
+                    id="postsCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </span>
+
+                <span class="profile-stat-label">
+                    Posts
+                </span>
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
+             BIO
+             ================================================= -->
+        <section class="profile-bio-section">
+
+            <h2 class="section-title">
+                Bio
+            </h2>
+
+            <p
+                id="profileBio"
+                class="profile-bio"
+            >
+                No bio available.
+            </p>
+
+
+            <!-- Links -->
+            <div
+                id="profileLinks"
+                class="profile-links hidden"
+            >
+                <!-- Links will be inserted by JavaScript -->
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PROFILE CONTENT TABS
+             ================================================= -->
+        <section class="profile-content-section">
+
+            <nav
+                class="profile-content-tabs"
+                aria-label="Profile content"
+            >
+
+                <button
+                    id="reelsTab"
+                    class="profile-content-tab active"
+                    type="button"
+                    data-tab="reels"
+                >
+                    Reels
+                </button>
+
+
+                <button
+                    id="photosTab"
+                    class="profile-content-tab"
+                    type="button"
+                    data-tab="photos"
+                >
+                    Photos
+                </button>
+
+
+                <button
+                    id="savedTab"
+                    class="profile-content-tab"
+                    type="button"
+                    data-tab="saved"
+                >
+                    Saved
+                </button>
+
+
+                <button
+                    id="privateTab"
+                    class="profile-content-tab"
+                    type="button"
+                    data-tab="private"
+                >
+                    Private
+                </button>
+
+            </nav>
+
+
+            <!-- Content -->
+            <div
+                id="profileContentContainer"
+                class="profile-content-container"
+            >
+
+                <div class="empty-content">
+                    No reels yet.
+                </div>
+
+            </div>
+
+        </section>
+
+    </section>
+
+
+    <!-- =====================================================
+         PROFILE PHOTO VIEWER
+         ===================================================== -->
+    <div
+        id="profilePhotoViewer"
+        class="profile-photo-viewer hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Profile photo viewer"
+    >
+
+        <button
+            id="closePhotoViewer"
+            class="viewer-close-button"
+            type="button"
+            aria-label="Close"
+        >
+            ×
+        </button>
+
+        <img
+            id="viewerPhoto"
+            class="viewer-photo"
+            src=""
+            alt="Profile photo"
+        >
+
+    </div>
+
+
+    <!-- =====================================================
+         EDIT PROFILE MODAL
+         ===================================================== -->
+    <div
+        id="editProfileModal"
+        class="modal-overlay hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit profile"
+    >
+
+        <div class="modal-card">
+
+            <div class="modal-header">
+
+                <h2>
+                    Edit Profile
+                </h2>
+
+                <button
+                    id="closeEditProfile"
+                    class="modal-close-button"
+                    type="button"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <!-- Profile photo change -->
+            <section class="edit-photo-section">
+
+                <img
+                    id="editProfilePhotoPreview"
+                    class="edit-profile-photo"
+                    src="/static/images/default-profile.png"
+                    alt="Profile photo"
+                >
+
+                <button
+                    id="changeProfilePhotoButton"
+                    class="secondary-button"
+                    type="button"
+                >
+                    Change Profile Photo
+                </button>
+
+                <input
+                    id="profilePhotoInput"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                >
+
+            </section>
+
+
+            <!-- Name -->
+            <label
+                class="form-label"
+                for="editName"
+            >
+                Name
+            </label>
+
+            <input
+                id="editName"
+                class="form-input"
+                type="text"
+                maxlength="100"
+                autocomplete="name"
+                placeholder="Your name"
+            >
+
+
+            <!-- Username locked -->
+            <label
+                class="form-label"
+                for="editUsername"
+            >
+                Username
+            </label>
+
+            <input
+                id="editUsername"
+                class="form-input locked-input"
+                type="text"
+                readonly
+            >
+
+            <div class="locked-message">
+                Username cannot be changed.
+            </div>
+
+
+            <!-- User ID locked -->
+            <label
+                class="form-label"
+                for="editUserId"
+            >
+                User ID
+            </label>
+
+            <input
+                id="editUserId"
+                class="form-input locked-input"
+                type="text"
+                readonly
+            >
+
+            <div class="locked-message">
+                User ID cannot be changed.
+            </div>
+
+
+            <!-- Bio -->
+            <label
+                class="form-label"
+                for="editBio"
+            >
+                Bio
+            </label>
+
+            <textarea
+                id="editBio"
+                class="form-textarea"
+                maxlength="160"
+                rows="4"
+                placeholder="Write something about yourself..."
+            ></textarea>
+
+
+            <!-- Website -->
+            <label
+                class="form-label"
+                for="editWebsite"
+            >
+                Website
+            </label>
+
+            <input
+                id="editWebsite"
+                class="form-input"
+                type="url"
+                maxlength="500"
+                placeholder="https://example.com"
+            >
+
+
+            <!-- Instagram -->
+            <label
+                class="form-label"
+                for="editInstagram"
+            >
+                Instagram
+            </label>
+
+            <input
+                id="editInstagram"
+                class="form-input"
+                type="url"
+                maxlength="500"
+                placeholder="Instagram profile link"
+            >
+
+
+            <!-- Other social link -->
+            <label
+                class="form-label"
+                for="editSocialLink"
+            >
+                Social Link
+            </label>
+
+            <input
+                id="editSocialLink"
+                class="form-input"
+                type="url"
+                maxlength="500"
+                placeholder="Other social profile link"
+            >
+
+
+            <!-- Save -->
+            <button
+                id="saveProfileButton"
+                class="primary-button"
+                type="button"
+            >
+                Save Changes
+            </button>
+
+
+            <div
+                id="editProfileMessage"
+                class="form-message"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+         ===================================================== -->
+    <nav
+        class="bottom-navigation"
+        aria-label="Main navigation"
+    >
+
+        <button
+            id="navHome"
+            class="bottom-nav-item"
+            type="button"
+        >
+            <span class="bottom-nav-icon">⌂</span>
+            <span class="bottom-nav-label">Home</span>
+        </button>
+
+
+        <button
+            id="navReels"
+            class="bottom-nav-item"
+            type="button"
+        >
+            <span class="bottom-nav-icon">▶</span>
+            <span class="bottom-nav-label">Reels</span>
+        </button>
+
+
+        <button
+            id="navSearch"
+            class="bottom-nav-item"
+            type="button"
+        >
+            <span class="bottom-nav-icon">⌕</span>
+            <span class="bottom-nav-label">Search</span>
+        </button>
+
+
+        <button
+            id="navNotifications"
+            class="bottom-nav-item"
+            type="button"
+        >
+            <span class="bottom-nav-icon notification-icon-wrapper">
+                ♡
+                <span
+                    id="notificationBadge"
+                    class="notification-badge hidden"
+                >
+                    0
+                </span>
+            </span>
+
+            <span class="bottom-nav-label">
+                Notifications
+            </span>
+        </button>
+
+
+        <button
+            id="navProfile"
+            class="bottom-nav-item active"
+            type="button"
+        >
+            <span class="bottom-nav-icon">●</span>
+            <span class="bottom-nav-label">Profile</span>
+        </button>
+
+    </nav>
+
+</main>
+
+
+<script src="/static/js/my-profile.js?v=1" defer></script>
+
+</body>
+</html>
