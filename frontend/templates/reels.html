@@ -223,9 +223,7 @@
 
                         <path d="M7 10l5 5 5-5"></path>
 
-                        <path
-                            d="M5 21h14"
-                        ></path>
+                        <path d="M5 21h14"></path>
                     </svg>
 
                     <span>
@@ -381,12 +379,15 @@
 
     <nav class="bottom-nav">
 
+        <!-- HOME -->
+
         <button
             type="button"
             class="nav-item"
             id="homeNav"
             aria-label="Home"
         >
+
             <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -400,8 +401,11 @@
             <span>
                 Home
             </span>
+
         </button>
 
+
+        <!-- REEL -->
 
         <button
             type="button"
@@ -409,6 +413,7 @@
             id="reelNav"
             aria-label="Reel"
         >
+
             <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -431,8 +436,11 @@
             <span>
                 Reel
             </span>
+
         </button>
 
+
+        <!-- SEARCH -->
 
         <button
             type="button"
@@ -440,6 +448,7 @@
             id="searchNav"
             aria-label="Search"
         >
+
             <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -458,8 +467,11 @@
             <span>
                 Search
             </span>
+
         </button>
 
+
+        <!-- NOTIFICATION -->
 
         <button
             type="button"
@@ -467,6 +479,7 @@
             id="notificationNav"
             aria-label="Notification"
         >
+
             <span class="notification-icon-wrapper">
 
                 <svg
@@ -480,10 +493,12 @@
                     ></path>
 
                     <path d="M10 21h4"></path>
+
                 </svg>
 
                 <span
                     class="notification-dot"
+                    id="notificationDot"
                     hidden
                 ></span>
 
@@ -492,8 +507,11 @@
             <span>
                 Notification
             </span>
+
         </button>
 
+
+        <!-- PROFILE -->
 
         <button
             type="button"
@@ -501,6 +519,7 @@
             id="profileNav"
             aria-label="Profile"
         >
+
             <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -516,11 +535,13 @@
                 <path
                     d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
                 ></path>
+
             </svg>
 
             <span>
                 Profile
             </span>
+
         </button>
 
     </nav>
@@ -529,6 +550,97 @@
 
 
 <script src="/static/js/reels.js?v=2"></script>
+
+
+<!-- =====================================================
+     REELS PAGE NAVIGATION
+     Profile ALWAYS opens My Profile
+====================================================== -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const homeNav =
+        document.getElementById("homeNav");
+
+    const reelNav =
+        document.getElementById("reelNav");
+
+    const searchNav =
+        document.getElementById("searchNav");
+
+    const notificationNav =
+        document.getElementById("notificationNav");
+
+    const profileNav =
+        document.getElementById("profileNav");
+
+
+    if (homeNav) {
+
+        homeNav.addEventListener("click", () => {
+
+            window.location.href = "/home";
+
+        });
+
+    }
+
+
+    if (reelNav) {
+
+        reelNav.addEventListener("click", () => {
+
+            window.location.href = "/reels";
+
+        });
+
+    }
+
+
+    if (searchNav) {
+
+        searchNav.addEventListener("click", () => {
+
+            window.location.href = "/search";
+
+        });
+
+    }
+
+
+    if (notificationNav) {
+
+        notificationNav.addEventListener("click", () => {
+
+            window.location.href = "/notifications";
+
+        });
+
+    }
+
+
+    /*
+    =========================================================
+       PROFILE
+       ALWAYS → MY PROFILE
+    =========================================================
+    */
+
+    if (profileNav) {
+
+        profileNav.addEventListener("click", () => {
+
+            window.location.href = "/my-profile";
+
+        });
+
+    }
+
+});
+
+</script>
 
 </body>
 </html>
