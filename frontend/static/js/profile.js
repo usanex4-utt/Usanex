@@ -1,337 +1,190 @@
+"use strict";
+
 /* =========================================================
    USANEX PROFILE
    ========================================================= */
-
-"use strict";
 
 
 /* =========================================================
    DOM
    ========================================================= */
 
-const backButton =
-    document.getElementById("backButton");
+const backButton = document.getElementById("backButton");
+const profileHeaderTitle = document.getElementById("profileHeaderTitle");
 
-const profileHeaderTitle =
-    document.getElementById("profileHeaderTitle");
+const profileMenuButton = document.getElementById("profileMenuButton");
+const profileMenu = document.getElementById("profileMenu");
 
-const profileMenuButton =
-    document.getElementById("profileMenuButton");
+const blockButton = document.getElementById("blockButton");
+const shareButton = document.getElementById("shareButton");
+const qrButton = document.getElementById("qrButton");
+const reportButton = document.getElementById("reportButton");
 
-const profileMenu =
-    document.getElementById("profileMenu");
+const profileContent = document.getElementById("profileContent");
 
-const blockButton =
-    document.getElementById("blockButton");
+const profileError = document.getElementById("profileError");
+const profileErrorMessage = document.getElementById("profileErrorMessage");
+const profileErrorBack = document.getElementById("profileErrorBack");
 
-const shareButton =
-    document.getElementById("shareButton");
+const profilePhoto = document.getElementById("profilePhoto");
+const profileUsername = document.getElementById("profileUsername");
+const profileUserId = document.getElementById("profileUserId");
+const profileBio = document.getElementById("profileBio");
 
-const qrButton =
-    document.getElementById("qrButton");
+const followersCount = document.getElementById("followersCount");
+const connectedCount = document.getElementById("connectedCount");
+const followingCount = document.getElementById("followingCount");
+const postsCount = document.getElementById("postsCount");
 
-const reportButton =
-    document.getElementById("reportButton");
+const reelsTab = document.getElementById("reelsTab");
+const photosTab = document.getElementById("photosTab");
 
-const profilePhoto =
-    document.getElementById("profilePhoto");
-
-const profileUsername =
-    document.getElementById("profileUsername");
-
-const profileUserId =
-    document.getElementById("profileUserId");
-
-const connectionStatus =
-    document.getElementById("connectionStatus");
-
-const connectionStatusText =
-    document.getElementById("connectionStatusText");
-
-const connectionCategory =
-    document.getElementById("connectionCategory");
-
-const profileBio =
-    document.getElementById("profileBio");
+const postsContainer = document.getElementById("postsContainer");
 
 
 /* =========================================================
-   URL
+   CONSTANTS
    ========================================================= */
 
-const params =
-    new URLSearchParams(
-        window.location.search
+const DEFAULT_PROFILE_IMAGE =
+    "/static/images/default-profile.png";
+
+const DEFAULT_BIO =
+    "No bio available.";
+
+
+/* =========================================================
+   STATE
+   ========================================================= */
+
+let profileData = null;
+let currentTab = "reels";
+
+
+/* =========================================================
+   GET USER ID
+   ========================================================= */
+
+function getTargetUserIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+
+    return params.get("user_id");
+}
+
+
+/* =========================================================
+   API REQUEST
+   ========================================================= */
+
+async function apiRequest(url, options = {}) {
+    const response = await fetch(url, {
+        credentials: "include",
+        ...options,
+        headers: {
+            "Accept": "application/json",
+            ...(options.headers || {})
+        }
+    });
+
+    let data = null;
+
+    try {
+        data = await response.json();
+    } catch (error) {
+        data = null;
+    }
+
+    return {
+        response,
+        data
+    };
+}
+
+
+/* =========================================================
+   GET CURRENT USER
+   ========================================================= */
+
+async function getCurrentUser() {
+    const result = await apiRequest(
+        "/api/auth/me"
     );
 
-const targetUserId =
-    params.get("user_id");
-
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-function getProfilePhoto(photo) {
-
-    if (!photo) {
-        return "/static/images/default-profile.png";
+    if (!result.response.ok) {
+        return null;
     }
 
-    return photo;
+    return result.data;
 }
 
 
 /* =========================================================
-   MENU
+   SHOW ERROR
    ========================================================= */
 
-function openProfileMenu() {
-
-    if (!profileMenu) {
-        return;
+function showError(message) {
+    if (profileContent) {
+        profileContent.classList.add("hidden");
     }
 
-    profileMenu.classList.remove("hidden");
-}
-
-
-function closeProfileMenu() {
-
-    if (!profileMenu) {
-        return;
+    if (profileError) {
+        profileError.classList.remove("hidden");
     }
 
-    profileMenu.classList.add("hidden");
-}
-
-
-function toggleProfileMenu() {
-
-    if (!profileMenu) {
-        return;
+    if (profileErrorMessage) {
+        profileErrorMessage.textContent =
+            message || "Unable to open profile.";
     }
-
-    profileMenu.classList.toggle("hidden");
-}
-
-
-if (profileMenuButton) {
-
-    profileMenuButton.addEventListener(
-        "click",
-        function (event) {
-
-            event.stopPropagation();
-
-            toggleProfileMenu();
-        }
-    );
-}
-
-
-document.addEventListener(
-    "click",
-    function (event) {
-
-        if (!profileMenu) {
-            return;
-        }
-
-        if (
-            !profileMenu.contains(event.target) &&
-            !profileMenuButton.contains(event.target)
-        ) {
-            closeProfileMenu();
-        }
-    }
-);
-
-
-document.addEventListener(
-    "keydown",
-    function (event) {
-
-        if (event.key === "Escape") {
-            closeProfileMenu();
-        }
-    }
-);
-
-
-/* =========================================================
-   BACK
-   ========================================================= */
-
-if (backButton) {
-
-    backButton.addEventListener(
-        "click",
-        function () {
-
-            if (window.history.length > 1) {
-
-                window.history.back();
-
-            } else {
-
-                window.location.href =
-                    "/home";
-            }
-        }
-    );
 }
 
 
 /* =========================================================
-   CATEGORY NORMALIZATION
+   HIDE ERROR
    ========================================================= */
 
-function getCategory(profile) {
-
-    if (!profile) {
-        return "";
+function hideError() {
+    if (profileError) {
+        profileError.classList.add("hidden");
     }
 
-
-    const category =
-        profile.personal_category ||
-        profile.category ||
-        profile.connection_category ||
-        "";
-
-
-    return String(category)
-        .trim()
-        .toLowerCase();
+    if (profileContent) {
+        profileContent.classList.remove("hidden");
+    }
 }
 
 
 /* =========================================================
-   CONNECTION STATUS
+   FORMAT NUMBER
    ========================================================= */
 
-function renderConnectionStatus(profile) {
+function formatCount(value) {
+    const number = Number(value);
 
-    if (!connectionStatus) {
-        return;
+    if (!Number.isFinite(number)) {
+        return "0";
     }
 
-
-    connectionStatus.classList.add(
-        "hidden"
-    );
-
-
-    if (connectionStatusText) {
-
-        connectionStatusText.textContent =
-            "Connected";
+    if (number < 1000) {
+        return String(number);
     }
 
+    if (number < 1000000) {
+        const result = number / 1000;
 
-    if (connectionCategory) {
-
-        connectionCategory.textContent = "";
-
-        connectionCategory.classList.add(
-            "hidden"
+        return (
+            result % 1 === 0
+                ? `${result}K`
+                : `${result.toFixed(1)}K`
         );
     }
 
+    const result = number / 1000000;
 
-    if (!profile) {
-        return;
-    }
-
-
-    /* Own profile */
-
-    if (profile.is_self === true) {
-        return;
-    }
-
-
-    const status =
-        String(
-            profile.connection_status || ""
-        )
-        .trim()
-        .toLowerCase();
-
-
-    const isConnected =
-        status === "connected" ||
-        profile.is_connected === true;
-
-
-    if (!isConnected) {
-        return;
-    }
-
-
-    /* Show Connected */
-
-    connectionStatus.classList.remove(
-        "hidden"
+    return (
+        result % 1 === 0
+            ? `${result}M`
+            : `${result.toFixed(1)}M`
     );
-
-
-    /* Category */
-
-    const category =
-        getCategory(profile);
-
-
-    if (!connectionCategory) {
-        return;
-    }
-
-
-    if (category === "friend") {
-
-        connectionCategory.textContent =
-            "Friends";
-
-        connectionCategory.classList.remove(
-            "hidden"
-        );
-
-        return;
-    }
-
-
-    if (category === "family") {
-
-        connectionCategory.textContent =
-            "Family";
-
-        connectionCategory.classList.remove(
-            "hidden"
-        );
-
-        return;
-    }
-
-
-    if (category === "couple") {
-
-        connectionCategory.textContent =
-            "Couple";
-
-        connectionCategory.classList.remove(
-            "hidden"
-        );
-
-        return;
-    }
-
-
-    /*
-       No category = All Connected
-
-       Only "Connected" remains visible.
-    */
 }
 
 
@@ -339,113 +192,672 @@ function renderConnectionStatus(profile) {
    PROFILE PHOTO
    ========================================================= */
 
-function renderProfilePhoto(profile) {
-
+function setProfilePhoto(photoUrl) {
     if (!profilePhoto) {
         return;
     }
 
+    if (
+        typeof photoUrl === "string" &&
+        photoUrl.trim() !== ""
+    ) {
+        profilePhoto.src = photoUrl;
+    } else {
+        profilePhoto.src = DEFAULT_PROFILE_IMAGE;
+    }
 
-    profilePhoto.src =
-        getProfilePhoto(
-            profile.profile_photo
-        );
-
-
-    profilePhoto.onerror =
-        function () {
-
-            profilePhoto.onerror = null;
-
-            profilePhoto.src =
-                "/static/images/default-profile.png";
-        };
+    profilePhoto.onerror = () => {
+        profilePhoto.onerror = null;
+        profilePhoto.src = DEFAULT_PROFILE_IMAGE;
+    };
 }
 
 
 /* =========================================================
-   RENDER PROFILE
+   RENDER BASIC PROFILE
    ========================================================= */
 
 function renderProfile(profile) {
-
     if (!profile) {
         return;
     }
 
+    const user = profile.user || {};
+    const stats = profile.stats || {};
 
-    /* Header Name */
+    /* -----------------------------------------
+       Header
+    ----------------------------------------- */
 
-    if (profileHeaderTitle) {
-
-        profileHeaderTitle.textContent =
-            profile.name ||
-            "Profile";
-    }
+    profileHeaderTitle.textContent =
+        user.name ||
+        user.username ||
+        "Profile";
 
 
-    /* Username */
+    /* -----------------------------------------
+       Username
+    ----------------------------------------- */
 
-    if (profileUsername) {
-
+    if (user.username) {
         const username =
-            profile.username || "";
+            String(user.username).startsWith("@")
+                ? user.username
+                : `@${user.username}`;
 
-
-        if (username) {
-
-            profileUsername.textContent =
-                `@${username}`;
-
-        } else {
-
-            profileUsername.textContent =
-                "@username";
-        }
+        profileUsername.textContent = username;
+    } else {
+        profileUsername.textContent = "@username";
     }
 
 
-    /* User ID */
+    /* -----------------------------------------
+       User ID
+    ----------------------------------------- */
 
-    if (profileUserId) {
+    profileUserId.textContent =
+        user.user_id ||
+        "user_id";
 
-        profileUserId.textContent =
-            profile.user_id || "";
+
+    /* -----------------------------------------
+       Profile Photo
+    ----------------------------------------- */
+
+    setProfilePhoto(
+        user.profile_photo
+    );
+
+
+    /* -----------------------------------------
+       Bio
+    ----------------------------------------- */
+
+    const bio =
+        typeof user.bio === "string"
+            ? user.bio.trim()
+            : "";
+
+    profileBio.textContent =
+        bio || DEFAULT_BIO;
+
+
+    /* -----------------------------------------
+       Stats
+    ----------------------------------------- */
+
+    followersCount.textContent =
+        formatCount(stats.followers);
+
+    connectedCount.textContent =
+        formatCount(stats.connected);
+
+    followingCount.textContent =
+        formatCount(stats.following);
+
+    postsCount.textContent =
+        formatCount(stats.posts);
+}
+
+
+/* =========================================================
+   NORMALIZE MEDIA TYPE
+   ========================================================= */
+
+function normalizeMediaType(post) {
+    if (!post) {
+        return "";
     }
 
-
-    /* Photo */
-
-    renderProfilePhoto(profile);
-
-
-    /* Connected + Category */
-
-    renderConnectionStatus(profile);
+    return String(
+        post.media_type || ""
+    )
+        .trim()
+        .toLowerCase();
+}
 
 
-    /* Bio */
+/* =========================================================
+   CHECK REEL
+   ========================================================= */
 
-    if (profileBio) {
+function isReel(post) {
+    const type = normalizeMediaType(post);
 
-        const bio =
-            profile.bio;
+    return (
+        type === "reel" ||
+        type === "video"
+    );
+}
 
 
-        if (
-            bio !== null &&
-            bio !== undefined &&
-            String(bio).trim() !== ""
-        ) {
+/* =========================================================
+   CHECK PHOTO
+   ========================================================= */
 
-            profileBio.textContent =
-                String(bio).trim();
+function isPhoto(post) {
+    const type = normalizeMediaType(post);
+
+    return type === "photo" ||
+        type === "image";
+}
+
+
+/* =========================================================
+   FILTER CONTENT
+   ========================================================= */
+
+function getFilteredPosts() {
+    if (!profileData) {
+        return [];
+    }
+
+    const content =
+        Array.isArray(profileData.content)
+            ? profileData.content
+            : [];
+
+    if (currentTab === "photos") {
+        return content.filter(isPhoto);
+    }
+
+    return content.filter(isReel);
+}
+
+
+/* =========================================================
+   EMPTY MESSAGE
+   ========================================================= */
+
+function getEmptyMessage() {
+    if (currentTab === "photos") {
+        return "No photos yet.";
+    }
+
+    return "No reels yet.";
+}
+
+
+/* =========================================================
+   CREATE POST ITEM
+   ========================================================= */
+
+function createPostItem(post) {
+    const item =
+        document.createElement("div");
+
+    item.className = "post-item";
+
+    item.dataset.postId =
+        post.id || "";
+
+
+    /* =====================================================
+       MEDIA
+    ===================================================== */
+
+    if (post.media_url) {
+
+        if (isReel(post)) {
+
+            const video =
+                document.createElement("video");
+
+            video.src = post.media_url;
+
+            video.muted = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+
+            item.appendChild(video);
+
+
+            /* ---------------------------------------------
+               Reel indicator
+            --------------------------------------------- */
+
+            const indicator =
+                document.createElement("div");
+
+            indicator.className =
+                "post-video-indicator";
+
+            indicator.textContent =
+                "Reel";
+
+            item.appendChild(indicator);
 
         } else {
 
-            profileBio.textContent =
-                "No bio available.";
+            const image =
+                document.createElement("img");
+
+            image.src =
+                post.media_url;
+
+            image.alt =
+                "Photo post";
+
+            image.loading =
+                "lazy";
+
+            image.onerror = () => {
+                image.style.display = "none";
+
+                const fallback =
+                    document.createElement("div");
+
+                fallback.className =
+                    "post-item-text";
+
+                fallback.textContent =
+                    "Image unavailable";
+
+                item.appendChild(fallback);
+            };
+
+            item.appendChild(image);
         }
+
+    } else {
+
+        /* =================================================
+           TEXT CONTENT
+        ================================================= */
+
+        const text =
+            document.createElement("div");
+
+        text.className =
+            "post-item-text";
+
+        text.textContent =
+            post.content ||
+            "Post";
+
+        item.appendChild(text);
+    }
+
+
+    /* =====================================================
+       CLICK
+    ===================================================== */
+
+    item.addEventListener(
+        "click",
+        () => {
+            openPostViewer(post);
+        }
+    );
+
+    return item;
+}
+
+
+/* =========================================================
+   RENDER POSTS
+   ========================================================= */
+
+function renderPosts() {
+    if (!postsContainer) {
+        return;
+    }
+
+    postsContainer.innerHTML = "";
+
+    const posts =
+        getFilteredPosts();
+
+
+    if (posts.length === 0) {
+
+        const empty =
+            document.createElement("div");
+
+        empty.className =
+            "empty-posts";
+
+        empty.textContent =
+            getEmptyMessage();
+
+        postsContainer.appendChild(empty);
+
+        return;
+    }
+
+
+    posts.forEach((post) => {
+
+        const item =
+            createPostItem(post);
+
+        postsContainer.appendChild(item);
+    });
+}
+
+
+/* =========================================================
+   TAB STATE
+   ========================================================= */
+
+function setActiveTab(tab) {
+    currentTab =
+        tab === "photos"
+            ? "photos"
+            : "reels";
+
+
+    if (reelsTab) {
+        reelsTab.classList.toggle(
+            "active",
+            currentTab === "reels"
+        );
+    }
+
+    if (photosTab) {
+        photosTab.classList.toggle(
+            "active",
+            currentTab === "photos"
+        );
+    }
+
+    renderPosts();
+}
+
+
+/* =========================================================
+   POST VIEWER
+   ========================================================= */
+
+function openPostViewer(post) {
+    if (!post) {
+        return;
+    }
+
+    const existing =
+        document.getElementById(
+            "profilePostViewer"
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+
+    const overlay =
+        document.createElement("div");
+
+    overlay.id =
+        "profilePostViewer";
+
+    overlay.style.position =
+        "fixed";
+
+    overlay.style.inset =
+        "0";
+
+    overlay.style.zIndex =
+        "5000";
+
+    overlay.style.background =
+        "rgba(0, 0, 0, 0.92)";
+
+    overlay.style.display =
+        "flex";
+
+    overlay.style.alignItems =
+        "center";
+
+    overlay.style.justifyContent =
+        "center";
+
+    overlay.style.padding =
+        "20px";
+
+
+    /* =====================================================
+       CLOSE BUTTON
+    ===================================================== */
+
+    const close =
+        document.createElement("button");
+
+    close.type =
+        "button";
+
+    close.textContent =
+        "×";
+
+    close.style.position =
+        "absolute";
+
+    close.style.top =
+        "18px";
+
+    close.style.right =
+        "18px";
+
+    close.style.width =
+        "44px";
+
+    close.style.height =
+        "44px";
+
+    close.style.borderRadius =
+        "50%";
+
+    close.style.border =
+        "1px solid rgba(255,255,255,0.15)";
+
+    close.style.background =
+        "#0d1729";
+
+    close.style.color =
+        "#ffffff";
+
+    close.style.fontSize =
+        "30px";
+
+    close.style.cursor =
+        "pointer";
+
+    close.addEventListener(
+        "click",
+        () => overlay.remove()
+    );
+
+    overlay.appendChild(close);
+
+
+    /* =====================================================
+       CONTENT
+    ===================================================== */
+
+    if (
+        post.media_url &&
+        isReel(post)
+    ) {
+
+        const video =
+            document.createElement("video");
+
+        video.src =
+            post.media_url;
+
+        video.controls =
+            true;
+
+        video.autoplay =
+            true;
+
+        video.playsInline =
+            true;
+
+        video.style.maxWidth =
+            "100%";
+
+        video.style.maxHeight =
+            "85vh";
+
+        video.style.borderRadius =
+            "14px";
+
+        overlay.appendChild(video);
+
+    } else if (
+        post.media_url &&
+        isPhoto(post)
+    ) {
+
+        const image =
+            document.createElement("img");
+
+        image.src =
+            post.media_url;
+
+        image.alt =
+            "Photo post";
+
+        image.style.maxWidth =
+            "100%";
+
+        image.style.maxHeight =
+            "85vh";
+
+        image.style.objectFit =
+            "contain";
+
+        image.style.borderRadius =
+            "14px";
+
+        overlay.appendChild(image);
+
+    } else {
+
+        const text =
+            document.createElement("div");
+
+        text.textContent =
+            post.content ||
+            "No content";
+
+        text.style.maxWidth =
+            "600px";
+
+        text.style.maxHeight =
+            "75vh";
+
+        text.style.overflow =
+            "auto";
+
+        text.style.padding =
+            "24px";
+
+        text.style.borderRadius =
+            "16px";
+
+        text.style.background =
+            "#0a1424";
+
+        text.style.border =
+            "1px solid rgba(255,255,255,0.08)";
+
+        text.style.color =
+            "#ffffff";
+
+        text.style.fontSize =
+            "16px";
+
+        text.style.lineHeight =
+            "1.6";
+
+        text.style.whiteSpace =
+            "pre-wrap";
+
+        overlay.appendChild(text);
+    }
+
+
+    /* =====================================================
+       OUTSIDE CLICK
+    ===================================================== */
+
+    overlay.addEventListener(
+        "click",
+        (event) => {
+
+            if (event.target === overlay) {
+                overlay.remove();
+            }
+        }
+    );
+
+
+    /* =====================================================
+       ESCAPE
+    ===================================================== */
+
+    const escapeHandler =
+        (event) => {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                overlay.remove();
+
+                document.removeEventListener(
+                    "keydown",
+                    escapeHandler
+                );
+            }
+        };
+
+    document.addEventListener(
+        "keydown",
+        escapeHandler
+    );
+
+
+    document.body.appendChild(
+        overlay
+    );
+}
+
+
+/* =========================================================
+   MENU
+   ========================================================= */
+
+function closeMenu() {
+    if (profileMenu) {
+        profileMenu.classList.add("hidden");
+    }
+}
+
+function toggleMenu() {
+    if (!profileMenu) {
+        return;
+    }
+
+    profileMenu.classList.toggle(
+        "hidden"
+    );
+}
+
+
+/* =========================================================
+   BACK
+   ========================================================= */
+
+function goBack() {
+    if (
+        window.history.length > 1
+    ) {
+        window.history.back();
+    } else {
+        window.location.href =
+            "/home";
     }
 }
 
@@ -455,67 +867,45 @@ function renderProfile(profile) {
    ========================================================= */
 
 async function shareProfile() {
-
-    if (!targetUserId) {
-
-        alert(
-            "Profile link is not available."
-        );
-
+    if (!profileData) {
         return;
     }
 
+    const user =
+        profileData.user || {};
 
     const shareUrl =
-        `${window.location.origin}/profile?user_id=${encodeURIComponent(targetUserId)}`;
+        window.location.href;
+
+    const shareText =
+        `${user.name || user.username || "Usanex user"}\n${shareUrl}`;
 
 
-    const shareTitle =
-        profileHeaderTitle
-            ? profileHeaderTitle.textContent.trim()
-            : "Usanex Profile";
+    try {
 
-
-    closeProfileMenu();
-
-
-    /* Native mobile share */
-
-    if (
-        navigator.share &&
-        typeof navigator.share === "function"
-    ) {
-
-        try {
+        if (
+            navigator.share
+        ) {
 
             await navigator.share({
-                title: shareTitle,
-                text: shareTitle,
-                url: shareUrl
+                title:
+                    user.name ||
+                    user.username ||
+                    "Usanex Profile",
+
+                text:
+                    shareText,
+
+                url:
+                    shareUrl
             });
 
             return;
-
-        } catch (error) {
-
-            if (
-                error &&
-                error.name === "AbortError"
-            ) {
-                return;
-            }
         }
-    }
 
-
-    /* Clipboard */
-
-    if (
-        navigator.clipboard &&
-        typeof navigator.clipboard.writeText === "function"
-    ) {
-
-        try {
+        if (
+            navigator.clipboard
+        ) {
 
             await navigator.clipboard.writeText(
                 shareUrl
@@ -526,25 +916,22 @@ async function shareProfile() {
             );
 
             return;
-
-        } catch (error) {
-            // Continue to fallback.
         }
+
+        alert(
+            shareUrl
+        );
+
+    } catch (error) {
+
+        /*
+         * User cancelled native share.
+         * No error message needed.
+         */
+
+    } finally {
+        closeMenu();
     }
-
-
-    /* Final fallback */
-
-    alert(shareUrl);
-}
-
-
-if (shareButton) {
-
-    shareButton.addEventListener(
-        "click",
-        shareProfile
-    );
 }
 
 
@@ -552,38 +939,24 @@ if (shareButton) {
    BLOCK
    ========================================================= */
 
-if (blockButton) {
+function handleBlock() {
+    closeMenu();
 
-    blockButton.addEventListener(
-        "click",
-        function () {
-
-            closeProfileMenu();
-
-            alert(
-                "Block feature will be available soon."
-            );
-        }
+    alert(
+        "Block feature will be connected next."
     );
 }
 
 
 /* =========================================================
-   QR CODE
+   QR
    ========================================================= */
 
-if (qrButton) {
+function handleQR() {
+    closeMenu();
 
-    qrButton.addEventListener(
-        "click",
-        function () {
-
-            closeProfileMenu();
-
-            alert(
-                "QR Code feature will be available soon."
-            );
-        }
+    alert(
+        "QR Code feature will be connected next."
     );
 }
 
@@ -592,18 +965,11 @@ if (qrButton) {
    REPORT
    ========================================================= */
 
-if (reportButton) {
+function handleReport() {
+    closeMenu();
 
-    reportButton.addEventListener(
-        "click",
-        function () {
-
-            closeProfileMenu();
-
-            alert(
-                "Report feature will be available soon."
-            );
-        }
+    alert(
+        "Report feature will be connected next."
     );
 }
 
@@ -614,47 +980,82 @@ if (reportButton) {
 
 async function loadProfile() {
 
-    if (!targetUserId) {
-
-        if (profileHeaderTitle) {
-
-            profileHeaderTitle.textContent =
-                "Profile";
-        }
-
-
-        if (profileBio) {
-
-            profileBio.textContent =
-                "Profile not found.";
-        }
-
-
-        return;
-    }
-
-
     try {
 
-        const response =
-            await fetch(
-                `/api/profile/${encodeURIComponent(targetUserId)}`,
-                {
-                    method: "GET",
+        hideError();
 
-                    credentials: "include",
 
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
+        /* =================================================
+           GET TARGET USER
+        ================================================= */
+
+        let targetUserId =
+            getTargetUserIdFromUrl();
+
+
+        /*
+         * If no user_id is present,
+         * open current user's profile.
+         */
+
+        if (!targetUserId) {
+
+            const me =
+                await getCurrentUser();
+
+            if (!me) {
+
+                showError(
+                    "Please login again."
+                );
+
+                return;
+            }
+
+
+            /*
+             * /api/auth/me may return user
+             * directly or inside user.
+             */
+
+            const currentUser =
+                me.user || me;
+
+
+            targetUserId =
+                currentUser.user_id;
+        }
+
+
+        if (!targetUserId) {
+
+            showError(
+                "User profile could not be found."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           FETCH PROFILE
+        ================================================= */
+
+        const result =
+            await apiRequest(
+                `/api/profile/${encodeURIComponent(
+                    targetUserId
+                )}`
             );
 
 
-        /* Login required */
+        /* =================================================
+           UNAUTHORIZED
+        ================================================= */
 
-        if (response.status === 401) {
+        if (
+            result.response.status === 401
+        ) {
 
             window.location.href =
                 "/login";
@@ -663,78 +1064,91 @@ async function loadProfile() {
         }
 
 
-        /* Profile unavailable */
-
-        if (response.status === 403) {
-
-            if (profileHeaderTitle) {
-
-                profileHeaderTitle.textContent =
-                    "Profile";
-            }
-
-
-            if (profileBio) {
-
-                profileBio.textContent =
-                    "This profile is not available.";
-            }
-
-
-            return;
-        }
-
-
-        /* Not found */
-
-        if (response.status === 404) {
-
-            if (profileHeaderTitle) {
-
-                profileHeaderTitle.textContent =
-                    "Profile";
-            }
-
-
-            if (profileBio) {
-
-                profileBio.textContent =
-                    "Profile not found.";
-            }
-
-
-            return;
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                `Profile request failed: ${response.status}`
-            );
-        }
-
-
-        const data =
-            await response.json();
-
+        /* =================================================
+           FORBIDDEN
+        ================================================= */
 
         if (
-            !data ||
-            data.ok !== true ||
-            !data.profile
+            result.response.status === 403
         ) {
 
-            throw new Error(
-                "Invalid profile response."
+            showError(
+                "This profile is available only to connected users."
             );
+
+            return;
         }
 
 
+        /* =================================================
+           NOT FOUND
+        ================================================= */
+
+        if (
+            result.response.status === 404
+        ) {
+
+            showError(
+                "User not found."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           OTHER ERROR
+        ================================================= */
+
+        if (
+            !result.response.ok
+        ) {
+
+            showError(
+                result.data?.detail ||
+                "Unable to load profile."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           VALIDATE RESPONSE
+        ================================================= */
+
+        if (
+            !result.data ||
+            result.data.success !== true
+        ) {
+
+            showError(
+                "Invalid profile response."
+            );
+
+            return;
+        }
+
+
+        /* =================================================
+           SAVE STATE
+        ================================================= */
+
+        profileData =
+            result.data;
+
+
+        /* =================================================
+           RENDER
+        ================================================= */
+
         renderProfile(
-            data.profile
+            profileData
         );
 
+        setActiveTab(
+            "reels"
+        );
 
     } catch (error) {
 
@@ -743,32 +1157,119 @@ async function loadProfile() {
             error
         );
 
-
-        if (profileHeaderTitle) {
-
-            profileHeaderTitle.textContent =
-                "Profile";
-        }
-
-
-        if (profileBio) {
-
-            profileBio.textContent =
-                "Unable to load profile.";
-        }
+        showError(
+            "Something went wrong while loading the profile."
+        );
     }
 }
 
 
 /* =========================================================
-   START
+   EVENTS
    ========================================================= */
 
+if (backButton) {
+    backButton.addEventListener(
+        "click",
+        goBack
+    );
+}
+
+
+if (profileErrorBack) {
+    profileErrorBack.addEventListener(
+        "click",
+        goBack
+    );
+}
+
+
+if (profileMenuButton) {
+    profileMenuButton.addEventListener(
+        "click",
+        (event) => {
+
+            event.stopPropagation();
+
+            toggleMenu();
+        }
+    );
+}
+
+
+if (reelsTab) {
+    reelsTab.addEventListener(
+        "click",
+        () => {
+            setActiveTab("reels");
+        }
+    );
+}
+
+
+if (photosTab) {
+    photosTab.addEventListener(
+        "click",
+        () => {
+            setActiveTab("photos");
+        }
+    );
+}
+
+
+if (shareButton) {
+    shareButton.addEventListener(
+        "click",
+        shareProfile
+    );
+}
+
+
+if (blockButton) {
+    blockButton.addEventListener(
+        "click",
+        handleBlock
+    );
+}
+
+
+if (qrButton) {
+    qrButton.addEventListener(
+        "click",
+        handleQR
+    );
+}
+
+
+if (reportButton) {
+    reportButton.addEventListener(
+        "click",
+        handleReport
+    );
+}
+
+
+/* =========================================================
+   CLOSE MENU OUTSIDE
+========================================================= */
+
 document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+    "click",
+    (event) => {
 
-        loadProfile();
-
+        if (
+            profileMenu &&
+            !profileMenu.contains(event.target) &&
+            event.target !== profileMenuButton
+        ) {
+            closeMenu();
+        }
     }
 );
+
+
+/* =========================================================
+   START
+========================================================= */
+
+loadProfile();
