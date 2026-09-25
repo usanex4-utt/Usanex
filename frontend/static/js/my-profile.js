@@ -15,7 +15,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const profileState = {
     user: null,
+    stats: {
+        followers: 0,
+        connected: 0,
+        following: 0,
+        posts: 0
+    },
     activeTab: "reels",
+
     content: {
         reels: [],
         photos: [],
@@ -74,11 +81,15 @@ function formatViews(value) {
     const views = Number(value || 0);
 
     if (views >= 1000000) {
-        return `${(views / 1000000).toFixed(1).replace(".0", "")}M`;
+        return `${(views / 1000000)
+            .toFixed(1)
+            .replace(".0", "")}M`;
     }
 
     if (views >= 1000) {
-        return `${(views / 1000).toFixed(1).replace(".0", "")}K`;
+        return `${(views / 1000)
+            .toFixed(1)
+            .replace(".0", "")}K`;
     }
 
     return String(views);
@@ -102,18 +113,21 @@ async function initMyProfile() {
 
 
 /* =========================================================
-   LOAD CURRENT USER
+   LOAD MY PROFILE
    ========================================================= */
 
 async function loadMyProfile() {
     try {
-        const response = await fetch("/api/auth/me", {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Accept": "application/json"
+        const response = await fetch(
+            "/api/profile/me",
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Accept": "application/json"
+                }
             }
-        });
+        );
 
         if (response.status === 401) {
             window.location.href = "/login";
@@ -121,35 +135,116 @@ async function loadMyProfile() {
         }
 
         if (!response.ok) {
-            throw new Error("Unable to load profile.");
+            const errorData =
+                await response.json().catch(() => null);
+
+            throw new Error(
+                errorData?.detail ||
+                "Unable to load profile."
+            );
         }
 
         const data = await response.json();
 
-        const user = data.user || data;
-
-        if (!user) {
-            throw new Error("Profile data not found.");
+        if (!data || !data.success) {
+            throw new Error(
+                "Invalid profile response."
+            );
         }
 
-        profileState.user = user;
+        profileState.user = data.user || {};
 
-        renderProfile(user);
+        profileState.stats = {
+            followers: Number(
+                data.stats?.followers || 0
+            ),
+
+            connected: Number(
+                data.stats?.connected || 0
+            ),
+
+            following: Number(
+                data.stats?.following || 0
+            ),
+
+            posts: Number(
+                data.stats?.posts || 0
+            )
+        };
 
         /*
-         * Content APIs are connected separately.
-         * For now the page remains ready for the unified
-         * Posts / Saved / Private system.
+         * Backend currently returns unified public
+         * content in data.content.
+         *
+         * Reels and Photos are filtered from the
+         * same Posts system.
          */
+        processUnifiedContent(
+            data.content || []
+        );
+
+        renderProfile(
+            profileState.user
+        );
+
         renderActiveTab();
 
     } catch (error) {
-        console.error("My Profile:", error);
+        console.error(
+            "My Profile:",
+            error
+        );
 
         renderProfileError(
+            error.message ||
             "Unable to load your profile. Please refresh and try again."
         );
     }
+}
+
+
+/* =========================================================
+   PROCESS UNIFIED POSTS
+   ========================================================= */
+
+function processUnifiedContent(posts) {
+    profileState.content.reels = [];
+    profileState.content.photos = [];
+
+    posts.forEach((post) => {
+        const mediaType = safeText(
+            post.media_type
+        ).toLowerCase();
+
+        /*
+         * Unified Posts system:
+         *
+         * video / reel -> Reels
+         * image / photo -> Photos
+         */
+
+        if (
+            mediaType === "video" ||
+            mediaType === "reel"
+        ) {
+            profileState.content.reels.push(post);
+            return;
+        }
+
+        if (
+            mediaType === "image" ||
+            mediaType === "photo"
+        ) {
+            profileState.content.photos.push(post);
+        }
+    });
+
+    /*
+     * Saved and Private are intentionally empty
+     * until their dedicated system is implemented.
+     */
+    profileState.content.saved = [];
+    profileState.content.private = [];
 }
 
 
@@ -159,7 +254,7 @@ async function loadMyProfile() {
 
 function renderProfile(user) {
     const name = safeText(
-        user.name || user.full_name,
+        user.name,
         "Usanex User"
     );
 
@@ -174,36 +269,12 @@ function renderProfile(user) {
     );
 
     const photo = getPhotoUrl(
-        user.profile_photo || user.photo_url
+        user.profile_photo
     );
 
     const bio = safeText(
         user.bio,
         ""
-    );
-
-    const followers = Number(
-        user.followers ??
-        user.followers_count ??
-        0
-    );
-
-    const connected = Number(
-        user.connected ??
-        user.connected_count ??
-        0
-    );
-
-    const following = Number(
-        user.following ??
-        user.following_count ??
-        0
-    );
-
-    const posts = Number(
-        user.posts ??
-        user.posts_count ??
-        0
     );
 
     if ($("profileName")) {
@@ -222,7 +293,8 @@ function renderProfile(user) {
     }
 
     if ($("profileUserId")) {
-        $("profileUserId").textContent = userId || "u_xxxxxxxx";
+        $("profileUserId").textContent =
+            userId || "u_xxxxxxxx";
     }
 
     if ($("profilePhoto")) {
@@ -240,20 +312,29 @@ function renderProfile(user) {
                 : "No bio available.";
     }
 
+    /*
+     * Stats now come directly from
+     * /api/profile/me.
+     */
+
     if ($("followersCount")) {
-        $("followersCount").textContent = followers;
+        $("followersCount").textContent =
+            profileState.stats.followers;
     }
 
     if ($("connectedCount")) {
-        $("connectedCount").textContent = connected;
+        $("connectedCount").textContent =
+            profileState.stats.connected;
     }
 
     if ($("followingCount")) {
-        $("followingCount").textContent = following;
+        $("followingCount").textContent =
+            profileState.stats.following;
     }
 
     if ($("postsCount")) {
-        $("postsCount").textContent = posts;
+        $("postsCount").textContent =
+            profileState.stats.posts;
     }
 
     renderProfileLinks(user);
@@ -302,14 +383,21 @@ function renderProfileLinks(user) {
     }
 
     links.forEach((link) => {
-        const anchor = document.createElement("a");
+        const anchor =
+            document.createElement("a");
 
         anchor.className = "profile-link";
-        anchor.href = normalizeUrl(link.url);
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
 
-        anchor.textContent = link.label;
+        anchor.href =
+            normalizeUrl(link.url);
+
+        anchor.target = "_blank";
+
+        anchor.rel =
+            "noopener noreferrer";
+
+        anchor.textContent =
+            link.label;
 
         container.appendChild(anchor);
     });
@@ -318,7 +406,8 @@ function renderProfileLinks(user) {
 }
 
 function normalizeUrl(url) {
-    const value = safeText(url).trim();
+    const value =
+        safeText(url).trim();
 
     if (!value) {
         return "#";
@@ -337,17 +426,21 @@ function normalizeUrl(url) {
    ========================================================= */
 
 function setupHeader() {
-    const addButton = $("profileAddButton");
+    const addButton =
+        $("profileAddButton");
 
-    if (addButton) {
-        addButton.addEventListener("click", () => {
-            /*
-             * Reserved for future profile quick actions.
-             * No profile-photo + action is attached here.
-             */
-            console.log("Profile quick actions");
-        });
+    if (!addButton) {
+        return;
     }
+
+    addButton.addEventListener(
+        "click",
+        () => {
+            console.log(
+                "Profile quick actions"
+            );
+        }
+    );
 }
 
 
@@ -356,115 +449,166 @@ function setupHeader() {
    ========================================================= */
 
 function setupMenu() {
-    const menuButton = $("profileMenuButton");
-    const menu = $("profileMenu");
+    const menuButton =
+        $("profileMenuButton");
+
+    const menu =
+        $("profileMenu");
 
     if (!menuButton || !menu) {
         return;
     }
 
-    menuButton.addEventListener("click", (event) => {
-        event.stopPropagation();
+    menuButton.addEventListener(
+        "click",
+        (event) => {
+            event.stopPropagation();
 
-        menu.classList.toggle("hidden");
-    });
-
-    document.addEventListener("click", (event) => {
-        if (
-            !menu.contains(event.target) &&
-            !menuButton.contains(event.target)
-        ) {
-            hide(menu);
+            menu.classList.toggle(
+                "hidden"
+            );
         }
-    });
+    );
+
+    document.addEventListener(
+        "click",
+        (event) => {
+            if (
+                !menu.contains(event.target) &&
+                !menuButton.contains(event.target)
+            ) {
+                hide(menu);
+            }
+        }
+    );
 
 
-    const editButton = $("editProfileButton");
+    const editButton =
+        $("editProfileButton");
 
     if (editButton) {
-        editButton.addEventListener("click", () => {
-            hide(menu);
-            openEditProfile();
-        });
+        editButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
+                openEditProfile();
+            }
+        );
     }
 
 
-    const privacyButton = $("privacyButton");
+    const privacyButton =
+        $("privacyButton");
 
     if (privacyButton) {
-        privacyButton.addEventListener("click", () => {
-            hide(menu);
+        privacyButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
 
-            /*
-             * Privacy page will be connected later.
-             */
-            alert("Privacy settings will be available here.");
-        });
+                alert(
+                    "Privacy settings will be available here."
+                );
+            }
+        );
     }
 
 
-    const securityButton = $("securityButton");
+    const securityButton =
+        $("securityButton");
 
     if (securityButton) {
-        securityButton.addEventListener("click", () => {
-            hide(menu);
+        securityButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
 
-            alert("Security settings will be available here.");
-        });
+                alert(
+                    "Security settings will be available here."
+                );
+            }
+        );
     }
 
 
-    const blockedUsersButton = $("blockedUsersButton");
+    const blockedUsersButton =
+        $("blockedUsersButton");
 
     if (blockedUsersButton) {
-        blockedUsersButton.addEventListener("click", () => {
-            hide(menu);
+        blockedUsersButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
 
-            alert("Blocked users will be available here.");
-        });
+                alert(
+                    "Blocked users will be available here."
+                );
+            }
+        );
     }
 
 
-    const accountButton = $("accountButton");
+    const accountButton =
+        $("accountButton");
 
     if (accountButton) {
-        accountButton.addEventListener("click", () => {
-            hide(menu);
+        accountButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
 
-            alert("Account settings will be available here.");
-        });
+                alert(
+                    "Account settings will be available here."
+                );
+            }
+        );
     }
 
 
-    const helpButton = $("helpButton");
+    const helpButton =
+        $("helpButton");
 
     if (helpButton) {
-        helpButton.addEventListener("click", () => {
-            hide(menu);
+        helpButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
 
-            alert("Help will be available here.");
-        });
+                alert(
+                    "Help will be available here."
+                );
+            }
+        );
     }
 
 
-    const aboutButton = $("aboutButton");
+    const aboutButton =
+        $("aboutButton");
 
     if (aboutButton) {
-        aboutButton.addEventListener("click", () => {
-            hide(menu);
+        aboutButton.addEventListener(
+            "click",
+            () => {
+                hide(menu);
 
-            alert("Usanex");
-        });
+                alert("Usanex");
+            }
+        );
     }
 
 
-    const logoutButton = $("logoutButton");
+    const logoutButton =
+        $("logoutButton");
 
     if (logoutButton) {
-        logoutButton.addEventListener("click", async () => {
-            hide(menu);
-            await logout();
-        });
+        logoutButton.addEventListener(
+            "click",
+            async () => {
+                hide(menu);
+
+                await logout();
+            }
+        );
     }
 }
 
@@ -474,51 +618,78 @@ function setupMenu() {
    ========================================================= */
 
 function setupPhotoViewer() {
-    const photoButton = $("profilePhotoButton");
-    const viewer = $("profilePhotoViewer");
-    const viewerPhoto = $("viewerPhoto");
-    const closeButton = $("closePhotoViewer");
+    const photoButton =
+        $("profilePhotoButton");
 
-    if (!photoButton || !viewer || !viewerPhoto) {
+    const viewer =
+        $("profilePhotoViewer");
+
+    const viewerPhoto =
+        $("viewerPhoto");
+
+    const closeButton =
+        $("closePhotoViewer");
+
+    if (
+        !photoButton ||
+        !viewer ||
+        !viewerPhoto
+    ) {
         return;
     }
 
-    photoButton.addEventListener("click", () => {
-        const photo = $("profilePhoto")?.src;
+    photoButton.addEventListener(
+        "click",
+        () => {
+            const photo =
+                $("profilePhoto")?.src;
 
-        if (!photo) {
-            return;
+            if (!photo) {
+                return;
+            }
+
+            viewerPhoto.src =
+                photo;
+
+            show(viewer);
+
+            document.body.style.overflow =
+                "hidden";
         }
-
-        viewerPhoto.src = photo;
-
-        show(viewer);
-
-        document.body.style.overflow = "hidden";
-    });
+    );
 
 
     if (closeButton) {
-        closeButton.addEventListener("click", closePhotoViewer);
+        closeButton.addEventListener(
+            "click",
+            closePhotoViewer
+        );
     }
 
 
-    viewer.addEventListener("click", (event) => {
-        if (event.target === viewer) {
-            closePhotoViewer();
+    viewer.addEventListener(
+        "click",
+        (event) => {
+            if (event.target === viewer) {
+                closePhotoViewer();
+            }
         }
-    });
+    );
 
 
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-            closePhotoViewer();
+    document.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key === "Escape") {
+                closePhotoViewer();
+            }
         }
-    });
+    );
 }
 
 function closePhotoViewer() {
-    const viewer = $("profilePhotoViewer");
+    const viewer =
+        $("profilePhotoViewer");
 
     if (!viewer) {
         return;
@@ -526,7 +697,8 @@ function closePhotoViewer() {
 
     hide(viewer);
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
 }
 
 
@@ -535,7 +707,8 @@ function closePhotoViewer() {
    ========================================================= */
 
 function setupEditProfile() {
-    const closeButton = $("closeEditProfile");
+    const closeButton =
+        $("closeEditProfile");
 
     if (closeButton) {
         closeButton.addEventListener(
@@ -545,14 +718,20 @@ function setupEditProfile() {
     }
 
 
-    const modal = $("editProfileModal");
+    const modal =
+        $("editProfileModal");
 
     if (modal) {
-        modal.addEventListener("click", (event) => {
-            if (event.target === modal) {
-                closeEditProfile();
+        modal.addEventListener(
+            "click",
+            (event) => {
+                if (
+                    event.target === modal
+                ) {
+                    closeEditProfile();
+                }
             }
-        });
+        );
     }
 
 
@@ -591,11 +770,14 @@ function setupEditProfile() {
     }
 
 
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-            closeEditProfile();
+    document.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key === "Escape") {
+                closeEditProfile();
+            }
         }
-    });
+    );
 }
 
 
@@ -604,61 +786,67 @@ function setupEditProfile() {
    ========================================================= */
 
 function openEditProfile() {
-    const modal = $("editProfileModal");
+    const modal =
+        $("editProfileModal");
 
     if (!modal) {
         return;
     }
 
-    const user = profileState.user || {};
+    const user =
+        profileState.user || {};
 
     if ($("editName")) {
         $("editName").value =
-            safeText(user.name, "");
+            safeText(user.name);
     }
 
     if ($("editUsername")) {
         $("editUsername").value =
-            safeText(user.username, "");
+            safeText(user.username);
     }
 
     if ($("editUserId")) {
         $("editUserId").value =
-            safeText(user.user_id, "");
+            safeText(user.user_id);
     }
 
     if ($("editBio")) {
         $("editBio").value =
-            safeText(user.bio, "");
+            safeText(user.bio);
     }
 
     if ($("editWebsite")) {
         $("editWebsite").value =
-            safeText(user.website, "");
+            safeText(user.website);
     }
 
     if ($("editInstagram")) {
         $("editInstagram").value =
-            safeText(user.instagram, "");
+            safeText(user.instagram);
     }
 
     if ($("editSocialLink")) {
         $("editSocialLink").value =
-            safeText(user.social_link, "");
+            safeText(user.social_link);
     }
 
     if ($("editProfilePhotoPreview")) {
         $("editProfilePhotoPreview").src =
-            getPhotoUrl(user.profile_photo);
+            getPhotoUrl(
+                user.profile_photo
+            );
     }
 
     if ($("editProfileMessage")) {
-        $("editProfileMessage").textContent = "";
+        $("editProfileMessage").textContent =
+            "";
     }
 
     show(modal);
 
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow =
+        "hidden";
 }
 
 
@@ -667,7 +855,8 @@ function openEditProfile() {
    ========================================================= */
 
 function closeEditProfile() {
-    const modal = $("editProfileModal");
+    const modal =
+        $("editProfileModal");
 
     if (!modal) {
         return;
@@ -675,7 +864,8 @@ function closeEditProfile() {
 
     hide(modal);
 
-    document.body.style.overflow = "";
+    document.body.style.overflow =
+        "";
 }
 
 
@@ -684,23 +874,33 @@ function closeEditProfile() {
    ========================================================= */
 
 function handleProfilePhotoSelection(event) {
-    const file = event.target.files?.[0];
+    const file =
+        event.target.files?.[0];
 
     if (!file) {
         return;
     }
 
     if (!file.type.startsWith("image/")) {
-        alert("Please select an image file.");
+        alert(
+            "Please select an image file."
+        );
+
         event.target.value = "";
+
         return;
     }
 
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize =
+        10 * 1024 * 1024;
 
     if (file.size > maxSize) {
-        alert("Profile photo must be 10 MB or smaller.");
+        alert(
+            "Profile photo must be 10 MB or smaller."
+        );
+
         event.target.value = "";
+
         return;
     }
 
@@ -714,10 +914,13 @@ function handleProfilePhotoSelection(event) {
     const objectUrl =
         URL.createObjectURL(file);
 
-    preview.src = objectUrl;
+    preview.src =
+        objectUrl;
 
     preview.onload = () => {
-        URL.revokeObjectURL(objectUrl);
+        URL.revokeObjectURL(
+            objectUrl
+        );
     };
 }
 
@@ -730,28 +933,31 @@ async function saveProfile() {
     const saveButton =
         $("saveProfileButton");
 
-    const message =
-        $("editProfileMessage");
-
     const name =
-        $("editName")?.value.trim() || "";
+        $("editName")?.value.trim() ||
+        "";
 
     const bio =
-        $("editBio")?.value.trim() || "";
+        $("editBio")?.value.trim() ||
+        "";
 
     const website =
-        $("editWebsite")?.value.trim() || "";
+        $("editWebsite")?.value.trim() ||
+        "";
 
     const instagram =
-        $("editInstagram")?.value.trim() || "";
+        $("editInstagram")?.value.trim() ||
+        "";
 
     const socialLink =
-        $("editSocialLink")?.value.trim() || "";
+        $("editSocialLink")?.value.trim() ||
+        "";
 
     if (!name) {
         setEditMessage(
             "Name cannot be empty."
         );
+
         return;
     }
 
@@ -759,57 +965,66 @@ async function saveProfile() {
         setEditMessage(
             "Name must be 100 characters or less."
         );
+
         return;
     }
 
-    if (bio.length > 160) {
+    if (bio.length > 500) {
         setEditMessage(
-            "Bio must be 160 characters or less."
+            "Bio must be 500 characters or less."
         );
+
         return;
     }
 
     if (saveButton) {
         saveButton.disabled = true;
-        saveButton.textContent = "Saving...";
+
+        saveButton.textContent =
+            "Saving...";
     }
 
-    if (message) {
-        message.textContent = "";
-    }
+    setEditMessage("");
 
     try {
-        /*
-         * This endpoint will be implemented in the
-         * profile backend in the next step.
-         */
-        const response = await fetch(
-            "/api/profile/me",
-            {
-                method: "PUT",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    name,
-                    bio,
-                    website,
-                    instagram,
-                    social_link: socialLink
-                })
-            }
-        );
+        const response =
+            await fetch(
+                "/api/profile/me",
+                {
+                    method: "PUT",
+
+                    credentials: "include",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        name,
+                        bio,
+                        website,
+                        instagram,
+                        social_link:
+                            socialLink
+                    })
+                }
+            );
 
         if (response.status === 401) {
-            window.location.href = "/login";
+            window.location.href =
+                "/login";
+
             return;
         }
 
         if (!response.ok) {
             const errorData =
-                await response.json()
+                await response
+                    .json()
                     .catch(() => null);
 
             throw new Error(
@@ -822,24 +1037,27 @@ async function saveProfile() {
             await response.json();
 
         const updatedUser =
-            data.user || data;
+            data.user || {};
 
-        if (profileState.user) {
-            profileState.user = {
-                ...profileState.user,
-                ...updatedUser
-            };
-        }
+        profileState.user = {
+            ...profileState.user,
+            ...updatedUser
+        };
 
-        renderProfile(profileState.user);
+        renderProfile(
+            profileState.user
+        );
 
         setEditMessage(
             "Profile saved successfully."
         );
 
-        setTimeout(() => {
-            closeEditProfile();
-        }, 700);
+        setTimeout(
+            () => {
+                closeEditProfile();
+            },
+            700
+        );
 
     } catch (error) {
         console.error(
@@ -854,7 +1072,9 @@ async function saveProfile() {
 
     } finally {
         if (saveButton) {
-            saveButton.disabled = false;
+            saveButton.disabled =
+                false;
+
             saveButton.textContent =
                 "Save Changes";
         }
@@ -866,7 +1086,8 @@ function setEditMessage(message) {
         $("editProfileMessage");
 
     if (element) {
-        element.textContent = message;
+        element.textContent =
+            message;
     }
 }
 
@@ -876,9 +1097,10 @@ function setEditMessage(message) {
    ========================================================= */
 
 function setupTabs() {
-    const tabs = document.querySelectorAll(
-        ".profile-content-tab"
-    );
+    const tabs =
+        document.querySelectorAll(
+            ".profile-content-tab"
+        );
 
     tabs.forEach((tab) => {
         tab.addEventListener(
@@ -891,7 +1113,9 @@ function setupTabs() {
                     return;
                 }
 
-                setActiveTab(tabName);
+                setActiveTab(
+                    tabName
+                );
             }
         );
     });
@@ -909,14 +1133,18 @@ function setActiveTab(tabName) {
         return;
     }
 
-    profileState.activeTab = tabName;
+    profileState.activeTab =
+        tabName;
 
     document
-        .querySelectorAll(".profile-content-tab")
+        .querySelectorAll(
+            ".profile-content-tab"
+        )
         .forEach((tab) => {
             tab.classList.toggle(
                 "active",
-                tab.dataset.tab === tabName
+                tab.dataset.tab ===
+                    tabName
             );
         });
 
@@ -944,18 +1172,22 @@ function renderActiveTab() {
     container.innerHTML = "";
 
     if (!items.length) {
-        const empty = document.createElement(
-            "div"
-        );
+        const empty =
+            document.createElement(
+                "div"
+            );
 
-        empty.className = "empty-content";
+        empty.className =
+            "empty-content";
 
         empty.textContent =
             getEmptyMessage(
                 profileState.activeTab
             );
 
-        container.appendChild(empty);
+        container.appendChild(
+            empty
+        );
 
         return;
     }
@@ -993,21 +1225,21 @@ function getEmptyMessage(tab) {
 
 function createContentCard(item) {
     const card =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
 
-    card.className = "content-card";
+    card.className =
+        "content-card";
 
     const mediaType =
         safeText(
-            item.media_type ||
-            item.type
+            item.media_type
         ).toLowerCase();
 
     const mediaUrl =
         safeText(
-            item.media_url ||
-            item.url ||
-            item.file_url
+            item.media_url
         );
 
     const views =
@@ -1017,71 +1249,102 @@ function createContentCard(item) {
             0
         );
 
+    /*
+     * Video / Reel
+     */
+
     if (
         mediaType === "video" ||
         mediaType === "reel"
     ) {
         const video =
-            document.createElement("video");
-
-        video.src = mediaUrl;
-
-        video.muted = true;
-        video.playsInline = true;
-        video.preload = "metadata";
-
-        card.appendChild(video);
-
-    } else if (
-        mediaUrl
-    ) {
-        const image =
-            document.createElement("img");
-
-        image.src = mediaUrl;
-
-        image.alt =
-            safeText(
-                item.caption,
-                "Usanex content"
+            document.createElement(
+                "video"
             );
 
-        image.loading = "lazy";
+        video.src =
+            mediaUrl;
 
-        card.appendChild(image);
+        video.muted =
+            true;
+
+        video.playsInline =
+            true;
+
+        video.preload =
+            "metadata";
+
+        card.appendChild(
+            video
+        );
+
+    /*
+     * Image / Photo
+     */
+
+    } else if (
+        mediaType === "image" ||
+        mediaType === "photo"
+    ) {
+        const image =
+            document.createElement(
+                "img"
+            );
+
+        image.src =
+            mediaUrl;
+
+        image.alt =
+            "Usanex content";
+
+        image.loading =
+            "lazy";
+
+        card.appendChild(
+            image
+        );
+
+    /*
+     * Text
+     */
 
     } else {
         const placeholder =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
-        placeholder.style.width = "100%";
-        placeholder.style.height = "100%";
-        placeholder.style.display = "flex";
-        placeholder.style.alignItems = "center";
-        placeholder.style.justifyContent = "center";
-        placeholder.style.padding = "15px";
-        placeholder.style.color = "#aab7c9";
-        placeholder.style.fontSize = "13px";
-        placeholder.style.textAlign = "center";
+        placeholder.className =
+            "content-text-preview";
 
         placeholder.textContent =
             safeText(
-                item.caption,
+                item.content,
                 "Content"
             );
 
-        card.appendChild(placeholder);
+        card.appendChild(
+            placeholder
+        );
     }
 
 
+    /*
+     * View count
+     */
+
     const overlay =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     overlay.className =
         "content-card-overlay";
 
     const viewCount =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
 
     viewCount.className =
         "content-view-count";
@@ -1089,9 +1352,13 @@ function createContentCard(item) {
     viewCount.textContent =
         `▶ ${formatViews(views)}`;
 
-    overlay.appendChild(viewCount);
+    overlay.appendChild(
+        viewCount
+    );
 
-    card.appendChild(overlay);
+    card.appendChild(
+        overlay
+    );
 
     return card;
 }
@@ -1102,19 +1369,28 @@ function createContentCard(item) {
    ========================================================= */
 
 function setupBottomNavigation() {
-    const home = $("navHome");
-    const reels = $("navReels");
-    const search = $("navSearch");
+    const home =
+        $("navHome");
+
+    const reels =
+        $("navReels");
+
+    const search =
+        $("navSearch");
+
     const notifications =
         $("navNotifications");
-    const profile = $("navProfile");
+
+    const profile =
+        $("navProfile");
 
 
     if (home) {
         home.addEventListener(
             "click",
             () => {
-                window.location.href = "/home";
+                window.location.href =
+                    "/home";
             }
         );
     }
@@ -1124,7 +1400,8 @@ function setupBottomNavigation() {
         reels.addEventListener(
             "click",
             () => {
-                window.location.href = "/reels";
+                window.location.href =
+                    "/reels";
             }
         );
     }
@@ -1134,7 +1411,8 @@ function setupBottomNavigation() {
         search.addEventListener(
             "click",
             () => {
-                window.location.href = "/search";
+                window.location.href =
+                    "/search";
             }
         );
     }
@@ -1185,16 +1463,12 @@ async function logout() {
                     method: "POST",
                     credentials: "include",
                     headers: {
-                        "Accept": "application/json"
+                        "Accept":
+                            "application/json"
                     }
                 }
             );
 
-        /*
-         * Even if the logout endpoint is not
-         * available yet, redirecting to login
-         * keeps the user flow clear.
-         */
         if (!response.ok) {
             console.warn(
                 "Logout endpoint returned:",
@@ -1209,7 +1483,8 @@ async function logout() {
         );
 
     } finally {
-        window.location.href = "/login";
+        window.location.href =
+            "/login";
     }
 }
 
@@ -1229,7 +1504,9 @@ function renderProfileError(message) {
     container.innerHTML = "";
 
     const error =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     error.className =
         "empty-content";
@@ -1237,5 +1514,7 @@ function renderProfileError(message) {
     error.textContent =
         message;
 
-    container.appendChild(error);
+    container.appendChild(
+        error
+    );
 }
