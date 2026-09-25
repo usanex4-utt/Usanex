@@ -1,5 +1,5 @@
 /* =========================================================
-   USANEX - OTHER USER PROFILE
+   USANEX PROFILE
    ========================================================= */
 
 "use strict";
@@ -48,23 +48,18 @@ const connectionStatus =
 const profileBio =
     document.getElementById("profileBio");
 
-const connectionType =
-    document.getElementById("connectionType");
-
 const personalCategory =
     document.getElementById("personalCategory");
 
 
 /* =========================================================
-   GET USER ID FROM URL
+   URL
    ========================================================= */
 
 const params =
-    new URLSearchParams(
-        window.location.search
-    );
+    new URLSearchParams(window.location.search);
 
-const userId =
+const targetUserId =
     params.get("user_id");
 
 
@@ -72,62 +67,22 @@ const userId =
    HELPERS
    ========================================================= */
 
-function escapeHtml(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
+function escapeText(value) {
+    if (value === null || value === undefined) {
         return "";
     }
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return String(value);
 }
 
 
-function getInitial(name) {
+function getProfilePhoto(photo) {
 
-    const value =
-        String(name || "U").trim();
-
-    return (
-        value.charAt(0).toUpperCase() ||
-        "U"
-    );
-}
-
-
-function normalizeCategory(category) {
-
-    if (!category) {
-        return "";
+    if (!photo) {
+        return "/static/images/default-profile.png";
     }
 
-    const value =
-        String(category)
-            .trim()
-            .toLowerCase();
-
-    if (
-        value === "friend" ||
-        value === "friends"
-    ) {
-        return "friend";
-    }
-
-    if (
-        value === "family" ||
-        value === "families"
-    ) {
-        return "family";
-    }
-
-    return "";
+    return photo;
 }
 
 
@@ -142,14 +97,6 @@ function openProfileMenu() {
     }
 
     profileMenu.classList.remove("hidden");
-
-    if (profileMenuButton) {
-
-        profileMenuButton.setAttribute(
-            "aria-expanded",
-            "true"
-        );
-    }
 }
 
 
@@ -160,14 +107,6 @@ function closeProfileMenu() {
     }
 
     profileMenu.classList.add("hidden");
-
-    if (profileMenuButton) {
-
-        profileMenuButton.setAttribute(
-            "aria-expanded",
-            "false"
-        );
-    }
 }
 
 
@@ -177,16 +116,7 @@ function toggleProfileMenu() {
         return;
     }
 
-    if (
-        profileMenu.classList.contains("hidden")
-    ) {
-
-        openProfileMenu();
-
-    } else {
-
-        closeProfileMenu();
-    }
+    profileMenu.classList.toggle("hidden");
 }
 
 
@@ -194,7 +124,7 @@ if (profileMenuButton) {
 
     profileMenuButton.addEventListener(
         "click",
-        (event) => {
+        function (event) {
 
             event.stopPropagation();
 
@@ -204,13 +134,9 @@ if (profileMenuButton) {
 }
 
 
-/* =========================================================
-   CLOSE MENU ON OUTSIDE CLICK
-   ========================================================= */
-
 document.addEventListener(
     "click",
-    (event) => {
+    function (event) {
 
         if (!profileMenu) {
             return;
@@ -220,23 +146,17 @@ document.addEventListener(
             !profileMenu.contains(event.target) &&
             !profileMenuButton.contains(event.target)
         ) {
-
             closeProfileMenu();
         }
     }
 );
 
 
-/* =========================================================
-   ESCAPE KEY
-   ========================================================= */
-
 document.addEventListener(
     "keydown",
-    (event) => {
+    function (event) {
 
         if (event.key === "Escape") {
-
             closeProfileMenu();
         }
     }
@@ -251,18 +171,12 @@ if (backButton) {
 
     backButton.addEventListener(
         "click",
-        () => {
+        function () {
 
-            if (
-                window.history.length > 1
-            ) {
-
+            if (window.history.length > 1) {
                 window.history.back();
-
             } else {
-
-                window.location.href =
-                    "/home";
+                window.location.href = "/home";
             }
         }
     );
@@ -270,81 +184,35 @@ if (backButton) {
 
 
 /* =========================================================
-   PROFILE PHOTO
-   ========================================================= */
-
-function renderProfilePhoto(user) {
-
-    if (!profilePhoto) {
-        return;
-    }
-
-    const photo =
-        user.profile_photo ||
-        user.profilePhoto ||
-        user.photo ||
-        "";
-
-    const name =
-        user.name ||
-        user.full_name ||
-        "U";
-
-
-    if (photo) {
-
-        profilePhoto.innerHTML = "";
-
-        const img =
-            document.createElement("img");
-
-        img.src = photo;
-
-        img.alt =
-            `${name} profile photo`;
-
-        img.onerror = () => {
-
-            profilePhoto.innerHTML =
-                escapeHtml(
-                    getInitial(name)
-                );
-        };
-
-        profilePhoto.appendChild(img);
-
-    } else {
-
-        profilePhoto.textContent =
-            getInitial(name);
-    }
-}
-
-
-/* =========================================================
    CONNECTION STATUS
    ========================================================= */
 
-function renderConnectionStatus(user) {
-
-    const status =
-        String(
-            user.connection_status ||
-            user.connectionStatus ||
-            ""
-        ).toLowerCase();
-
-    const connected =
-        user.is_connected === true ||
-        status === "connected";
-
+function renderConnectionStatus(profile) {
 
     if (!connectionStatus) {
         return;
     }
 
+    connectionStatus.classList.add("hidden");
+    connectionStatus.textContent = "";
 
-    if (connected) {
+    if (!profile) {
+        return;
+    }
+
+
+    if (profile.is_self) {
+        return;
+    }
+
+
+    const status =
+        String(
+            profile.connection_status || ""
+        ).toLowerCase();
+
+
+    if (status === "connected") {
 
         connectionStatus.textContent =
             "Connected";
@@ -353,40 +221,18 @@ function renderConnectionStatus(user) {
             "hidden"
         );
 
-    } else {
-
-        connectionStatus.classList.add(
-            "hidden"
-        );
+        return;
     }
 
 
-    if (connectionType) {
+    if (profile.is_connected === true) {
 
-        if (connected) {
+        connectionStatus.textContent =
+            "Connected";
 
-            connectionType.textContent =
-                "Connected";
-
-        } else if (
-            status === "pending_sent"
-        ) {
-
-            connectionType.textContent =
-                "Request sent";
-
-        } else if (
-            status === "pending_received"
-        ) {
-
-            connectionType.textContent =
-                "Request received";
-
-        } else {
-
-            connectionType.textContent =
-                "Not connected";
-        }
+        connectionStatus.classList.remove(
+            "hidden"
+        );
     }
 }
 
@@ -395,50 +241,106 @@ function renderConnectionStatus(user) {
    PERSONAL CATEGORY
    ========================================================= */
 
-function renderPersonalCategory(user) {
+function renderPersonalCategory(profile) {
 
     if (!personalCategory) {
         return;
     }
 
-    const category =
-        normalizeCategory(
-            user.category ||
-            user.personal_category ||
-            user.personalCategory ||
-            user.connection_category
-        );
+    let category = null;
 
 
-    personalCategory.classList.remove(
-        "friend",
-        "family"
-    );
+    if (
+        profile &&
+        profile.personal_category
+    ) {
+        category =
+            profile.personal_category;
+    }
 
 
-    if (category === "friend") {
+    if (
+        !category &&
+        profile &&
+        profile.category
+    ) {
+        category =
+            profile.category;
+    }
+
+
+    if (
+        !category &&
+        profile &&
+        profile.connection_category
+    ) {
+        category =
+            profile.connection_category;
+    }
+
+
+    if (!category) {
+
+        personalCategory.textContent =
+            "—";
+
+        return;
+    }
+
+
+    const normalized =
+        String(category)
+            .trim()
+            .toLowerCase();
+
+
+    if (normalized === "friend") {
 
         personalCategory.textContent =
             "Friend";
 
-        personalCategory.classList.add(
-            "friend"
-        );
+        return;
+    }
 
-    } else if (category === "family") {
+
+    if (normalized === "family") {
 
         personalCategory.textContent =
             "Family";
 
-        personalCategory.classList.add(
-            "family"
+        return;
+    }
+
+
+    personalCategory.textContent =
+        category;
+}
+
+
+/* =========================================================
+   PROFILE PHOTO
+   ========================================================= */
+
+function renderProfilePhoto(profile) {
+
+    if (!profilePhoto) {
+        return;
+    }
+
+    profilePhoto.src =
+        getProfilePhoto(
+            profile.profile_photo
         );
 
-    } else {
 
-        personalCategory.textContent =
-            "—";
-    }
+    profilePhoto.onerror =
+        function () {
+
+            profilePhoto.onerror = null;
+
+            profilePhoto.src =
+                "/static/images/default-profile.png";
+        };
 }
 
 
@@ -446,94 +348,86 @@ function renderPersonalCategory(user) {
    RENDER PROFILE
    ========================================================= */
 
-function renderProfile(user) {
+function renderProfile(profile) {
 
-    const name =
-        user.name ||
-        user.full_name ||
-        "Unknown User";
-
-
-    const username =
-        user.username ||
-        user.user_name ||
-        user.handle ||
-        "";
+    if (!profile) {
+        return;
+    }
 
 
-    const returnedUserId =
-        user.user_id ||
-        user.userId ||
-        user.id ||
-        userId;
-
-
-    const bio =
-        user.bio ||
-        "No bio available.";
-
-
-    /* =====================================================
-       HEADER NAME
-       ===================================================== */
+    /* Header name */
 
     if (profileHeaderTitle) {
 
         profileHeaderTitle.textContent =
-            name;
+            escapeText(
+                profile.name || "Profile"
+            );
     }
 
 
-    /* =====================================================
-       USERNAME
-       ===================================================== */
+    /* Username */
 
     if (profileUsername) {
 
-        if (username) {
+        const username =
+            profile.username || "";
 
-            profileUsername.textContent =
-                username.startsWith("@")
-                    ? username
-                    : `@${username}`;
-
-        } else {
-
-            profileUsername.textContent =
-                "@username";
-        }
+        profileUsername.textContent =
+            username
+                ? `@${username}`
+                : "@username";
     }
 
 
-    /* =====================================================
-       USER ID
-       ===================================================== */
+    /* User ID */
 
     if (profileUserId) {
 
         profileUserId.textContent =
-            returnedUserId
-                ? String(returnedUserId)
-                : "User ID";
+            escapeText(
+                profile.user_id || ""
+            );
     }
 
 
-    /* =====================================================
-       BIO
-       ===================================================== */
+    /* Photo */
+
+    renderProfilePhoto(profile);
+
+
+    /* Connection */
+
+    renderConnectionStatus(profile);
+
+
+    /* Bio */
 
     if (profileBio) {
 
-        profileBio.textContent =
-            bio;
+        const bio =
+            profile.bio;
+
+        if (
+            bio !== null &&
+            bio !== undefined &&
+            String(bio).trim() !== ""
+        ) {
+
+            profileBio.textContent =
+                String(bio).trim();
+
+        } else {
+
+            profileBio.textContent =
+                "No bio available.";
+        }
     }
 
 
-    renderProfilePhoto(user);
+    /* Category */
 
-    renderConnectionStatus(user);
-
-    renderPersonalCategory(user);
+    renderPersonalCategory(profile);
 }
 
 
@@ -543,10 +437,18 @@ function renderProfile(user) {
 
 async function shareProfile() {
 
-    closeProfileMenu();
+    if (!targetUserId) {
+
+        alert(
+            "Profile link is not available."
+        );
+
+        return;
+    }
+
 
     const shareUrl =
-        `${window.location.origin}/profile?user_id=${encodeURIComponent(userId)}`;
+        `${window.location.origin}/profile?user_id=${encodeURIComponent(targetUserId)}`;
 
 
     const shareTitle =
@@ -555,11 +457,17 @@ async function shareProfile() {
             : "Usanex Profile";
 
 
-    try {
+    closeProfileMenu();
 
-        if (
-            navigator.share
-        ) {
+
+    /* Native share */
+
+    if (
+        navigator.share &&
+        typeof navigator.share === "function"
+    ) {
+
+        try {
 
             await navigator.share({
                 title: shareTitle,
@@ -568,13 +476,27 @@ async function shareProfile() {
             });
 
             return;
+
+        } catch (error) {
+
+            if (
+                error &&
+                error.name === "AbortError"
+            ) {
+                return;
+            }
         }
+    }
 
 
-        if (
-            navigator.clipboard &&
-            navigator.clipboard.writeText
-        ) {
+    /* Clipboard fallback */
+
+    if (
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === "function"
+    ) {
+
+        try {
 
             await navigator.clipboard.writeText(
                 shareUrl
@@ -585,25 +507,16 @@ async function shareProfile() {
             );
 
             return;
+
+        } catch (error) {
+            // Continue to final fallback.
         }
-
-
-        alert(
-            shareUrl
-        );
-
-    } catch (error) {
-
-        /*
-         * User cancelled native share.
-         * No error message needed.
-         */
-
-        console.log(
-            "Share cancelled:",
-            error
-        );
     }
+
+
+    /* Final fallback */
+
+    alert(shareUrl);
 }
 
 
@@ -624,12 +537,12 @@ if (blockButton) {
 
     blockButton.addEventListener(
         "click",
-        () => {
+        function () {
 
             closeProfileMenu();
 
             alert(
-                "Block feature will be connected to the backend."
+                "Block feature will be available soon."
             );
         }
     );
@@ -644,12 +557,12 @@ if (qrButton) {
 
     qrButton.addEventListener(
         "click",
-        () => {
+        function () {
 
             closeProfileMenu();
 
             alert(
-                "QR Code feature will be added next."
+                "QR Code feature will be available soon."
             );
         }
     );
@@ -664,12 +577,12 @@ if (reportButton) {
 
     reportButton.addEventListener(
         "click",
-        () => {
+        function () {
 
             closeProfileMenu();
 
             alert(
-                "Report feature will be connected to the backend."
+                "Report feature will be available soon."
             );
         }
     );
@@ -677,151 +590,84 @@ if (reportButton) {
 
 
 /* =========================================================
-   LOADING STATE
-   ========================================================= */
-
-function showLoading() {
-
-    if (profileHeaderTitle) {
-
-        profileHeaderTitle.textContent =
-            "Loading...";
-    }
-
-
-    if (profileUsername) {
-
-        profileUsername.textContent =
-            "";
-    }
-
-
-    if (profileUserId) {
-
-        profileUserId.textContent =
-            "";
-    }
-
-
-    if (profileBio) {
-
-        profileBio.textContent =
-            "Loading profile...";
-    }
-}
-
-
-/* =========================================================
-   ERROR STATE
-   ========================================================= */
-
-function showError(message) {
-
-    if (profileHeaderTitle) {
-
-        profileHeaderTitle.textContent =
-            "Profile";
-    }
-
-
-    if (profileUsername) {
-
-        profileUsername.textContent =
-            "";
-    }
-
-
-    if (profileUserId) {
-
-        profileUserId.textContent =
-            "";
-    }
-
-
-    if (profileBio) {
-
-        profileBio.textContent =
-            message ||
-            "Unable to load this profile.";
-
-        profileBio.classList.add(
-            "profile-error"
-        );
-    }
-
-
-    if (connectionStatus) {
-
-        connectionStatus.classList.add(
-            "hidden"
-        );
-    }
-}
-
-
-/* =========================================================
-   FETCH PROFILE
+   LOAD PROFILE
    ========================================================= */
 
 async function loadProfile() {
 
-    if (!userId) {
+    if (!targetUserId) {
 
-        showError(
-            "No user was selected."
-        );
+        if (profileHeaderTitle) {
+            profileHeaderTitle.textContent =
+                "Profile";
+        }
+
+        if (profileBio) {
+            profileBio.textContent =
+                "Profile not found.";
+        }
 
         return;
     }
-
-
-    showLoading();
 
 
     try {
 
         const response =
             await fetch(
-                `/api/profile/${encodeURIComponent(userId)}`,
+                `/api/profile/${encodeURIComponent(targetUserId)}`,
                 {
                     method: "GET",
-
                     credentials: "include",
-
                     headers: {
-                        "Accept":
-                            "application/json"
+                        "Accept": "application/json"
                     }
                 }
             );
 
 
+        if (response.status === 401) {
+
+            window.location.href =
+                "/login";
+
+            return;
+        }
+
+
+        if (response.status === 403) {
+
+            if (profileHeaderTitle) {
+                profileHeaderTitle.textContent =
+                    "Profile";
+            }
+
+            if (profileBio) {
+                profileBio.textContent =
+                    "This profile is not available.";
+            }
+
+            return;
+        }
+
+
+        if (response.status === 404) {
+
+            if (profileHeaderTitle) {
+                profileHeaderTitle.textContent =
+                    "Profile";
+            }
+
+            if (profileBio) {
+                profileBio.textContent =
+                    "Profile not found.";
+            }
+
+            return;
+        }
+
+
         if (!response.ok) {
-
-            if (response.status === 403) {
-
-                throw new Error(
-                    "This profile is available only to connected users."
-                );
-            }
-
-
-            if (response.status === 404) {
-
-                throw new Error(
-                    "User profile not found."
-                );
-            }
-
-
-            if (response.status === 401) {
-
-                throw new Error(
-                    "Please login again."
-                );
-            }
-
-
             throw new Error(
                 `Profile request failed: ${response.status}`
             );
@@ -832,38 +678,42 @@ async function loadProfile() {
             await response.json();
 
 
-        const user =
-            data.user ||
-            data.profile ||
-            data;
-
-
         if (
-            !user ||
-            typeof user !== "object"
+            !data ||
+            data.ok !== true ||
+            !data.profile
         ) {
-
             throw new Error(
                 "Invalid profile response."
             );
         }
 
 
-        renderProfile(user);
+        renderProfile(
+            data.profile
+        );
 
 
     } catch (error) {
 
         console.error(
-            "Usanex profile error:",
+            "Profile loading error:",
             error
         );
 
 
-        showError(
-            error.message ||
-            "Unable to load this profile."
-        );
+        if (profileHeaderTitle) {
+
+            profileHeaderTitle.textContent =
+                "Profile";
+        }
+
+
+        if (profileBio) {
+
+            profileBio.textContent =
+                "Unable to load profile.";
+        }
     }
 }
 
@@ -874,7 +724,7 @@ async function loadProfile() {
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    function () {
 
         loadProfile();
 
