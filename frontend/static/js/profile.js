@@ -15,6 +15,24 @@ const backButton =
 const profileHeaderTitle =
     document.getElementById("profileHeaderTitle");
 
+const profileMenuButton =
+    document.getElementById("profileMenuButton");
+
+const profileMenu =
+    document.getElementById("profileMenu");
+
+const blockButton =
+    document.getElementById("blockButton");
+
+const shareButton =
+    document.getElementById("shareButton");
+
+const qrButton =
+    document.getElementById("qrButton");
+
+const reportButton =
+    document.getElementById("reportButton");
+
 const profilePhoto =
     document.getElementById("profilePhoto");
 
@@ -111,6 +129,118 @@ function normalizeCategory(category) {
 
     return "";
 }
+
+
+/* =========================================================
+   MENU
+   ========================================================= */
+
+function openProfileMenu() {
+
+    if (!profileMenu) {
+        return;
+    }
+
+    profileMenu.classList.remove("hidden");
+
+    if (profileMenuButton) {
+
+        profileMenuButton.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+    }
+}
+
+
+function closeProfileMenu() {
+
+    if (!profileMenu) {
+        return;
+    }
+
+    profileMenu.classList.add("hidden");
+
+    if (profileMenuButton) {
+
+        profileMenuButton.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+    }
+}
+
+
+function toggleProfileMenu() {
+
+    if (!profileMenu) {
+        return;
+    }
+
+    if (
+        profileMenu.classList.contains("hidden")
+    ) {
+
+        openProfileMenu();
+
+    } else {
+
+        closeProfileMenu();
+    }
+}
+
+
+if (profileMenuButton) {
+
+    profileMenuButton.addEventListener(
+        "click",
+        (event) => {
+
+            event.stopPropagation();
+
+            toggleProfileMenu();
+        }
+    );
+}
+
+
+/* =========================================================
+   CLOSE MENU ON OUTSIDE CLICK
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    (event) => {
+
+        if (!profileMenu) {
+            return;
+        }
+
+        if (
+            !profileMenu.contains(event.target) &&
+            !profileMenuButton.contains(event.target)
+        ) {
+
+            closeProfileMenu();
+        }
+    }
+);
+
+
+/* =========================================================
+   ESCAPE KEY
+   ========================================================= */
+
+document.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (event.key === "Escape") {
+
+            closeProfileMenu();
+        }
+    }
+);
 
 
 /* =========================================================
@@ -318,19 +448,11 @@ function renderPersonalCategory(user) {
 
 function renderProfile(user) {
 
-    /* -----------------------------------------------------
-       NAME
-       ----------------------------------------------------- */
-
     const name =
         user.name ||
         user.full_name ||
         "Unknown User";
 
-
-    /* -----------------------------------------------------
-       USERNAME
-       ----------------------------------------------------- */
 
     const username =
         user.username ||
@@ -339,10 +461,6 @@ function renderProfile(user) {
         "";
 
 
-    /* -----------------------------------------------------
-       USER ID
-       ----------------------------------------------------- */
-
     const returnedUserId =
         user.user_id ||
         user.userId ||
@@ -350,17 +468,13 @@ function renderProfile(user) {
         userId;
 
 
-    /* -----------------------------------------------------
-       BIO
-       ----------------------------------------------------- */
-
     const bio =
         user.bio ||
         "No bio available.";
 
 
     /* =====================================================
-       HEADER = ONLY NAME
+       HEADER NAME
        ===================================================== */
 
     if (profileHeaderTitle) {
@@ -415,15 +529,150 @@ function renderProfile(user) {
     }
 
 
-    /* =====================================================
-       OTHER DATA
-       ===================================================== */
-
     renderProfilePhoto(user);
 
     renderConnectionStatus(user);
 
     renderPersonalCategory(user);
+}
+
+
+/* =========================================================
+   SHARE
+   ========================================================= */
+
+async function shareProfile() {
+
+    closeProfileMenu();
+
+    const shareUrl =
+        `${window.location.origin}/profile?user_id=${encodeURIComponent(userId)}`;
+
+
+    const shareTitle =
+        profileHeaderTitle
+            ? profileHeaderTitle.textContent.trim()
+            : "Usanex Profile";
+
+
+    try {
+
+        if (
+            navigator.share
+        ) {
+
+            await navigator.share({
+                title: shareTitle,
+                text: shareTitle,
+                url: shareUrl
+            });
+
+            return;
+        }
+
+
+        if (
+            navigator.clipboard &&
+            navigator.clipboard.writeText
+        ) {
+
+            await navigator.clipboard.writeText(
+                shareUrl
+            );
+
+            alert(
+                "Profile link copied."
+            );
+
+            return;
+        }
+
+
+        alert(
+            shareUrl
+        );
+
+    } catch (error) {
+
+        /*
+         * User cancelled native share.
+         * No error message needed.
+         */
+
+        console.log(
+            "Share cancelled:",
+            error
+        );
+    }
+}
+
+
+if (shareButton) {
+
+    shareButton.addEventListener(
+        "click",
+        shareProfile
+    );
+}
+
+
+/* =========================================================
+   BLOCK
+   ========================================================= */
+
+if (blockButton) {
+
+    blockButton.addEventListener(
+        "click",
+        () => {
+
+            closeProfileMenu();
+
+            alert(
+                "Block feature will be connected to the backend."
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   QR CODE
+   ========================================================= */
+
+if (qrButton) {
+
+    qrButton.addEventListener(
+        "click",
+        () => {
+
+            closeProfileMenu();
+
+            alert(
+                "QR Code feature will be added next."
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   REPORT
+   ========================================================= */
+
+if (reportButton) {
+
+    reportButton.addEventListener(
+        "click",
+        () => {
+
+            closeProfileMenu();
+
+            alert(
+                "Report feature will be connected to the backend."
+            );
+        }
+    );
 }
 
 
