@@ -2,18 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Profile - Usanex</title>
 
-    <link rel="stylesheet" href="/static/css/profile.css?v=7">
+    <link
+        rel="stylesheet"
+        href="/static/css/profile.css?v=8"
+    >
 </head>
 
 <body>
 
 <main class="profile-page">
 
-    <!-- HEADER -->
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
     <header class="profile-header">
 
         <button
@@ -87,59 +96,163 @@
     </header>
 
 
-    <!-- PROFILE -->
-    <section class="profile-content">
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
 
-        <!-- PROFILE PHOTO -->
-        <div class="profile-photo-wrapper">
-
-            <img
-                id="profilePhoto"
-                class="profile-photo"
-                src="/static/images/default-profile.png"
-                alt="Profile photo"
-            >
-
+    <section
+        id="profileError"
+        class="profile-error hidden"
+    >
+        <div class="profile-error-title">
+            Unable to open profile
         </div>
 
-
-        <!-- USERNAME -->
         <div
-            id="profileUsername"
-            class="profile-username"
+            id="profileErrorMessage"
+            class="profile-error-message"
         >
-            @username
+            Please try again.
         </div>
 
-
-        <!-- USER ID -->
-        <div
-            id="profileUserId"
-            class="profile-user-id"
+        <button
+            id="profileErrorBack"
+            class="profile-error-button"
+            type="button"
         >
-            user_id
-        </div>
+            Go Back
+        </button>
+    </section>
 
 
-        <!-- CONNECTION -->
-        <div
-            id="connectionStatus"
-            class="connection-status hidden"
-        >
+    <!-- =====================================================
+         PROFILE CONTENT
+    ====================================================== -->
 
-            <span id="connectionStatusText">
-                Connected
-            </span>
+    <section
+        id="profileContent"
+        class="profile-content"
+    >
 
-            <span
-                id="connectionCategory"
-                class="connection-category hidden"
-            ></span>
+        <!-- =================================================
+             PROFILE TOP
+        ================================================== -->
 
-        </div>
+        <section class="profile-top">
+
+            <!-- Profile photo -->
+
+            <div class="profile-photo-wrapper">
+
+                <img
+                    id="profilePhoto"
+                    class="profile-photo"
+                    src="/static/images/default-profile.png"
+                    alt="Profile photo"
+                >
+
+            </div>
 
 
-        <!-- BIO -->
+            <!-- User information -->
+
+            <div class="profile-user-info">
+
+                <div
+                    id="profileUsername"
+                    class="profile-username"
+                >
+                    @username
+                </div>
+
+                <div
+                    id="profileUserId"
+                    class="profile-user-id"
+                >
+                    user_id
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             STATS
+        ================================================== -->
+
+        <section class="profile-stats">
+
+            <div class="profile-stat">
+
+                <div
+                    id="followersCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </div>
+
+                <div class="profile-stat-label">
+                    Followers
+                </div>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <div
+                    id="connectedCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </div>
+
+                <div class="profile-stat-label">
+                    Connected
+                </div>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <div
+                    id="followingCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </div>
+
+                <div class="profile-stat-label">
+                    Following
+                </div>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <div
+                    id="postsCount"
+                    class="profile-stat-number"
+                >
+                    0
+                </div>
+
+                <div class="profile-stat-label">
+                    Posts
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             BIO
+        ================================================== -->
+
         <section class="bio-section">
 
             <h2 class="section-title">
@@ -156,12 +269,38 @@
         </section>
 
 
-        <!-- POSTS -->
-        <section class="posts-section">
+        <!-- =================================================
+             CONTENT TABS
+        ================================================== -->
 
-            <h2 class="section-title">
-                Posts
-            </h2>
+        <section class="profile-content-section">
+
+            <div class="profile-tabs">
+
+                <button
+                    id="reelsTab"
+                    class="profile-tab active"
+                    type="button"
+                    data-tab="reels"
+                >
+                    Reels
+                </button>
+
+                <button
+                    id="photosTab"
+                    class="profile-tab"
+                    type="button"
+                    data-tab="photos"
+                >
+                    Photos
+                </button>
+
+            </div>
+
+
+            <!-- =============================================
+                 CONTENT GRID
+            ============================================== -->
 
             <div
                 id="postsContainer"
@@ -169,7 +308,7 @@
             >
 
                 <div class="empty-posts">
-                    No posts yet.
+                    No reels yet.
                 </div>
 
             </div>
@@ -181,7 +320,10 @@
 </main>
 
 
-<script src="/static/js/profile.js?v=7" defer></script>
+<script
+    src="/static/js/profile.js?v=8"
+    defer
+></script>
 
 </body>
 </html>
