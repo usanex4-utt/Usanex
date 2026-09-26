@@ -9,6 +9,10 @@ from ..database.database import get_db
 from .auth import get_current_user_from_request
 
 
+# =========================================================
+# ROUTER
+# =========================================================
+
 router = APIRouter(
     tags=["Pages"],
 )
@@ -211,6 +215,44 @@ def notifications_page(
     return templates.TemplateResponse(
         request=request,
         name="notifications.html",
+        context={
+            "user": current_user,
+        },
+    )
+
+
+# =========================================================
+# CHAT
+#
+# URL:
+# /chat
+#
+# Chat page is available only to logged-in users.
+# =========================================================
+
+@router.get(
+    "/chat",
+    include_in_schema=False,
+)
+def chat_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    current_user = get_current_user_from_request(
+        request=request,
+        db=db,
+    )
+
+    if current_user is None:
+        return RedirectResponse(
+            url="/login",
+            status_code=307,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="chat.html",
         context={
             "user": current_user,
         },
