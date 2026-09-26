@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..database.database import get_db
 from ..database.models import (
     User,
+    UserFollow,
     ConnectionRequest,
     ConnectionVerification,
     ConnectionNotification,
@@ -42,6 +43,10 @@ class ConnectionRequestBody(BaseModel):
     user_id: str
 
 
+class FollowBody(BaseModel):
+    user_id: str
+
+
 class LegacyFollowBody(BaseModel):
     requester_id: Optional[str] = None
     target_user_id: Optional[str] = None
@@ -65,7 +70,7 @@ class PersonalCategoryBody(BaseModel):
 
 
 # ============================================================
-# HELPERS
+# AUTHENTICATION HELPER
 # ============================================================
 
 def get_authenticated_user(
@@ -86,9 +91,14 @@ def get_authenticated_user(
     return user
 
 
+# ============================================================
+# CATEGORY HELPER
+# ============================================================
+
 def normalize_personal_category(
     category: str,
 ) -> str:
+
     if not category:
         raise HTTPException(
             status_code=400,
@@ -116,6 +126,10 @@ def normalize_personal_category(
 
     return normalized
 
+
+# ============================================================
+# CONNECTION HELPER
+# ============================================================
 
 def get_pair_connection(
     db: Session,
@@ -148,6 +162,10 @@ def get_pair_connection(
     )
 
 
+# ============================================================
+# REQUEST HELPER
+# ============================================================
+
 def get_latest_request(
     db: Session,
     sender_id: int,
@@ -166,6 +184,10 @@ def get_latest_request(
     )
 
 
+# ============================================================
+# NOTIFICATION HELPER
+# ============================================================
+
 def get_latest_notification_for_request(
     db: Session,
     request_id: int,
@@ -183,6 +205,10 @@ def get_latest_notification_for_request(
     )
 
 
+# ============================================================
+# PERSONAL CATEGORY HELPER
+# ============================================================
+
 def get_personal_category(
     db: Session,
     user_id: int,
@@ -197,6 +223,248 @@ def get_personal_category(
         )
         .first()
     )
+
+
+# ============================================================
+# FOLLOW HELPER
+# ============================================================
+
+def get_follow(
+    db: Session,
+    follower_id: int,
+    following_id: int,
+):
+    return (
+        db.query(UserFollow)
+        .filter(
+            UserFollow.follower_id == follower_id,
+            UserFollow.following_id == following_id,
+        )
+        .first()
+    )
+
+
+# ============================================================
+# FOLLOW USER
+# ============================================================
+
+@router.post("/follow")
+def follow_user(
+    body: FollowBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    target_user = (
+        db.query(User)
+        .filter(
+            User.user_id == body.user_id.strip()
+        )
+        .first()
+    )
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    if target_user.id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot follow yourself",
+        )
+
+    existing_follow = get_follow(
+        db,
+        current_user.id,
+        target_user.id,
+    )
+
+    if existing_follow:
+
+        return {
+            "success": True,
+            "status": "following",
+            "message": "Already following",
+            "user_id": target_user.user_id,
+        }
+
+    follow = UserFollow(
+        follower_id=current_user.id,
+        following_id=target_user.id,
+        created_at=datetime.utcnow(),
+    )
+
+    db.add(follow)
+    db.commit()
+    db.refresh(follow)
+
+    return {
+        "success": True,
+        "status": "following",
+        "message": "User followed successfully",
+        "user_id": target_user.user_id,
+    }
+
+
+# ============================================================
+# UNFOLLOW USER
+# ============================================================
+
+@router.post("/unfollow")
+def unfollow_user(
+    body: FollowBody,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    target_user = (
+        db.query(User)
+        .filter(
+            User.user_id == body.user_id.strip()
+        )
+        .first()
+    )
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    if target_user.id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot unfollow yourself",
+        )
+
+    existing_follow = get_follow(
+        db,
+        current_user.id,
+        target_user.id,
+    )
+
+    if existing_follow:
+
+        db.delete(existing_follow)
+        db.commit()
+
+    return {
+        "success": True,
+        "status": "none",
+        "message": "User unfollowed successfully",
+        "user_id": target_user.user_id,
+    }
+
+
+# ============================================================
+# FOLLOW STATUS
+# ============================================================
+
+@router.get("/follow-status/{user_id}")
+def get_follow_status(
+    user_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    current_user = get_authenticated_user(
+        request,
+        db,
+    )
+
+    target_user = (
+        db.query(User)
+        .filter(
+            User.user_id == user_id.strip()
+        )
+        .first()
+    )
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    if target_user.id == current_user.id:
+        return {
+            "success": True,
+            "is_following": False,
+            "is_self": True,
+        }
+
+    existing_follow = get_follow(
+        db,
+        current_user.id,
+        target_user.id,
+    )
+
+    return {
+        "success": True,
+        "is_following": existing_follow is not None,
+        "is_self": False,
+    }
+
+
+# ============================================================
+# FOLLOW COUNTS
+# ============================================================
+
+@router.get("/follow-counts/{user_id}")
+def get_follow_counts(
+    user_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    get_authenticated_user(
+        request,
+        db,
+    )
+
+    target_user = (
+        db.query(User)
+        .filter(
+            User.user_id == user_id.strip()
+        )
+        .first()
+    )
+
+    if target_user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    followers = (
+        db.query(UserFollow)
+        .filter(
+            UserFollow.following_id == target_user.id
+        )
+        .count()
+    )
+
+    following = (
+        db.query(UserFollow)
+        .filter(
+            UserFollow.follower_id == target_user.id
+        )
+        .count()
+    )
+
+    return {
+        "success": True,
+        "followers": followers,
+        "following": following,
+    }
 
 
 # ============================================================
@@ -234,10 +502,6 @@ def send_connection_request(
             detail="You cannot connect with yourself",
         )
 
-    # --------------------------------------------------------
-    # Already connected
-    # --------------------------------------------------------
-
     existing_connection = get_pair_connection(
         db,
         current_user.id,
@@ -245,6 +509,7 @@ def send_connection_request(
     )
 
     if existing_connection:
+
         personal_category = get_personal_category(
             db,
             current_user.id,
@@ -262,10 +527,6 @@ def send_connection_request(
             ),
         }
 
-    # --------------------------------------------------------
-    # Check latest requests in both directions
-    # --------------------------------------------------------
-
     outgoing = get_latest_request(
         db,
         current_user.id,
@@ -278,8 +539,8 @@ def send_connection_request(
         current_user.id,
     )
 
-    # Existing pending outgoing request
     if outgoing and outgoing.status == "pending":
+
         return {
             "success": True,
             "status": "pending_sent",
@@ -287,8 +548,8 @@ def send_connection_request(
             "request_id": outgoing.id,
         }
 
-    # Target already sent request
     if incoming and incoming.status == "pending":
+
         return {
             "success": True,
             "status": "pending_received",
@@ -299,10 +560,6 @@ def send_connection_request(
         }
 
     now = datetime.utcnow()
-
-    # --------------------------------------------------------
-    # Reuse previously rejected outgoing request
-    # --------------------------------------------------------
 
     if outgoing and outgoing.status == "rejected":
 
@@ -323,10 +580,6 @@ def send_connection_request(
 
         db.add(request_row)
         db.flush()
-
-    # --------------------------------------------------------
-    # Create notification
-    # --------------------------------------------------------
 
     notification = ConnectionNotification(
         receiver_id=target_user.id,
@@ -353,11 +606,11 @@ def send_connection_request(
 
 
 # ============================================================
-# LEGACY FOLLOW COMPATIBILITY
+# LEGACY CONNECTION FOLLOW ROUTE
 # ============================================================
 
-@router.post("/follow")
-def follow_compatibility(
+@router.post("/follow-request")
+def follow_request_compatibility(
     body: LegacyFollowBody,
     request: Request,
     db: Session = Depends(get_db),
@@ -397,10 +650,6 @@ def accept_connection_request(
         db,
     )
 
-    # --------------------------------------------------------
-    # Find request
-    # --------------------------------------------------------
-
     connection_request = (
         db.query(ConnectionRequest)
         .filter(
@@ -415,18 +664,11 @@ def accept_connection_request(
             detail="Connection request not found",
         )
 
-    if (
-        connection_request.receiver_id
-        != current_user.id
-    ):
+    if connection_request.receiver_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="You cannot accept this request",
         )
-
-    # --------------------------------------------------------
-    # Already accepted
-    # --------------------------------------------------------
 
     if connection_request.status == "accepted":
 
@@ -453,10 +695,6 @@ def accept_connection_request(
             ),
         )
 
-    # --------------------------------------------------------
-    # Request must be pending
-    # --------------------------------------------------------
-
     if connection_request.status != "pending":
         raise HTTPException(
             status_code=400,
@@ -467,10 +705,6 @@ def accept_connection_request(
 
     connection_request.status = "accepted"
     connection_request.updated_at = now
-
-    # --------------------------------------------------------
-    # Create actual connection
-    # --------------------------------------------------------
 
     existing_connection = get_pair_connection(
         db,
@@ -494,10 +728,6 @@ def accept_connection_request(
 
         existing_connection.updated_at = now
 
-    # --------------------------------------------------------
-    # Mark original request notification as read
-    # --------------------------------------------------------
-
     original_notification = (
         get_latest_notification_for_request(
             db,
@@ -507,10 +737,6 @@ def accept_connection_request(
 
     if original_notification:
         original_notification.is_read = 1
-
-    # --------------------------------------------------------
-    # Notify requester
-    # --------------------------------------------------------
 
     accepted_notification = ConnectionNotification(
         receiver_id=connection_request.sender_id,
@@ -564,16 +790,14 @@ def reject_connection_request(
             detail="Connection request not found",
         )
 
-    if (
-        connection_request.receiver_id
-        != current_user.id
-    ):
+    if connection_request.receiver_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="You cannot reject this request",
         )
 
     if connection_request.status != "pending":
+
         return {
             "success": True,
             "status": connection_request.status,
@@ -594,10 +818,6 @@ def reject_connection_request(
 
     if original_notification:
         original_notification.is_read = 1
-
-    # --------------------------------------------------------
-    # Notify original sender
-    # --------------------------------------------------------
 
     rejected_notification = ConnectionNotification(
         receiver_id=connection_request.sender_id,
@@ -656,7 +876,7 @@ def reject_compatibility(
 
 
 # ============================================================
-# GET CONNECTION REQUESTS
+# CONNECTION REQUESTS
 # ============================================================
 
 @router.get("/requests")
@@ -721,7 +941,7 @@ def get_connection_requests(
 
 
 # ============================================================
-# GET NOTIFICATIONS
+# NOTIFICATIONS
 # ============================================================
 
 @router.get("/notifications")
@@ -771,10 +991,6 @@ def get_connection_notifications(
             .first()
         )
 
-        # ----------------------------------------------------
-        # Message
-        # ----------------------------------------------------
-
         if row.notification_type == "connection_request":
 
             message = (
@@ -803,7 +1019,6 @@ def get_connection_notifications(
         result.append({
             "id": row.id,
             "notification_id": row.id,
-
             "type": row.notification_type,
             "notification_type": row.notification_type,
 
@@ -812,9 +1027,7 @@ def get_connection_notifications(
             "sender_username": sender.username,
             "sender_name": sender.name,
 
-            "sender_profile_picture": (
-                sender.profile_photo
-            ),
+            "sender_profile_picture": sender.profile_photo,
 
             "message": message,
 
@@ -846,7 +1059,7 @@ def get_connection_notifications(
 
 
 # ============================================================
-# LEGACY NOTIFICATIONS ROUTE
+# LEGACY NOTIFICATIONS
 # ============================================================
 
 @router.get("/all")
@@ -903,7 +1116,7 @@ def mark_notification_read(
 
 
 # ============================================================
-# LEGACY READ ROUTE
+# LEGACY READ
 # ============================================================
 
 @router.post("/read")
@@ -920,7 +1133,7 @@ def mark_read_compatibility(
 
 
 # ============================================================
-# SET PERSONAL FRIEND / FAMILY CATEGORY
+# PERSONAL CATEGORY
 # ============================================================
 
 @router.post("/category")
@@ -953,10 +1166,6 @@ def set_personal_category(
             status_code=400,
             detail="You cannot categorize yourself",
         )
-
-    # --------------------------------------------------------
-    # Must actually be connected
-    # --------------------------------------------------------
 
     connection = get_pair_connection(
         db,
@@ -1116,12 +1325,6 @@ def get_connections(
         if user is None:
             continue
 
-        # ----------------------------------------------------
-        # IMPORTANT:
-        # Category belongs to CURRENT USER only.
-        # It is NOT stored on UserConnection.
-        # ----------------------------------------------------
-
         personal_category = get_personal_category(
             db,
             current_user.id,
@@ -1140,7 +1343,6 @@ def get_connections(
             "name": user.name,
             "profile_photo": user.profile_photo,
 
-            # Personal category of current user
             "category": category,
             "connection_category": category,
             "connection_type": category,
