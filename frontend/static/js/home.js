@@ -1,3 +1,5 @@
+"use strict";
+
 document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
@@ -56,7 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /*
-     * Own profile
+     * OWN PROFILE
+     *
+     * Bottom Profile button opens own profile.
      */
 
     $("profileNav")?.addEventListener("click", () => {
@@ -73,82 +77,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeMenu = $("closeMenu");
 
     function openMenu() {
-
         if (!menuOverlay) {
             return;
         }
 
         menuOverlay.hidden = false;
-
-        document.body.classList.add(
-            "menu-open"
-        );
+        document.body.classList.add("menu-open");
     }
 
-
     function closeSideMenu() {
-
         if (!menuOverlay) {
             return;
         }
 
         menuOverlay.hidden = true;
-
-        document.body.classList.remove(
-            "menu-open"
-        );
+        document.body.classList.remove("menu-open");
     }
 
+    menuButton?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-    menuButton?.addEventListener(
-        "click",
-        (event) => {
+        openMenu();
+    });
 
-            event.preventDefault();
-            event.stopPropagation();
+    closeMenu?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-            openMenu();
-        }
-    );
+        closeSideMenu();
+    });
 
-
-    closeMenu?.addEventListener(
-        "click",
-        (event) => {
-
-            event.preventDefault();
-            event.stopPropagation();
-
+    menuOverlay?.addEventListener("click", (event) => {
+        if (event.target === menuOverlay) {
             closeSideMenu();
         }
-    );
+    });
 
-
-    menuOverlay?.addEventListener(
-        "click",
-        (event) => {
-
-            if (
-                event.target === menuOverlay
-            ) {
-                closeSideMenu();
-            }
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeSideMenu();
+            closeCategoryPopup();
         }
-    );
-
-
-    document.addEventListener(
-        "keydown",
-        (event) => {
-
-            if (event.key === "Escape") {
-
-                closeSideMenu();
-
-                closeCategoryPopup();
-            }
-        }
-    );
+    });
 
 
     /* =====================================================
@@ -177,7 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function getConnectionUser(item) {
-
         if (!item) {
             return {};
         }
@@ -196,13 +166,11 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function isConnectedUser(item) {
-
         if (!item) {
             return false;
         }
 
-        const user =
-            getConnectionUser(item);
+        const user = getConnectionUser(item);
 
         const status = String(
             item.connection_status ??
@@ -214,11 +182,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .trim()
             .toLowerCase();
 
-
         if (!status) {
             return true;
         }
-
 
         return (
             status === "connected" ||
@@ -232,7 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function getUserCategory(item) {
-
         if (!item) {
             return "";
         }
@@ -261,9 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getFilteredUsers() {
 
-        if (
-            currentCategory === "all"
-        ) {
+        if (currentCategory === "all") {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -281,9 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        if (
-            currentCategory === "friend"
-        ) {
+        if (currentCategory === "friend") {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -300,9 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        if (
-            currentCategory === "family"
-        ) {
+        if (currentCategory === "family") {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -310,21 +269,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const category =
                         getUserCategory(item);
 
-                    return (
-                        category === "family"
-                    );
+                    return category === "family";
                 }
             );
         }
 
 
-        /*
-         * Couple Chat
-         */
-
-        if (
-            currentCategory === "couple"
-        ) {
+        if (currentCategory === "couple") {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -342,7 +293,6 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
-
         return [];
     }
 
@@ -357,31 +307,22 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
-        if (
-            currentCategory === "all"
-        ) {
+        if (currentCategory === "all") {
 
             connectedTitle.textContent =
                 "All Connected";
 
-        } else if (
-            currentCategory === "friend"
-        ) {
+        } else if (currentCategory === "friend") {
 
             connectedTitle.textContent =
                 "Friends";
 
-        } else if (
-            currentCategory === "family"
-        ) {
+        } else if (currentCategory === "family") {
 
             connectedTitle.textContent =
                 "Family";
 
-        } else if (
-            currentCategory === "couple"
-        ) {
+        } else if (currentCategory === "couple") {
 
             connectedTitle.textContent =
                 "Couple Chat";
@@ -399,33 +340,24 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         let message =
             "No connected people yet.";
 
-
-        if (
-            currentCategory === "friend"
-        ) {
+        if (currentCategory === "friend") {
 
             message =
                 "No friends added yet.";
 
-        } else if (
-            currentCategory === "family"
-        ) {
+        } else if (currentCategory === "family") {
 
             message =
                 "No family members added yet.";
 
-        } else if (
-            currentCategory === "couple"
-        ) {
+        } else if (currentCategory === "couple") {
 
             message =
                 "No couple chat connection yet.";
         }
-
 
         connectedList.innerHTML = `
             <div class="connected-empty">
@@ -441,7 +373,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let categoryPopup = null;
 
-
     function closeCategoryPopup() {
 
         if (!categoryPopup) {
@@ -449,7 +380,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         categoryPopup.remove();
-
         categoryPopup = null;
 
         document.body.classList.remove(
@@ -465,7 +395,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ) {
 
         closeCategoryPopup();
-
 
         const overlay =
             document.createElement("div");
@@ -483,17 +412,12 @@ document.addEventListener("DOMContentLoaded", () => {
             "true"
         );
 
-
         const box =
             document.createElement("div");
 
         box.className =
             "personal-category-popup";
 
-
-        /* =================================================
-           TITLE
-        ================================================= */
 
         const title =
             document.createElement("div");
@@ -530,7 +454,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "0"
         );
 
-
         friendButton.addEventListener(
             "click",
             async (event) => {
@@ -543,7 +466,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
         );
-
 
         friendButton.addEventListener(
             "keydown",
@@ -564,10 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
-        box.appendChild(
-            friendButton
-        );
+        box.appendChild(friendButton);
 
 
         /* =================================================
@@ -593,7 +512,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "0"
         );
 
-
         familyButton.addEventListener(
             "click",
             async (event) => {
@@ -606,7 +524,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
         );
-
 
         familyButton.addEventListener(
             "keydown",
@@ -627,10 +544,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
-        box.appendChild(
-            familyButton
-        );
+        box.appendChild(familyButton);
 
 
         /* =================================================
@@ -662,7 +576,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 "0"
             );
 
-
             removeButton.addEventListener(
                 "click",
                 async (event) => {
@@ -675,7 +588,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
-
 
             removeButton.addEventListener(
                 "keydown",
@@ -696,10 +608,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             );
 
-
-            box.appendChild(
-                removeButton
-            );
+            box.appendChild(removeButton);
         }
 
 
@@ -726,7 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
             "0"
         );
 
-
         cancelButton.addEventListener(
             "click",
             (event) => {
@@ -736,7 +644,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 closeCategoryPopup();
             }
         );
-
 
         cancelButton.addEventListener(
             "keydown",
@@ -754,15 +661,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
-        box.appendChild(
-            cancelButton
-        );
+        box.appendChild(cancelButton);
 
 
-        overlay.appendChild(
-            box
-        );
+        overlay.appendChild(box);
 
 
         overlay.addEventListener(
@@ -783,10 +685,8 @@ document.addEventListener("DOMContentLoaded", () => {
             overlay
         );
 
-
         categoryPopup =
             overlay;
-
 
         document.body.classList.add(
             "category-popup-open"
@@ -794,9 +694,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         setTimeout(() => {
-
             friendButton.focus();
-
         }, 50);
     }
 
@@ -814,7 +712,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return false;
         }
 
-
         try {
 
             if (
@@ -831,10 +728,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ),
                         {
                             method: "DELETE",
-
-                            credentials:
-                                "include",
-
+                            credentials: "include",
                             headers: {
                                 "Accept":
                                     "application/json"
@@ -842,16 +736,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     );
 
-
-                if (
-                    response.status === 401
-                ) {
+                if (response.status === 401) {
 
                     go("/login");
 
                     return false;
                 }
-
 
                 if (!response.ok) {
 
@@ -860,7 +750,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         response.status
                     );
                 }
-
 
                 return true;
             }
@@ -871,9 +760,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "/api/connections/category",
                     {
                         method: "POST",
-
-                        credentials:
-                            "include",
+                        credentials: "include",
 
                         headers: {
                             "Content-Type":
@@ -883,21 +770,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                 "application/json"
                         },
 
-                        body:
-                            JSON.stringify({
-                                connected_user_id:
-                                    connectedUserId,
+                        body: JSON.stringify({
+                            connected_user_id:
+                                connectedUserId,
 
-                                category:
-                                    category
-                            })
+                            category:
+                                category
+                        })
                     }
                 );
 
 
-            if (
-                response.status === 401
-            ) {
+            if (response.status === 401) {
 
                 go("/login");
 
@@ -910,12 +794,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 let errorMessage =
                     "Unable to update category";
 
-
                 try {
 
                     const errorData =
                         await response.json();
-
 
                     if (
                         errorData &&
@@ -926,16 +808,12 @@ document.addEventListener("DOMContentLoaded", () => {
                             errorData.detail;
                     }
 
-                } catch (error) {
-                    // Ignore JSON parsing error.
-                }
-
+                } catch (_) {}
 
                 throw new Error(
                     errorMessage
                 );
             }
-
 
             return true;
 
@@ -946,12 +824,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-
             alert(
                 error.message ||
                 "Unable to update category."
             );
-
 
             return false;
         }
@@ -971,24 +847,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         const success =
             await savePersonalCategory(
                 userId,
                 newCategory
             );
 
-
         if (!success) {
             return;
         }
-
 
         updateLocalUserCategory(
             userId,
             newCategory
         );
-
 
         closeCategoryPopup();
 
@@ -997,7 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       UPDATE LOCAL USER CATEGORY
+       UPDATE LOCAL CATEGORY
     ===================================================== */
 
     function updateLocalUserCategory(
@@ -1006,56 +878,42 @@ document.addEventListener("DOMContentLoaded", () => {
     ) {
 
         allConnectedUsers =
-            allConnectedUsers.map(
-                (item) => {
+            allConnectedUsers.map((item) => {
 
-                    const user =
-                        getConnectionUser(
-                            item
-                        );
+                const user =
+                    getConnectionUser(item);
 
+                const itemUserId =
+                    user.user_id ||
+                    item.user_id ||
+                    "";
 
-                    const itemUserId =
-                        user.user_id ||
-                        item.user_id ||
-                        "";
+                if (
+                    String(itemUserId) !==
+                    String(connectedUserId)
+                ) {
 
-
-                    if (
-                        String(itemUserId) !==
-                        String(connectedUserId)
-                    ) {
-
-                        return item;
-                    }
-
-
-                    return {
-                        ...item,
-
-                        category:
-                            category || null,
-
-                        connection_category:
-                            category || null,
-
-                        personal_category:
-                            category || null
-                    };
+                    return item;
                 }
-            );
+
+                return {
+                    ...item,
+
+                    category:
+                        category || null,
+
+                    connection_category:
+                        category || null,
+
+                    personal_category:
+                        category || null
+                };
+            });
     }
 
 
     /* =====================================================
        LONG PRESS HANDLER
-       
-       IMPORTANT:
-       Long press is attached to CARD,
-       BUT PROFILE OPENING IS NO LONGER
-       ATTACHED TO CARD CLICK.
-       
-       Profile opens ONLY from DP.
     ===================================================== */
 
     function addLongPressToCard(
@@ -1069,11 +927,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         let pressTimer = null;
-
         let longPressTriggered = false;
-
         let pointerDown = false;
 
         const LONG_PRESS_TIME = 600;
@@ -1094,32 +949,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function startLongPress(event) {
 
-            if (
-                !userId ||
-                !isConnected
-            ) {
+            if (!userId || !isConnected) {
                 return;
             }
-
-
-            /*
-             * IMPORTANT:
-             * Do not start category long press
-             * when pressing the DP.
-             *
-             * DP has its own profile action.
-             */
-
-            const avatar =
-                event.target.closest(
-                    ".connected-person-avatar"
-                );
-
-
-            if (avatar) {
-                return;
-            }
-
 
             if (
                 event.pointerType === "mouse" &&
@@ -1128,53 +960,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-
             pointerDown = true;
-
             longPressTriggered = false;
 
             clearPressTimer();
 
-
             pressTimer =
-                setTimeout(
-                    () => {
+                setTimeout(() => {
 
-                        if (!pointerDown) {
-                            return;
+                    if (!pointerDown) {
+                        return;
+                    }
+
+                    longPressTriggered = true;
+
+                    if (window.getSelection) {
+
+                        const selection =
+                            window.getSelection();
+
+                        if (selection) {
+                            selection.removeAllRanges();
                         }
+                    }
 
+                    createCategoryPopup(
+                        userId,
+                        userName,
+                        getCurrentCategoryForUser(
+                            userId
+                        )
+                    );
 
-                        longPressTriggered =
-                            true;
-
-
-                        if (
-                            window.getSelection
-                        ) {
-
-                            const selection =
-                                window.getSelection();
-
-
-                            if (selection) {
-
-                                selection.removeAllRanges();
-                            }
-                        }
-
-
-                        createCategoryPopup(
-                            userId,
-                            userName,
-                            getCurrentCategoryForUser(
-                                userId
-                            )
-                        );
-
-                    },
-                    LONG_PRESS_TIME
-                );
+                }, LONG_PRESS_TIME);
         }
 
 
@@ -1191,18 +1009,15 @@ document.addEventListener("DOMContentLoaded", () => {
             startLongPress
         );
 
-
         card.addEventListener(
             "pointerup",
             endLongPress
         );
 
-
         card.addEventListener(
             "pointercancel",
             endLongPress
         );
-
 
         card.addEventListener(
             "pointerleave",
@@ -1217,7 +1032,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-
         card.addEventListener(
             "contextmenu",
             (event) => {
@@ -1230,10 +1044,10 @@ document.addEventListener("DOMContentLoaded", () => {
         /*
          * IMPORTANT:
          *
-         * There is intentionally NO card click
-         * profile navigation here.
+         * NO card click -> profile.
          *
-         * Only DP opens profile.
+         * Profile opening is handled ONLY
+         * by the DP/avatar click handler.
          */
     }
 
@@ -1255,12 +1069,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             connection
                         );
 
-
                     const currentUserId =
                         user.user_id ||
                         connection.user_id ||
                         "";
-
 
                     return (
                         String(currentUserId) ===
@@ -1269,15 +1081,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             );
 
-
         return getUserCategory(item);
     }
 
 
     /* =====================================================
        OPEN CONNECTED USER PROFILE
-       
-       ONLY DP USES THIS.
+       ONLY DP USES THIS
     ===================================================== */
 
     function openConnectedUserProfile(
@@ -1288,12 +1098,9 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         go(
             "/profile?user_id=" +
-            encodeURIComponent(
-                userId
-            )
+            encodeURIComponent(userId)
         );
     }
 
@@ -1311,16 +1118,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-
         updateSectionTitle();
-
 
         const users =
             getFilteredUsers();
 
-
         connectedList.innerHTML = "";
-
 
         if (connectedCount) {
 
@@ -1328,9 +1131,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 String(users.length);
         }
 
-
-        connectedSection.hidden =
-            false;
+        connectedSection.hidden = false;
 
 
         if (users.length === 0) {
@@ -1341,271 +1142,254 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        users.forEach(
-            (item) => {
+        users.forEach((item) => {
+
+            /*
+             * ONLY ACTUAL CONNECTIONS
+             */
+
+            if (!isConnectedUser(item)) {
+                return;
+            }
+
+
+            const user =
+                getConnectionUser(item);
+
+            const name =
+                user.name ||
+                user.full_name ||
+                "User";
+
+            const username =
+                user.username ||
+                "";
+
+            const userId =
+                user.user_id ||
+                item.user_id ||
+                "";
+
+            const photo =
+                user.profile_photo ||
+                item.profile_photo ||
+                "";
+
+
+            const card =
+                document.createElement(
+                    "article"
+                );
+
+            card.className =
+                "connected-person-card";
+
+
+            if (userId) {
+
+                card.dataset.userId =
+                    userId;
+            }
+
+
+            card.style.userSelect =
+                "none";
+
+            card.style.webkitUserSelect =
+                "none";
+
+            card.style.touchAction =
+                "manipulation";
+
+
+            /* =============================================
+               AVATAR
+            ============================================= */
+
+            let avatarHtml;
+
+            if (photo) {
+
+                avatarHtml = `
+                    <div
+                        class="connected-person-avatar"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Open ${escapeHtml(name)} profile"
+                    >
+                        <img
+                            src="${escapeHtml(photo)}"
+                            alt="${escapeHtml(name)}"
+                            draggable="false"
+                        >
+                    </div>
+                `;
+
+            } else {
+
+                avatarHtml = `
+                    <div
+                        class="connected-person-avatar"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Open ${escapeHtml(name)} profile"
+                    >
+                        ${escapeHtml(
+                            getInitial(name)
+                        )}
+                    </div>
+                `;
+            }
+
+
+            /* =============================================
+               USER INFO
+               
+               IMPORTANT:
+               These are NOT clickable.
+            ============================================= */
+
+            const infoHtml = `
+                <div
+                    class="connected-person-info"
+                >
+
+                    <strong>
+                        ${escapeHtml(name)}
+                    </strong>
+
+                    ${
+                        username
+                            ? `
+                                <span>
+                                    @${escapeHtml(username)}
+                                </span>
+                              `
+                            : ""
+                    }
+
+                    ${
+                        userId
+                            ? `
+                                <small>
+                                    ${escapeHtml(userId)}
+                                </small>
+                              `
+                            : ""
+                    }
+
+                </div>
+            `;
+
+
+            /* =============================================
+               ARROW
+               
+               IMPORTANT:
+               Arrow is NOT clickable.
+            ============================================= */
+
+            const arrowHtml = `
+                <div
+                    class="connected-person-arrow"
+                    aria-hidden="true"
+                >
+                    ›
+                </div>
+            `;
+
+
+            card.innerHTML =
+                avatarHtml +
+                infoHtml +
+                arrowHtml;
+
+
+            /* =============================================
+               AVATAR ELEMENT
+            ============================================= */
+
+            const avatar =
+                card.querySelector(
+                    ".connected-person-avatar"
+                );
+
+
+            if (avatar) {
+
+                const openProfile =
+                    (event) => {
+
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        openConnectedUserProfile(
+                            userId
+                        );
+                    };
+
 
                 /*
-                 * Only actual connected users.
+                 * CLICK DP
                  */
 
-                if (
-                    !isConnectedUser(item)
-                ) {
-                    return;
-                }
-
-
-                const user =
-                    getConnectionUser(item);
-
-
-                const name =
-                    user.name ||
-                    user.full_name ||
-                    "User";
-
-
-                const username =
-                    user.username ||
-                    "";
-
-
-                const userId =
-                    user.user_id ||
-                    item.user_id ||
-                    "";
-
-
-                const photo =
-                    user.profile_photo ||
-                    item.profile_photo ||
-                    "";
-
-
-                const card =
-                    document.createElement(
-                        "article"
-                    );
-
-
-                card.className =
-                    "connected-person-card";
-
-
-                if (userId) {
-
-                    card.dataset.userId =
-                        userId;
-                }
-
-
-                card.style.userSelect =
-                    "none";
-
-
-                card.style.webkitUserSelect =
-                    "none";
-
-
-                card.style.touchAction =
-                    "manipulation";
-
-
-                /* =========================================
-                   AVATAR
-                ========================================= */
-
-                let avatarHtml;
-
-
-                if (photo) {
-
-                    avatarHtml = `
-                        <div
-                            class="connected-person-avatar"
-                            role="button"
-                            tabindex="0"
-                            aria-label="Open ${escapeHtml(name)} profile"
-                        >
-                            <img
-                                src="${escapeHtml(photo)}"
-                                alt="${escapeHtml(name)}"
-                                draggable="false"
-                            >
-                        </div>
-                    `;
-
-                } else {
-
-                    avatarHtml = `
-                        <div
-                            class="connected-person-avatar"
-                            role="button"
-                            tabindex="0"
-                            aria-label="Open ${escapeHtml(name)} profile"
-                        >
-                            ${escapeHtml(
-                                getInitial(name)
-                            )}
-                        </div>
-                    `;
-                }
-
-
-                /* =========================================
-                   USER INFO
-                ========================================= */
-
-                const infoHtml = `
-                    <div
-                        class="connected-person-info"
-                    >
-
-                        <strong>
-                            ${escapeHtml(name)}
-                        </strong>
-
-                        ${
-                            username
-                                ? `
-                                    <span>
-                                        @${escapeHtml(username)}
-                                    </span>
-                                  `
-                                : ""
-                        }
-
-                        ${
-                            userId
-                                ? `
-                                    <small>
-                                        ${escapeHtml(userId)}
-                                    </small>
-                                  `
-                                : ""
-                        }
-
-                    </div>
-                `;
-
-
-                /* =========================================
-                   ARROW
-                   
-                   Arrow is now decorative.
-                   It does NOT open profile.
-                ========================================= */
-
-                const arrowHtml = `
-                    <div
-                        class="connected-person-arrow"
-                        aria-hidden="true"
-                    >
-                        ›
-                    </div>
-                `;
-
-
-                card.innerHTML =
-                    avatarHtml +
-                    infoHtml +
-                    arrowHtml;
-
-
-                /* =========================================
-                   LONG PRESS
-                ========================================= */
-
-                addLongPressToCard(
-                    card,
-                    userId,
-                    name,
-                    true
+                avatar.addEventListener(
+                    "click",
+                    openProfile
                 );
 
 
-                /* =========================================
-                   DP CLICK
-                   
-                   ONLY DP opens profile.
-                ========================================= */
+                /*
+                 * KEYBOARD
+                 */
 
-                const avatar =
-                    card.querySelector(
-                        ".connected-person-avatar"
-                    );
+                avatar.addEventListener(
+                    "keydown",
+                    (event) => {
 
+                        if (
+                            event.key === "Enter" ||
+                            event.key === " "
+                        ) {
 
-                if (avatar) {
-
-                    avatar.style.cursor =
-                        "pointer";
-
-
-                    avatar.addEventListener(
-                        "click",
-                        (event) => {
-
-                            event.preventDefault();
-
-                            event.stopPropagation();
-
-
-                            openConnectedUserProfile(
-                                userId
-                            );
+                            openProfile(event);
                         }
-                    );
+                    }
+                );
 
 
-                    avatar.addEventListener(
-                        "keydown",
-                        (event) => {
+                /*
+                 * Prevent image long-press/context menu
+                 */
 
-                            if (
-                                event.key === "Enter" ||
-                                event.key === " "
-                            ) {
+                avatar.addEventListener(
+                    "contextmenu",
+                    (event) => {
 
-                                event.preventDefault();
-
-                                event.stopPropagation();
-
-
-                                openConnectedUserProfile(
-                                    userId
-                                );
-                            }
-                        }
-                    );
-
-
-                    /*
-                     * Prevent browser image
-                     * context menu.
-                     */
-
-                    avatar.addEventListener(
-                        "contextmenu",
-                        (event) => {
-
-                            event.preventDefault();
-
-                            event.stopPropagation();
-                        }
-                    );
-                }
-
-
-                /* =========================================
-                   ADD CARD
-                ========================================= */
-
-                connectedList.appendChild(
-                    card
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
                 );
             }
-        );
+
+
+            /* =============================================
+               LONG PRESS
+            ============================================= */
+
+            addLongPressToCard(
+                card,
+                userId,
+                name,
+                true
+            );
+
+
+            connectedList.appendChild(
+                card
+            );
+
+        });
     }
 
 
@@ -1618,30 +1402,23 @@ document.addEventListener("DOMContentLoaded", () => {
         currentCategory =
             category;
 
-
         closeSideMenu();
 
-
         renderConnectedPeople();
-
 
         if (connectedSection) {
 
             connectedSection.hidden =
                 false;
 
+            setTimeout(() => {
 
-            setTimeout(
-                () => {
+                connectedSection.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
 
-                    connectedSection.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start"
-                    });
-
-                },
-                50
-            );
+            }, 50);
         }
     }
 
@@ -1653,7 +1430,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuAllConnected")?.addEventListener(
         "click",
         () => {
-
             showCategory("all");
         }
     );
@@ -1666,7 +1442,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuFamily")?.addEventListener(
         "click",
         () => {
-
             showCategory("family");
         }
     );
@@ -1679,7 +1454,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuFriends")?.addEventListener(
         "click",
         () => {
-
             showCategory("friend");
         }
     );
@@ -1692,7 +1466,6 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuCoupleChat")?.addEventListener(
         "click",
         () => {
-
             showCategory("couple");
         }
     );
@@ -1724,11 +1497,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const button =
                 $("logoutButton");
 
-
             if (button) {
                 button.disabled = true;
             }
-
 
             try {
 
@@ -1799,8 +1570,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     {
                         method: "GET",
 
-                        credentials:
-                            "include",
+                        credentials: "include",
 
                         headers: {
                             "Accept":
@@ -1810,9 +1580,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            if (
-                response.status === 401
-            ) {
+            if (response.status === 401) {
 
                 go("/login");
 
@@ -1832,47 +1600,35 @@ document.addEventListener("DOMContentLoaded", () => {
             const data =
                 await response.json();
 
-
             let users = [];
 
 
-            if (
-                Array.isArray(data)
-            ) {
+            if (Array.isArray(data)) {
 
                 users = data;
 
             } else if (
-                Array.isArray(
-                    data.connections
-                )
+                Array.isArray(data.connections)
             ) {
 
-                users =
-                    data.connections;
+                users = data.connections;
 
             } else if (
-                Array.isArray(
-                    data.users
-                )
+                Array.isArray(data.users)
             ) {
 
-                users =
-                    data.users;
+                users = data.users;
 
             } else if (
-                Array.isArray(
-                    data.data
-                )
+                Array.isArray(data.data)
             ) {
 
-                users =
-                    data.data;
+                users = data.data;
             }
 
 
             /*
-             * Keep ONLY actual connections.
+             * Keep ONLY actual connected users.
              */
 
             allConnectedUsers =
@@ -1895,14 +1651,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
+            allConnectedUsers = [];
 
-            allConnectedUsers =
-                [];
-
-
-            currentCategory =
-                "all";
-
+            currentCategory = "all";
 
             renderConnectedPeople();
         }
@@ -1917,7 +1668,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home loaded."
+        "Usanex Home loaded - DP only opens profile."
     );
 
 });
