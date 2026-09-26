@@ -9,49 +9,59 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
+    <meta name="theme-color" content="#080f1d">
+
     <title>My Profile | Usanex</title>
 
     <link
         rel="stylesheet"
-        href="/static/css/my-profile.css?v=2"
+        href="/static/css/my-profile.css?v=30"
     >
 </head>
 
 <body>
 
-<div class="app-shell">
+<div class="profile-page">
 
     <!-- =====================================================
-         PROFILE HEADER
-         ===================================================== -->
+         HEADER
+    ====================================================== -->
 
     <header class="profile-header">
+
+        <!-- PLUS -->
 
         <button
             type="button"
             class="profile-add-button"
             id="profileAddButton"
-            aria-label="Quick actions"
+            aria-label="Create"
         >
             +
         </button>
 
 
+        <!-- NAME -->
+
         <h1
-            class="profile-name"
+            class="profile-header-name"
             id="profileName"
         >
             Usanex User
         </h1>
 
 
+        <!-- MENU -->
+
         <button
             type="button"
             class="profile-menu-button"
             id="profileMenuButton"
-            aria-label="Profile menu"
+            aria-label="Open menu"
         >
-            ⋮
+            <span></span>
+            <span></span>
+            <span></span>
         </button>
 
     </header>
@@ -59,393 +69,381 @@
 
     <!-- =====================================================
          MAIN PROFILE
-         ===================================================== -->
+    ====================================================== -->
 
     <main class="profile-main">
 
-        <div class="profile-scroll">
+        <!-- =================================================
+             2ND ROW — PROFILE + USER INFORMATION
+        ================================================== -->
 
-            <!-- =================================================
-                 PROFILE TOP
-                 ================================================= -->
+        <section class="profile-user-row">
 
-            <section class="profile-top">
+            <!-- PROFILE PHOTO -->
 
-                <button
-                    type="button"
-                    class="profile-photo-button"
-                    id="profilePhotoButton"
-                    aria-label="View profile photo"
+            <button
+                type="button"
+                class="profile-photo-button"
+                id="profilePhotoButton"
+                aria-label="View profile photo"
+            >
+
+                <img
+                    id="profilePhoto"
+                    class="profile-photo"
+                    src="/static/images/default-profile.png"
+                    alt="Profile photo"
                 >
 
-                    <img
-                        id="profilePhoto"
-                        class="profile-photo"
-                        src="/static/images/default-profile.png"
-                        alt="Profile photo"
-                    >
-
-                </button>
+            </button>
 
 
-                <div class="profile-identity">
+            <!-- USER INFORMATION -->
 
-                    <div
-                        class="profile-display-name"
-                        id="profileDisplayName"
-                    >
-                        Usanex User
-                    </div>
+            <div class="profile-user-info">
 
-
-                    <div
-                        class="profile-username"
-                        id="profileUsername"
-                    >
-                        @username
-                    </div>
-
-
-                    <div
-                        class="profile-user-id"
-                        id="profileUserId"
-                    >
-                        u_xxxxxxxx
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 PROFILE STATS
-                 ================================================= -->
-
-            <section class="profile-stats">
-
-                <div class="profile-stat">
-
-                    <strong id="followersCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Followers
-                    </span>
-
-                </div>
-
-
-                <div class="profile-stat">
-
-                    <strong id="connectedCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Connected
-                    </span>
-
-                </div>
-
-
-                <div class="profile-stat">
-
-                    <strong id="followingCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Following
-                    </span>
-
-                </div>
-
-
-                <div class="profile-stat">
-
-                    <strong id="postsCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Posts
-                    </span>
-
-                </div>
-
-            </section>
-
-
-            <!-- =================================================
-                 BIO
-                 ================================================= -->
-
-            <section class="profile-bio-section">
-
-                <p
-                    class="profile-bio"
-                    id="profileBio"
-                >
-                    No bio available.
-                </p>
-
+                <h2 id="profileDisplayName">
+                    Usanex User
+                </h2>
 
                 <div
-                    class="profile-links"
-                    id="profileLinks"
-                    hidden
-                ></div>
-
-            </section>
-
-
-            <!-- =================================================
-                 PROFILE CONTENT TABS
-                 ================================================= -->
-
-            <nav
-                class="profile-content-tabs"
-                aria-label="Profile content"
-            >
-
-                <button
-                    type="button"
-                    class="profile-content-tab active"
-                    data-tab="reels"
+                    class="profile-username"
+                    id="profileUsername"
                 >
-                    Reels
-                </button>
-
-
-                <button
-                    type="button"
-                    class="profile-content-tab"
-                    data-tab="photos"
-                >
-                    Photos
-                </button>
-
-
-                <button
-                    type="button"
-                    class="profile-content-tab"
-                    data-tab="saved"
-                >
-                    Saved
-                </button>
-
-
-                <button
-                    type="button"
-                    class="profile-content-tab"
-                    data-tab="private"
-                >
-                    Private
-                </button>
-
-            </nav>
-
-
-            <!-- =================================================
-                 PROFILE CONTENT
-                 ================================================= -->
-
-            <section
-                class="profile-content"
-                id="profileContentContainer"
-            >
-
-                <div class="empty-content">
-                    Loading...
+                    @username
                 </div>
 
-            </section>
+                <div
+                    class="profile-user-id"
+                    id="profileUserId"
+                >
+                    u_xxxxxxxx
+                </div>
 
-        </div>
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             3RD ROW — BIO
+        ================================================== -->
+
+        <section class="profile-bio-section">
+
+            <p
+                class="profile-bio"
+                id="profileBio"
+            >
+                No bio available.
+            </p>
+
+            <div
+                class="profile-links"
+                id="profileLinks"
+                hidden
+            ></div>
+
+        </section>
+
+
+        <!-- =================================================
+             4TH ROW — STATS
+        ================================================== -->
+
+        <section class="profile-stats">
+
+            <div class="profile-stat">
+
+                <strong id="followersCount">
+                    0
+                </strong>
+
+                <span>
+                    Followers
+                </span>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <strong id="connectedCount">
+                    0
+                </strong>
+
+                <span>
+                    Connected
+                </span>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <strong id="followingCount">
+                    0
+                </strong>
+
+                <span>
+                    Following
+                </span>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <strong id="postsCount">
+                    0
+                </strong>
+
+                <span>
+                    Posts
+                </span>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             5TH ROW — CONTENT TABS
+        ================================================== -->
+
+        <nav
+            class="profile-content-tabs"
+            aria-label="Profile content"
+        >
+
+            <button
+                type="button"
+                class="profile-content-tab active"
+                data-tab="reels"
+            >
+                Reels
+            </button>
+
+            <button
+                type="button"
+                class="profile-content-tab"
+                data-tab="photos"
+            >
+                Photos
+            </button>
+
+            <button
+                type="button"
+                class="profile-content-tab"
+                data-tab="saved"
+            >
+                Saved
+            </button>
+
+            <button
+                type="button"
+                class="profile-content-tab"
+                data-tab="private"
+            >
+                Private
+            </button>
+
+        </nav>
+
+
+        <!-- =================================================
+             CONTENT
+        ================================================== -->
+
+        <section
+            class="profile-content"
+            id="profileContentContainer"
+        >
+
+            <div class="empty-content">
+                No reels yet.
+            </div>
+
+        </section>
 
     </main>
 
 
     <!-- =====================================================
-         BOTTOM NAVIGATION
-         EXACT SAME STRUCTURE AS HOME
-         ===================================================== -->
+         PROFILE PHOTO VIEWER
+    ====================================================== -->
 
-    <nav class="bottom-nav">
-
-        <!-- HOME -->
+    <div
+        class="profile-photo-viewer hidden"
+        id="profilePhotoViewer"
+    >
 
         <button
             type="button"
-            class="nav-item"
-            id="homeNav"
+            class="close-photo-viewer"
+            id="closePhotoViewer"
+            aria-label="Close"
         >
-
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
-                <path d="M3 10.5L12 3l9 7.5"></path>
-                <path d="M5.5 9.5V21h13V9.5"></path>
-            </svg>
-
-            <span>
-                Home
-            </span>
-
+            ×
         </button>
 
-
-        <!-- REEL -->
-
-        <button
-            type="button"
-            class="nav-item"
-            id="reelNav"
+        <img
+            id="viewerPhoto"
+            src=""
+            alt="Profile photo"
         >
 
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
-
-                <rect
-                    x="3"
-                    y="4"
-                    width="18"
-                    height="16"
-                    rx="3"
-                ></rect>
-
-                <path d="M8 4l3 5"></path>
-
-                <path d="M14 4l3 5"></path>
-
-                <path d="M10 12l5 3-5 3v-6z"></path>
-
-            </svg>
-
-            <span>
-                Reel
-            </span>
-
-        </button>
+    </div>
 
 
-        <!-- SEARCH -->
+    <!-- =====================================================
+         EDIT PROFILE MODAL
+    ====================================================== -->
 
-        <button
-            type="button"
-            class="nav-item"
-            id="searchNav"
-        >
+    <div
+        class="edit-profile-modal hidden"
+        id="editProfileModal"
+    >
 
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
+        <div class="edit-profile-box">
 
-                <circle
-                    cx="11"
-                    cy="11"
-                    r="7"
-                ></circle>
+            <div class="edit-profile-header">
 
-                <path d="M20 20l-4-4"></path>
+                <h2>
+                    Edit Profile
+                </h2>
 
-            </svg>
+                <button
+                    type="button"
+                    id="closeEditProfile"
+                >
+                    ×
+                </button>
 
-            <span>
-                Search
-            </span>
-
-        </button>
+            </div>
 
 
-        <!-- NOTIFICATION -->
+            <div class="edit-profile-photo-area">
 
-        <button
-            type="button"
-            class="nav-item"
-            id="notificationNav"
-        >
-
-            <span class="notification-icon-wrapper">
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
+                <img
+                    id="editProfilePhotoPreview"
+                    src="/static/images/default-profile.png"
+                    alt="Profile photo"
                 >
 
-                    <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                <button
+                    type="button"
+                    id="changeProfilePhotoButton"
+                >
+                    Change Photo
+                </button>
 
-                    <path d="M10 21h4"></path>
-
-                </svg>
-
-
-                <span
-                    class="notification-dot"
-                    id="notificationDot"
+                <input
+                    type="file"
+                    id="profilePhotoInput"
+                    accept="image/*"
                     hidden
-                ></span>
+                >
 
-            </span>
-
-            <span>
-                Notification
-            </span>
-
-        </button>
+            </div>
 
 
-        <!-- PROFILE -->
+            <label>
+                Name
 
-        <button
-            type="button"
-            class="nav-item active"
-            id="profileNav"
-        >
+                <input
+                    type="text"
+                    id="editName"
+                    maxlength="100"
+                >
+            </label>
 
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
+
+            <label>
+                Username
+
+                <input
+                    type="text"
+                    id="editUsername"
+                    disabled
+                >
+            </label>
+
+
+            <label>
+                User ID
+
+                <input
+                    type="text"
+                    id="editUserId"
+                    disabled
+                >
+            </label>
+
+
+            <label>
+                Bio
+
+                <textarea
+                    id="editBio"
+                    maxlength="500"
+                    rows="4"
+                ></textarea>
+            </label>
+
+
+            <label>
+                Website
+
+                <input
+                    type="url"
+                    id="editWebsite"
+                >
+            </label>
+
+
+            <label>
+                Instagram
+
+                <input
+                    type="text"
+                    id="editInstagram"
+                >
+            </label>
+
+
+            <label>
+                Social Link
+
+                <input
+                    type="url"
+                    id="editSocialLink"
+                >
+            </label>
+
+
+            <div
+                class="edit-profile-message"
+                id="editProfileMessage"
+            ></div>
+
+
+            <button
+                type="button"
+                class="save-profile-button"
+                id="saveProfileButton"
             >
+                Save Changes
+            </button>
 
-                <circle
-                    cx="12"
-                    cy="8"
-                    r="4"
-                ></circle>
+        </div>
 
-                <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
-
-            </svg>
-
-            <span>
-                Profile
-            </span>
-
-        </button>
-
-    </nav>
+    </div>
 
 
     <!-- =====================================================
          PROFILE MENU
-         ===================================================== -->
+    ====================================================== -->
 
     <div
         class="profile-menu hidden"
@@ -453,6 +451,11 @@
     >
 
         <div class="profile-menu-panel">
+
+            <div class="profile-menu-title">
+                Usanex
+            </div>
+
 
             <button
                 type="button"
@@ -510,8 +513,12 @@
             </button>
 
 
+            <div class="menu-divider"></div>
+
+
             <button
                 type="button"
+                class="logout-menu-button"
                 id="logoutButton"
             >
                 Logout
@@ -523,213 +530,180 @@
 
 
     <!-- =====================================================
-         PROFILE PHOTO VIEWER
-         ===================================================== -->
+         BOTTOM NAVIGATION
+    ====================================================== -->
 
-    <div
-        class="profile-photo-viewer hidden"
-        id="profilePhotoViewer"
+    <nav
+        class="bottom-nav"
+        aria-label="Main navigation"
     >
+
+        <!-- HOME -->
 
         <button
             type="button"
-            class="close-photo-viewer"
-            id="closePhotoViewer"
-            aria-label="Close"
+            class="nav-item"
+            id="navHome"
         >
-            ×
+
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+                <path d="M3 10.5L12 3l9 7.5"></path>
+                <path d="M5.5 9.5V21h13V9.5"></path>
+            </svg>
+
+            <span>
+                Home
+            </span>
+
         </button>
 
 
-        <img
-            id="viewerPhoto"
-            src=""
-            alt="Profile photo"
+        <!-- REELS -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="navReels"
         >
 
-    </div>
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+                <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="16"
+                    rx="3"
+                ></rect>
+
+                <path d="M8 4l3 5"></path>
+                <path d="M14 4l3 5"></path>
+                <path d="M10 12l5 3-5 3v-6z"></path>
+            </svg>
+
+            <span>
+                Reel
+            </span>
+
+        </button>
 
 
-    <!-- =====================================================
-         EDIT PROFILE MODAL
-         ===================================================== -->
+        <!-- SEARCH -->
 
-    <div
-        class="edit-profile-modal hidden"
-        id="editProfileModal"
-    >
+        <button
+            type="button"
+            class="nav-item"
+            id="navSearch"
+        >
 
-        <div class="edit-profile-panel">
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
 
-            <div class="edit-profile-header">
+                <path d="M20 20l-4-4"></path>
+            </svg>
 
-                <h2>
-                    Edit Profile
-                </h2>
+            <span>
+                Search
+            </span>
+
+        </button>
 
 
-                <button
-                    type="button"
-                    id="closeEditProfile"
-                    aria-label="Close"
+        <!-- NOTIFICATION -->
+
+        <button
+            type="button"
+            class="nav-item"
+            id="navNotifications"
+        >
+
+            <span class="notification-icon-wrapper">
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
                 >
-                    ×
-                </button>
+                    <path
+                        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                    ></path>
 
-            </div>
+                    <path d="M10 21h4"></path>
+                </svg>
 
-
-            <!-- PROFILE PHOTO -->
-
-            <div class="edit-profile-photo-section">
-
-                <img
-                    id="editProfilePhotoPreview"
-                    src="/static/images/default-profile.png"
-                    alt="Profile photo"
-                >
-
-
-                <button
-                    type="button"
-                    id="changeProfilePhotoButton"
-                >
-                    Change Photo
-                </button>
-
-
-                <input
-                    type="file"
-                    id="profilePhotoInput"
-                    accept="image/*"
+                <span
+                    class="notification-dot"
                     hidden
-                >
+                ></span>
 
-            </div>
+            </span>
+
+            <span>
+                Notification
+            </span>
+
+        </button>
 
 
-            <!-- NAME -->
+        <!-- PROFILE -->
 
-            <label for="editName">
-                Name
-            </label>
+        <button
+            type="button"
+            class="nav-item active"
+            id="navProfile"
+        >
 
-            <input
-                type="text"
-                id="editName"
-                maxlength="100"
-                autocomplete="name"
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
             >
+                <circle
+                    cx="12"
+                    cy="8"
+                    r="4"
+                ></circle>
 
+                <path
+                    d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
+                ></path>
+            </svg>
 
-            <!-- USERNAME -->
+            <span>
+                Profile
+            </span>
 
-            <label for="editUsername">
-                Username
-            </label>
+        </button>
 
-            <input
-                type="text"
-                id="editUsername"
-                readonly
-            >
-
-
-            <!-- USER ID -->
-
-            <label for="editUserId">
-                User ID
-            </label>
-
-            <input
-                type="text"
-                id="editUserId"
-                readonly
-            >
-
-
-            <!-- BIO -->
-
-            <label for="editBio">
-                Bio
-            </label>
-
-            <textarea
-                id="editBio"
-                maxlength="500"
-                rows="4"
-            ></textarea>
-
-
-            <!-- WEBSITE -->
-
-            <label for="editWebsite">
-                Website
-            </label>
-
-            <input
-                type="text"
-                id="editWebsite"
-                maxlength="500"
-                autocomplete="url"
-            >
-
-
-            <!-- INSTAGRAM -->
-
-            <label for="editInstagram">
-                Instagram
-            </label>
-
-            <input
-                type="text"
-                id="editInstagram"
-                maxlength="500"
-            >
-
-
-            <!-- SOCIAL LINK -->
-
-            <label for="editSocialLink">
-                Social Link
-            </label>
-
-            <input
-                type="text"
-                id="editSocialLink"
-                maxlength="500"
-            >
-
-
-            <!-- MESSAGE -->
-
-            <div
-                class="edit-profile-message"
-                id="editProfileMessage"
-            ></div>
-
-
-            <!-- SAVE -->
-
-            <button
-                type="button"
-                id="saveProfileButton"
-            >
-                Save Changes
-            </button>
-
-        </div>
-
-    </div>
+    </nav>
 
 </div>
 
 
-<!-- =======================================================
-     JAVASCRIPT
-     ======================================================= -->
-
-<script src="/static/js/my-profile.js?v=2"></script>
+<script
+    src="/static/js/my-profile.js?v=30"
+    defer
+></script>
 
 </body>
 </html>
