@@ -6,19 +6,11 @@
 
 
 /* =========================================================
-   INITIALIZATION
-   ========================================================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-    initMyProfile();
-});
-
-
-/* =========================================================
    STATE
    ========================================================= */
 
 const profileState = {
+
     user: null,
 
     stats: {
@@ -36,7 +28,22 @@ const profileState = {
         saved: [],
         private: []
     }
+
 };
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        initMyProfile();
+
+    }
+);
 
 
 /* =========================================================
@@ -44,25 +51,32 @@ const profileState = {
    ========================================================= */
 
 function $(id) {
+
     return document.getElementById(id);
+
 }
 
 
 function show(element) {
+
     if (element) {
         element.classList.remove("hidden");
     }
+
 }
 
 
 function hide(element) {
+
     if (element) {
         element.classList.add("hidden");
     }
+
 }
 
 
 function safeText(value, fallback = "") {
+
     if (
         value === null ||
         value === undefined
@@ -71,44 +85,63 @@ function safeText(value, fallback = "") {
     }
 
     return String(value);
+
 }
 
 
 function escapeHtml(value) {
+
     return safeText(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+
 }
 
 
 function getPhotoUrl(photo) {
+
     if (!photo) {
+
         return "/static/images/default-profile.png";
+
     }
 
     return String(photo);
+
 }
 
 
 function formatViews(value) {
+
     const views = Number(value || 0);
 
     if (views >= 1000000) {
-        return `${(views / 1000000)
-            .toFixed(1)
-            .replace(".0", "")}M`;
+
+        return (
+            (views / 1000000)
+                .toFixed(1)
+                .replace(".0", "") +
+            "M"
+        );
+
     }
 
     if (views >= 1000) {
-        return `${(views / 1000)
-            .toFixed(1)
-            .replace(".0", "")}K`;
+
+        return (
+            (views / 1000)
+                .toFixed(1)
+                .replace(".0", "") +
+            "K"
+        );
+
     }
 
     return String(views);
+
 }
 
 
@@ -131,11 +164,12 @@ async function initMyProfile() {
     setupBottomNavigation();
 
     await loadMyProfile();
+
 }
 
 
 /* =========================================================
-   LOAD MY PROFILE
+   LOAD PROFILE
    ========================================================= */
 
 async function loadMyProfile() {
@@ -150,8 +184,7 @@ async function loadMyProfile() {
                 credentials: "include",
 
                 headers: {
-                    "Accept":
-                        "application/json"
+                    "Accept": "application/json"
                 }
             }
         );
@@ -159,10 +192,10 @@ async function loadMyProfile() {
 
         if (response.status === 401) {
 
-            window.location.href =
-                "/login";
+            window.location.href = "/login";
 
             return;
+
         }
 
 
@@ -177,6 +210,7 @@ async function loadMyProfile() {
                 errorData?.detail ||
                 "Unable to load profile."
             );
+
         }
 
 
@@ -184,14 +218,12 @@ async function loadMyProfile() {
             await response.json();
 
 
-        if (
-            !data ||
-            !data.success
-        ) {
+        if (!data || !data.success) {
 
             throw new Error(
                 "Invalid profile response."
             );
+
         }
 
 
@@ -220,17 +252,9 @@ async function loadMyProfile() {
                 Number(
                     data.stats?.posts || 0
                 )
+
         };
 
-
-        /*
-         * Unified Posts system.
-         *
-         * Same posts table:
-         *
-         * video/reel -> Reels
-         * image/photo -> Photos
-         */
 
         processUnifiedContent(
             data.content || []
@@ -244,6 +268,7 @@ async function loadMyProfile() {
 
         renderActiveTab();
 
+
     } catch (error) {
 
         console.error(
@@ -254,14 +279,16 @@ async function loadMyProfile() {
 
         renderProfileError(
             error.message ||
-            "Unable to load your profile. Please refresh and try again."
+            "Unable to load your profile."
         );
+
     }
+
 }
 
 
 /* =========================================================
-   PROCESS UNIFIED POSTS
+   PROCESS CONTENT
    ========================================================= */
 
 function processUnifiedContent(posts) {
@@ -270,56 +297,50 @@ function processUnifiedContent(posts) {
 
     profileState.content.photos = [];
 
+    posts.forEach(
+        (post) => {
 
-    posts.forEach((post) => {
-
-        const mediaType =
-            safeText(
-                post.media_type
-            ).toLowerCase();
+            const mediaType =
+                safeText(
+                    post.media_type
+                ).toLowerCase();
 
 
-        /*
-         * Video / Reel
-         */
+            if (
+                mediaType === "video" ||
+                mediaType === "reel"
+            ) {
 
-        if (
-            mediaType === "video" ||
-            mediaType === "reel"
-        ) {
+                profileState
+                    .content
+                    .reels
+                    .push(post);
 
-            profileState.content.reels.push(
-                post
-            );
+                return;
 
-            return;
+            }
+
+
+            if (
+                mediaType === "image" ||
+                mediaType === "photo"
+            ) {
+
+                profileState
+                    .content
+                    .photos
+                    .push(post);
+
+            }
+
         }
+    );
 
-
-        /*
-         * Image / Photo
-         */
-
-        if (
-            mediaType === "image" ||
-            mediaType === "photo"
-        ) {
-
-            profileState.content.photos.push(
-                post
-            );
-        }
-
-    });
-
-
-    /*
-     * These systems will be implemented later.
-     */
 
     profileState.content.saved = [];
 
     profileState.content.private = [];
+
 }
 
 
@@ -363,19 +384,21 @@ function renderProfile(user) {
         );
 
 
+    /*
+     * HEADER NAME
+     */
+
     if ($("profileName")) {
 
         $("profileName").textContent =
             name;
+
     }
 
 
-    if ($("profileDisplayName")) {
-
-        $("profileDisplayName").textContent =
-            name;
-    }
-
+    /*
+     * PROFILE USERNAME
+     */
 
     if ($("profileUsername")) {
 
@@ -383,21 +406,31 @@ function renderProfile(user) {
             username
                 ? `@${username.replace(/^@/, "")}`
                 : "@username";
+
     }
 
+
+    /*
+     * USER ID
+     */
 
     if ($("profileUserId")) {
 
         $("profileUserId").textContent =
-            userId ||
-            "u_xxxxxxxx";
+            userId || "u_xxxxxxxx";
+
     }
 
+
+    /*
+     * PROFILE PHOTO
+     */
 
     if ($("profilePhoto")) {
 
         $("profilePhoto").src =
             photo;
+
     }
 
 
@@ -405,8 +438,13 @@ function renderProfile(user) {
 
         $("editProfilePhotoPreview").src =
             photo;
+
     }
 
+
+    /*
+     * BIO
+     */
 
     if ($("profileBio")) {
 
@@ -414,17 +452,19 @@ function renderProfile(user) {
             bio.trim()
                 ? bio
                 : "No bio available.";
+
     }
 
 
     /*
-     * Profile statistics
+     * STATS
      */
 
     if ($("followersCount")) {
 
         $("followersCount").textContent =
             profileState.stats.followers;
+
     }
 
 
@@ -432,6 +472,7 @@ function renderProfile(user) {
 
         $("connectedCount").textContent =
             profileState.stats.connected;
+
     }
 
 
@@ -439,6 +480,7 @@ function renderProfile(user) {
 
         $("followingCount").textContent =
             profileState.stats.following;
+
     }
 
 
@@ -446,10 +488,12 @@ function renderProfile(user) {
 
         $("postsCount").textContent =
             profileState.stats.posts;
+
     }
 
 
     renderProfileLinks(user);
+
 }
 
 
@@ -480,6 +524,7 @@ function renderProfileLinks(user) {
             label: "Website",
             url: user.website
         });
+
     }
 
 
@@ -489,6 +534,7 @@ function renderProfileLinks(user) {
             label: "Instagram",
             url: user.instagram
         });
+
     }
 
 
@@ -498,6 +544,7 @@ function renderProfileLinks(user) {
             label: "Social Link",
             url: user.social_link
         });
+
     }
 
 
@@ -506,42 +553,49 @@ function renderProfileLinks(user) {
         hide(container);
 
         return;
+
     }
 
 
-    links.forEach((link) => {
+    links.forEach(
+        (link) => {
 
-        const anchor =
-            document.createElement("a");
-
-
-        anchor.className =
-            "profile-link";
+            const anchor =
+                document.createElement("a");
 
 
-        anchor.href =
-            normalizeUrl(link.url);
+            anchor.className =
+                "profile-link";
 
 
-        anchor.target =
-            "_blank";
+            anchor.href =
+                normalizeUrl(
+                    link.url
+                );
 
 
-        anchor.rel =
-            "noopener noreferrer";
+            anchor.target =
+                "_blank";
 
 
-        anchor.textContent =
-            link.label;
+            anchor.rel =
+                "noopener noreferrer";
 
 
-        container.appendChild(
-            anchor
-        );
-    });
+            anchor.textContent =
+                link.label;
+
+
+            container.appendChild(
+                anchor
+            );
+
+        }
+    );
 
 
     show(container);
+
 }
 
 
@@ -561,10 +615,12 @@ function normalizeUrl(url) {
     ) {
 
         return value;
+
     }
 
 
     return `https://${value}`;
+
 }
 
 
@@ -587,16 +643,23 @@ function setupHeader() {
         "click",
         () => {
 
+            /*
+             * Future:
+             * Create post / reel / moment
+             */
+
             console.log(
-                "Profile quick actions"
+                "Usanex create button"
             );
+
         }
     );
+
 }
 
 
 /* =========================================================
-   PROFILE MENU
+   THREE LINE MENU
    ========================================================= */
 
 function setupMenu() {
@@ -609,11 +672,7 @@ function setupMenu() {
         $("profileMenu");
 
 
-    if (
-        !menuButton ||
-        !menu
-    ) {
-
+    if (!menuButton || !menu) {
         return;
     }
 
@@ -627,6 +686,7 @@ function setupMenu() {
             menu.classList.toggle(
                 "hidden"
             );
+
         }
     );
 
@@ -645,10 +705,16 @@ function setupMenu() {
             ) {
 
                 hide(menu);
+
             }
+
         }
     );
 
+
+    /*
+     * EDIT PROFILE
+     */
 
     const editButton =
         $("editProfileButton");
@@ -663,10 +729,16 @@ function setupMenu() {
                 hide(menu);
 
                 openEditProfile();
+
             }
         );
+
     }
 
+
+    /*
+     * PRIVACY
+     */
 
     const privacyButton =
         $("privacyButton");
@@ -683,10 +755,16 @@ function setupMenu() {
                 alert(
                     "Privacy settings will be available here."
                 );
+
             }
         );
+
     }
 
+
+    /*
+     * SECURITY
+     */
 
     const securityButton =
         $("securityButton");
@@ -703,10 +781,16 @@ function setupMenu() {
                 alert(
                     "Security settings will be available here."
                 );
+
             }
         );
+
     }
 
+
+    /*
+     * BLOCKED USERS
+     */
 
     const blockedUsersButton =
         $("blockedUsersButton");
@@ -723,10 +807,16 @@ function setupMenu() {
                 alert(
                     "Blocked users will be available here."
                 );
+
             }
         );
+
     }
 
+
+    /*
+     * ACCOUNT
+     */
 
     const accountButton =
         $("accountButton");
@@ -743,10 +833,16 @@ function setupMenu() {
                 alert(
                     "Account settings will be available here."
                 );
+
             }
         );
+
     }
 
+
+    /*
+     * HELP
+     */
 
     const helpButton =
         $("helpButton");
@@ -763,10 +859,16 @@ function setupMenu() {
                 alert(
                     "Help will be available here."
                 );
+
             }
         );
+
     }
 
+
+    /*
+     * ABOUT
+     */
 
     const aboutButton =
         $("aboutButton");
@@ -783,10 +885,16 @@ function setupMenu() {
                 alert(
                     "Usanex"
                 );
+
             }
         );
+
     }
 
+
+    /*
+     * LOGOUT
+     */
 
     const logoutButton =
         $("logoutButton");
@@ -801,9 +909,12 @@ function setupMenu() {
                 hide(menu);
 
                 await logout();
+
             }
         );
+
     }
+
 }
 
 
@@ -836,6 +947,7 @@ function setupPhotoViewer() {
     ) {
 
         return;
+
     }
 
 
@@ -861,6 +973,7 @@ function setupPhotoViewer() {
 
             document.body.style.overflow =
                 "hidden";
+
         }
     );
 
@@ -871,6 +984,7 @@ function setupPhotoViewer() {
             "click",
             closePhotoViewer
         );
+
     }
 
 
@@ -883,7 +997,9 @@ function setupPhotoViewer() {
             ) {
 
                 closePhotoViewer();
+
             }
+
         }
     );
 
@@ -897,9 +1013,12 @@ function setupPhotoViewer() {
             ) {
 
                 closePhotoViewer();
+
             }
+
         }
     );
+
 }
 
 
@@ -919,6 +1038,7 @@ function closePhotoViewer() {
 
     document.body.style.overflow =
         "";
+
 }
 
 
@@ -938,6 +1058,7 @@ function setupEditProfile() {
             "click",
             closeEditProfile
         );
+
     }
 
 
@@ -956,9 +1077,12 @@ function setupEditProfile() {
                 ) {
 
                     closeEditProfile();
+
                 }
+
             }
         );
+
     }
 
 
@@ -980,6 +1104,7 @@ function setupEditProfile() {
             () => {
 
                 photoInput.click();
+
             }
         );
 
@@ -988,6 +1113,7 @@ function setupEditProfile() {
             "change",
             handleProfilePhotoSelection
         );
+
     }
 
 
@@ -1001,6 +1127,7 @@ function setupEditProfile() {
             "click",
             saveProfile
         );
+
     }
 
 
@@ -1013,9 +1140,12 @@ function setupEditProfile() {
             ) {
 
                 closeEditProfile();
+
             }
+
         }
     );
+
 }
 
 
@@ -1042,6 +1172,7 @@ function openEditProfile() {
 
         $("editName").value =
             safeText(user.name);
+
     }
 
 
@@ -1049,6 +1180,7 @@ function openEditProfile() {
 
         $("editUsername").value =
             safeText(user.username);
+
     }
 
 
@@ -1056,6 +1188,7 @@ function openEditProfile() {
 
         $("editUserId").value =
             safeText(user.user_id);
+
     }
 
 
@@ -1063,6 +1196,7 @@ function openEditProfile() {
 
         $("editBio").value =
             safeText(user.bio);
+
     }
 
 
@@ -1070,6 +1204,7 @@ function openEditProfile() {
 
         $("editWebsite").value =
             safeText(user.website);
+
     }
 
 
@@ -1077,6 +1212,7 @@ function openEditProfile() {
 
         $("editInstagram").value =
             safeText(user.instagram);
+
     }
 
 
@@ -1084,6 +1220,7 @@ function openEditProfile() {
 
         $("editSocialLink").value =
             safeText(user.social_link);
+
     }
 
 
@@ -1093,6 +1230,7 @@ function openEditProfile() {
             getPhotoUrl(
                 user.profile_photo
             );
+
     }
 
 
@@ -1100,6 +1238,7 @@ function openEditProfile() {
 
         $("editProfileMessage").textContent =
             "";
+
     }
 
 
@@ -1108,6 +1247,7 @@ function openEditProfile() {
 
     document.body.style.overflow =
         "hidden";
+
 }
 
 
@@ -1131,11 +1271,12 @@ function closeEditProfile() {
 
     document.body.style.overflow =
         "";
+
 }
 
 
 /* =========================================================
-   PROFILE PHOTO SELECTION
+   PHOTO SELECTION
    ========================================================= */
 
 function handleProfilePhotoSelection(event) {
@@ -1158,10 +1299,12 @@ function handleProfilePhotoSelection(event) {
         );
 
 
-        event.target.value = "";
+        event.target.value =
+            "";
 
 
         return;
+
     }
 
 
@@ -1176,10 +1319,12 @@ function handleProfilePhotoSelection(event) {
         );
 
 
-        event.target.value = "";
+        event.target.value =
+            "";
 
 
         return;
+
     }
 
 
@@ -1205,7 +1350,9 @@ function handleProfilePhotoSelection(event) {
         URL.revokeObjectURL(
             objectUrl
         );
+
     };
+
 }
 
 
@@ -1251,6 +1398,7 @@ async function saveProfile() {
         );
 
         return;
+
     }
 
 
@@ -1261,6 +1409,7 @@ async function saveProfile() {
         );
 
         return;
+
     }
 
 
@@ -1271,6 +1420,7 @@ async function saveProfile() {
         );
 
         return;
+
     }
 
 
@@ -1282,6 +1432,7 @@ async function saveProfile() {
 
         saveButton.textContent =
             "Saving...";
+
     }
 
 
@@ -1296,26 +1447,34 @@ async function saveProfile() {
                 {
                     method: "PUT",
 
-                    credentials:
-                        "include",
+                    credentials: "include",
 
                     headers: {
+
                         "Content-Type":
                             "application/json",
 
                         "Accept":
                             "application/json"
+
                     },
 
                     body:
                         JSON.stringify({
+
                             name,
+
                             bio,
+
                             website,
+
                             instagram,
+
                             social_link:
                                 socialLink
+
                         })
+
                 }
             );
 
@@ -1328,6 +1487,7 @@ async function saveProfile() {
                 "/login";
 
             return;
+
         }
 
 
@@ -1343,6 +1503,7 @@ async function saveProfile() {
                 errorData?.detail ||
                 "Unable to save profile."
             );
+
         }
 
 
@@ -1350,13 +1511,12 @@ async function saveProfile() {
             await response.json();
 
 
-        const updatedUser =
-            data.user || {};
-
-
         profileState.user = {
+
             ...profileState.user,
-            ...updatedUser
+
+            ...(data.user || {})
+
         };
 
 
@@ -1379,6 +1539,7 @@ async function saveProfile() {
             700
         );
 
+
     } catch (error) {
 
         console.error(
@@ -1392,6 +1553,7 @@ async function saveProfile() {
             "Unable to save profile."
         );
 
+
     } finally {
 
         if (saveButton) {
@@ -1402,8 +1564,11 @@ async function saveProfile() {
 
             saveButton.textContent =
                 "Save Changes";
+
         }
+
     }
+
 }
 
 
@@ -1417,7 +1582,9 @@ function setEditMessage(message) {
 
         element.textContent =
             message;
+
     }
+
 }
 
 
@@ -1433,27 +1600,32 @@ function setupTabs() {
         );
 
 
-    tabs.forEach((tab) => {
+    tabs.forEach(
+        (tab) => {
 
-        tab.addEventListener(
-            "click",
-            () => {
+            tab.addEventListener(
+                "click",
+                () => {
 
-                const tabName =
-                    tab.dataset.tab;
+                    const tabName =
+                        tab.dataset.tab;
 
 
-                if (!tabName) {
-                    return;
+                    if (!tabName) {
+                        return;
+                    }
+
+
+                    setActiveTab(
+                        tabName
+                    );
+
                 }
+            );
 
+        }
+    );
 
-                setActiveTab(
-                    tabName
-                );
-            }
-        );
-    });
 }
 
 
@@ -1472,6 +1644,7 @@ function setActiveTab(tabName) {
     ) {
 
         return;
+
     }
 
 
@@ -1483,17 +1656,21 @@ function setActiveTab(tabName) {
         .querySelectorAll(
             ".profile-content-tab"
         )
-        .forEach((tab) => {
+        .forEach(
+            (tab) => {
 
-            tab.classList.toggle(
-                "active",
-                tab.dataset.tab ===
-                    tabName
-            );
-        });
+                tab.classList.toggle(
+                    "active",
+                    tab.dataset.tab ===
+                        tabName
+                );
+
+            }
+        );
 
 
     renderActiveTab();
+
 }
 
 
@@ -1518,7 +1695,8 @@ function renderActiveTab() {
         ] || [];
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     if (!items.length) {
@@ -1545,15 +1723,20 @@ function renderActiveTab() {
 
 
         return;
+
     }
 
 
-    items.forEach((item) => {
+    items.forEach(
+        (item) => {
 
-        container.appendChild(
-            createContentCard(item)
-        );
-    });
+            container.appendChild(
+                createContentCard(item)
+            );
+
+        }
+    );
+
 }
 
 
@@ -1575,7 +1758,9 @@ function getEmptyMessage(tab) {
 
         default:
             return "No content yet.";
+
     }
+
 }
 
 
@@ -1615,10 +1800,6 @@ function createContentCard(item) {
         );
 
 
-    /*
-     * Video / Reel
-     */
-
     if (
         mediaType === "video" ||
         mediaType === "reel"
@@ -1651,10 +1832,6 @@ function createContentCard(item) {
         );
 
 
-    /*
-     * Image / Photo
-     */
-
     } else if (
         mediaType === "image" ||
         mediaType === "photo"
@@ -1683,10 +1860,6 @@ function createContentCard(item) {
         );
 
 
-    /*
-     * Text
-     */
-
     } else {
 
         const placeholder =
@@ -1709,12 +1882,9 @@ function createContentCard(item) {
         card.appendChild(
             placeholder
         );
+
     }
 
-
-    /*
-     * View count
-     */
 
     const overlay =
         document.createElement(
@@ -1751,51 +1921,35 @@ function createContentCard(item) {
 
 
     return card;
+
 }
 
 
 /* =========================================================
    BOTTOM NAVIGATION
-   =========================================================
-   
-   IMPORTANT:
-   Home page is the master navigation structure.
-
-   Home IDs:
-   homeNav
-   reelNav
-   searchNav
-   notificationNav
-   profileNav
-
-   My Profile uses the SAME IDs.
    ========================================================= */
 
 function setupBottomNavigation() {
 
     const home =
-        $("homeNav");
+        $("navHome");
 
 
     const reels =
-        $("reelNav");
+        $("navReels");
 
 
     const search =
-        $("searchNav");
+        $("navSearch");
 
 
     const notifications =
-        $("notificationNav");
+        $("navNotifications");
 
 
     const profile =
-        $("profileNav");
+        $("navProfile");
 
-
-    /*
-     * Home
-     */
 
     if (home) {
 
@@ -1805,14 +1959,12 @@ function setupBottomNavigation() {
 
                 window.location.href =
                     "/home";
+
             }
         );
+
     }
 
-
-    /*
-     * Reels
-     */
 
     if (reels) {
 
@@ -1822,14 +1974,12 @@ function setupBottomNavigation() {
 
                 window.location.href =
                     "/reels";
+
             }
         );
+
     }
 
-
-    /*
-     * Search
-     */
 
     if (search) {
 
@@ -1839,14 +1989,12 @@ function setupBottomNavigation() {
 
                 window.location.href =
                     "/search";
+
             }
         );
+
     }
 
-
-    /*
-     * Notifications
-     */
 
     if (notifications) {
 
@@ -1856,16 +2004,12 @@ function setupBottomNavigation() {
 
                 window.location.href =
                     "/notifications";
+
             }
         );
+
     }
 
-
-    /*
-     * My Profile
-     *
-     * Already on My Profile.
-     */
 
     if (profile) {
 
@@ -1875,9 +2019,12 @@ function setupBottomNavigation() {
 
                 window.location.href =
                     "/my-profile";
+
             }
         );
+
     }
+
 }
 
 
@@ -1900,30 +2047,19 @@ async function logout() {
 
     try {
 
-        const response =
-            await fetch(
-                "/api/auth/logout",
-                {
-                    method: "POST",
+        await fetch(
+            "/api/auth/logout",
+            {
+                method: "POST",
 
-                    credentials:
-                        "include",
+                credentials: "include",
 
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
+                headers: {
+                    "Accept":
+                        "application/json"
                 }
-            );
-
-
-        if (!response.ok) {
-
-            console.warn(
-                "Logout endpoint returned:",
-                response.status
-            );
-        }
+            }
+        );
 
     } catch (error) {
 
@@ -1936,7 +2072,9 @@ async function logout() {
 
         window.location.href =
             "/login";
+
     }
+
 }
 
 
@@ -1955,7 +2093,8 @@ function renderProfileError(message) {
     }
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     const error =
@@ -1975,4 +2114,5 @@ function renderProfileError(message) {
     container.appendChild(
         error
     );
+
 }
