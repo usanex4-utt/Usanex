@@ -18,7 +18,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/chat.css?v=2"
+        href="/static/css/chat.css?v=3"
     >
 </head>
 
@@ -27,165 +27,94 @@
 <div class="chat-app">
 
     <!-- =====================================================
-         CHAT SIDEBAR
+         CHAT HEADER
     ====================================================== -->
 
-    <aside
-        class="chat-sidebar"
-        id="chatSidebar"
-    >
+    <header class="conversation-header">
 
-        <header class="sidebar-header">
+        <!-- BACK -->
 
-            <div class="brand">
-                <span>Usanex</span>
-                <small>AI</small>
-            </div>
-
-            <div class="header-actions">
-
-                <button
-                    type="button"
-                    id="searchToggle"
-                    aria-label="Search"
-                >
-                    ⌕
-                </button>
-
-                <button
-                    type="button"
-                    id="menuButton"
-                    aria-label="Menu"
-                >
-                    ⋮
-                </button>
-
-            </div>
-
-        </header>
-
-
-        <!-- SEARCH -->
-
-        <div class="chat-search">
-
-            <span>⌕</span>
-
-            <input
-                type="search"
-                id="chatSearch"
-                placeholder="Search chats..."
-                autocomplete="off"
-            >
-
-        </div>
-
-
-        <!-- FILTERS -->
-
-        <div class="chat-filters">
-
-            <button
-                type="button"
-                class="filter active"
-                data-filter="all"
-            >
-                All
-            </button>
-
-            <button
-                type="button"
-                class="filter"
-                data-filter="unread"
-            >
-                Unread
-            </button>
-
-            <button
-                type="button"
-                class="filter"
-                data-filter="contacts"
-            >
-                Contacts
-            </button>
-
-            <button
-                type="button"
-                class="filter"
-                data-filter="groups"
-            >
-                Groups
-            </button>
-
-        </div>
-
-
-        <!-- CHAT LIST -->
-
-        <div
-            class="chat-list"
-            id="chatList"
+        <button
+            type="button"
+            class="back-button"
+            id="backButton"
+            aria-label="Back"
         >
-        </div>
+            ‹
+        </button>
 
 
-        <!-- BOTTOM NAV -->
+        <!-- USER DP -->
 
-        <nav
-            class="bottom-nav"
-            aria-label="Main navigation"
+        <button
+            type="button"
+            class="selected-avatar-wrap"
+            id="selectedAvatarButton"
+            aria-label="Open profile"
         >
 
+            <img
+                id="selectedAvatar"
+                src="/static/images/default-profile.png"
+                alt="Profile"
+            >
+
+            <span
+                class="online-dot"
+                id="headerOnlineDot"
+                hidden
+            ></span>
+
+        </button>
+
+
+        <!-- USER INFORMATION -->
+
+        <div class="selected-info">
+
+            <strong id="selectedName">
+                Loading...
+            </strong>
+
+            <span id="selectedStatus">
+                Offline
+            </span>
+
+        </div>
+
+
+        <!-- HEADER ACTIONS -->
+
+        <div class="conversation-actions">
+
+            <!-- CALL -->
+
             <button
                 type="button"
-                data-page="/home"
+                id="voiceCallButton"
+                aria-label="Voice call"
             >
-                <span>⌂</span>
-                <small>Home</small>
+                ☎
             </button>
+
+
+            <!-- MENU -->
 
             <button
                 type="button"
-                class="active"
-                data-page="/chat"
+                id="conversationMenu"
+                aria-label="More options"
             >
-                <span>▣</span>
-                <small>Chat</small>
+                ⋮
             </button>
 
-            <button
-                type="button"
-                data-page="/search"
-            >
-                <span>⌕</span>
-                <small>Search</small>
-            </button>
+        </div>
 
-            <button
-                type="button"
-                data-page="/notifications"
-            >
-                <span>♧</span>
-                <small>Notifications</small>
-
-                <b>3</b>
-            </button>
-
-            <button
-                type="button"
-                data-page="/my-profile"
-            >
-                <span>♙</span>
-                <small>Profile</small>
-            </button>
-
-        </nav>
-
-    </aside>
+    </header>
 
 
     <!-- =====================================================
-         REAL CONVERSATION AREA
+         CHAT BODY
     ====================================================== -->
 
     <main
@@ -193,178 +122,122 @@
         id="conversation"
     >
 
-        <!-- CHAT HEADER -->
-
-        <header class="conversation-header">
-
-            <button
-                type="button"
-                class="back-button"
-                id="backButton"
-                aria-label="Back"
-            >
-                ‹
-            </button>
-
-
-            <!-- SELECTED USER DP -->
-
-            <div
-                class="selected-avatar-wrap"
-                id="selectedAvatarButton"
-            >
-
-                <img
-                    id="selectedAvatar"
-                    src="/static/images/default-profile.png"
-                    alt="Profile"
-                >
-
-                <i></i>
-
-            </div>
-
-
-            <!-- SELECTED USER -->
-
-            <div class="selected-info">
-
-                <strong id="selectedName">
-                    Loading...
-                </strong>
-
-                <span id="selectedStatus">
-                    Offline
-                </span>
-
-            </div>
-
-
-            <!-- ACTIONS -->
-
-            <div class="conversation-actions">
-
-                <button
-                    type="button"
-                    id="videoCallButton"
-                    aria-label="Video call"
-                >
-                    ▣
-                </button>
-
-                <button
-                    type="button"
-                    id="voiceCallButton"
-                    aria-label="Voice call"
-                >
-                    ⌕
-                </button>
-
-                <button
-                    type="button"
-                    id="conversationMenu"
-                    aria-label="More"
-                >
-                    ⋮
-                </button>
-
-            </div>
-
-        </header>
-
-
-        <!-- =================================================
-             LIGHT WATERMARK
-        ================================================== -->
+        <!-- WATERMARK -->
 
         <div
             class="watermark"
             aria-hidden="true"
         >
-            Usanex AI
+            Usanex
         </div>
 
 
-        <!-- =================================================
-             MESSAGES
-        ================================================== -->
+        <!-- MESSAGES -->
 
         <section
             class="messages"
             id="messages"
+            aria-live="polite"
         >
 
             <div class="day-label">
                 Today
             </div>
 
-            <!-- Messages will be loaded by chat.js -->
-
         </section>
 
+    </main>
 
-        <!-- =================================================
-             MESSAGE COMPOSER
-        ================================================== -->
+
+    <!-- =====================================================
+         TYPING / MESSAGE COMPOSER
+    ====================================================== -->
+
+    <div class="chat-bottom">
+
+        <!-- TYPING INDICATOR -->
+
+        <div
+            class="typing-indicator"
+            id="typingIndicator"
+            hidden
+        >
+            typing...
+        </div>
+
+
+        <!-- COMPOSER -->
 
         <form
             class="composer"
             id="composer"
         >
 
+            <!-- EMOJI -->
+
             <button
                 type="button"
                 id="emojiButton"
                 aria-label="Emoji"
             >
-                ☺
+                😊
             </button>
 
+
+            <!-- MESSAGE -->
 
             <input
                 type="text"
                 id="messageInput"
-                placeholder="Type a message..."
+                placeholder="Message"
                 maxlength="4000"
                 autocomplete="off"
             >
 
 
+            <!-- ATTACHMENT -->
+
             <button
                 type="button"
                 id="attachButton"
-                aria-label="Attach"
+                aria-label="Attach file"
             >
-                ⌕
+                📎
             </button>
 
+
+            <!-- CAMERA -->
 
             <button
                 type="button"
                 id="cameraButton"
                 aria-label="Camera"
             >
-                ▣
+                📷
             </button>
 
+
+            <!-- SEND -->
 
             <button
                 type="submit"
                 class="send-button"
                 id="sendButton"
-                aria-label="Send message"
+                aria-label="Send"
             >
                 ➤
             </button>
 
         </form>
 
-    </main>
+    </div>
 
 </div>
 
 
-<!-- FILE INPUT -->
+<!-- =====================================================
+     FILE INPUT
+====================================================== -->
 
 <input
     type="file"
@@ -374,12 +247,15 @@
 >
 
 
-<!-- CHAT JAVASCRIPT -->
+<!-- =====================================================
+     CHAT JAVASCRIPT
+====================================================== -->
 
 <script
-    src="/static/js/chat.js?v=2"
+    src="/static/js/chat.js?v=3"
     defer
 ></script>
 
 </body>
+
 </html>
