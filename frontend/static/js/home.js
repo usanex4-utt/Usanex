@@ -1044,10 +1044,8 @@ document.addEventListener("DOMContentLoaded", () => {
         /*
          * IMPORTANT:
          *
-         * NO card click -> profile.
-         *
-         * Profile opening is handled ONLY
-         * by the DP/avatar click handler.
+         * Card click is handled separately
+         * after this function.
          */
     }
 
@@ -1100,6 +1098,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         go(
             "/profile?user_id=" +
+            encodeURIComponent(userId)
+        );
+    }
+
+
+    /* =====================================================
+       OPEN CONNECTED USER CHAT
+       CARD EXCEPT DP
+    ===================================================== */
+
+    function openConnectedUserChat(
+        userId
+    ) {
+
+        if (!userId) {
+            return;
+        }
+
+        go(
+            "/chat?user_id=" +
             encodeURIComponent(userId)
         );
     }
@@ -1246,7 +1264,8 @@ document.addEventListener("DOMContentLoaded", () => {
                USER INFO
                
                IMPORTANT:
-               These are NOT clickable.
+               These are NOT clickable separately.
+               Clicking them opens CHAT through card.
             ============================================= */
 
             const infoHtml = `
@@ -1286,7 +1305,7 @@ document.addEventListener("DOMContentLoaded", () => {
                ARROW
                
                IMPORTANT:
-               Arrow is NOT clickable.
+               Arrow is also part of chat area.
             ============================================= */
 
             const arrowHtml = `
@@ -1307,6 +1326,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             /* =============================================
                AVATAR ELEMENT
+               
+               DP ONLY = PROFILE
             ============================================= */
 
             const avatar =
@@ -1371,6 +1392,51 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 );
             }
+
+
+            /* =============================================
+               CARD CLICK
+               
+               DP = PROFILE
+               EVERYTHING ELSE = CHAT
+            ============================================= */
+
+            card.addEventListener(
+                "click",
+                (event) => {
+
+                    /*
+                     * DP click is already handled
+                     * by avatar handler.
+                     */
+                    if (
+                        event.target.closest(
+                            ".connected-person-avatar"
+                        )
+                    ) {
+                        return;
+                    }
+
+
+                    /*
+                     * Do not open chat when
+                     * category popup is active.
+                     */
+                    if (
+                        categoryPopup
+                    ) {
+                        return;
+                    }
+
+
+                    /*
+                     * Open chat.
+                     */
+                    openConnectedUserChat(
+                        userId
+                    );
+                }
+            );
 
 
             /* =============================================
@@ -1668,7 +1734,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home loaded - DP only opens profile."
+        "Usanex Home loaded - DP opens profile, card opens chat."
     );
 
 });
