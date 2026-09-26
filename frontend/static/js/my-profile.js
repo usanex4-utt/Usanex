@@ -51,9 +51,7 @@ document.addEventListener(
    ========================================================= */
 
 function $(id) {
-
     return document.getElementById(id);
-
 }
 
 
@@ -104,9 +102,7 @@ function escapeHtml(value) {
 function getPhotoUrl(photo) {
 
     if (!photo) {
-
         return "/static/images/default-profile.png";
-
     }
 
     return String(photo);
@@ -176,23 +172,26 @@ async function loadMyProfile() {
 
     try {
 
-        const response = await fetch(
-            "/api/profile/me",
-            {
-                method: "GET",
+        const response =
+            await fetch(
+                "/api/profile/me",
+                {
+                    method: "GET",
 
-                credentials: "include",
+                    credentials: "include",
 
-                headers: {
-                    "Accept": "application/json"
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
                 }
-            }
-        );
+            );
 
 
         if (response.status === 401) {
 
-            window.location.href = "/login";
+            window.location.href =
+                "/login";
 
             return;
 
@@ -384,10 +383,6 @@ function renderProfile(user) {
         );
 
 
-    /*
-     * HEADER NAME
-     */
-
     if ($("profileName")) {
 
         $("profileName").textContent =
@@ -395,10 +390,6 @@ function renderProfile(user) {
 
     }
 
-
-    /*
-     * PROFILE USERNAME
-     */
 
     if ($("profileUsername")) {
 
@@ -410,10 +401,6 @@ function renderProfile(user) {
     }
 
 
-    /*
-     * USER ID
-     */
-
     if ($("profileUserId")) {
 
         $("profileUserId").textContent =
@@ -422,14 +409,18 @@ function renderProfile(user) {
     }
 
 
-    /*
-     * PROFILE PHOTO
-     */
-
     if ($("profilePhoto")) {
 
         $("profilePhoto").src =
             photo;
+
+        $("profilePhoto").onerror =
+            () => {
+
+                $("profilePhoto").src =
+                    "/static/images/default-profile.png";
+
+            };
 
     }
 
@@ -439,12 +430,16 @@ function renderProfile(user) {
         $("editProfilePhotoPreview").src =
             photo;
 
+        $("editProfilePhotoPreview").onerror =
+            () => {
+
+                $("editProfilePhotoPreview").src =
+                    "/static/images/default-profile.png";
+
+            };
+
     }
 
-
-    /*
-     * BIO
-     */
 
     if ($("profileBio")) {
 
@@ -455,10 +450,6 @@ function renderProfile(user) {
 
     }
 
-
-    /*
-     * STATS
-     */
 
     if ($("followersCount")) {
 
@@ -643,11 +634,6 @@ function setupHeader() {
         "click",
         () => {
 
-            /*
-             * Future:
-             * Create post / reel / moment
-             */
-
             console.log(
                 "Usanex create button"
             );
@@ -666,7 +652,6 @@ function setupMenu() {
 
     const menuButton =
         $("profileMenuButton");
-
 
     const menu =
         $("profileMenu");
@@ -712,10 +697,6 @@ function setupMenu() {
     );
 
 
-    /*
-     * EDIT PROFILE
-     */
-
     const editButton =
         $("editProfileButton");
 
@@ -735,10 +716,6 @@ function setupMenu() {
 
     }
 
-
-    /*
-     * PRIVACY
-     */
 
     const privacyButton =
         $("privacyButton");
@@ -762,10 +739,6 @@ function setupMenu() {
     }
 
 
-    /*
-     * SECURITY
-     */
-
     const securityButton =
         $("securityButton");
 
@@ -787,10 +760,6 @@ function setupMenu() {
 
     }
 
-
-    /*
-     * BLOCKED USERS
-     */
 
     const blockedUsersButton =
         $("blockedUsersButton");
@@ -814,10 +783,6 @@ function setupMenu() {
     }
 
 
-    /*
-     * ACCOUNT
-     */
-
     const accountButton =
         $("accountButton");
 
@@ -839,10 +804,6 @@ function setupMenu() {
 
     }
 
-
-    /*
-     * HELP
-     */
 
     const helpButton =
         $("helpButton");
@@ -866,10 +827,6 @@ function setupMenu() {
     }
 
 
-    /*
-     * ABOUT
-     */
-
     const aboutButton =
         $("aboutButton");
 
@@ -891,10 +848,6 @@ function setupMenu() {
 
     }
 
-
-    /*
-     * LOGOUT
-     */
 
     const logoutButton =
         $("logoutButton");
@@ -927,14 +880,11 @@ function setupPhotoViewer() {
     const photoButton =
         $("profilePhotoButton");
 
-
     const viewer =
         $("profilePhotoViewer");
 
-
     const viewerPhoto =
         $("viewerPhoto");
-
 
     const closeButton =
         $("closePhotoViewer");
@@ -1088,7 +1038,6 @@ function setupEditProfile() {
 
     const changePhotoButton =
         $("changeProfilePhotoButton");
-
 
     const photoInput =
         $("profilePhotoInput");
@@ -1391,6 +1340,18 @@ async function saveProfile() {
         "";
 
 
+    const photoInput =
+        $("profilePhotoInput");
+
+
+    const selectedPhoto =
+        photoInput?.files?.[0] || null;
+
+
+    /* =====================================================
+       VALIDATION
+       ===================================================== */
+
     if (!name) {
 
         setEditMessage(
@@ -1429,7 +1390,6 @@ async function saveProfile() {
         saveButton.disabled =
             true;
 
-
         saveButton.textContent =
             "Saving...";
 
@@ -1441,7 +1401,11 @@ async function saveProfile() {
 
     try {
 
-        const response =
+        /* =================================================
+           1. SAVE TEXT PROFILE
+           ================================================= */
+
+        const profileResponse =
             await fetch(
                 "/api/profile/me",
                 {
@@ -1450,37 +1414,34 @@ async function saveProfile() {
                     credentials: "include",
 
                     headers: {
-
                         "Content-Type":
                             "application/json",
 
                         "Accept":
                             "application/json"
-
                     },
 
-                    body:
-                        JSON.stringify({
+                    body: JSON.stringify({
 
-                            name,
+                        name: name,
 
-                            bio,
+                        bio: bio,
 
-                            website,
+                        website: website,
 
-                            instagram,
+                        instagram: instagram,
 
-                            social_link:
-                                socialLink
+                        social_link:
+                            socialLink
 
-                        })
+                    })
 
                 }
             );
 
 
         if (
-            response.status === 401
+            profileResponse.status === 401
         ) {
 
             window.location.href =
@@ -1491,10 +1452,10 @@ async function saveProfile() {
         }
 
 
-        if (!response.ok) {
+        if (!profileResponse.ok) {
 
             const errorData =
-                await response
+                await profileResponse
                     .json()
                     .catch(() => null);
 
@@ -1507,23 +1468,123 @@ async function saveProfile() {
         }
 
 
-        const data =
-            await response.json();
+        const profileData =
+            await profileResponse.json();
 
 
         profileState.user = {
 
             ...profileState.user,
 
-            ...(data.user || {})
+            ...(profileData.user || {})
 
         };
 
+
+        /* =================================================
+           2. UPLOAD DP
+           ================================================= */
+
+        if (selectedPhoto) {
+
+            const formData =
+                new FormData();
+
+
+            formData.append(
+                "photo",
+                selectedPhoto
+            );
+
+
+            const photoResponse =
+                await fetch(
+                    "/api/profile/me/photo",
+                    {
+                        method: "POST",
+
+                        credentials: "include",
+
+                        body: formData
+                    }
+                );
+
+
+            if (
+                photoResponse.status === 401
+            ) {
+
+                window.location.href =
+                    "/login";
+
+                return;
+
+            }
+
+
+            if (!photoResponse.ok) {
+
+                const errorData =
+                    await photoResponse
+                        .json()
+                        .catch(() => null);
+
+
+                throw new Error(
+                    errorData?.detail ||
+                    "Unable to save profile photo."
+                );
+
+            }
+
+
+            const photoData =
+                await photoResponse.json();
+
+
+            if (
+                photoData &&
+                photoData.success
+            ) {
+
+                profileState.user = {
+
+                    ...profileState.user,
+
+                    ...(photoData.user || {}),
+
+                    profile_photo:
+                        photoData.profile_photo ||
+                        profileState.user.profile_photo
+
+                };
+
+            }
+
+
+            /*
+             * Important:
+             * Clear selected file only after
+             * successful upload.
+             */
+
+            photoInput.value = "";
+
+        }
+
+
+        /* =================================================
+           3. UPDATE PROFILE UI
+           ================================================= */
 
         renderProfile(
             profileState.user
         );
 
+
+        /* =================================================
+           4. SUCCESS
+           ================================================= */
 
         setEditMessage(
             "Profile saved successfully."
@@ -1560,7 +1621,6 @@ async function saveProfile() {
 
             saveButton.disabled =
                 false;
-
 
             saveButton.textContent =
                 "Save Changes";
