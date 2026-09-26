@@ -1,6 +1,5 @@
-
 /* =========================================================
-   USANEX — CHAT PAGE
+   USANEX — CHAT
    ========================================================= */
 
 "use strict";
@@ -12,21 +11,25 @@
 
 const chatState = {
 
-    currentUser: null,
+    chats: [],
 
-    activeChat: null,
+    filteredChats: [],
+
+    selectedChat: null,
+
+    activeFilter: "all",
+
+    searchText: "",
 
     messages: [],
 
-    loading: false,
-
-    sending: false
+    loading: false
 
 };
 
 
 /* =========================================================
-   DOM READY
+   START
    ========================================================= */
 
 document.addEventListener(
@@ -50,25 +53,16 @@ function $(id) {
 }
 
 
-function safeText(value, fallback = "") {
+function escapeHtml(value) {
 
     if (
         value === null ||
         value === undefined
     ) {
-
-        return fallback;
-
+        return "";
     }
 
-    return String(value);
-
-}
-
-
-function escapeHtml(value) {
-
-    return safeText(value)
+    return String(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -78,16 +72,610 @@ function escapeHtml(value) {
 }
 
 
-function formatTime(dateValue) {
+function getPhoto(photo) {
 
-    if (!dateValue) {
+    if (!photo) {
 
-        return "";
+        return "/static/images/default-profile.png";
 
     }
 
+    return String(photo);
+
+}
+
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+
+function initChat() {
+
+    setupNavigation();
+
+    setupSearch();
+
+    setupFilters();
+
+    setupComposer();
+
+    setupBackButton();
+
+    setupHeaderButtons();
+
+    loadChats();
+
+}
+
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+function setupNavigation() {
+
+    document
+        .querySelectorAll(
+            ".bottom-nav button[data-page]"
+        )
+        .forEach(
+            (button) => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const page =
+                            button.dataset.page;
+
+                        if (!page) {
+                            return;
+                        }
+
+                        window.location.href =
+                            page;
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+function setupSearch() {
+
+    const input =
+        $("chatSearch");
+
+
+    if (!input) {
+        return;
+    }
+
+
+    input.addEventListener(
+        "input",
+        () => {
+
+            chatState.searchText =
+                input.value
+                    .trim()
+                    .toLowerCase();
+
+
+            filterAndRenderChats();
+
+        }
+    );
+
+
+    const searchToggle =
+        $("searchToggle");
+
+
+    if (searchToggle) {
+
+        searchToggle.addEventListener(
+            "click",
+            () => {
+
+                input.focus();
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
+function setupFilters() {
+
+    document
+        .querySelectorAll(
+            ".filter"
+        )
+        .forEach(
+            (button) => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        document
+                            .querySelectorAll(
+                                ".filter"
+                            )
+                            .forEach(
+                                (item) => {
+
+                                    item.classList.remove(
+                                        "active"
+                                    );
+
+                                }
+                            );
+
+
+                        button.classList.add(
+                            "active"
+                        );
+
+
+                        chatState.activeFilter =
+                            button.dataset.filter ||
+                            "all";
+
+
+                        filterAndRenderChats();
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   LOAD CHATS
+   ========================================================= */
+
+async function loadChats() {
+
+    const list =
+        $("chatList");
+
+
+    if (!list) {
+        return;
+    }
+
+
+    list.innerHTML = `
+        <div class="chat-loading">
+            Loading chats...
+        </div>
+    `;
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/chat/chats",
+                {
+                    method: "GET",
+
+                    credentials: "include",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        if (response.status === 401) {
+
+            window.location.href =
+                "/login";
+
+            return;
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to load chats."
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        /*
+         * Supported responses:
+         *
+         * {
+         *   "success": true,
+         *   "chats": [...]
+         * }
+         */
+
+
+        chatState.chats =
+            Array.isArray(data.chats)
+                ? data.chats
+                : [];
+
+
+        chatState.filteredChats =
+            [...chatState.chats];
+
+
+        filterAndRenderChats();
+
+
+    } catch (error) {
+
+        console.error(
+            "Load chats:",
+            error
+        );
+
+
+        /*
+         * Temporary empty state.
+         *
+         * Backend chat API can be connected
+         * without changing the UI code.
+         */
+
+        chatState.chats = [];
+
+        chatState.filteredChats = [];
+
+        renderEmptyChats();
+
+    }
+
+}
+
+
+/* =========================================================
+   FILTER + RENDER
+   ========================================================= */
+
+function filterAndRenderChats() {
+
+    let chats =
+        [...chatState.chats];
+
+
+    /*
+     * FILTER
+     */
+
+    if (
+        chatState.activeFilter ===
+        "unread"
+    ) {
+
+        chats =
+            chats.filter(
+                (chat) =>
+                    Number(
+                        chat.unread_count || 0
+                    ) > 0
+            );
+
+    }
+
+
+    if (
+        chatState.activeFilter ===
+        "contacts"
+    ) {
+
+        chats =
+            chats.filter(
+                (chat) =>
+                    chat.is_contact !== false
+            );
+
+    }
+
+
+    if (
+        chatState.activeFilter ===
+        "groups"
+    ) {
+
+        chats =
+            chats.filter(
+                (chat) =>
+                    chat.is_group === true
+            );
+
+    }
+
+
+    /*
+     * SEARCH
+     */
+
+    if (chatState.searchText) {
+
+        chats =
+            chats.filter(
+                (chat) => {
+
+                    const name =
+                        String(
+                            chat.name || ""
+                        ).toLowerCase();
+
+                    const username =
+                        String(
+                            chat.username || ""
+                        ).toLowerCase();
+
+                    const lastMessage =
+                        String(
+                            chat.last_message || ""
+                        ).toLowerCase();
+
+                    return (
+                        name.includes(
+                            chatState.searchText
+                        ) ||
+                        username.includes(
+                            chatState.searchText
+                        ) ||
+                        lastMessage.includes(
+                            chatState.searchText
+                        )
+                    );
+
+                }
+            );
+
+    }
+
+
+    chatState.filteredChats =
+        chats;
+
+
+    renderChatList();
+
+}
+
+
+/* =========================================================
+   RENDER CHAT LIST
+   ========================================================= */
+
+function renderChatList() {
+
+    const list =
+        $("chatList");
+
+
+    if (!list) {
+        return;
+    }
+
+
+    list.innerHTML =
+        "";
+
+
+    if (
+        !chatState.filteredChats.length
+    ) {
+
+        renderEmptyChats();
+
+        return;
+
+    }
+
+
+    chatState.filteredChats
+        .forEach(
+            (chat) => {
+
+                list.appendChild(
+                    createChatItem(chat)
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   EMPTY CHATS
+   ========================================================= */
+
+function renderEmptyChats() {
+
+    const list =
+        $("chatList");
+
+
+    if (!list) {
+        return;
+    }
+
+
+    list.innerHTML = `
+        <div class="empty-chat">
+            <strong>No chats yet</strong>
+            Start a conversation from Usanex.
+        </div>
+    `;
+
+}
+
+
+/* =========================================================
+   CREATE CHAT ITEM
+   ========================================================= */
+
+function createChatItem(chat) {
+
+    const item =
+        document.createElement(
+            "button"
+        );
+
+
+    item.type =
+        "button";
+
+
+    item.className =
+        "chat-item";
+
+
+    item.dataset.chatId =
+        chat.id ??
+        chat.user_id ??
+        "";
+
+
+    const avatar =
+        getPhoto(
+            chat.profile_photo ||
+            chat.avatar
+        );
+
+
+    const name =
+        chat.name ||
+        chat.username ||
+        "Usanex User";
+
+
+    const lastMessage =
+        chat.last_message ||
+        "Start a conversation";
+
+
+    const time =
+        formatChatTime(
+            chat.last_message_at ||
+            chat.updated_at ||
+            chat.created_at
+        );
+
+
+    const unread =
+        Number(
+            chat.unread_count || 0
+        );
+
+
+    item.innerHTML = `
+
+        <div class="chat-item-avatar">
+
+            <img
+                src="${escapeHtml(avatar)}"
+                alt="${escapeHtml(name)}"
+                loading="lazy"
+            >
+
+        </div>
+
+
+        <div class="chat-item-content">
+
+            <div class="chat-item-top">
+
+                <strong class="chat-item-name">
+                    ${escapeHtml(name)}
+                </strong>
+
+                <span class="chat-item-time">
+                    ${escapeHtml(time)}
+                </span>
+
+            </div>
+
+
+            <div class="chat-item-bottom">
+
+                <span class="chat-item-message">
+                    ${escapeHtml(lastMessage)}
+                </span>
+
+                ${
+                    unread > 0
+                        ? `
+                            <span class="chat-item-unread">
+                                ${unread > 99 ? "99+" : unread}
+                            </span>
+                        `
+                        : ""
+                }
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    item.addEventListener(
+        "click",
+        () => {
+
+            openChat(chat);
+
+        }
+    );
+
+
+    return item;
+
+}
+
+
+/* =========================================================
+   FORMAT TIME
+   ========================================================= */
+
+function formatChatTime(value) {
+
+    if (!value) {
+        return "";
+    }
+
+
     const date =
-        new Date(dateValue);
+        new Date(value);
 
 
     if (
@@ -101,233 +689,33 @@ function formatTime(dateValue) {
     }
 
 
-    return date.toLocaleTimeString(
+    const now =
+        new Date();
+
+
+    const sameDay =
+        date.toDateString() ===
+        now.toDateString();
+
+
+    if (sameDay) {
+
+        return date.toLocaleTimeString(
+            [],
+            {
+                hour: "numeric",
+                minute: "2-digit"
+            }
+        );
+
+    }
+
+
+    return date.toLocaleDateString(
         [],
         {
-            hour: "2-digit",
-            minute: "2-digit"
-        }
-    );
-
-}
-
-
-function scrollMessagesToBottom() {
-
-    const container =
-        $("chatMessages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    requestAnimationFrame(
-        () => {
-
-            container.scrollTop =
-                container.scrollHeight;
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   INITIALIZATION
-   ========================================================= */
-
-async function initChat() {
-
-    setupBackButton();
-
-    setupChatMenu();
-
-    setupMessageInput();
-
-    setupSendButton();
-
-    setupAttachmentButton();
-
-    setupEmojiButton();
-
-    setupVoiceButton();
-
-    setupSearchButton();
-
-    setupChatList();
-
-    setupMobileChat();
-
-    await loadCurrentUser();
-
-    loadChatFromUrl();
-
-}
-
-
-/* =========================================================
-   CURRENT USER
-   ========================================================= */
-
-async function loadCurrentUser() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/auth/me",
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.href =
-                "/login";
-
-            return;
-
-        }
-
-
-        if (!response.ok) {
-
-            return;
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        chatState.currentUser =
-            data.user ||
-            data;
-
-
-    } catch (error) {
-
-        console.error(
-            "Current user:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   URL CHAT
-   ========================================================= */
-
-function loadChatFromUrl() {
-
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-
-    const userId =
-        params.get("user_id");
-
-
-    const username =
-        params.get("username");
-
-
-    const name =
-        params.get("name");
-
-
-    if (
-        userId ||
-        username ||
-        name
-    ) {
-
-        openChat({
-            user_id: userId || "",
-            username: username || "",
-            name: name || "User",
-            profile_photo:
-                params.get(
-                    "profile_photo"
-                ) || ""
-        });
-
-    }
-
-}
-
-
-/* =========================================================
-   CHAT LIST
-   ========================================================= */
-
-function setupChatList() {
-
-    const chatList =
-        $("chatList");
-
-
-    if (!chatList) {
-
-        return;
-
-    }
-
-
-    chatList.addEventListener(
-        "click",
-        (event) => {
-
-            const item =
-                event.target.closest(
-                    "[data-chat-user-id]"
-                );
-
-
-            if (!item) {
-
-                return;
-
-            }
-
-
-            openChat({
-
-                user_id:
-                    item.dataset.chatUserId,
-
-                username:
-                    item.dataset.chatUsername || "",
-
-                name:
-                    item.dataset.chatName ||
-                    "User",
-
-                profile_photo:
-                    item.dataset.chatPhoto || ""
-
-            });
-
+            day: "numeric",
+            month: "short"
         }
     );
 
@@ -338,79 +726,104 @@ function setupChatList() {
    OPEN CHAT
    ========================================================= */
 
-async function openChat(user) {
+async function openChat(chat) {
 
-    chatState.activeChat =
-        user;
+    if (!chat) {
+        return;
+    }
 
 
-    updateChatHeader(
-        user
+    chatState.selectedChat =
+        chat;
+
+
+    renderSelectedUser(
+        chat
     );
 
 
-    showChatOnMobile();
+    const app =
+        document.querySelector(
+            ".chat-app"
+        );
 
 
-    clearMessages();
+    if (app) {
+
+        app.classList.add(
+            "chat-open"
+        );
+
+    }
 
 
     await loadMessages(
-        user.user_id
+        chat
     );
 
 }
 
 
 /* =========================================================
-   CHAT HEADER
+   SELECTED USER
    ========================================================= */
 
-function updateChatHeader(user) {
+function renderSelectedUser(chat) {
 
     const name =
-        user.name ||
-        user.username ||
-        "User";
+        chat.name ||
+        chat.username ||
+        "Usanex User";
 
 
-    const username =
-        user.username
-            ? `@${String(
-                user.username
-            ).replace(/^@/, "")}`
-            : "";
+    const avatar =
+        getPhoto(
+            chat.profile_photo ||
+            chat.avatar
+        );
 
 
-    if ($("chatUserName")) {
+    const status =
+        chat.online === true
+            ? "Online"
+            : (
+                chat.status ||
+                "Offline"
+            );
 
-        $("chatUserName").textContent =
+
+    const selectedName =
+        $("selectedName");
+
+
+    if (selectedName) {
+
+        selectedName.textContent =
             name;
 
     }
 
 
-    if ($("chatUserUsername")) {
-
-        $("chatUserUsername").textContent =
-            username;
-
-    }
+    const selectedAvatar =
+        $("selectedAvatar");
 
 
-    if ($("chatUserPhoto")) {
+    if (selectedAvatar) {
 
-        $("chatUserPhoto").src =
-            user.profile_photo ||
-            "/static/images/default-profile.png";
+        selectedAvatar.src =
+            avatar;
 
     }
 
 
-    if ($("chatOnlineStatus")) {
+    const selectedStatus =
+        $("selectedStatus");
 
-        $("chatOnlineStatus").textContent =
-            "offline";
+
+    if (selectedStatus) {
+
+        selectedStatus.textContent =
+            status;
 
     }
 
@@ -421,28 +834,48 @@ function updateChatHeader(user) {
    LOAD MESSAGES
    ========================================================= */
 
-async function loadMessages(userId) {
+async function loadMessages(chat) {
 
-    if (!userId) {
+    const container =
+        $("messages");
 
-        renderChatWelcome();
+
+    if (!container) {
+        return;
+    }
+
+
+    container.innerHTML = `
+        <div class="day-label">
+            Today
+        </div>
+
+        <div class="chat-loading">
+            Loading messages...
+        </div>
+    `;
+
+
+    const chatId =
+        chat.id ??
+        chat.chat_id ??
+        chat.user_id;
+
+
+    if (!chatId) {
+
+        renderMessages([]);
 
         return;
 
     }
 
 
-    chatState.loading =
-        true;
-
-
     try {
 
         const response =
             await fetch(
-                `/api/chat/messages/${encodeURIComponent(
-                    userId
-                )}`,
+                `/api/chat/${encodeURIComponent(chatId)}/messages`,
                 {
                     method: "GET",
 
@@ -462,17 +895,6 @@ async function loadMessages(userId) {
 
             window.location.href =
                 "/login";
-
-            return;
-
-        }
-
-
-        if (
-            response.status === 404
-        ) {
-
-            renderEmptyMessages();
 
             return;
 
@@ -497,12 +919,12 @@ async function loadMessages(userId) {
                 data.messages
             )
                 ? data.messages
-                : Array.isArray(data)
-                    ? data
-                    : [];
+                : [];
 
 
-        renderMessages();
+        renderMessages(
+            chatState.messages
+        );
 
 
     } catch (error) {
@@ -513,181 +935,13 @@ async function loadMessages(userId) {
         );
 
 
-        renderMessageError();
-
-    } finally {
-
-        chatState.loading =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   CLEAR MESSAGES
-   ========================================================= */
-
-function clearMessages() {
-
-    const container =
-        $("chatMessages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = "";
-
-}
-
-
-/* =========================================================
-   RENDER WELCOME
-   ========================================================= */
-
-function renderChatWelcome() {
-
-    const container =
-        $("chatMessages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-
-        <div class="chat-welcome">
-
-            <div class="chat-welcome-icon">
-                💬
-            </div>
-
-            <h3>
-                Start a conversation
-            </h3>
-
-            <p>
-                Send a message to start chatting.
-            </p>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-   EMPTY MESSAGES
-   ========================================================= */
-
-function renderEmptyMessages() {
-
-    const container =
-        $("chatMessages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-
-        <div class="chat-empty">
-
-            <div class="chat-empty-icon">
-                ✦
-            </div>
-
-            <div>
-                No messages yet
-            </div>
-
-            <small>
-                Say hello and start chatting.
-            </small>
-
-        </div>
-
-    `;
-
-}
-
-
-/* =========================================================
-   MESSAGE ERROR
-   ========================================================= */
-
-function renderMessageError() {
-
-    const container =
-        $("chatMessages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-
-        <div class="chat-empty">
-
-            <div>
-                Unable to load messages.
-            </div>
-
-            <button
-                type="button"
-                id="retryMessagesButton"
-            >
-                Try Again
-            </button>
-
-        </div>
-
-    `;
-
-
-    const retry =
-        $("retryMessagesButton");
-
-
-    if (retry) {
-
-        retry.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    chatState.activeChat
-                ) {
-
-                    loadMessages(
-                        chatState
-                            .activeChat
-                            .user_id
-                    );
-
-                }
-
-            }
-        );
+        /*
+         * Do not break the chat page
+         * if backend messaging endpoint
+         * is not created yet.
+         */
+
+        renderMessages([]);
 
     }
 
@@ -698,34 +952,68 @@ function renderMessageError() {
    RENDER MESSAGES
    ========================================================= */
 
-function renderMessages() {
+function renderMessages(messages) {
 
     const container =
-        $("chatMessages");
+        $("messages");
 
 
     if (!container) {
-
         return;
-
     }
 
 
     container.innerHTML = "";
 
 
-    if (
-        !chatState.messages.length
-    ) {
+    const day =
+        document.createElement(
+            "div"
+        );
 
-        renderEmptyMessages();
+
+    day.className =
+        "day-label";
+
+
+    day.textContent =
+        "Today";
+
+
+    container.appendChild(
+        day
+    );
+
+
+    if (!messages.length) {
+
+        const empty =
+            document.createElement(
+                "div"
+            );
+
+
+        empty.className =
+            "empty-chat";
+
+
+        empty.innerHTML = `
+            <strong>Start chatting</strong>
+            Send a message to begin.
+        `;
+
+
+        container.appendChild(
+            empty
+        );
+
 
         return;
 
     }
 
 
-    chatState.messages.forEach(
+    messages.forEach(
         (message) => {
 
             container.appendChild(
@@ -755,219 +1043,58 @@ function createMessageElement(message) {
         );
 
 
-    const currentUserId =
-        chatState.currentUser?.id;
-
-
-    const senderId =
-        message.sender_id ??
-        message.from_user_id;
-
-
-    const isMine =
-        String(senderId) ===
-        String(currentUserId);
+    const outgoing =
+        message.is_mine === true ||
+        message.sender_is_me === true;
 
 
     wrapper.className =
-        isMine
-            ? "message-row message-row-me"
-            : "message-row message-row-other";
+        outgoing
+            ? "message outgoing"
+            : "message incoming";
 
 
-    const bubble =
-        document.createElement(
-            "div"
-        );
-
-
-    bubble.className =
-        "message-bubble";
-
-
-    /*
-     * IMAGE
-     */
-
-    if (
-        message.media_type === "image" &&
-        message.media_url
-    ) {
-
-        const image =
-            document.createElement(
-                "img"
-            );
-
-
-        image.src =
-            message.media_url;
-
-
-        image.alt =
-            "Image";
-
-
-        image.className =
-            "chat-message-image";
-
-
-        bubble.appendChild(
-            image
-        );
-
-    }
-
-
-    /*
-     * VIDEO
-     */
-
-    if (
-        message.media_type === "video" &&
-        message.media_url
-    ) {
-
-        const video =
-            document.createElement(
-                "video"
-            );
-
-
-        video.src =
-            message.media_url;
-
-
-        video.controls =
-            true;
-
-
-        video.playsInline =
-            true;
-
-
-        video.className =
-            "chat-message-video";
-
-
-        bubble.appendChild(
-            video
-        );
-
-    }
-
-
-    /*
-     * TEXT
-     */
-
-    if (
-        message.content ||
-        message.text
-    ) {
-
-        const text =
-            document.createElement(
-                "div"
-            );
-
-
-        text.className =
-            "message-text";
-
-
-        text.textContent =
-            message.content ||
-            message.text;
-
-
-        bubble.appendChild(
-            text
-        );
-
-    }
-
-
-    /*
-     * TIME
-     */
-
-    const meta =
-        document.createElement(
-            "div"
-        );
-
-
-    meta.className =
-        "message-meta";
+    const text =
+        message.text ??
+        message.content ??
+        message.message ??
+        "";
 
 
     const time =
-        document.createElement(
-            "span"
-        );
+        message.created_at
+            ? formatMessageTime(
+                message.created_at
+            )
+            : "";
 
 
-    time.textContent =
-        formatTime(
-            message.created_at ||
-            message.sent_at ||
-            message.timestamp
-        );
+    wrapper.innerHTML = `
 
+        <span class="message-text">
+            ${escapeHtml(text)}
+        </span>
 
-    meta.appendChild(
-        time
-    );
-
-
-    /*
-     * READ STATUS
-     */
-
-    if (isMine) {
-
-        const status =
-            document.createElement(
-                "span"
-            );
-
-
-        status.className =
-            "message-read-status";
-
-
-        if (
-            message.read ||
-            message.is_read
-        ) {
-
-            status.textContent =
-                "✓✓";
-
-        } else {
-
-            status.textContent =
-                "✓";
-
+        ${
+            time
+                ? `
+                    <span class="message-time">
+                        ${escapeHtml(time)}
+                        ${
+                            outgoing
+                                ? `
+                                    <span class="message-status">
+                                        ✓
+                                    </span>
+                                `
+                                : ""
+                        }
+                    </span>
+                `
+                : ""
         }
 
-
-        meta.appendChild(
-            status
-        );
-
-    }
-
-
-    bubble.appendChild(
-        meta
-    );
-
-
-    wrapper.appendChild(
-        bubble
-    );
+    `;
 
 
     return wrapper;
@@ -976,35 +1103,99 @@ function createMessageElement(message) {
 
 
 /* =========================================================
-   MESSAGE INPUT
+   MESSAGE TIME
    ========================================================= */
 
-function setupMessageInput() {
+function formatMessageTime(value) {
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+
+    }
+
+
+    return date.toLocaleTimeString(
+        [],
+        {
+            hour: "numeric",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   COMPOSER
+   ========================================================= */
+
+function setupComposer() {
+
+    const composer =
+        $("composer");
+
 
     const input =
         $("messageInput");
 
 
-    if (!input) {
-
+    if (!composer || !input) {
         return;
-
     }
 
 
-    input.addEventListener(
-        "input",
-        () => {
+    composer.addEventListener(
+        "submit",
+        async (event) => {
 
-            autoResizeInput(
-                input
+            event.preventDefault();
+
+
+            const text =
+                input.value.trim();
+
+
+            if (!text) {
+                return;
+            }
+
+
+            if (
+                !chatState.selectedChat
+            ) {
+
+                return;
+
+            }
+
+
+            input.value = "";
+
+
+            await sendMessage(
+                text
             );
-
-            updateSendButton();
 
         }
     );
 
+
+    /*
+     * ENTER = SEND
+     * SHIFT + ENTER = NEW LINE
+     *
+     * Input is single-line, so ENTER
+     * directly sends the message.
+     */
 
     input.addEventListener(
         "keydown",
@@ -1017,88 +1208,79 @@ function setupMessageInput() {
 
                 event.preventDefault();
 
-                sendMessage();
+                composer.requestSubmit();
 
             }
 
         }
     );
 
-}
+
+    const emojiButton =
+        $("emojiButton");
 
 
-/* =========================================================
-   AUTO RESIZE
-   ========================================================= */
+    if (emojiButton) {
 
-function autoResizeInput(input) {
+        emojiButton.addEventListener(
+            "click",
+            () => {
 
-    input.style.height =
-        "auto";
+                insertEmoji();
 
-
-    input.style.height =
-        Math.min(
-            input.scrollHeight,
-            120
-        ) + "px";
-
-}
-
-
-/* =========================================================
-   SEND BUTTON
-   ========================================================= */
-
-function setupSendButton() {
-
-    const button =
-        $("sendMessageButton");
-
-
-    if (!button) {
-
-        return;
+            }
+        );
 
     }
 
 
-    button.addEventListener(
-        "click",
-        sendMessage
-    );
-
-}
+    const attachButton =
+        $("attachButton");
 
 
-/* =========================================================
-   UPDATE SEND BUTTON
-   ========================================================= */
-
-function updateSendButton() {
-
-    const input =
-        $("messageInput");
+    const fileInput =
+        $("fileInput");
 
 
-    const button =
-        $("sendMessageButton");
+    if (
+        attachButton &&
+        fileInput
+    ) {
+
+        attachButton.addEventListener(
+            "click",
+            () => {
+
+                fileInput.click();
+
+            }
+        );
 
 
-    if (!input || !button) {
-
-        return;
+        fileInput.addEventListener(
+            "change",
+            handleFiles
+        );
 
     }
 
 
-    const hasText =
-        input.value.trim().length > 0;
+    const cameraButton =
+        $("cameraButton");
 
 
-    button.disabled =
-        !hasText ||
-        chatState.sending;
+    if (cameraButton) {
+
+        cameraButton.addEventListener(
+            "click",
+            () => {
+
+                openCamera();
+
+            }
+        );
+
+    }
 
 }
 
@@ -1107,60 +1289,67 @@ function updateSendButton() {
    SEND MESSAGE
    ========================================================= */
 
-async function sendMessage() {
+async function sendMessage(text) {
 
-    if (
-        chatState.sending
-    ) {
+    const chat =
+        chatState.selectedChat;
 
+
+    if (!chat) {
         return;
-
     }
 
 
-    if (
-        !chatState.activeChat
-    ) {
+    /*
+     * Optimistic message
+     */
 
+    const temporaryMessage = {
+
+        id:
+            `temp-${Date.now()}`,
+
+        content:
+            text,
+
+        text:
+            text,
+
+        is_mine:
+            true,
+
+        created_at:
+            new Date().toISOString()
+
+    };
+
+
+    chatState.messages.push(
+        temporaryMessage
+    );
+
+
+    renderMessages(
+        chatState.messages
+    );
+
+
+    const chatId =
+        chat.id ??
+        chat.chat_id ??
+        chat.user_id;
+
+
+    if (!chatId) {
         return;
-
     }
-
-
-    const input =
-        $("messageInput");
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const text =
-        input.value.trim();
-
-
-    if (!text) {
-
-        return;
-
-    }
-
-
-    chatState.sending =
-        true;
-
-
-    updateSendButton();
 
 
     try {
 
         const response =
             await fetch(
-                "/api/chat/send",
+                `/api/chat/${encodeURIComponent(chatId)}/messages`,
                 {
                     method: "POST",
 
@@ -1179,12 +1368,7 @@ async function sendMessage() {
                     body:
                         JSON.stringify({
 
-                            receiver_id:
-                                chatState
-                                    .activeChat
-                                    .user_id,
-
-                            content:
+                            message:
                                 text
 
                         })
@@ -1207,16 +1391,7 @@ async function sendMessage() {
 
         if (!response.ok) {
 
-            const errorData =
-                await response
-                    .json()
-                    .catch(
-                        () => null
-                    );
-
-
             throw new Error(
-                errorData?.detail ||
                 "Message could not be sent."
             );
 
@@ -1228,33 +1403,20 @@ async function sendMessage() {
 
 
         /*
-         * Clear input
-         */
-
-        input.value = "";
-
-        input.style.height =
-            "auto";
-
-
-        /*
-         * Add returned message
+         * Replace temporary message
+         * with backend message.
          */
 
         if (data.message) {
 
-            chatState.messages.push(
-                data.message
-            );
+            chatState.messages[
+                chatState.messages.length - 1
+            ] =
+                data.message;
 
-            renderMessages();
 
-        } else {
-
-            await loadMessages(
-                chatState
-                    .activeChat
-                    .user_id
+            renderMessages(
+                chatState.messages
             );
 
         }
@@ -1268,20 +1430,43 @@ async function sendMessage() {
         );
 
 
-        showChatToast(
-            error.message ||
-            "Unable to send message."
-        );
+        /*
+         * Keep temporary message visible
+         * so the UI doesn't suddenly lose it.
+         */
 
-    } finally {
-
-        chatState.sending =
-            false;
+        const messages =
+            $("messages");
 
 
-        updateSendButton();
+        if (messages) {
 
-        input.focus();
+            const errorMessage =
+                document.createElement(
+                    "div"
+                );
+
+
+            errorMessage.style.cssText = `
+                text-align:center;
+                color:#ff7888;
+                font-size:11px;
+                margin:4px 0 8px;
+            `;
+
+
+            errorMessage.textContent =
+                "Message could not be delivered.";
+
+
+            messages.appendChild(
+                errorMessage
+            );
+
+
+            scrollMessagesToBottom();
+
+        }
 
     }
 
@@ -1289,103 +1474,93 @@ async function sendMessage() {
 
 
 /* =========================================================
-   ATTACHMENT
+   EMOJI
    ========================================================= */
 
-function setupAttachmentButton() {
-
-    const button =
-        $("attachmentButton");
-
+function insertEmoji() {
 
     const input =
-        $("chatFileInput");
+        $("messageInput");
 
 
-    if (
-        !button ||
-        !input
-    ) {
-
+    if (!input) {
         return;
-
     }
 
 
-    button.addEventListener(
-        "click",
-        () => {
+    const emoji =
+        "😊";
 
-            input.click();
+
+    const start =
+        input.selectionStart ??
+        input.value.length;
+
+
+    const end =
+        input.selectionEnd ??
+        input.value.length;
+
+
+    input.value =
+        input.value.slice(
+            0,
+            start
+        ) +
+        emoji +
+        input.value.slice(
+            end
+        );
+
+
+    input.focus();
+
+
+    const cursor =
+        start + emoji.length;
+
+
+    input.setSelectionRange(
+        cursor,
+        cursor
+    );
+
+}
+
+
+/* =========================================================
+   FILE ATTACHMENT
+   ========================================================= */
+
+function handleFiles(event) {
+
+    const files =
+        Array.from(
+            event.target.files || []
+        );
+
+
+    if (!files.length) {
+        return;
+    }
+
+
+    files.forEach(
+        (file) => {
+
+            console.log(
+                "Selected file:",
+                file.name
+            );
 
         }
     );
 
 
-    input.addEventListener(
-        "change",
-        handleAttachment
-    );
-
-}
-
-
-/* =========================================================
-   HANDLE ATTACHMENT
-   ========================================================= */
-
-function handleAttachment(event) {
-
-    const file =
-        event.target.files?.[0];
-
-
-    if (!file) {
-
-        return;
-
-    }
-
-
-    if (
-        !chatState.activeChat
-    ) {
-
-        return;
-
-    }
-
-
     /*
-     * Frontend preview only.
-     * Actual upload endpoint can be connected later.
+     * Actual server upload will be connected
+     * when the media-message API is added.
      */
-
-    const url =
-        URL.createObjectURL(
-            file
-        );
-
-
-    const preview =
-        $("attachmentPreview");
-
-
-    if (preview) {
-
-        preview.src =
-            url;
-
-        preview.classList.remove(
-            "hidden"
-        );
-
-    }
-
-
-    showChatToast(
-        "Attachment selected."
-    );
 
 
     event.target.value =
@@ -1395,375 +1570,44 @@ function handleAttachment(event) {
 
 
 /* =========================================================
-   EMOJI
+   CAMERA
    ========================================================= */
 
-function setupEmojiButton() {
+function openCamera() {
 
-    const button =
-        $("emojiButton");
-
-
-    const input =
-        $("messageInput");
+    const fileInput =
+        $("fileInput");
 
 
-    if (
-        !button ||
-        !input
-    ) {
-
+    if (!fileInput) {
         return;
-
     }
 
 
-    button.addEventListener(
-        "click",
+    /*
+     * On supported mobile browsers this
+     * opens the camera.
+     */
+
+    fileInput.setAttribute(
+        "capture",
+        "environment"
+    );
+
+
+    fileInput.click();
+
+
+    setTimeout(
         () => {
 
-            input.value += "😊";
-
-            input.focus();
-
-            updateSendButton();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   VOICE
-   ========================================================= */
-
-function setupVoiceButton() {
-
-    const button =
-        $("voiceButton");
-
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            showChatToast(
-                "Voice messages will be available soon."
+            fileInput.removeAttribute(
+                "capture"
             );
 
-        }
+        },
+        1000
     );
-
-}
-
-
-/* =========================================================
-   SEARCH
-   ========================================================= */
-
-function setupSearchButton() {
-
-    const button =
-        $("chatSearchButton");
-
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            const input =
-                $("chatSearchInput");
-
-
-            if (!input) {
-
-                return;
-
-            }
-
-
-            input.classList.toggle(
-                "hidden"
-            );
-
-
-            if (
-                !input.classList.contains(
-                    "hidden"
-                )
-            ) {
-
-                input.focus();
-
-            }
-
-        }
-    );
-
-
-    const searchInput =
-        $("chatSearchInput");
-
-
-    if (searchInput) {
-
-        searchInput.addEventListener(
-            "input",
-            () => {
-
-                searchMessages(
-                    searchInput.value
-                );
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   SEARCH MESSAGES
-   ========================================================= */
-
-function searchMessages(query) {
-
-    const value =
-        query.trim().toLowerCase();
-
-
-    document
-        .querySelectorAll(
-            ".message-row"
-        )
-        .forEach(
-            (row) => {
-
-                if (!value) {
-
-                    row.style.display =
-                        "";
-
-                    return;
-
-                }
-
-
-                const text =
-                    row.textContent
-                        .toLowerCase();
-
-
-                row.style.display =
-                    text.includes(value)
-                        ? ""
-                        : "none";
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   CHAT MENU
-   ========================================================= */
-
-function setupChatMenu() {
-
-    const button =
-        $("chatMenuButton");
-
-
-    const menu =
-        $("chatMenu");
-
-
-    if (
-        !button ||
-        !menu
-    ) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        (event) => {
-
-            event.stopPropagation();
-
-            menu.classList.toggle(
-                "hidden"
-            );
-
-        }
-    );
-
-
-    document.addEventListener(
-        "click",
-        (event) => {
-
-            if (
-                !menu.contains(
-                    event.target
-                ) &&
-                !button.contains(
-                    event.target
-                )
-            ) {
-
-                menu.classList.add(
-                    "hidden"
-                );
-
-            }
-
-        }
-    );
-
-
-    const clearButton =
-        $("clearChatButton");
-
-
-    if (clearButton) {
-
-        clearButton.addEventListener(
-            "click",
-            () => {
-
-                menu.classList.add(
-                    "hidden"
-                );
-
-                clearChat();
-
-            }
-        );
-
-    }
-
-
-    const blockButton =
-        $("blockChatButton");
-
-
-    if (blockButton) {
-
-        blockButton.addEventListener(
-            "click",
-            () => {
-
-                menu.classList.add(
-                    "hidden"
-                );
-
-                showChatToast(
-                    "Block option will be available soon."
-                );
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   CLEAR CHAT
-   ========================================================= */
-
-async function clearChat() {
-
-    if (
-        !chatState.activeChat
-    ) {
-
-        return;
-
-    }
-
-
-    const confirmed =
-        window.confirm(
-            "Clear this chat?"
-        );
-
-
-    if (!confirmed) {
-
-        return;
-
-    }
-
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/chat/clear/${encodeURIComponent(
-                    chatState
-                        .activeChat
-                        .user_id
-                )}`,
-                {
-                    method: "DELETE",
-
-                    credentials: "include"
-                }
-            );
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Unable to clear chat."
-            );
-
-        }
-
-
-        chatState.messages =
-            [];
-
-
-        renderEmptyMessages();
-
-
-    } catch (error) {
-
-        console.error(
-            "Clear chat:",
-            error
-        );
-
-
-        showChatToast(
-            error.message
-        );
-
-    }
 
 }
 
@@ -1774,33 +1618,20 @@ async function clearChat() {
 
 function setupBackButton() {
 
-    const button =
-        $("chatBackButton");
+    const backButton =
+        $("backButton");
 
 
-    if (!button) {
-
+    if (!backButton) {
         return;
-
     }
 
 
-    button.addEventListener(
+    backButton.addEventListener(
         "click",
         () => {
 
-            if (
-                window.history.length > 1
-            ) {
-
-                window.history.back();
-
-            } else {
-
-                window.location.href =
-                    "/home";
-
-            }
+            closeChat();
 
         }
     );
@@ -1809,202 +1640,291 @@ function setupBackButton() {
 
 
 /* =========================================================
-   MOBILE CHAT
+   CLOSE CHAT
    ========================================================= */
 
-function setupMobileChat() {
+function closeChat() {
 
-    const button =
-        $("chatBackButton");
-
-
-    if (!button) {
-
-        return;
-
-    }
+    const app =
+        document.querySelector(
+            ".chat-app"
+        );
 
 
-    button.addEventListener(
-        "click",
-        () => {
+    if (app) {
 
-            hideChatOnMobile();
-
-        }
-    );
-
-}
-
-
-function showChatOnMobile() {
-
-    document.body.classList.add(
-        "chat-open"
-    );
-
-}
-
-
-function hideChatOnMobile() {
-
-    document.body.classList.remove(
-        "chat-open"
-    );
-
-}
-
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-
-function showChatToast(message) {
-
-    let toast =
-        $("chatToast");
-
-
-    if (!toast) {
-
-        toast =
-            document.createElement(
-                "div"
-            );
-
-
-        toast.id =
-            "chatToast";
-
-
-        toast.className =
-            "chat-toast";
-
-
-        document.body.appendChild(
-            toast
+        app.classList.remove(
+            "chat-open"
         );
 
     }
 
 
-    toast.textContent =
-        message;
+    chatState.selectedChat =
+        null;
+
+}
 
 
-    toast.classList.add(
-        "show"
-    );
+/* =========================================================
+   HEADER BUTTONS
+   ========================================================= */
+
+function setupHeaderButtons() {
+
+    const menuButton =
+        $("menuButton");
 
 
-    clearTimeout(
-        toast._timeout
-    );
+    if (menuButton) {
 
-
-    toast._timeout =
-        setTimeout(
+        menuButton.addEventListener(
+            "click",
             () => {
 
-                toast.classList.remove(
-                    "show"
+                showChatMenu(
+                    menuButton
                 );
 
-            },
-            2500
+            }
         );
+
+    }
+
+
+    const conversationMenu =
+        $("conversationMenu");
+
+
+    if (conversationMenu) {
+
+        conversationMenu.addEventListener(
+            "click",
+            () => {
+
+                showConversationMenu(
+                    conversationMenu
+                );
+
+            }
+        );
+
+    }
 
 }
 
 
 /* =========================================================
-   OPTIONAL POLLING
+   CHAT MENU
    ========================================================= */
 
-let messagePollingTimer =
-    null;
+function showChatMenu(button) {
+
+    removeExistingMenu();
 
 
-function startMessagePolling() {
+    const menu =
+        document.createElement(
+            "div"
+        );
 
-    stopMessagePolling();
+
+    menu.className =
+        "chat-popup-menu";
 
 
-    messagePollingTimer =
-        setInterval(
-            async () => {
+    menu.innerHTML = `
 
-                if (
-                    !chatState.activeChat ||
-                    chatState.sending
-                ) {
+        <button type="button">
+            New chat
+        </button>
 
-                    return;
+        <button type="button">
+            Mark all as read
+        </button>
+
+        <button type="button">
+            Chat settings
+        </button>
+
+    `;
+
+
+    document
+        .querySelector(
+            ".chat-sidebar"
+        )
+        ?.appendChild(
+            menu
+        );
+
+
+    setTimeout(
+        () => {
+
+            document.addEventListener(
+                "click",
+                outsideMenuHandler,
+                {
+                    once: true
+                }
+            );
+
+        },
+        0
+    );
+
+
+    function outsideMenuHandler(event) {
+
+        if (
+            !menu.contains(
+                event.target
+            ) &&
+            event.target !== button
+        ) {
+
+            menu.remove();
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   CONVERSATION MENU
+   ========================================================= */
+
+function showConversationMenu(button) {
+
+    removeExistingMenu();
+
+
+    const header =
+        document.querySelector(
+            ".conversation-header"
+        );
+
+
+    if (!header) {
+        return;
+    }
+
+
+    const menu =
+        document.createElement(
+            "div"
+        );
+
+
+    menu.className =
+        "chat-popup-menu";
+
+
+    menu.innerHTML = `
+
+        <button type="button">
+            Search messages
+        </button>
+
+        <button type="button">
+            Media, links and files
+        </button>
+
+        <button type="button">
+            Clear chat
+        </button>
+
+        <button type="button">
+            Block user
+        </button>
+
+    `;
+
+
+    header.appendChild(
+        menu
+    );
+
+
+    setTimeout(
+        () => {
+
+            document.addEventListener(
+                "click",
+                function handler(event) {
+
+                    if (
+                        !menu.contains(
+                            event.target
+                        ) &&
+                        event.target !== button
+                    ) {
+
+                        menu.remove();
+
+                        document.removeEventListener(
+                            "click",
+                            handler
+                        );
+
+                    }
 
                 }
+            );
 
-
-                await loadMessages(
-                    chatState
-                        .activeChat
-                        .user_id
-                );
-
-            },
-            5000
-        );
-
-}
-
-
-function stopMessagePolling() {
-
-    if (
-        messagePollingTimer
-    ) {
-
-        clearInterval(
-            messagePollingTimer
-        );
-
-
-        messagePollingTimer =
-            null;
-
-    }
+        },
+        0
+    );
 
 }
 
 
 /* =========================================================
-   START POLLING AFTER CHAT OPEN
+   REMOVE MENU
    ========================================================= */
 
-const originalOpenChat =
-    openChat;
+function removeExistingMenu() {
 
+    document
+        .querySelectorAll(
+            ".chat-popup-menu"
+        )
+        .forEach(
+            (menu) => {
 
-openChat =
-    async function(user) {
+                menu.remove();
 
-        await originalOpenChat(
-            user
+            }
         );
 
-        startMessagePolling();
-
-    };
+}
 
 
 /* =========================================================
-   PAGE CLEANUP
+   SCROLL
    ========================================================= */
 
-window.addEventListener(
-    "beforeunload",
-    () => {
+function scrollMessagesToBottom() {
 
-        stopMessagePolling();
+    const messages =
+        $("messages");
 
+
+    if (!messages) {
+        return;
     }
-);
+
+
+    requestAnimationFrame(
+        () => {
+
+            messages.scrollTop =
+                messages.scrollHeight;
+
+        }
+    );
+
+}
