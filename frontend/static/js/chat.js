@@ -1,5 +1,6 @@
 /* =========================================================
    USANEX — CHAT PAGE
+   frontend/static/js/chat.js
    ========================================================= */
 
 "use strict";
@@ -10,23 +11,12 @@
 ========================================================= */
 
 const chatState = {
-
     currentUser: null,
-
     selectedUser: null,
-
     selectedUserId: null,
-
     messages: [],
-
     sending: false,
-
-    typingTimer: null,
-
-    search: "",
-
-    filter: "all"
-
+    typingTimer: null
 };
 
 
@@ -34,14 +24,9 @@ const chatState = {
    START
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        initChatPage();
-
-    }
-);
+document.addEventListener("DOMContentLoaded", () => {
+    initChatPage();
+});
 
 
 /* =========================================================
@@ -51,47 +36,24 @@ document.addEventListener(
 async function initChatPage() {
 
     setupBackButton();
-
     setupComposer();
-
     setupEmoji();
-
     setupAttachment();
-
     setupCamera();
-
     setupHeaderButtons();
-
-    setupNavigation();
-
-    setupSearch();
-
-    setupFilters();
 
     await loadCurrentUser();
 
-    const userId =
-        getUserIdFromURL();
+    const userId = getUserIdFromURL();
 
-    if (userId) {
-
-        chatState.selectedUserId =
-            userId;
-
-        await loadSelectedUser(
-            userId
-        );
-
-        await loadMessages(
-            userId
-        );
-
-    } else {
-
+    if (!userId) {
         showEmptyConversation();
-
+        return;
     }
 
+    chatState.selectedUserId = userId;
+
+    await loadChat(userId);
 }
 
 
@@ -100,55 +62,20 @@ async function initChatPage() {
 ========================================================= */
 
 function $(id) {
-
     return document.getElementById(id);
-
 }
 
 
-function safeText(
-    value,
-    fallback = ""
-) {
+function safeText(value, fallback = "") {
 
     if (
         value === null ||
         value === undefined
     ) {
-
         return fallback;
-
     }
 
     return String(value);
-
-}
-
-
-function escapeHtml(value) {
-
-    return safeText(value)
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
-
 }
 
 
@@ -156,12 +83,22 @@ function getAvatar(photo) {
 
     return photo ||
         "/static/images/default-profile.png";
+}
 
+
+function escapeHtml(value) {
+
+    return safeText(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 
 /* =========================================================
-   GET USER ID FROM HOME CARD
+   GET USER ID
 ========================================================= */
 
 function getUserIdFromURL() {
@@ -176,7 +113,6 @@ function getUserIdFromURL() {
         params.get("id") ||
         ""
     );
-
 }
 
 
@@ -188,44 +124,30 @@ async function loadCurrentUser() {
 
     try {
 
-        const response =
-            await fetch(
-                "/api/profile/me",
-                {
-                    method: "GET",
-
-                    credentials: "include",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
+        const response = await fetch(
+            "/api/profile/me",
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Accept": "application/json"
                 }
-            );
+            }
+        );
 
+        if (response.status === 401) {
 
-        if (
-            response.status === 401
-        ) {
-
-            window.location.href =
-                "/login";
-
+            window.location.href = "/login";
             return;
 
         }
-
 
         if (!response.ok) {
-
             return;
-
         }
-
 
         const data =
             await response.json();
-
 
         if (data?.user) {
 
@@ -242,56 +164,53 @@ async function loadCurrentUser() {
         );
 
     }
-
 }
 
 
 /* =========================================================
-   LOAD SELECTED USER
+   LOAD CHAT
 ========================================================= */
 
-async function loadSelectedUser(
-    userId
-) {
+async function loadChat(userId) {
 
-    setHeaderLoading();
+    const container =
+        $("messages");
 
+    if (container) {
+
+        container.innerHTML = `
+            <div class="messages-loading">
+                Loading messages...
+            </div>
+        `;
+
+    }
 
     try {
 
-        const response =
-            await fetch(
-                `/api/profile/${encodeURIComponent(userId)}`,
-                {
-                    method: "GET",
+        /*
+         * IMPORTANT:
+         *
+         * Backend:
+         * GET /api/chat/{user_id}
+         */
 
-                    credentials: "include",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
+        const response = await fetch(
+            `/api/chat/${encodeURIComponent(userId)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Accept": "application/json"
                 }
-            );
+            }
+        );
 
 
-        if (
-            response.status === 401
-        ) {
+        if (response.status === 401) {
 
-            window.location.href =
-                "/login";
-
+            window.location.href = "/login";
             return;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "User profile unavailable"
-            );
 
         }
 
@@ -300,104 +219,74 @@ async function loadSelectedUser(
             await response.json();
 
 
-        const user =
-            data?.user ||
-            data?.profile ||
-            data;
-
-
-        if (!user) {
+        if (!response.ok) {
 
             throw new Error(
-                "User not found"
+                data?.detail ||
+                "Unable to load chat."
             );
 
         }
 
 
         chatState.selectedUser =
-            user;
+            data.user || null;
 
 
-        updateChatHeader(
-            user
-        );
+        chatState.messages =
+            Array.isArray(data.messages)
+                ? data.messages
+                : [];
 
+
+        if (chatState.selectedUser) {
+
+            updateChatHeader(
+                chatState.selectedUser
+            );
+
+        }
+
+
+        renderMessages();
 
     } catch (error) {
 
         console.error(
-            "Selected user error:",
+            "Load chat error:",
             error
         );
 
 
-        /*
-         * Fallback:
-         * URL se user id available hai,
-         * isliye basic header show karenge.
-         */
+        if (container) {
 
-        chatState.selectedUser = {
+            container.innerHTML = `
+                <div class="empty-chat">
+                    <div class="empty-chat-icon">
+                        ⚠️
+                    </div>
 
-            user_id: userId,
+                    <strong>
+                        Unable to load chat
+                    </strong>
 
-            name: "Usanex User",
+                    <span>
+                        ${escapeHtml(error.message)}
+                    </span>
+                </div>
+            `;
 
-            username: "",
-
-            profile_photo: "",
-
-            online: false
-
-        };
-
-
-        updateChatHeader(
-            chatState.selectedUser
-        );
+        }
 
     }
-
 }
 
 
 /* =========================================================
-   HEADER LOADING
+   HEADER
 ========================================================= */
 
-function setHeaderLoading() {
-
-    const name =
-        $("selectedName");
-
-    const status =
-        $("selectedStatus");
-
-    if (name) {
-
-        name.textContent =
-            "Loading...";
-
-    }
-
-    if (status) {
-
-        status.textContent =
-            "Connecting...";
-
-    }
-
-}
-
-
-/* =========================================================
-   UPDATE CHAT HEADER
-========================================================= */
-
-function updateChatHeader(
-    user
-) {
+function updateChatHeader(user) {
 
     const avatar =
         $("selectedAvatar");
@@ -418,7 +307,6 @@ function updateChatHeader(
 
     const userName =
         user.name ||
-        user.full_name ||
         user.username ||
         "Usanex User";
 
@@ -445,198 +333,9 @@ function updateChatHeader(
     if (status) {
 
         status.textContent =
-            getUserStatus(user);
+            "Offline";
 
     }
-
-}
-
-
-/* =========================================================
-   USER STATUS
-========================================================= */
-
-function getUserStatus(
-    user
-) {
-
-    if (
-        user.online === true ||
-        user.is_online === true
-    ) {
-
-        return "Online";
-
-    }
-
-
-    if (
-        user.last_seen ||
-        user.last_seen_at
-    ) {
-
-        return formatLastSeen(
-            user.last_seen ||
-            user.last_seen_at
-        );
-
-    }
-
-
-    return "Offline";
-
-}
-
-
-/* =========================================================
-   LAST SEEN
-========================================================= */
-
-function formatLastSeen(
-    value
-) {
-
-    if (!value) {
-
-        return "Offline";
-
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return "Offline";
-
-    }
-
-
-    return (
-        "last seen " +
-        date.toLocaleString(
-            [],
-            {
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        )
-    );
-
-}
-
-
-/* =========================================================
-   LOAD MESSAGES
-========================================================= */
-
-async function loadMessages(
-    userId
-) {
-
-    const container =
-        $("messages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-        <div class="messages-loading">
-            Loading messages...
-        </div>
-    `;
-
-
-    try {
-
-        /*
-         * Primary endpoint
-         */
-
-        const response =
-            await fetch(
-                `/api/chat/messages/${encodeURIComponent(userId)}`,
-                {
-                    method: "GET",
-
-                    credentials: "include",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.href =
-                "/login";
-
-            return;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Messages unavailable"
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        chatState.messages =
-            Array.isArray(
-                data.messages
-            )
-                ? data.messages
-                : [];
-
-
-        renderMessages();
-
-
-    } catch (error) {
-
-        console.error(
-            "Load messages error:",
-            error
-        );
-
-
-        /*
-         * New conversation can
-         * naturally have zero messages.
-         */
-
-        chatState.messages = [];
-
-        renderMessages();
-
-    }
-
 }
 
 
@@ -649,11 +348,8 @@ function renderMessages() {
     const container =
         $("messages");
 
-
     if (!container) {
-
         return;
-
     }
 
 
@@ -665,7 +361,6 @@ function renderMessages() {
     ) {
 
         container.innerHTML = `
-
             <div class="empty-chat">
 
                 <div class="empty-chat-icon">
@@ -681,11 +376,9 @@ function renderMessages() {
                 </span>
 
             </div>
-
         `;
 
         return;
-
     }
 
 
@@ -701,32 +394,25 @@ function renderMessages() {
                 );
 
 
-            if (
-                date !== lastDate
-            ) {
+            if (date !== lastDate) {
 
                 const day =
                     document.createElement(
                         "div"
                     );
 
-
                 day.className =
                     "day-label";
 
-
                 day.textContent =
                     date;
-
 
                 container.appendChild(
                     day
                 );
 
-
                 lastDate =
                     date;
-
             }
 
 
@@ -741,7 +427,6 @@ function renderMessages() {
 
 
     scrollMessages();
-
 }
 
 
@@ -749,35 +434,25 @@ function renderMessages() {
    MESSAGE BUBBLE
 ========================================================= */
 
-function createMessageBubble(
-    message
-) {
+function createMessageBubble(message) {
 
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     const senderId =
         String(
-            message.sender_id ||
-            message.sender_user_id ||
-            ""
+            message.sender_id || ""
         );
 
 
     const currentId =
         String(
-            chatState.currentUser?.id ||
-            chatState.currentUser?.user_id ||
-            ""
+            chatState.currentUser?.id || ""
         );
 
 
     const isMine =
-        senderId &&
-        currentId &&
         senderId === currentId;
 
 
@@ -788,47 +463,71 @@ function createMessageBubble(
 
 
     const bubble =
-        document.createElement(
-            "div"
-        );
-
+        document.createElement("div");
 
     bubble.className =
         "message-bubble";
 
 
-    const text =
-        document.createElement(
-            "div"
+    /*
+     * IMAGE MESSAGE
+     */
+
+    if (
+        message.media_url &&
+        message.media_type === "image"
+    ) {
+
+        const image =
+            document.createElement("img");
+
+        image.src =
+            message.media_url;
+
+        image.className =
+            "chat-image";
+
+        image.alt =
+            "Image";
+
+        bubble.appendChild(
+            image
         );
 
-
-    text.className =
-        "message-text";
+    }
 
 
-    text.textContent =
-        safeText(
-            message.message ||
-            message.content ||
-            ""
+    /*
+     * TEXT MESSAGE
+     */
+
+    if (message.content) {
+
+        const text =
+            document.createElement("div");
+
+        text.className =
+            "message-text";
+
+        text.textContent =
+            message.content;
+
+        bubble.appendChild(
+            text
         );
 
+    }
 
-    bubble.appendChild(
-        text
-    );
 
+    /*
+     * META
+     */
 
     const meta =
-        document.createElement(
-            "div"
-        );
-
+        document.createElement("div");
 
     meta.className =
         "message-meta";
-
 
     meta.textContent =
         formatTime(
@@ -839,20 +538,15 @@ function createMessageBubble(
     if (isMine) {
 
         const ticks =
-            document.createElement(
-                "span"
-            );
-
+            document.createElement("span");
 
         ticks.className =
             "message-ticks";
-
 
         ticks.textContent =
             message.read
                 ? "✓✓"
                 : "✓";
-
 
         meta.appendChild(
             ticks
@@ -865,14 +559,12 @@ function createMessageBubble(
         meta
     );
 
-
     wrapper.appendChild(
         bubble
     );
 
 
     return wrapper;
-
 }
 
 
@@ -883,9 +575,7 @@ function createMessageBubble(
 async function sendMessage() {
 
     if (chatState.sending) {
-
         return;
-
     }
 
 
@@ -894,38 +584,30 @@ async function sendMessage() {
 
 
     if (!input) {
-
         return;
-
     }
 
 
-    const message =
+    const content =
         input.value.trim();
 
 
-    if (!message) {
-
+    if (!content) {
         return;
-
     }
 
 
-    if (
-        !chatState.selectedUserId
-    ) {
+    if (!chatState.selectedUserId) {
 
         alert(
             "Please select a user first."
         );
 
         return;
-
     }
 
 
-    chatState.sending =
-        true;
+    chatState.sending = true;
 
 
     const sendButton =
@@ -933,81 +615,108 @@ async function sendMessage() {
 
 
     if (sendButton) {
-
-        sendButton.disabled =
-            true;
-
+        sendButton.disabled = true;
     }
 
 
     try {
 
+        /*
+         * IMPORTANT:
+         *
+         * Backend expects:
+         *
+         * POST /api/chat/send
+         *
+         * FormData:
+         * receiver_id
+         * content
+         * file
+         */
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "receiver_id",
+            chatState.selectedUserId
+        );
+
+
+        formData.append(
+            "content",
+            content
+        );
+
+
+        const fileInput =
+            $("fileInput");
+
+
+        if (
+            fileInput &&
+            fileInput.files &&
+            fileInput.files.length > 0
+        ) {
+
+            formData.append(
+                "file",
+                fileInput.files[0]
+            );
+
+        }
+
+
         const response =
             await fetch(
-                "/api/chat/messages",
+                "/api/chat/send",
                 {
                     method: "POST",
-
                     credentials: "include",
 
-                    headers: {
+                    /*
+                     * DO NOT manually set
+                     * Content-Type.
+                     *
+                     * Browser creates multipart/form-data
+                     * boundary automatically.
+                     */
 
-                        "Content-Type":
-                            "application/json",
-
-                        "Accept":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            receiver_id:
-                                chatState.selectedUserId,
-
-                            message:
-                                message
-
-                        })
-
+                    body: formData
                 }
             );
 
 
-        if (
-            response.status === 401
-        ) {
+        const data =
+            await response.json()
+                .catch(
+                    () => ({})
+                );
+
+
+        if (response.status === 401) {
 
             window.location.href =
                 "/login";
 
             return;
-
         }
 
 
         if (!response.ok) {
 
-            const errorData =
-                await response
-                    .json()
-                    .catch(
-                        () => null
-                    );
-
-
             throw new Error(
-                errorData?.detail ||
+                data?.detail ||
                 "Message could not be sent."
             );
 
         }
 
 
-        const data =
-            await response.json();
-
+        /*
+         * Add returned message
+         */
 
         if (data?.message) {
 
@@ -1015,40 +724,29 @@ async function sendMessage() {
                 data.message
             );
 
-        } else {
-
-            /*
-             * Fallback optimistic message
-             */
-
-            chatState.messages.push({
-
-                sender_id:
-                    chatState.currentUser?.id,
-
-                message:
-                    message,
-
-                created_at:
-                    new Date().toISOString(),
-
-                read:
-                    false
-
-            });
-
         }
 
+
+        /*
+         * Clear input
+         */
 
         input.value = "";
 
 
+        /*
+         * Clear selected file
+         */
+
+        if (fileInput) {
+
+            fileInput.value = "";
+
+        }
+
+
         renderMessages();
 
-
-        /*
-         * Keep typing box focused
-         */
 
         input.focus();
 
@@ -1068,8 +766,7 @@ async function sendMessage() {
 
     } finally {
 
-        chatState.sending =
-            false;
+        chatState.sending = false;
 
 
         if (sendButton) {
@@ -1080,7 +777,6 @@ async function sendMessage() {
         }
 
     }
-
 }
 
 
@@ -1135,52 +831,24 @@ function setupComposer() {
         );
 
 
-        /*
-         * WhatsApp-style typing status
-         */
-
         input.addEventListener(
             "input",
             () => {
 
-                handleTyping();
+                clearTimeout(
+                    chatState.typingTimer
+                );
+
+                chatState.typingTimer =
+                    setTimeout(
+                        () => {},
+                        1000
+                    );
 
             }
         );
 
     }
-
-}
-
-
-/* =========================================================
-   TYPING
-========================================================= */
-
-function handleTyping() {
-
-    clearTimeout(
-        chatState.typingTimer
-    );
-
-
-    /*
-     * Future backend websocket /
-     * typing endpoint can be connected here.
-     */
-
-    chatState.typingTimer =
-        setTimeout(
-            () => {
-
-                /*
-                 * stop typing
-                 */
-
-            },
-            1200
-        );
-
 }
 
 
@@ -1193,18 +861,12 @@ function setupEmoji() {
     const button =
         $("emojiButton");
 
-
     const input =
         $("messageInput");
 
 
-    if (
-        !button ||
-        !input
-    ) {
-
+    if (!button || !input) {
         return;
-
     }
 
 
@@ -1212,14 +874,12 @@ function setupEmoji() {
         "click",
         () => {
 
-            input.value +=
-                "😊";
+            input.value += "😊";
 
             input.focus();
 
         }
     );
-
 }
 
 
@@ -1232,18 +892,12 @@ function setupAttachment() {
     const button =
         $("attachButton");
 
-
     const fileInput =
         $("fileInput");
 
 
-    if (
-        !button ||
-        !fileInput
-    ) {
-
+    if (!button || !fileInput) {
         return;
-
     }
 
 
@@ -1252,7 +906,7 @@ function setupAttachment() {
         () => {
 
             fileInput.accept =
-                "*/*";
+                "image/*";
 
             fileInput.removeAttribute(
                 "capture"
@@ -1262,35 +916,6 @@ function setupAttachment() {
 
         }
     );
-
-
-    fileInput.addEventListener(
-        "change",
-        () => {
-
-            if (
-                !fileInput.files ||
-                !fileInput.files.length
-            ) {
-
-                return;
-
-            }
-
-
-            console.log(
-                "Selected files:",
-                fileInput.files
-            );
-
-            /*
-             * Upload API will be connected
-             * later.
-             */
-
-        }
-    );
-
 }
 
 
@@ -1303,18 +928,12 @@ function setupCamera() {
     const button =
         $("cameraButton");
 
-
     const fileInput =
         $("fileInput");
 
 
-    if (
-        !button ||
-        !fileInput
-    ) {
-
+    if (!button || !fileInput) {
         return;
-
     }
 
 
@@ -1334,7 +953,6 @@ function setupCamera() {
 
         }
     );
-
 }
 
 
@@ -1343,56 +961,6 @@ function setupCamera() {
 ========================================================= */
 
 function setupHeaderButtons() {
-
-    /*
-     * 3-dot menu
-     */
-
-    const menu =
-        $("conversationMenu");
-
-
-    if (menu) {
-
-        menu.addEventListener(
-            "click",
-            () => {
-
-                showConversationMenu();
-
-            }
-        );
-
-    }
-
-
-    /*
-     * Video call
-     */
-
-    const video =
-        $("videoCallButton");
-
-
-    if (video) {
-
-        video.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Video call will be available soon."
-                );
-
-            }
-        );
-
-    }
-
-
-    /*
-     * Voice call
-     */
 
     const voice =
         $("voiceCallButton");
@@ -1405,7 +973,7 @@ function setupHeaderButtons() {
             () => {
 
                 alert(
-                    "Voice call will be available soon."
+                    "Voice call feature will be added next."
                 );
 
             }
@@ -1414,9 +982,25 @@ function setupHeaderButtons() {
     }
 
 
-    /*
-     * Selected DP
-     */
+    const video =
+        $("videoCallButton");
+
+
+    if (video) {
+
+        video.addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Video call feature will be added next."
+                );
+
+            }
+        );
+
+    }
+
 
     const avatar =
         $("selectedAvatarButton");
@@ -1444,103 +1028,6 @@ function setupHeaderButtons() {
         );
 
     }
-
-}
-
-
-/* =========================================================
-   CONVERSATION MENU
-========================================================= */
-
-function showConversationMenu() {
-
-    const menu =
-        document.createElement(
-            "div"
-        );
-
-
-    menu.className =
-        "chat-popup-menu";
-
-
-    menu.innerHTML = `
-
-        <button type="button">
-            Search messages
-        </button>
-
-        <button type="button">
-            Media
-        </button>
-
-        <button type="button">
-            Clear chat
-        </button>
-
-        <button type="button">
-            Block
-        </button>
-
-        <button type="button">
-            Cancel
-        </button>
-
-    `;
-
-
-    document.body.appendChild(
-        menu
-    );
-
-
-    const cancel =
-        menu.querySelector(
-            "button:last-child"
-        );
-
-
-    cancel?.addEventListener(
-        "click",
-        () => {
-
-            menu.remove();
-
-        }
-    );
-
-
-    setTimeout(
-        () => {
-
-            document.addEventListener(
-                "click",
-                function closeMenu(
-                    event
-                ) {
-
-                    if (
-                        !menu.contains(
-                            event.target
-                        )
-                    ) {
-
-                        menu.remove();
-
-                        document.removeEventListener(
-                            "click",
-                            closeMenu
-                        );
-
-                    }
-
-                }
-            );
-
-        },
-        0
-    );
-
 }
 
 
@@ -1555,9 +1042,7 @@ function setupBackButton() {
 
 
     if (!button) {
-
         return;
-
     }
 
 
@@ -1565,138 +1050,16 @@ function setupBackButton() {
         "click",
         () => {
 
-            /*
-             * Home page par wapas.
-             */
-
             window.location.href =
                 "/home";
 
         }
     );
-
 }
 
 
 /* =========================================================
-   NAVIGATION
-========================================================= */
-
-function setupNavigation() {
-
-    document
-        .querySelectorAll(
-            ".bottom-nav button[data-page]"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        const page =
-                            button.dataset.page;
-
-
-                        if (page) {
-
-                            window.location.href =
-                                page;
-
-                        }
-
-                    }
-                );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   SEARCH
-========================================================= */
-
-function setupSearch() {
-
-    const input =
-        $("chatSearch");
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    input.addEventListener(
-        "input",
-        () => {
-
-            chatState.search =
-                input.value.trim();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   FILTERS
-========================================================= */
-
-function setupFilters() {
-
-    document
-        .querySelectorAll(
-            ".filter"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        document
-                            .querySelectorAll(
-                                ".filter"
-                            )
-                            .forEach(
-                                item => {
-
-                                    item.classList.remove(
-                                        "active"
-                                    );
-
-                                }
-                            );
-
-
-                        button.classList.add(
-                            "active"
-                        );
-
-
-                        chatState.filter =
-                            button.dataset.filter ||
-                            "all";
-
-                    }
-                );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
-   EMPTY CONVERSATION
+   EMPTY CHAT
 ========================================================= */
 
 function showEmptyConversation() {
@@ -1710,18 +1073,14 @@ function showEmptyConversation() {
 
 
     if (name) {
-
         name.textContent =
             "Select a chat";
-
     }
 
 
     if (status) {
-
         status.textContent =
             "Usanex";
-
     }
 
 
@@ -1732,7 +1091,6 @@ function showEmptyConversation() {
     if (messages) {
 
         messages.innerHTML = `
-
             <div class="empty-chat">
 
                 <div class="empty-chat-icon">
@@ -1748,11 +1106,9 @@ function showEmptyConversation() {
                 </span>
 
             </div>
-
         `;
 
     }
-
 }
 
 
@@ -1760,14 +1116,10 @@ function showEmptyConversation() {
    TIME
 ========================================================= */
 
-function formatTime(
-    value
-) {
+function formatTime(value) {
 
     if (!value) {
-
         return "";
-
     }
 
 
@@ -1780,9 +1132,7 @@ function formatTime(
             date.getTime()
         )
     ) {
-
         return "";
-
     }
 
 
@@ -1793,7 +1143,6 @@ function formatTime(
             minute: "2-digit"
         }
     );
-
 }
 
 
@@ -1801,14 +1150,10 @@ function formatTime(
    DATE
 ========================================================= */
 
-function formatDate(
-    value
-) {
+function formatDate(value) {
 
     if (!value) {
-
         return "Today";
-
     }
 
 
@@ -1821,9 +1166,7 @@ function formatDate(
             date.getTime()
         )
     ) {
-
         return "Today";
-
     }
 
 
@@ -1849,7 +1192,6 @@ function formatDate(
             year: "numeric"
         }
     );
-
 }
 
 
@@ -1864,9 +1206,7 @@ function scrollMessages() {
 
 
     if (!container) {
-
         return;
-
     }
 
 
@@ -1878,7 +1218,6 @@ function scrollMessages() {
 
         }
     );
-
 }
 
 
@@ -1887,5 +1226,5 @@ function scrollMessages() {
 ========================================================= */
 
 console.log(
-    "Usanex Chat JS loaded."
+    "Usanex Chat JS loaded — API matched."
 );
