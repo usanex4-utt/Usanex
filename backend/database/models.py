@@ -9,7 +9,11 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     username = Column(
         String(100),
@@ -438,20 +442,6 @@ class UserFollow(Base):
 # =========================================================
 # POSTS
 # =========================================================
-#
-# IMPORTANT:
-# Reels, photos and normal public posts
-# are all stored in this ONE posts table.
-#
-# media_type examples:
-#   text
-#   image
-#   video
-#   reel
-#
-# Saved and Private content are handled separately
-# and are NOT counted as public posts.
-# =========================================================
 
 class Post(Base):
     __tablename__ = "posts"
@@ -488,8 +478,23 @@ class Post(Base):
         index=True,
         nullable=False
     )
-    # =========================================================
+
+
+# =========================================================
 # CHAT MESSAGE
+# =========================================================
+#
+# Stores:
+#   - sender
+#   - receiver
+#   - text message
+#   - image/video URL
+#   - media type
+#   - read status
+#   - deleted status
+#   - creation time
+#
+# This table is used by chat.py and chat.js.
 # =========================================================
 
 class ChatMessage(Base):
