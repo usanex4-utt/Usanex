@@ -1,6 +1,6 @@
 /* =========================================================
-   USANEX — CHAT PAGE
-   frontend/static/js/chat.js
+   USANEX — CHAT JS
+   Optimized real-time-feeling chat
    ========================================================= */
 
 "use strict";
@@ -11,22 +11,40 @@
 ========================================================= */
 
 const chatState = {
+
     currentUser: null,
+
     selectedUser: null,
+
     selectedUserId: null,
+
     messages: [],
+
     sending: false,
-    typingTimer: null
+
+    uploading: false,
+
+    search: "",
+
+    filter: "all",
+
+    pollingTimer: null,
+
+    pollingBusy: false,
+
+    initialized: false
+
 };
 
 
 /* =========================================================
-   START
+   DOM READY
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
-    initChatPage();
-});
+document.addEventListener(
+    "DOMContentLoaded",
+    initChatPage
+);
 
 
 /* =========================================================
@@ -35,30 +53,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function initChatPage() {
 
+    if (chatState.initialized) {
+        return;
+    }
+
+    chatState.initialized = true;
+
     setupBackButton();
     setupComposer();
     setupEmoji();
     setupAttachment();
     setupCamera();
     setupHeaderButtons();
+    setupNavigation();
+    setupSearch();
+    setupFilters();
 
-    await loadCurrentUser();
+    const loggedIn =
+        await loadCurrentUser();
 
-    const userId = getUserIdFromURL();
-
-    if (!userId) {
-        showEmptyConversation();
+    if (!loggedIn) {
         return;
     }
 
-    chatState.selectedUserId = userId;
+    const userId =
+        getUserIdFromURL();
 
-    await loadChat(userId);
+    if (!userId) {
+
+        showEmptyConversation();
+
+        return;
+    }
+
+    chatState.selectedUserId =
+        userId;
+
+    await loadSelectedUser(
+        userId
+    );
+
+    await loadMessages(
+        userId,
+        true
+    );
+
+    startMessagePolling();
+
 }
 
 
 /* =========================================================
-   HELPERS
+   BASIC HELPERS
 ========================================================= */
 
 function $(id) {
@@ -66,7 +112,10 @@ function $(id) {
 }
 
 
-function safeText(value, fallback = "") {
+function safeText(
+    value,
+    fallback = ""
+) {
 
     if (
         value === null ||
@@ -79,13 +128,6 @@ function safeText(value, fallback = "") {
 }
 
 
-function getAvatar(photo) {
-
-    return photo ||
-        "/static/images/default-profile.png";
-}
-
-
 function escapeHtml(value) {
 
     return safeText(value)
@@ -94,6 +136,13 @@ function escapeHtml(value) {
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+
+function getAvatar(photo) {
+
+    return photo ||
+        "/static/images/default-profile.png";
 }
 
 
@@ -124,37 +173,50 @@ async function loadCurrentUser() {
 
     try {
 
-        const response = await fetch(
-            "/api/profile/me",
-            {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Accept": "application/json"
+        const response =
+            await fetch(
+                "/api/auth/me",
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
                 }
-            }
-        );
+            );
 
-        if (response.status === 401) {
+        if (
+            response.status === 401
+        ) {
 
-            window.location.href = "/login";
-            return;
+            window.location.href =
+                "/login";
 
+            return false;
         }
 
         if (!response.ok) {
-            return;
+
+            throw new Error(
+                "Unable to load current user."
+            );
         }
 
         const data =
             await response.json();
 
-        if (data?.user) {
+        if (!data?.user) {
 
-            chatState.currentUser =
-                data.user;
-
+            throw new Error(
+                "Current user not found."
+            );
         }
+
+        chatState.currentUser =
+            data.user;
+
+        return true;
 
     } catch (error) {
 
@@ -163,121 +225,103 @@ async function loadCurrentUser() {
             error
         );
 
+        return false;
     }
 }
 
 
 /* =========================================================
-   LOAD CHAT
+   LOAD SELECTED USER
 ========================================================= */
 
-async function loadChat(userId) {
+async function loadSelectedUser(
+    userId
+) {
 
-    const container =
-        $("messages");
-
-    if (container) {
-
-        container.innerHTML = `
-            <div class="messages-loading">
-                Loading messages...
-            </div>
-        `;
-
-    }
+    setHeaderLoading();
 
     try {
 
         /*
-         * IMPORTANT:
-         *
-         * Backend:
-         * GET /api/chat/{user_id}
+         * We use chat endpoint itself.
+         * This avoids depending on /api/profile/{id}.
          */
 
-        const response = await fetch(
-            `/api/chat/${encodeURIComponent(userId)}`,
-            {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Accept": "application/json"
+        const response =
+            await fetch(
+                `/api/chat/${encodeURIComponent(userId)}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
                 }
-            }
-        );
+            );
 
+        if (
+            response.status === 401
+        ) {
 
-        if (response.status === 401) {
+            window.location.href =
+                "/login";
 
-            window.location.href = "/login";
             return;
-
         }
-
-
-        const data =
-            await response.json();
-
 
         if (!response.ok) {
 
             throw new Error(
-                data?.detail ||
-                "Unable to load chat."
+                "Chat user unavailable."
             );
-
         }
 
+        const data =
+            await response.json();
+
+        if (!data?.user) {
+
+            throw new Error(
+                "Chat user not found."
+            );
+        }
 
         chatState.selectedUser =
-            data.user || null;
+            data.user;
 
-
-        chatState.messages =
-            Array.isArray(data.messages)
-                ? data.messages
-                : [];
-
-
-        if (chatState.selectedUser) {
-
-            updateChatHeader(
-                chatState.selectedUser
-            );
-
-        }
-
-
-        renderMessages();
+        updateChatHeader(
+            data.user
+        );
 
     } catch (error) {
 
         console.error(
-            "Load chat error:",
+            "Selected user error:",
             error
         );
 
+        /*
+         * Header fallback
+         */
 
-        if (container) {
+        chatState.selectedUser = {
 
-            container.innerHTML = `
-                <div class="empty-chat">
-                    <div class="empty-chat-icon">
-                        ⚠️
-                    </div>
+            user_id: userId,
 
-                    <strong>
-                        Unable to load chat
-                    </strong>
+            name: "Usanex User",
 
-                    <span>
-                        ${escapeHtml(error.message)}
-                    </span>
-                </div>
-            `;
+            username: "",
 
-        }
+            profile_photo: "",
 
+            online: false
+
+        };
+
+        updateChatHeader(
+            chatState.selectedUser
+        );
     }
 }
 
@@ -285,6 +329,26 @@ async function loadChat(userId) {
 /* =========================================================
    HEADER
 ========================================================= */
+
+function setHeaderLoading() {
+
+    const name =
+        $("selectedName");
+
+    const status =
+        $("selectedStatus");
+
+    if (name) {
+        name.textContent =
+            "Loading...";
+    }
+
+    if (status) {
+        status.textContent =
+            "Connecting...";
+    }
+}
+
 
 function updateChatHeader(user) {
 
@@ -297,19 +361,17 @@ function updateChatHeader(user) {
     const status =
         $("selectedStatus");
 
-
     const photo =
         user.profile_photo ||
         user.avatar ||
         user.photo ||
         "";
 
-
     const userName =
         user.name ||
+        user.full_name ||
         user.username ||
         "Usanex User";
-
 
     if (avatar) {
 
@@ -318,24 +380,301 @@ function updateChatHeader(user) {
 
         avatar.alt =
             userName;
-
     }
-
 
     if (name) {
-
         name.textContent =
             userName;
-
     }
-
 
     if (status) {
-
         status.textContent =
-            "Offline";
-
+            getUserStatus(user);
     }
+}
+
+
+function getUserStatus(user) {
+
+    if (
+        user.online === true ||
+        user.is_online === true
+    ) {
+        return "Online";
+    }
+
+    if (
+        user.last_seen ||
+        user.last_seen_at
+    ) {
+
+        return formatLastSeen(
+            user.last_seen ||
+            user.last_seen_at
+        );
+    }
+
+    return "Offline";
+}
+
+
+function formatLastSeen(value) {
+
+    if (!value) {
+        return "Offline";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return "Offline";
+    }
+
+    return (
+        "last seen " +
+        date.toLocaleString(
+            [],
+            {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        )
+    );
+}
+
+
+/* =========================================================
+   LOAD MESSAGES
+========================================================= */
+
+async function loadMessages(
+    userId,
+    initial = false
+) {
+
+    if (chatState.pollingBusy) {
+        return;
+    }
+
+    chatState.pollingBusy = true;
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/chat/${encodeURIComponent(userId)}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+        if (
+            response.status === 401
+        ) {
+
+            stopMessagePolling();
+
+            window.location.href =
+                "/login";
+
+            return;
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Unable to load messages."
+            );
+        }
+
+        const data =
+            await response.json();
+
+        const serverMessages =
+            Array.isArray(
+                data.messages
+            )
+                ? data.messages
+                : [];
+
+        /*
+         * Initial load:
+         * directly use server data.
+         */
+
+        if (initial) {
+
+            chatState.messages =
+                serverMessages;
+
+            renderMessages();
+
+            return;
+        }
+
+        /*
+         * Polling:
+         * Only update UI if something actually changed.
+         */
+
+        const changed =
+            messagesChanged(
+                chatState.messages,
+                serverMessages
+            );
+
+        if (changed) {
+
+            chatState.messages =
+                mergeMessages(
+                    chatState.messages,
+                    serverMessages
+                );
+
+            renderMessages();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Load messages error:",
+            error
+        );
+
+    } finally {
+
+        chatState.pollingBusy =
+            false;
+    }
+}
+
+
+/* =========================================================
+   MESSAGE COMPARISON
+========================================================= */
+
+function messagesChanged(
+    oldMessages,
+    newMessages
+) {
+
+    if (
+        oldMessages.length !==
+        newMessages.length
+    ) {
+        return true;
+    }
+
+    if (
+        oldMessages.length === 0
+    ) {
+        return false;
+    }
+
+    const oldLast =
+        oldMessages[
+            oldMessages.length - 1
+        ];
+
+    const newLast =
+        newMessages[
+            newMessages.length - 1
+        ];
+
+    if (
+        String(oldLast?.id || "") !==
+        String(newLast?.id || "")
+    ) {
+        return true;
+    }
+
+    if (
+        Boolean(oldLast?.read) !==
+        Boolean(newLast?.read)
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+
+/* =========================================================
+   MERGE MESSAGES
+========================================================= */
+
+function mergeMessages(
+    localMessages,
+    serverMessages
+) {
+
+    const map =
+        new Map();
+
+    localMessages.forEach(
+        message => {
+
+            if (message.id !== undefined) {
+
+                map.set(
+                    String(message.id),
+                    message
+                );
+            }
+
+        }
+    );
+
+    serverMessages.forEach(
+        message => {
+
+            if (message.id !== undefined) {
+
+                map.set(
+                    String(message.id),
+                    message
+                );
+            }
+
+        }
+    );
+
+    const result =
+        Array.from(
+            map.values()
+        );
+
+    result.sort(
+        (a, b) => {
+
+            const first =
+                new Date(
+                    a.created_at || 0
+                ).getTime();
+
+            const second =
+                new Date(
+                    b.created_at || 0
+                ).getTime();
+
+            return first - second;
+        }
+    );
+
+    return result;
 }
 
 
@@ -352,15 +691,17 @@ function renderMessages() {
         return;
     }
 
+    const wasNearBottom =
+        isNearBottom(container);
 
     container.innerHTML = "";
-
 
     if (
         chatState.messages.length === 0
     ) {
 
         container.innerHTML = `
+
             <div class="empty-chat">
 
                 <div class="empty-chat-icon">
@@ -376,14 +717,13 @@ function renderMessages() {
                 </span>
 
             </div>
+
         `;
 
         return;
     }
 
-
     let lastDate = "";
-
 
     chatState.messages.forEach(
         message => {
@@ -393,8 +733,9 @@ function renderMessages() {
                     message.created_at
                 );
 
-
-            if (date !== lastDate) {
+            if (
+                date !== lastDate
+            ) {
 
                 const day =
                     document.createElement(
@@ -415,18 +756,23 @@ function renderMessages() {
                     date;
             }
 
-
             container.appendChild(
                 createMessageBubble(
                     message
                 )
             );
-
         }
     );
 
+    /*
+     * Only force bottom when:
+     * - initial chat
+     * - user already near bottom
+     */
 
-    scrollMessages();
+    if (wasNearBottom) {
+        scrollMessages();
+    }
 }
 
 
@@ -434,43 +780,47 @@ function renderMessages() {
    MESSAGE BUBBLE
 ========================================================= */
 
-function createMessageBubble(message) {
+function createMessageBubble(
+    message
+) {
 
     const wrapper =
-        document.createElement("div");
-
+        document.createElement(
+            "div"
+        );
 
     const senderId =
         String(
-            message.sender_id || ""
+            message.sender_id ||
+            message.sender_user_id ||
+            ""
         );
-
 
     const currentId =
         String(
-            chatState.currentUser?.id || ""
+            chatState.currentUser?.id ||
+            chatState.currentUser?.user_id ||
+            ""
         );
-
 
     const isMine =
         senderId === currentId;
-
 
     wrapper.className =
         isMine
             ? "message-row mine"
             : "message-row received";
 
-
     const bubble =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     bubble.className =
         "message-bubble";
 
-
     /*
-     * IMAGE MESSAGE
+     * IMAGE
      */
 
     if (
@@ -479,52 +829,76 @@ function createMessageBubble(message) {
     ) {
 
         const image =
-            document.createElement("img");
+            document.createElement(
+                "img"
+            );
+
+        image.className =
+            "message-image";
 
         image.src =
             message.media_url;
 
-        image.className =
-            "chat-image";
-
         image.alt =
             "Image";
+
+        image.loading =
+            "lazy";
+
+        image.addEventListener(
+            "click",
+            () => {
+
+                window.open(
+                    message.media_url,
+                    "_blank"
+                );
+
+            }
+        );
 
         bubble.appendChild(
             image
         );
-
     }
 
-
     /*
-     * TEXT MESSAGE
+     * TEXT
      */
 
-    if (message.content) {
+    const messageText =
+        message.message ||
+        message.content ||
+        "";
+
+    if (messageText) {
 
         const text =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
         text.className =
             "message-text";
 
         text.textContent =
-            message.content;
+            safeText(
+                messageText
+            );
 
         bubble.appendChild(
             text
         );
-
     }
-
 
     /*
      * META
      */
 
     const meta =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     meta.className =
         "message-meta";
@@ -534,11 +908,12 @@ function createMessageBubble(message) {
             message.created_at
         );
 
-
     if (isMine) {
 
         const ticks =
-            document.createElement("span");
+            document.createElement(
+                "span"
+            );
 
         ticks.className =
             "message-ticks";
@@ -551,9 +926,7 @@ function createMessageBubble(message) {
         meta.appendChild(
             ticks
         );
-
     }
-
 
     bubble.appendChild(
         meta
@@ -563,13 +936,12 @@ function createMessageBubble(message) {
         bubble
     );
 
-
     return wrapper;
 }
 
 
 /* =========================================================
-   SEND MESSAGE
+   SEND TEXT MESSAGE
 ========================================================= */
 
 async function sendMessage() {
@@ -578,26 +950,23 @@ async function sendMessage() {
         return;
     }
 
-
     const input =
         $("messageInput");
-
 
     if (!input) {
         return;
     }
 
-
-    const content =
+    const message =
         input.value.trim();
 
-
-    if (!content) {
+    if (!message) {
         return;
     }
 
-
-    if (!chatState.selectedUserId) {
+    if (
+        !chatState.selectedUserId
+    ) {
 
         alert(
             "Please select a user first."
@@ -606,67 +975,89 @@ async function sendMessage() {
         return;
     }
 
+    /*
+     * Clear immediately.
+     * This makes the UI feel instant.
+     */
+
+    input.value = "";
+
+    input.focus();
 
     chatState.sending = true;
 
+    const temporaryId =
+        "temp_" +
+        Date.now() +
+        "_" +
+        Math.random()
+            .toString(36)
+            .slice(2);
 
-    const sendButton =
-        $("sendButton");
+    const optimisticMessage = {
 
+        id: temporaryId,
 
-    if (sendButton) {
-        sendButton.disabled = true;
-    }
+        sender_id:
+            chatState.currentUser?.id,
 
+        receiver_id:
+            chatState.selectedUser?.id,
+
+        content:
+            message,
+
+        message:
+            message,
+
+        media_url:
+            null,
+
+        media_type:
+            null,
+
+        read:
+            false,
+
+        is_read:
+            false,
+
+        is_deleted:
+            false,
+
+        created_at:
+            new Date().toISOString(),
+
+        temporary:
+            true
+    };
+
+    /*
+     * INSTANT UI
+     */
+
+    chatState.messages.push(
+        optimisticMessage
+    );
+
+    renderMessages();
+
+    scrollMessages();
 
     try {
 
-        /*
-         * IMPORTANT:
-         *
-         * Backend expects:
-         *
-         * POST /api/chat/send
-         *
-         * FormData:
-         * receiver_id
-         * content
-         * file
-         */
-
         const formData =
             new FormData();
-
 
         formData.append(
             "receiver_id",
             chatState.selectedUserId
         );
 
-
         formData.append(
             "content",
-            content
+            message
         );
-
-
-        const fileInput =
-            $("fileInput");
-
-
-        if (
-            fileInput &&
-            fileInput.files &&
-            fileInput.files.length > 0
-        ) {
-
-            formData.append(
-                "file",
-                fileInput.files[0]
-            );
-
-        }
-
 
         const response =
             await fetch(
@@ -674,28 +1065,13 @@ async function sendMessage() {
                 {
                     method: "POST",
                     credentials: "include",
-
-                    /*
-                     * DO NOT manually set
-                     * Content-Type.
-                     *
-                     * Browser creates multipart/form-data
-                     * boundary automatically.
-                     */
-
                     body: formData
                 }
             );
 
-
-        const data =
-            await response.json()
-                .catch(
-                    () => ({})
-                );
-
-
-        if (response.status === 401) {
+        if (
+            response.status === 401
+        ) {
 
             window.location.href =
                 "/login";
@@ -703,6 +1079,11 @@ async function sendMessage() {
             return;
         }
 
+        const data =
+            await response.json()
+                .catch(
+                    () => ({})
+                );
 
         if (!response.ok) {
 
@@ -710,12 +1091,20 @@ async function sendMessage() {
                 data?.detail ||
                 "Message could not be sent."
             );
-
         }
 
+        /*
+         * Remove optimistic message
+         */
+
+        chatState.messages =
+            chatState.messages.filter(
+                item =>
+                    item.id !== temporaryId
+            );
 
         /*
-         * Add returned message
+         * Add real database message
          */
 
         if (data?.message) {
@@ -723,33 +1112,11 @@ async function sendMessage() {
             chatState.messages.push(
                 data.message
             );
-
         }
-
-
-        /*
-         * Clear input
-         */
-
-        input.value = "";
-
-
-        /*
-         * Clear selected file
-         */
-
-        if (fileInput) {
-
-            fileInput.value = "";
-
-        }
-
 
         renderMessages();
 
-
-        input.focus();
-
+        scrollMessages();
 
     } catch (error) {
 
@@ -758,24 +1125,168 @@ async function sendMessage() {
             error
         );
 
+        /*
+         * Remove failed optimistic message
+         */
+
+        chatState.messages =
+            chatState.messages.filter(
+                item =>
+                    item.id !== temporaryId
+            );
+
+        renderMessages();
 
         alert(
             error.message ||
             "Unable to send message."
         );
 
+        input.value =
+            message;
+
+        input.focus();
+
     } finally {
 
-        chatState.sending = false;
+        chatState.sending =
+            false;
+    }
+}
 
 
-        if (sendButton) {
+/* =========================================================
+   SEND IMAGE
+========================================================= */
 
-            sendButton.disabled =
-                false;
+async function sendImage(
+    file
+) {
 
+    if (
+        !file ||
+        chatState.uploading
+    ) {
+        return;
+    }
+
+    if (
+        !file.type.startsWith(
+            "image/"
+        )
+    ) {
+
+        alert(
+            "Only image files are allowed."
+        );
+
+        return;
+    }
+
+    const maxSize =
+        10 * 1024 * 1024;
+
+    if (
+        file.size > maxSize
+    ) {
+
+        alert(
+            "Image must be 10 MB or smaller."
+        );
+
+        return;
+    }
+
+    if (
+        !chatState.selectedUserId
+    ) {
+        return;
+    }
+
+    chatState.uploading =
+        true;
+
+    try {
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            "receiver_id",
+            chatState.selectedUserId
+        );
+
+        formData.append(
+            "content",
+            ""
+        );
+
+        formData.append(
+            "file",
+            file
+        );
+
+        const response =
+            await fetch(
+                "/api/chat/send",
+                {
+                    method: "POST",
+                    credentials: "include",
+                    body: formData
+                }
+            );
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "/login";
+
+            return;
         }
 
+        const data =
+            await response.json()
+                .catch(
+                    () => ({})
+                );
+
+        if (!response.ok) {
+
+            throw new Error(
+                data?.detail ||
+                "Image could not be sent."
+            );
+        }
+
+        if (data?.message) {
+
+            chatState.messages.push(
+                data.message
+            );
+
+            renderMessages();
+
+            scrollMessages();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Image send error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to send image."
+        );
+
+    } finally {
+
+        chatState.uploading =
+            false;
     }
 }
 
@@ -789,10 +1300,8 @@ function setupComposer() {
     const composer =
         $("composer");
 
-
     const input =
         $("messageInput");
-
 
     if (composer) {
 
@@ -806,9 +1315,7 @@ function setupComposer() {
 
             }
         );
-
     }
-
 
     if (input) {
 
@@ -824,30 +1331,9 @@ function setupComposer() {
                     event.preventDefault();
 
                     sendMessage();
-
                 }
-
             }
         );
-
-
-        input.addEventListener(
-            "input",
-            () => {
-
-                clearTimeout(
-                    chatState.typingTimer
-                );
-
-                chatState.typingTimer =
-                    setTimeout(
-                        () => {},
-                        1000
-                    );
-
-            }
-        );
-
     }
 }
 
@@ -864,20 +1350,42 @@ function setupEmoji() {
     const input =
         $("messageInput");
 
-
-    if (!button || !input) {
+    if (
+        !button ||
+        !input
+    ) {
         return;
     }
-
 
     button.addEventListener(
         "click",
         () => {
 
-            input.value += "😊";
+            const emoji =
+                "😊";
+
+            const start =
+                input.selectionStart;
+
+            const end =
+                input.selectionEnd;
+
+            input.value =
+                input.value.slice(
+                    0,
+                    start
+                ) +
+                emoji +
+                input.value.slice(
+                    end
+                );
 
             input.focus();
 
+            input.selectionStart =
+                input.selectionEnd =
+                    start +
+                    emoji.length;
         }
     );
 }
@@ -895,11 +1403,12 @@ function setupAttachment() {
     const fileInput =
         $("fileInput");
 
-
-    if (!button || !fileInput) {
+    if (
+        !button ||
+        !fileInput
+    ) {
         return;
     }
-
 
     button.addEventListener(
         "click",
@@ -913,7 +1422,26 @@ function setupAttachment() {
             );
 
             fileInput.click();
+        }
+    );
 
+    fileInput.addEventListener(
+        "change",
+        async () => {
+
+            const file =
+                fileInput.files?.[0];
+
+            if (!file) {
+                return;
+            }
+
+            await sendImage(
+                file
+            );
+
+            fileInput.value =
+                "";
         }
     );
 }
@@ -931,11 +1459,12 @@ function setupCamera() {
     const fileInput =
         $("fileInput");
 
-
-    if (!button || !fileInput) {
+    if (
+        !button ||
+        !fileInput
+    ) {
         return;
     }
-
 
     button.addEventListener(
         "click",
@@ -950,9 +1479,59 @@ function setupCamera() {
             );
 
             fileInput.click();
-
         }
     );
+}
+
+
+/* =========================================================
+   POLLING
+========================================================= */
+
+function startMessagePolling() {
+
+    stopMessagePolling();
+
+    /*
+     * 2.5 seconds.
+     *
+     * Later we can replace this with
+     * WebSocket for true real-time chat.
+     */
+
+    chatState.pollingTimer =
+        setInterval(
+            () => {
+
+                if (
+                    chatState.selectedUserId
+                ) {
+
+                    loadMessages(
+                        chatState.selectedUserId,
+                        false
+                    );
+                }
+
+            },
+            2500
+        );
+}
+
+
+function stopMessagePolling() {
+
+    if (
+        chatState.pollingTimer
+    ) {
+
+        clearInterval(
+            chatState.pollingTimer
+        );
+
+        chatState.pollingTimer =
+            null;
+    }
 }
 
 
@@ -962,29 +1541,19 @@ function setupCamera() {
 
 function setupHeaderButtons() {
 
-    const voice =
-        $("voiceCallButton");
+    const menu =
+        $("conversationMenu");
 
+    if (menu) {
 
-    if (voice) {
-
-        voice.addEventListener(
+        menu.addEventListener(
             "click",
-            () => {
-
-                alert(
-                    "Voice call feature will be added next."
-                );
-
-            }
+            showConversationMenu
         );
-
     }
-
 
     const video =
         $("videoCallButton");
-
 
     if (video) {
 
@@ -993,18 +1562,30 @@ function setupHeaderButtons() {
             () => {
 
                 alert(
-                    "Video call feature will be added next."
+                    "Video call will be available soon."
                 );
-
             }
         );
-
     }
 
+    const voice =
+        $("voiceCallButton");
+
+    if (voice) {
+
+        voice.addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Voice call will be available soon."
+                );
+            }
+        );
+    }
 
     const avatar =
         $("selectedAvatarButton");
-
 
     if (avatar) {
 
@@ -1021,13 +1602,106 @@ function setupHeaderButtons() {
                         encodeURIComponent(
                             chatState.selectedUserId
                         );
-
                 }
-
             }
         );
-
     }
+}
+
+
+/* =========================================================
+   MENU
+========================================================= */
+
+function showConversationMenu() {
+
+    const existing =
+        document.querySelector(
+            ".chat-popup-menu"
+        );
+
+    if (existing) {
+        existing.remove();
+    }
+
+    const menu =
+        document.createElement(
+            "div"
+        );
+
+    menu.className =
+        "chat-popup-menu";
+
+    menu.innerHTML = `
+
+        <button type="button">
+            Search messages
+        </button>
+
+        <button type="button">
+            Media
+        </button>
+
+        <button type="button">
+            Clear chat
+        </button>
+
+        <button type="button">
+            Block
+        </button>
+
+        <button type="button">
+            Cancel
+        </button>
+
+    `;
+
+    document.body.appendChild(
+        menu
+    );
+
+    const cancel =
+        menu.querySelector(
+            "button:last-child"
+        );
+
+    cancel?.addEventListener(
+        "click",
+        () => {
+
+            menu.remove();
+
+        }
+    );
+
+    setTimeout(
+        () => {
+
+            document.addEventListener(
+                "click",
+                function closeMenu(
+                    event
+                ) {
+
+                    if (
+                        !menu.contains(
+                            event.target
+                        )
+                    ) {
+
+                        menu.remove();
+
+                        document.removeEventListener(
+                            "click",
+                            closeMenu
+                        );
+                    }
+                }
+            );
+
+        },
+        0
+    );
 }
 
 
@@ -1040,21 +1714,122 @@ function setupBackButton() {
     const button =
         $("backButton");
 
-
     if (!button) {
         return;
     }
-
 
     button.addEventListener(
         "click",
         () => {
 
+            stopMessagePolling();
+
             window.location.href =
                 "/home";
-
         }
     );
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function setupNavigation() {
+
+    document
+        .querySelectorAll(
+            ".bottom-nav button[data-page]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        stopMessagePolling();
+
+                        const page =
+                            button.dataset.page;
+
+                        if (page) {
+
+                            window.location.href =
+                                page;
+                        }
+                    }
+                );
+            }
+        );
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+function setupSearch() {
+
+    const input =
+        $("chatSearch");
+
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener(
+        "input",
+        () => {
+
+            chatState.search =
+                input.value.trim();
+        }
+    );
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+function setupFilters() {
+
+    document
+        .querySelectorAll(
+            ".filter"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        document
+                            .querySelectorAll(
+                                ".filter"
+                            )
+                            .forEach(
+                                item => {
+
+                                    item.classList.remove(
+                                        "active"
+                                    );
+                                }
+                            );
+
+                        button.classList.add(
+                            "active"
+                        );
+
+                        chatState.filter =
+                            button.dataset.filter ||
+                            "all";
+                    }
+                );
+            }
+        );
 }
 
 
@@ -1067,30 +1842,26 @@ function showEmptyConversation() {
     const name =
         $("selectedName");
 
-
     const status =
         $("selectedStatus");
-
 
     if (name) {
         name.textContent =
             "Select a chat";
     }
 
-
     if (status) {
         status.textContent =
             "Usanex";
     }
 
-
     const messages =
         $("messages");
-
 
     if (messages) {
 
         messages.innerHTML = `
+
             <div class="empty-chat">
 
                 <div class="empty-chat-icon">
@@ -1106,8 +1877,8 @@ function showEmptyConversation() {
                 </span>
 
             </div>
-        `;
 
+        `;
     }
 }
 
@@ -1122,10 +1893,8 @@ function formatTime(value) {
         return "";
     }
 
-
     const date =
         new Date(value);
-
 
     if (
         Number.isNaN(
@@ -1134,7 +1903,6 @@ function formatTime(value) {
     ) {
         return "";
     }
-
 
     return date.toLocaleTimeString(
         [],
@@ -1156,10 +1924,8 @@ function formatDate(value) {
         return "Today";
     }
 
-
     const date =
         new Date(value);
-
 
     if (
         Number.isNaN(
@@ -1169,20 +1935,15 @@ function formatDate(value) {
         return "Today";
     }
 
-
     const today =
         new Date();
-
 
     if (
         date.toDateString() ===
         today.toDateString()
     ) {
-
         return "Today";
-
     }
-
 
     return date.toLocaleDateString(
         [],
@@ -1204,21 +1965,45 @@ function scrollMessages() {
     const container =
         $("messages");
 
-
     if (!container) {
         return;
     }
-
 
     requestAnimationFrame(
         () => {
 
             container.scrollTop =
                 container.scrollHeight;
-
         }
     );
 }
+
+
+function isNearBottom(
+    container
+) {
+
+    const distance =
+        container.scrollHeight -
+        container.scrollTop -
+        container.clientHeight;
+
+    return distance < 180;
+}
+
+
+/* =========================================================
+   CLEANUP
+========================================================= */
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        stopMessagePolling();
+
+    }
+);
 
 
 /* =========================================================
@@ -1226,5 +2011,5 @@ function scrollMessages() {
 ========================================================= */
 
 console.log(
-    "Usanex Chat JS loaded — API matched."
+    "Usanex optimized Chat JS loaded."
 );
