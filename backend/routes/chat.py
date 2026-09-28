@@ -1,5 +1,6 @@
 /* =========================================================
    USANEX — CHAT PAGE
+   frontend/static/js/chat.js
    ========================================================= */
 
 "use strict";
@@ -16,17 +17,16 @@ const chatState = {
     isSending: false
 };
 
+let selectedImageFile = null;
+
 
 /* =========================================================
    START
    ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-        initChat();
-    }
-);
+document.addEventListener("DOMContentLoaded", () => {
+    initChat();
+});
 
 
 /* =========================================================
@@ -39,11 +39,7 @@ function $(id) {
 
 
 function safeText(value, fallback = "") {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
+    if (value === null || value === undefined) {
         return fallback;
     }
 
@@ -51,19 +47,7 @@ function safeText(value, fallback = "") {
 }
 
 
-function escapeHtml(value) {
-
-    return safeText(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
 function getPhotoUrl(photo) {
-
     if (!photo) {
         return "/static/images/default-profile.png";
     }
@@ -79,25 +63,16 @@ function getPhotoUrl(photo) {
 async function initChat() {
 
     setupBackButton();
-
     setupChatMenu();
-
     setupMessageInput();
-
     setupSendButton();
-
     setupAttachmentButton();
-
     setupEmojiButton();
-
     setupImagePreview();
-
     setupKeyboard();
-
     setupChatActions();
 
     await loadChat();
-
 }
 
 
@@ -107,87 +82,52 @@ async function initChat() {
 
 async function loadChat() {
 
+    const params = new URLSearchParams(
+        window.location.search
+    );
+
+    const userId = params.get("user_id");
+
+    if (!userId) {
+        showChatError("No chat selected.");
+        return;
+    }
+
     try {
 
-        /*
-         * Chat partner can be passed as:
-         *
-         * /chat?user_id=xxxx
-         */
-
-        const params =
-            new URLSearchParams(
-                window.location.search
-            );
-
-
-        const userId =
-            params.get("user_id");
-
-
-        if (!userId) {
-
-            showChatError(
-                "No chat selected."
-            );
-
-            return;
-
-        }
-
-
-        const response =
-            await fetch(
-                `/api/chat/${encodeURIComponent(userId)}`,
-                {
-                    method: "GET",
-
-                    credentials: "include",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
+        const response = await fetch(
+            `/api/chat/${encodeURIComponent(userId)}`,
+            {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Accept": "application/json"
                 }
-            );
+            }
+        );
 
 
         if (response.status === 401) {
-
-            window.location.href =
-                "/login";
-
+            window.location.href = "/login";
             return;
-
         }
+
+
+        const data = await response.json();
 
 
         if (!response.ok) {
-
-            const errorData =
-                await response
-                    .json()
-                    .catch(() => null);
-
-
             throw new Error(
-                errorData?.detail ||
+                data?.detail ||
                 "Unable to load chat."
             );
-
         }
 
 
-        const data =
-            await response.json();
-
-
         if (!data?.success) {
-
             throw new Error(
                 "Invalid chat response."
             );
-
         }
 
 
@@ -196,7 +136,9 @@ async function loadChat() {
 
 
         chatState.currentChat =
-            data.user || data.chat_user || null;
+            data.user ||
+            data.chat_user ||
+            null;
 
 
         chatState.messages =
@@ -206,31 +148,24 @@ async function loadChat() {
 
 
         renderChatHeader();
-
         renderMessages();
-
         scrollToBottom();
 
 
     } catch (error) {
 
         console.error(
-            "Load chat:",
+            "Usanex chat load error:",
             error
         );
 
-
-        /*
-         * Backend may not yet have the
-         * chat API. Keep the UI usable.
-         */
-
         renderChatHeader();
 
-        renderMessages();
-
+        showChatError(
+            error.message ||
+            "Unable to load chat."
+        );
     }
-
 }
 
 
@@ -265,10 +200,8 @@ function renderChatHeader() {
 
 
     if ($("chatUserName")) {
-
         $("chatUserName").textContent =
             name;
-
     }
 
 
@@ -278,25 +211,20 @@ function renderChatHeader() {
             username
                 ? `@${username.replace(/^@/, "")}`
                 : "";
-
     }
 
 
     if ($("chatUserPhoto")) {
-
-        $("chatUserPhoto").src =
-            photo;
-
+        $("chatUserPhoto").src = photo;
     }
 
 
     if ($("chatUserStatus")) {
-
         $("chatUserStatus").textContent =
-            "online";
-
+            user.is_online
+                ? "online"
+                : "offline";
     }
-
 }
 
 
@@ -321,24 +249,18 @@ function renderMessages() {
     if (!chatState.messages.length) {
 
         renderEmptyChat();
-
         return;
-
     }
 
 
     chatState.messages.forEach(
-        (message) => {
+        message => {
 
             container.appendChild(
-                createMessageElement(
-                    message
-                )
+                createMessageElement(message)
             );
-
         }
     );
-
 }
 
 
@@ -358,9 +280,7 @@ function renderEmptyChat() {
 
 
     const empty =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     empty.className =
@@ -368,9 +288,7 @@ function renderEmptyChat() {
 
 
     empty.innerHTML = `
-        <div class="chat-empty-icon">
-            💬
-        </div>
+        <div class="chat-empty-icon">💬</div>
 
         <div class="chat-empty-title">
             Start a conversation
@@ -382,10 +300,7 @@ function renderEmptyChat() {
     `;
 
 
-    container.appendChild(
-        empty
-    );
-
+    container.appendChild(empty);
 }
 
 
@@ -396,9 +311,7 @@ function renderEmptyChat() {
 function createMessageElement(message) {
 
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     const senderId =
@@ -423,9 +336,7 @@ function createMessageElement(message) {
 
 
     const bubble =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     bubble.className =
@@ -434,9 +345,7 @@ function createMessageElement(message) {
             : "message-bubble message-other";
 
 
-    /*
-     * IMAGE MESSAGE
-     */
+    /* IMAGE */
 
     if (
         message.media_type === "image" &&
@@ -444,9 +353,7 @@ function createMessageElement(message) {
     ) {
 
         const image =
-            document.createElement(
-                "img"
-            );
+            document.createElement("img");
 
 
         image.src =
@@ -461,23 +368,31 @@ function createMessageElement(message) {
             "Image";
 
 
-        bubble.appendChild(
-            image
+        image.loading =
+            "lazy";
+
+
+        image.addEventListener(
+            "click",
+            () => {
+                window.open(
+                    message.media_url,
+                    "_blank"
+                );
+            }
         );
 
+
+        bubble.appendChild(image);
     }
 
 
-    /*
-     * TEXT
-     */
+    /* TEXT */
 
     if (message.content) {
 
         const text =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
 
         text.className =
@@ -488,21 +403,14 @@ function createMessageElement(message) {
             message.content;
 
 
-        bubble.appendChild(
-            text
-        );
-
+        bubble.appendChild(text);
     }
 
 
-    /*
-     * TIME
-     */
+    /* FOOTER */
 
     const footer =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     footer.className =
@@ -510,9 +418,7 @@ function createMessageElement(message) {
 
 
     const time =
-        document.createElement(
-            "span"
-        );
+        document.createElement("span");
 
 
     time.className =
@@ -526,21 +432,15 @@ function createMessageElement(message) {
         );
 
 
-    footer.appendChild(
-        time
-    );
+    footer.appendChild(time);
 
 
-    /*
-     * READ STATUS
-     */
+    /* READ STATUS */
 
     if (isMine) {
 
         const status =
-            document.createElement(
-                "span"
-            );
+            document.createElement("span");
 
 
         status.className =
@@ -548,30 +448,21 @@ function createMessageElement(message) {
 
 
         status.textContent =
-            message.read
+            message.read ||
+            message.is_read
                 ? "✓✓"
                 : "✓";
 
 
-        footer.appendChild(
-            status
-        );
-
+        footer.appendChild(status);
     }
 
 
-    bubble.appendChild(
-        footer
-    );
+    bubble.appendChild(footer);
 
-
-    wrapper.appendChild(
-        bubble
-    );
-
+    wrapper.appendChild(bubble);
 
     return wrapper;
-
 }
 
 
@@ -590,14 +481,8 @@ function formatMessageTime(value) {
         new Date(value);
 
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
+    if (Number.isNaN(date.getTime())) {
         return "";
-
     }
 
 
@@ -608,7 +493,6 @@ function formatMessageTime(value) {
             minute: "2-digit"
         }
     );
-
 }
 
 
@@ -631,15 +515,11 @@ function setupMessageInput() {
         "input",
         () => {
 
-            autoResizeInput(
-                input
-            );
+            autoResizeInput(input);
 
             updateSendButton();
-
         }
     );
-
 }
 
 
@@ -654,7 +534,6 @@ function autoResizeInput(input) {
             input.scrollHeight,
             120
         ) + "px";
-
 }
 
 
@@ -675,13 +554,11 @@ function setupSendButton() {
 
     button.addEventListener(
         "click",
-        () => {
-
-            sendMessage();
-
-        }
+        sendMessage
     );
 
+
+    updateSendButton();
 }
 
 
@@ -700,10 +577,21 @@ function updateSendButton() {
     }
 
 
-    button.disabled =
-        !input.value.trim() &&
-        !selectedImageFile;
+    const hasText =
+        Boolean(
+            input.value.trim()
+        );
 
+
+    const hasImage =
+        Boolean(
+            selectedImageFile
+        );
+
+
+    button.disabled =
+        !hasText &&
+        !hasImage;
 }
 
 
@@ -731,7 +619,25 @@ async function sendMessage() {
         input.value.trim();
 
 
-    if (!text && !selectedImageFile) {
+    if (
+        !text &&
+        !selectedImageFile
+    ) {
+        return;
+    }
+
+
+    const receiverId =
+        chatState.currentChat?.user_id ||
+        chatState.currentChat?.id;
+
+
+    if (!receiverId) {
+
+        alert(
+            "Chat user not found."
+        );
+
         return;
     }
 
@@ -745,32 +651,11 @@ async function sendMessage() {
 
 
     if (button) {
-
-        button.disabled =
-            true;
-
+        button.disabled = true;
     }
 
 
     try {
-
-        /*
-         * First try real backend.
-         */
-
-        const receiverId =
-            chatState.currentChat?.user_id ||
-            chatState.currentChat?.id;
-
-
-        if (!receiverId) {
-
-            throw new Error(
-                "Chat user not found."
-            );
-
-        }
-
 
         const formData =
             new FormData();
@@ -778,7 +663,7 @@ async function sendMessage() {
 
         formData.append(
             "receiver_id",
-            receiverId
+            String(receiverId)
         );
 
 
@@ -788,7 +673,6 @@ async function sendMessage() {
                 "content",
                 text
             );
-
         }
 
 
@@ -798,7 +682,6 @@ async function sendMessage() {
                 "file",
                 selectedImageFile
             );
-
         }
 
 
@@ -807,9 +690,7 @@ async function sendMessage() {
                 "/api/chat/send",
                 {
                     method: "POST",
-
                     credentials: "include",
-
                     body: formData
                 }
             );
@@ -821,41 +702,36 @@ async function sendMessage() {
                 "/login";
 
             return;
-
         }
+
+
+        const data =
+            await response.json()
+                .catch(() => null);
 
 
         if (!response.ok) {
 
-            /*
-             * If backend endpoint is not ready,
-             * still show the message locally.
-             */
+            throw new Error(
+                data?.detail ||
+                "Message could not be sent."
+            );
+        }
 
-            addLocalMessage(
-                text
+
+        if (
+            data?.message
+        ) {
+
+            chatState.messages.push(
+                data.message
             );
 
         } else {
 
-            const data =
-                await response.json();
+            await loadChat();
 
-
-            if (data?.message) {
-
-                chatState.messages.push(
-                    data.message
-                );
-
-            } else {
-
-                addLocalMessage(
-                    text
-                );
-
-            }
-
+            return;
         }
 
 
@@ -875,76 +751,24 @@ async function sendMessage() {
     } catch (error) {
 
         console.error(
-            "Send message:",
+            "Usanex send message error:",
             error
         );
 
 
-        /*
-         * Local fallback
-         */
-
-        addLocalMessage(
-            text
+        alert(
+            error.message ||
+            "Message could not be sent."
         );
 
-
-        input.value = "";
-
-        input.style.height =
-            "auto";
-
-
-        clearSelectedImage();
-
-        renderMessages();
-
-        scrollToBottom();
 
     } finally {
 
         chatState.isSending =
             false;
 
-
         updateSendButton();
-
     }
-
-}
-
-
-/* =========================================================
-   LOCAL MESSAGE
-   ========================================================= */
-
-function addLocalMessage(text) {
-
-    if (!text && !selectedImageFile) {
-        return;
-    }
-
-
-    chatState.messages.push({
-
-        id:
-            `local-${Date.now()}`,
-
-        sender_id:
-            chatState.currentUser?.id ||
-            chatState.currentUser?.user_id,
-
-        content:
-            text,
-
-        created_at:
-            new Date().toISOString(),
-
-        read:
-            false
-
-    });
-
 }
 
 
@@ -965,7 +789,7 @@ function setupKeyboard() {
 
     input.addEventListener(
         "keydown",
-        (event) => {
+        event => {
 
             if (
                 event.key === "Enter" &&
@@ -975,22 +799,15 @@ function setupKeyboard() {
                 event.preventDefault();
 
                 sendMessage();
-
             }
-
         }
     );
-
 }
 
 
 /* =========================================================
    ATTACHMENT
    ========================================================= */
-
-let selectedImageFile =
-    null;
-
 
 function setupAttachmentButton() {
 
@@ -1010,9 +827,7 @@ function setupAttachmentButton() {
     button.addEventListener(
         "click",
         () => {
-
             input.click();
-
         }
     );
 
@@ -1040,13 +855,9 @@ function setupAttachmentButton() {
                     "Please select an image."
                 );
 
-
-                input.value =
-                    "";
-
+                input.value = "";
 
                 return;
-
             }
 
 
@@ -1059,13 +870,9 @@ function setupAttachmentButton() {
                     "Image must be 10 MB or smaller."
                 );
 
-
-                input.value =
-                    "";
-
+                input.value = "";
 
                 return;
-
             }
 
 
@@ -1073,16 +880,11 @@ function setupAttachmentButton() {
                 file;
 
 
-            showImagePreview(
-                file
-            );
-
+            showImagePreview(file);
 
             updateSendButton();
-
         }
     );
-
 }
 
 
@@ -1102,9 +904,7 @@ function setupImagePreview() {
             "click",
             clearSelectedImage
         );
-
     }
-
 }
 
 
@@ -1127,29 +927,23 @@ function showImagePreview(file) {
 
 
     const url =
-        URL.createObjectURL(
-            file
-        );
+        URL.createObjectURL(file);
 
 
     previewImage.src =
         url;
 
 
-    previewImage.onload =
-        () => {
-
-            URL.revokeObjectURL(
-                url
-            );
-
-        };
-
-
     previewBox.classList.remove(
         "hidden"
     );
 
+
+    previewImage.onload =
+        () => {
+
+            URL.revokeObjectURL(url);
+        };
 }
 
 
@@ -1164,10 +958,7 @@ function clearSelectedImage() {
 
 
     if (input) {
-
-        input.value =
-            "";
-
+        input.value = "";
     }
 
 
@@ -1180,7 +971,6 @@ function clearSelectedImage() {
         preview.classList.add(
             "hidden"
         );
-
     }
 
 
@@ -1192,9 +982,10 @@ function clearSelectedImage() {
 
         previewImage.src =
             "";
-
     }
 
+
+    updateSendButton();
 }
 
 
@@ -1221,17 +1012,15 @@ function setupEmojiButton() {
         "click",
         () => {
 
-            input.value +=
-                "😊";
-
+            input.value += "😊";
 
             input.focus();
 
-            updateSendButton();
+            autoResizeInput(input);
 
+            updateSendButton();
         }
     );
-
 }
 
 
@@ -1256,40 +1045,32 @@ function setupChatMenu() {
 
     button.addEventListener(
         "click",
-        (event) => {
+        event => {
 
             event.stopPropagation();
 
             menu.classList.toggle(
                 "hidden"
             );
-
         }
     );
 
 
     document.addEventListener(
         "click",
-        (event) => {
+        event => {
 
             if (
-                !menu.contains(
-                    event.target
-                ) &&
-                !button.contains(
-                    event.target
-                )
+                !menu.contains(event.target) &&
+                !button.contains(event.target)
             ) {
 
                 menu.classList.add(
                     "hidden"
                 );
-
             }
-
         }
     );
-
 }
 
 
@@ -1310,8 +1091,8 @@ function setupChatActions() {
             () => {
 
                 const userId =
-                    chatState.currentChat
-                        ?.user_id;
+                    chatState.currentChat?.user_id ||
+                    chatState.currentChat?.id;
 
 
                 if (!userId) {
@@ -1321,10 +1102,8 @@ function setupChatActions() {
 
                 window.location.href =
                     `/profile/${encodeURIComponent(userId)}`;
-
             }
         );
-
     }
 
 
@@ -1336,26 +1115,8 @@ function setupChatActions() {
 
         clearChat.addEventListener(
             "click",
-            () => {
-
-                if (
-                    !confirm(
-                        "Clear this chat?"
-                    )
-                ) {
-                    return;
-                }
-
-
-                chatState.messages =
-                    [];
-
-
-                renderMessages();
-
-            }
+            clearCurrentChat
         );
-
     }
 
 
@@ -1367,17 +1128,159 @@ function setupChatActions() {
 
         blockUser.addEventListener(
             "click",
-            () => {
-
-                alert(
-                    "Block feature will be connected to the backend."
-                );
-
-            }
+            blockCurrentUser
         );
+    }
+}
 
+
+/* =========================================================
+   CLEAR CHAT
+   ========================================================= */
+
+async function clearCurrentChat() {
+
+    const userId =
+        chatState.currentChat?.user_id ||
+        chatState.currentChat?.id;
+
+
+    if (!userId) {
+        return;
     }
 
+
+    const confirmed =
+        confirm(
+            "Clear this chat?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/chat/${encodeURIComponent(userId)}`,
+                {
+                    method: "DELETE",
+                    credentials: "include"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            const data =
+                await response.json()
+                    .catch(() => null);
+
+
+            throw new Error(
+                data?.detail ||
+                "Unable to clear chat."
+            );
+        }
+
+
+        chatState.messages =
+            [];
+
+
+        renderMessages();
+
+
+    } catch (error) {
+
+        console.error(
+            "Clear chat:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to clear chat."
+        );
+    }
+}
+
+
+/* =========================================================
+   BLOCK USER
+   ========================================================= */
+
+async function blockCurrentUser() {
+
+    const userId =
+        chatState.currentChat?.user_id ||
+        chatState.currentChat?.id;
+
+
+    if (!userId) {
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            "Block this user?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/chat/${encodeURIComponent(userId)}/block`,
+                {
+                    method: "POST",
+                    credentials: "include"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            const data =
+                await response.json()
+                    .catch(() => null);
+
+
+            throw new Error(
+                data?.detail ||
+                "Unable to block user."
+            );
+        }
+
+
+        alert(
+            "User blocked."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Block user:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to block user."
+        );
+    }
 }
 
 
@@ -1410,12 +1313,9 @@ function setupBackButton() {
 
                 window.location.href =
                     "/home";
-
             }
-
         }
     );
-
 }
 
 
@@ -1439,10 +1339,8 @@ function scrollToBottom() {
 
             container.scrollTop =
                 container.scrollHeight;
-
         }
     );
-
 }
 
 
@@ -1465,9 +1363,7 @@ function showChatError(message) {
 
 
     const error =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     error.className =
@@ -1478,8 +1374,5 @@ function showChatError(message) {
         message;
 
 
-    container.appendChild(
-        error
-    );
-
+    container.appendChild(error);
 }
