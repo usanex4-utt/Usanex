@@ -5,7 +5,6 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
-import shutil
 import uuid
 
 from fastapi import (
@@ -17,12 +16,12 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from ..database.database import SessionLocal
 from ..database.models import (
     User,
+    UserSession,
     ChatMessage,
     UserConnection,
 )
@@ -34,8 +33,23 @@ from ..database.models import (
 
 router = APIRouter(
     prefix="/api/chat",
-    tags=["Chat"]
+    tags=["Chat"],
 )
+
+
+# =========================================================
+# SESSION COOKIE
+# =========================================================
+#
+# IMPORTANT:
+# auth.py भी यही cookie बनाता है:
+#
+#     usanex_session
+#
+# इसलिए Chat में भी यही नाम होना चाहिए.
+# =========================================================
+
+SESSION_COOKIE_NAME = "usanex_session"
 
 
 # =========================================================
@@ -57,131 +71,179 @@ def get_db():
 # =========================================================
 
 def utc_now():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    """
+    Return current UTC time without timezone information.
+    This matches the DateTime fields used in models.py.
+    """
+
+    return datetime.now(
+        timezone.utc
+    ).replace(
+        tzinfo=None
+    )
 
 
 # =========================================================
-# SESSION / CURRENT USER
+# CURRENT USER
 # =========================================================
 
 def get_current_user(
     request: Request,
-    db: Session
+    db: Session,
 ):
     """
-    Reads the Usanex session cookie.
+    Get currently logged-in user.
 
-    Expected cookie:
-        session_token
+    Uses the same session cookie created by auth.py:
 
-    It also supports:
-        user_id
-    as a fallback for older login code.
+        usanex_session
     """
 
-    session_token = (
-        request.cookies.get("session_token")
+    # -----------------------------------------------------
+    # READ SESSION COOKIE
+    # -----------------------------------------------------
+
+    session_token = request.cookies.get(
+        SESSION_COOKIE_NAME
     )
 
-    # -----------------------------------------------------
-    # SESSION TOKEN LOGIN
-    # -----------------------------------------------------
+    if not session_token:
 
-    if session_token:
-
-        try:
-
-            from ..database.models import UserSession
-
-            session = (
-                db.query(UserSession)
-                .filter(
-                    UserSession.session_token
-                    == session_token
-                )
-                .first()
-            )
-
-            if session:
-
-                if (
-                    session.expires_at
-                    and session.expires_at > utc_now()
-                ):
-
-                    user = (
-                        db.query(User)
-                        .filter(
-                            User.id == session.user_id
-                        )
-                        .first()
-                    )
-
-                    if user:
-                        return user
-
-        except Exception:
-            pass
-
-    # -----------------------------------------------------
-    # FALLBACK USER ID COOKIE
-    # -----------------------------------------------------
-
-    cookie_user_id = (
-        request.cookies.get("user_id")
-    )
-
-    if cookie_user_id:
-
-        user = (
-            db.query(User)
-            .filter(
-                User.user_id == cookie_user_id
-            )
-            .first()
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated.",
         )
 
-        if user:
-            return user
+    # -----------------------------------------------------
+    # FIND SESSION
+    # -----------------------------------------------------
 
-        try:
+    session = (
+        db.query(UserSession)
+        .filter(
+            UserSession.session_token
+            == session_token
+        )
+        .first()
+    )
 
-            user = (
-                db.query(User)
-                .filter(
-                    User.id == int(cookie_user_id)
-                )
-                .first()
-            )
+    if session is None:
 
-            if user:
-                return user
-
-        except Exception:
-            pass
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid session.",
+        )
 
     # -----------------------------------------------------
-    # FALLBACK LOCAL STORAGE CANNOT BE READ BY BACKEND
+    # CHECK EXPIRATION
     # -----------------------------------------------------
-    #
-    # Browser localStorage is NOT automatically available
-    # to FastAPI.
-    #
-    # Therefore the proper production method is the
-    # session_token cookie.
-    #
 
-    raise HTTPException(
-        status_code=401,
-        detail="Not authenticated."
+    expires_at = session.expires_at
+
+    if expires_at.tzinfo is None:
+
+        expires_at = expires_at.replace(
+            tzinfo=timezone.utc
+        )
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    if now >= expires_at:
+
+        db.delete(session)
+        db.commit()
+
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired.",
+        )
+
+    # -----------------------------------------------------
+    # FIND USER
+    # -----------------------------------------------------
+
+    user = (
+        db.query(User)
+        .filter(
+            User.id == session.user_id
+        )
+        .first()
+    )
+
+    if user is None:
+
+        db.delete(session)
+        db.commit()
+
+        raise HTTPException(
+            status_code=401,
+            detail="User not found.",
+        )
+
+    return user
+
+
+# =========================================================
+# FIND USER
+# =========================================================
+
+def find_user(
+    db: Session,
+    user_identifier: str,
+):
+    """
+    Find user by public user_id.
+
+    Also supports database integer id as fallback.
+    """
+
+    user = (
+        db.query(User)
+        .filter(
+            User.user_id == user_identifier
+        )
+        .first()
+    )
+
+    if user:
+
+        return user
+
+    # -----------------------------------------------------
+    # INTEGER ID FALLBACK
+    # -----------------------------------------------------
+
+    try:
+
+        numeric_id = int(
+            user_identifier
+        )
+
+    except (
+        ValueError,
+        TypeError,
+    ):
+
+        return None
+
+    return (
+        db.query(User)
+        .filter(
+            User.id == numeric_id
+        )
+        .first()
     )
 
 
 # =========================================================
-# USER RESPONSE
+# SERIALIZE USER
 # =========================================================
 
-def serialize_user(user: User):
+def serialize_user(
+    user: User,
+):
     return {
         "id": user.id,
         "user_id": user.user_id,
@@ -192,11 +254,12 @@ def serialize_user(user: User):
 
 
 # =========================================================
-# MESSAGE RESPONSE
+# SERIALIZE MESSAGE
 # =========================================================
 
-def serialize_message(message: ChatMessage):
-
+def serialize_message(
+    message: ChatMessage,
+):
     return {
         "id": message.id,
 
@@ -206,13 +269,23 @@ def serialize_message(message: ChatMessage):
 
         "content": message.content,
 
+        "message": message.content,
+
         "media_url": message.media_url,
 
         "media_type": message.media_type,
 
-        "read": bool(message.is_read),
+        "read": bool(
+            message.is_read
+        ),
 
-        "is_deleted": bool(message.is_deleted),
+        "is_read": bool(
+            message.is_read
+        ),
+
+        "is_deleted": bool(
+            message.is_deleted
+        ),
 
         "created_at": (
             message.created_at.isoformat()
@@ -229,25 +302,41 @@ def serialize_message(message: ChatMessage):
 def are_users_connected(
     db: Session,
     user_one_id: int,
-    user_two_id: int
+    user_two_id: int,
 ):
+    """
+    Chat is allowed only when users are connected.
+    """
 
     connection = (
         db.query(UserConnection)
         .filter(
-            UserConnection.status == "connected"
+            UserConnection.status
+            == "connected"
         )
         .filter(
             (
-                (UserConnection.user_one_id == user_one_id)
+                (
+                    UserConnection.user_one_id
+                    == user_one_id
+                )
                 &
-                (UserConnection.user_two_id == user_two_id)
+                (
+                    UserConnection.user_two_id
+                    == user_two_id
+                )
             )
             |
             (
-                (UserConnection.user_one_id == user_two_id)
+                (
+                    UserConnection.user_one_id
+                    == user_two_id
+                )
                 &
-                (UserConnection.user_two_id == user_one_id)
+                (
+                    UserConnection.user_two_id
+                    == user_one_id
+                )
             )
         )
         .first()
@@ -257,21 +346,45 @@ def are_users_connected(
 
 
 # =========================================================
+# CHAT HEALTH
+# =========================================================
+#
+# GET /api/chat/health/status
+#
+# =========================================================
+
+@router.get(
+    "/health/status"
+)
+def chat_health():
+
+    return {
+        "success": True,
+        "app": "Usanex",
+        "service": "chat",
+        "status": "online",
+    }
+
+
+# =========================================================
 # GET CHAT
 # =========================================================
 #
 # GET /api/chat/{user_id}
 #
 # Example:
+#
 # /api/chat/u_abc123
 #
 # =========================================================
 
-@router.get("/{user_id}")
+@router.get(
+    "/{user_id}"
+)
 def get_chat(
     user_id: str,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
 
     # -----------------------------------------------------
@@ -279,63 +392,38 @@ def get_chat(
     # -----------------------------------------------------
 
     current_user = get_current_user(
-        request,
-        db
+        request=request,
+        db=db,
     )
 
     # -----------------------------------------------------
-    # FIND CHAT USER
+    # CHAT USER
     # -----------------------------------------------------
 
-    chat_user = (
-        db.query(User)
-        .filter(
-            User.user_id == user_id
-        )
-        .first()
+    chat_user = find_user(
+        db=db,
+        user_identifier=user_id,
     )
 
-    # -----------------------------------------------------
-    # FALLBACK: INTEGER USER ID
-    # -----------------------------------------------------
-
-    if not chat_user:
-
-        try:
-
-            numeric_id = int(user_id)
-
-            chat_user = (
-                db.query(User)
-                .filter(
-                    User.id == numeric_id
-                )
-                .first()
-            )
-
-        except Exception:
-            pass
-
-    # -----------------------------------------------------
-    # USER NOT FOUND
-    # -----------------------------------------------------
-
-    if not chat_user:
+    if chat_user is None:
 
         raise HTTPException(
             status_code=404,
-            detail="Chat user not found."
+            detail="Chat user not found.",
         )
 
     # -----------------------------------------------------
-    # CANNOT CHAT WITH YOURSELF
+    # SELF CHAT
     # -----------------------------------------------------
 
-    if chat_user.id == current_user.id:
+    if (
+        chat_user.id
+        == current_user.id
+    ):
 
         raise HTTPException(
             status_code=400,
-            detail="You cannot chat with yourself."
+            detail="You cannot chat with yourself.",
         )
 
     # -----------------------------------------------------
@@ -349,15 +437,27 @@ def get_chat(
         )
         .filter(
             (
-                (ChatMessage.sender_id == current_user.id)
+                (
+                    ChatMessage.sender_id
+                    == current_user.id
+                )
                 &
-                (ChatMessage.receiver_id == chat_user.id)
+                (
+                    ChatMessage.receiver_id
+                    == chat_user.id
+                )
             )
             |
             (
-                (ChatMessage.sender_id == chat_user.id)
+                (
+                    ChatMessage.sender_id
+                    == chat_user.id
+                )
                 &
-                (ChatMessage.receiver_id == current_user.id)
+                (
+                    ChatMessage.receiver_id
+                    == current_user.id
+                )
             )
         )
         .order_by(
@@ -373,10 +473,12 @@ def get_chat(
     unread_messages = (
         db.query(ChatMessage)
         .filter(
-            ChatMessage.sender_id == chat_user.id
+            ChatMessage.sender_id
+            == chat_user.id
         )
         .filter(
-            ChatMessage.receiver_id == current_user.id
+            ChatMessage.receiver_id
+            == current_user.id
         )
         .filter(
             ChatMessage.is_read == 0
@@ -402,18 +504,22 @@ def get_chat(
     return {
         "success": True,
 
-        "current_user": serialize_user(
-            current_user
-        ),
+        "current_user":
+            serialize_user(
+                current_user
+            ),
 
-        "user": serialize_user(
-            chat_user
-        ),
+        "user":
+            serialize_user(
+                chat_user
+            ),
 
         "messages": [
-            serialize_message(message)
+            serialize_message(
+                message
+            )
             for message in messages
-        ]
+        ],
     }
 
 
@@ -423,14 +529,17 @@ def get_chat(
 #
 # POST /api/chat/send
 #
-# Form:
+# FormData:
+#
 # receiver_id
 # content
 # file
 #
 # =========================================================
 
-@router.post("/send")
+@router.post(
+    "/send"
+)
 async def send_message(
     request: Request,
 
@@ -444,7 +553,7 @@ async def send_message(
         default=None
     ),
 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
 
     # -----------------------------------------------------
@@ -452,67 +561,66 @@ async def send_message(
     # -----------------------------------------------------
 
     current_user = get_current_user(
-        request,
-        db
+        request=request,
+        db=db,
     )
 
     # -----------------------------------------------------
-    # FIND RECEIVER
+    # RECEIVER
     # -----------------------------------------------------
 
-    receiver = (
-        db.query(User)
-        .filter(
-            User.user_id == receiver_id
-        )
-        .first()
+    receiver = find_user(
+        db=db,
+        user_identifier=receiver_id,
     )
 
-    # -----------------------------------------------------
-    # FALLBACK INTEGER ID
-    # -----------------------------------------------------
-
-    if not receiver:
-
-        try:
-
-            numeric_id = int(receiver_id)
-
-            receiver = (
-                db.query(User)
-                .filter(
-                    User.id == numeric_id
-                )
-                .first()
-            )
-
-        except Exception:
-            pass
-
-    # -----------------------------------------------------
-    # RECEIVER NOT FOUND
-    # -----------------------------------------------------
-
-    if not receiver:
+    if receiver is None:
 
         raise HTTPException(
             status_code=404,
-            detail="Receiver not found."
+            detail="Receiver not found.",
         )
 
     # -----------------------------------------------------
-    # SELF MESSAGE BLOCK
+    # SELF MESSAGE
     # -----------------------------------------------------
 
-    if receiver.id == current_user.id:
+    if (
+        receiver.id
+        == current_user.id
+    ):
 
         raise HTTPException(
             status_code=400,
-            detail="You cannot send a message to yourself."
+            detail="You cannot send a message to yourself.",
         )
 
     # -----------------------------------------------------
-    # CLEAN MESSAGE
+    # CONNECTION CHECK
+    # -----------------------------------------------------
+    #
+    # फिलहाल development में connection check
+    # optional रखा गया है ताकि existing users
+    # का chat flow न टूटे.
+    #
+    # जब पूरा connection system stable होगा,
+    # इसे strict किया जा सकता है.
+    # -----------------------------------------------------
+
+    # connected = are_users_connected(
+    #     db,
+    #     current_user.id,
+    #     receiver.id,
+    # )
+
+    # if not connected:
+    #     raise HTTPException(
+    #         status_code=403,
+    #         detail="You can only chat with connected users.",
+    #     )
+
+    # -----------------------------------------------------
+    # CLEAN TEXT
     # -----------------------------------------------------
 
     clean_content = (
@@ -525,21 +633,25 @@ async def send_message(
     media_type = None
 
     # =====================================================
-    # IMAGE UPLOAD
+    # FILE UPLOAD
     # =====================================================
 
     if file:
 
         # -------------------------------------------------
-        # FILE TYPE
+        # CONTENT TYPE
         # -------------------------------------------------
 
         if not file.content_type:
 
             raise HTTPException(
                 status_code=400,
-                detail="Invalid file."
+                detail="Invalid file.",
             )
+
+        # -------------------------------------------------
+        # IMAGE ONLY
+        # -------------------------------------------------
 
         if not file.content_type.startswith(
             "image/"
@@ -547,27 +659,28 @@ async def send_message(
 
             raise HTTPException(
                 status_code=400,
-                detail="Only image files are allowed."
+                detail="Only image files are allowed.",
             )
 
         # -------------------------------------------------
-        # FILE SIZE
+        # READ FILE
         # -------------------------------------------------
-        #
-        # Maximum = 10 MB
-        #
+
+        file_bytes = await file.read()
+
+        # -------------------------------------------------
+        # MAX SIZE = 10 MB
+        # -------------------------------------------------
 
         max_size = (
             10 * 1024 * 1024
         )
 
-        file_bytes = await file.read()
-
         if len(file_bytes) > max_size:
 
             raise HTTPException(
                 status_code=400,
-                detail="Image must be 10 MB or smaller."
+                detail="Image must be 10 MB or smaller.",
             )
 
         # -------------------------------------------------
@@ -586,11 +699,11 @@ async def send_message(
 
         upload_dir.mkdir(
             parents=True,
-            exist_ok=True
+            exist_ok=True,
         )
 
         # -------------------------------------------------
-        # SAFE FILE EXTENSION
+        # EXTENSION
         # -------------------------------------------------
 
         extension = (
@@ -604,7 +717,7 @@ async def send_message(
             ".jpeg",
             ".png",
             ".gif",
-            ".webp"
+            ".webp",
         }
 
         if extension not in allowed_extensions:
@@ -616,22 +729,22 @@ async def send_message(
         # -------------------------------------------------
 
         filename = (
-            f"{uuid.uuid4().hex}"
-            f"{extension}"
+            uuid.uuid4().hex
+            + extension
         )
 
         file_path = (
-            upload_dir /
-            filename
+            upload_dir
+            / filename
         )
 
         # -------------------------------------------------
         # SAVE FILE
-        # -------------------------------------------------
+        # -----------------------------------------------------
 
         with open(
             file_path,
-            "wb"
+            "wb",
         ) as buffer:
 
             buffer.write(
@@ -653,11 +766,14 @@ async def send_message(
     # EMPTY MESSAGE CHECK
     # =====================================================
 
-    if not clean_content and not media_url:
+    if (
+        not clean_content
+        and not media_url
+    ):
 
         raise HTTPException(
             status_code=400,
-            detail="Message cannot be empty."
+            detail="Message cannot be empty.",
         )
 
     # =====================================================
@@ -684,8 +800,12 @@ async def send_message(
 
         is_deleted=0,
 
-        created_at=utc_now()
+        created_at=utc_now(),
     )
+
+    # -----------------------------------------------------
+    # SAVE
+    # -----------------------------------------------------
 
     db.add(message)
 
@@ -700,9 +820,10 @@ async def send_message(
     return {
         "success": True,
 
-        "message": serialize_message(
-            message
-        )
+        "message":
+            serialize_message(
+                message
+            ),
     }
 
 
@@ -714,54 +835,42 @@ async def send_message(
 #
 # =========================================================
 
-@router.post("/{user_id}/read")
+@router.post(
+    "/{user_id}/read"
+)
 def mark_chat_read(
     user_id: str,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
 
+    # -----------------------------------------------------
+    # CURRENT USER
+    # -----------------------------------------------------
+
     current_user = get_current_user(
-        request,
-        db
+        request=request,
+        db=db,
     )
 
     # -----------------------------------------------------
-    # FIND USER
+    # CHAT USER
     # -----------------------------------------------------
 
-    chat_user = (
-        db.query(User)
-        .filter(
-            User.user_id == user_id
-        )
-        .first()
+    chat_user = find_user(
+        db=db,
+        user_identifier=user_id,
     )
 
-    if not chat_user:
-
-        try:
-
-            chat_user = (
-                db.query(User)
-                .filter(
-                    User.id == int(user_id)
-                )
-                .first()
-            )
-
-        except Exception:
-            pass
-
-    if not chat_user:
+    if chat_user is None:
 
         raise HTTPException(
             status_code=404,
-            detail="Chat user not found."
+            detail="Chat user not found.",
         )
 
     # -----------------------------------------------------
-    # MARK AS READ
+    # FIND UNREAD
     # -----------------------------------------------------
 
     messages = (
@@ -783,6 +892,10 @@ def mark_chat_read(
         .all()
     )
 
+    # -----------------------------------------------------
+    # MARK READ
+    # -----------------------------------------------------
+
     for message in messages:
 
         message.is_read = 1
@@ -791,7 +904,9 @@ def mark_chat_read(
 
     return {
         "success": True,
-        "marked_read": len(messages)
+        "marked_read": len(
+            messages
+        ),
     }
 
 
@@ -803,43 +918,61 @@ def mark_chat_read(
 #
 # =========================================================
 
-@router.post("/message/{message_id}/delete")
+@router.post(
+    "/message/{message_id}/delete"
+)
 def delete_message(
     message_id: int,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
 
+    # -----------------------------------------------------
+    # CURRENT USER
+    # -----------------------------------------------------
+
     current_user = get_current_user(
-        request,
-        db
+        request=request,
+        db=db,
     )
+
+    # -----------------------------------------------------
+    # MESSAGE
+    # -----------------------------------------------------
 
     message = (
         db.query(ChatMessage)
         .filter(
-            ChatMessage.id == message_id
+            ChatMessage.id
+            == message_id
         )
         .first()
     )
 
-    if not message:
+    if message is None:
 
         raise HTTPException(
             status_code=404,
-            detail="Message not found."
+            detail="Message not found.",
         )
 
     # -----------------------------------------------------
     # ONLY SENDER CAN DELETE
     # -----------------------------------------------------
 
-    if message.sender_id != current_user.id:
+    if (
+        message.sender_id
+        != current_user.id
+    ):
 
         raise HTTPException(
             status_code=403,
-            detail="You cannot delete this message."
+            detail="You cannot delete this message.",
         )
+
+    # -----------------------------------------------------
+    # SOFT DELETE
+    # -----------------------------------------------------
 
     message.is_deleted = 1
 
@@ -847,20 +980,5 @@ def delete_message(
 
     return {
         "success": True,
-        "message": "Message deleted."
-    }
-
-
-# =========================================================
-# CHAT HEALTH CHECK
-# =========================================================
-
-@router.get("/health/status")
-def chat_health():
-
-    return {
-        "success": True,
-        "app": "Usanex",
-        "service": "chat",
-        "status": "online"
+        "message": "Message deleted.",
     }
