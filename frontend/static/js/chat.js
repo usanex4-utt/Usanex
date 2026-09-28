@@ -1,24 +1,33 @@
 /* =========================================================
-   USANEX — CHAT PAGE
-   Fast + Real-time-like Chat
+   USANEX — CHAT JS
+   HD IMAGE + FAST CHAT
    ========================================================= */
 
 "use strict";
+
 
 /* =========================================================
    STATE
 ========================================================= */
 
 const chatState = {
+
     currentUser: null,
+
     selectedUser: null,
+
     selectedUserId: null,
+
     messages: [],
+
     sending: false,
-    loading: false,
-    refreshTimer: null,
-    lastMessageId: 0,
-    typingTimer: null
+
+    uploading: false,
+
+    typingTimer: null,
+
+    refreshTimer: null
+
 };
 
 
@@ -26,7 +35,14 @@ const chatState = {
    START
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", initChatPage);
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        initChatPage();
+
+    }
+);
 
 
 /* =========================================================
@@ -36,38 +52,93 @@ document.addEventListener("DOMContentLoaded", initChatPage);
 async function initChatPage() {
 
     setupBackButton();
+
     setupComposer();
+
     setupEmoji();
+
     setupAttachment();
+
     setupCamera();
+
     setupHeaderButtons();
+
     setupNavigation();
 
     await loadCurrentUser();
 
-    const userId = getUserIdFromURL();
+    const userId =
+        getUserIdFromURL();
 
     if (!userId) {
+
         showEmptyConversation();
+
         return;
+
     }
 
-    chatState.selectedUserId = userId;
+    chatState.selectedUserId =
+        userId;
 
-    await loadChat(userId);
+    await loadChat();
 
-    startFastRefresh();
 }
 
 
 /* =========================================================
-   HELPERS
+   BASIC HELPERS
 ========================================================= */
 
 function $(id) {
+
     return document.getElementById(id);
+
 }
 
+
+function safeText(
+    value,
+    fallback = ""
+) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return fallback;
+
+    }
+
+    return String(value);
+
+}
+
+
+function escapeHtml(value) {
+
+    return safeText(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+function getAvatar(photo) {
+
+    return photo ||
+        "/static/images/default-profile.png";
+
+}
+
+
+/* =========================================================
+   URL USER ID
+========================================================= */
 
 function getUserIdFromURL() {
 
@@ -81,24 +152,7 @@ function getUserIdFromURL() {
         params.get("id") ||
         ""
     );
-}
 
-
-function escapeHtml(value) {
-
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-function getAvatar(photo) {
-
-    return photo ||
-        "/static/images/default-profile.png";
 }
 
 
@@ -114,37 +168,47 @@ async function loadCurrentUser() {
             await fetch(
                 "/api/auth/me",
                 {
+                    method: "GET",
                     credentials: "include",
                     headers: {
-                        Accept:
+                        "Accept":
                             "application/json"
                     }
                 }
             );
 
-        if (response.status === 401) {
+
+        if (
+            response.status === 401
+        ) {
 
             window.location.href =
                 "/login";
 
             return false;
+
         }
 
+
         if (!response.ok) {
+
             return false;
+
         }
+
 
         const data =
             await response.json();
+
 
         if (data?.user) {
 
             chatState.currentUser =
                 data.user;
 
-        }
+            return true;
 
-        return true;
+        }
 
     } catch (error) {
 
@@ -153,81 +217,103 @@ async function loadCurrentUser() {
             error
         );
 
-        return false;
     }
+
+    return false;
+
 }
 
 
 /* =========================================================
-   LOAD CHAT
+   LOAD COMPLETE CHAT
 ========================================================= */
 
-async function loadChat(userId) {
+async function loadChat() {
 
-    if (chatState.loading) {
+    if (
+        !chatState.selectedUserId
+    ) {
+
         return;
+
     }
 
-    chatState.loading = true;
+
+    setHeaderLoading();
+
 
     try {
 
         const response =
             await fetch(
-                `/api/chat/${encodeURIComponent(userId)}`,
+                `/api/chat/${encodeURIComponent(
+                    chatState.selectedUserId
+                )}`,
                 {
                     method: "GET",
+
                     credentials: "include",
-                    cache: "no-store",
+
                     headers: {
-                        Accept:
+                        "Accept":
                             "application/json"
                     }
                 }
             );
 
-        if (response.status === 401) {
 
-            stopFastRefresh();
+        if (
+            response.status === 401
+        ) {
 
             window.location.href =
                 "/login";
 
             return;
+
         }
+
 
         if (!response.ok) {
 
-            const error =
+            const errorData =
                 await response
                     .json()
-                    .catch(() => null);
+                    .catch(
+                        () => null
+                    );
 
             throw new Error(
-                error?.detail ||
-                "Chat could not be loaded."
+                errorData?.detail ||
+                "Unable to load chat."
             );
+
         }
+
 
         const data =
             await response.json();
 
-        chatState.currentUser =
-            data.current_user ||
-            chatState.currentUser;
 
-        chatState.selectedUser =
-            data.user ||
-            null;
+        if (data.user) {
+
+            chatState.selectedUser =
+                data.user;
+
+            updateChatHeader(
+                data.user
+            );
+
+        }
+
 
         chatState.messages =
-            Array.isArray(data.messages)
+            Array.isArray(
+                data.messages
+            )
                 ? data.messages
                 : [];
 
-        updateChatHeader(
-            chatState.selectedUser
-        );
 
         renderMessages();
 
@@ -238,194 +324,13 @@ async function loadChat(userId) {
             error
         );
 
+
         showChatError(
             error.message
         );
 
-    } finally {
-
-        chatState.loading = false;
-    }
-}
-
-
-/* =========================================================
-   FAST REFRESH
-========================================================= */
-
-function startFastRefresh() {
-
-    stopFastRefresh();
-
-    /*
-     * 2.5 second refresh.
-     *
-     * Ye full page reload nahi karta.
-     * Sirf chat API se latest messages leta hai.
-     */
-
-    chatState.refreshTimer =
-        setInterval(
-            async () => {
-
-                if (
-                    !chatState.selectedUserId ||
-                    chatState.sending
-                ) {
-                    return;
-                }
-
-                await refreshMessages();
-
-            },
-            2500
-        );
-}
-
-
-function stopFastRefresh() {
-
-    if (chatState.refreshTimer) {
-
-        clearInterval(
-            chatState.refreshTimer
-        );
-
-        chatState.refreshTimer = null;
-    }
-}
-
-
-/* =========================================================
-   REFRESH MESSAGES
-========================================================= */
-
-async function refreshMessages() {
-
-    const userId =
-        chatState.selectedUserId;
-
-    if (!userId) {
-        return;
     }
 
-    try {
-
-        const response =
-            await fetch(
-                `/api/chat/${encodeURIComponent(userId)}`,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    cache: "no-store",
-                    headers: {
-                        Accept:
-                            "application/json"
-                    }
-                }
-            );
-
-        if (!response.ok) {
-            return;
-        }
-
-        const data =
-            await response.json();
-
-        const newMessages =
-            Array.isArray(data.messages)
-                ? data.messages
-                : [];
-
-        /*
-         * Sirf tab DOM update karenge
-         * jab messages actually change hue hain.
-         */
-
-        if (
-            messagesChanged(
-                chatState.messages,
-                newMessages
-            )
-        ) {
-
-            chatState.messages =
-                newMessages;
-
-            renderMessages();
-        }
-
-    } catch (error) {
-
-        console.debug(
-            "Background refresh:",
-            error
-        );
-    }
-}
-
-
-/* =========================================================
-   MESSAGE CHANGE CHECK
-========================================================= */
-
-function messagesChanged(
-    oldMessages,
-    newMessages
-) {
-
-    if (
-        oldMessages.length !==
-        newMessages.length
-    ) {
-        return true;
-    }
-
-    if (!oldMessages.length) {
-        return false;
-    }
-
-    const oldLast =
-        oldMessages[
-            oldMessages.length - 1
-        ];
-
-    const newLast =
-        newMessages[
-            newMessages.length - 1
-        ];
-
-    if (
-        String(oldLast?.id) !==
-        String(newLast?.id)
-    ) {
-        return true;
-    }
-
-    /*
-     * Read status change detect.
-     */
-
-    for (
-        let i = 0;
-        i < newMessages.length;
-        i++
-    ) {
-
-        if (
-            Boolean(
-                oldMessages[i]?.read
-            ) !==
-            Boolean(
-                newMessages[i]?.read
-            )
-        ) {
-
-            return true;
-        }
-    }
-
-    return false;
 }
 
 
@@ -433,11 +338,36 @@ function messagesChanged(
    HEADER
 ========================================================= */
 
-function updateChatHeader(user) {
+function setHeaderLoading() {
 
-    if (!user) {
-        return;
+    const name =
+        $("selectedName");
+
+    const status =
+        $("selectedStatus");
+
+
+    if (name) {
+
+        name.textContent =
+            "Loading...";
+
     }
+
+
+    if (status) {
+
+        status.textContent =
+            "Connecting...";
+
+    }
+
+}
+
+
+function updateChatHeader(
+    user
+) {
 
     const avatar =
         $("selectedAvatar");
@@ -448,17 +378,19 @@ function updateChatHeader(user) {
     const status =
         $("selectedStatus");
 
+
     const photo =
         user.profile_photo ||
         user.avatar ||
         user.photo ||
         "";
 
+
     const userName =
         user.name ||
-        user.full_name ||
         user.username ||
         "Usanex User";
+
 
     if (avatar) {
 
@@ -467,13 +399,17 @@ function updateChatHeader(user) {
 
         avatar.alt =
             userName;
+
     }
+
 
     if (name) {
 
         name.textContent =
             userName;
+
     }
+
 
     if (status) {
 
@@ -481,7 +417,9 @@ function updateChatHeader(user) {
             user.online
                 ? "Online"
                 : "Usanex";
+
     }
+
 }
 
 
@@ -494,26 +432,28 @@ function renderMessages() {
     const container =
         $("messages");
 
+
     if (!container) {
+
         return;
+
     }
 
-    /*
-     * Save scroll position.
-     */
-
-    const wasNearBottom =
-        isNearBottom(container);
 
     container.innerHTML = "";
+
 
     if (
         chatState.messages.length === 0
     ) {
 
         container.innerHTML = `
+
             <div class="empty-chat">
-                <div class="empty-chat-icon">💬</div>
+
+                <div class="empty-chat-icon">
+                    💬
+                </div>
 
                 <strong>
                     Start a conversation
@@ -522,21 +462,36 @@ function renderMessages() {
                 <span>
                     Send a message to start chatting.
                 </span>
+
             </div>
+
         `;
 
         return;
+
     }
+
 
     let lastDate = "";
 
+
     chatState.messages.forEach(
         message => {
+
+            if (
+                message.is_deleted
+            ) {
+
+                return;
+
+            }
+
 
             const date =
                 formatDate(
                     message.created_at
                 );
+
 
             if (
                 date !== lastDate
@@ -557,26 +512,24 @@ function renderMessages() {
                     day
                 );
 
-                lastDate = date;
+                lastDate =
+                    date;
+
             }
+
 
             container.appendChild(
                 createMessageBubble(
                     message
                 )
             );
+
         }
     );
 
-    /*
-     * New message aaye to bottom.
-     * User purane messages dekh raha ho
-     * to uski position disturb nahi hogi.
-     */
 
-    if (wasNearBottom) {
-        scrollMessages();
-    }
+    scrollMessages();
+
 }
 
 
@@ -584,43 +537,52 @@ function renderMessages() {
    MESSAGE BUBBLE
 ========================================================= */
 
-function createMessageBubble(message) {
+function createMessageBubble(
+    message
+) {
 
     const wrapper =
         document.createElement(
             "div"
         );
 
+
     const senderId =
         String(
-            message.sender_id ?? ""
+            message.sender_id || ""
         );
+
 
     const currentId =
         String(
-            chatState.currentUser?.id ??
+            chatState.currentUser?.id ||
             ""
         );
 
+
     const isMine =
         senderId === currentId;
+
 
     wrapper.className =
         isMine
             ? "message-row mine"
             : "message-row received";
 
+
     const bubble =
         document.createElement(
             "div"
         );
 
+
     bubble.className =
         "message-bubble";
 
-    /*
-     * IMAGE
-     */
+
+    /* =====================================================
+       IMAGE
+    ===================================================== */
 
     if (
         message.media_url &&
@@ -632,82 +594,109 @@ function createMessageBubble(message) {
                 "img"
             );
 
-        image.src =
-            message.media_url;
-
-        image.loading =
-            "lazy";
 
         image.className =
             "chat-image";
 
+
+        image.src =
+            message.media_url;
+
+
         image.alt =
-            "Image";
+            "Photo";
+
+
+        image.loading =
+            "lazy";
+
+
+        image.decoding =
+            "async";
+
 
         image.addEventListener(
             "click",
             () => {
 
-                window.open(
-                    message.media_url,
-                    "_blank"
+                openFullImage(
+                    message.media_url
                 );
 
             }
         );
 
+
         bubble.appendChild(
             image
         );
+
     }
 
-    /*
-     * TEXT
-     */
 
-    const content =
-        message.content ??
-        message.message ??
-        "";
+    /* =====================================================
+       TEXT
+    ===================================================== */
 
-    if (content) {
+    if (
+        message.content ||
+        message.message
+    ) {
 
         const text =
             document.createElement(
                 "div"
             );
 
+
         text.className =
             "message-text";
 
+
         text.textContent =
-            content;
+            safeText(
+                message.content ||
+                message.message
+            );
+
 
         bubble.appendChild(
             text
         );
+
     }
 
-    /*
-     * TIME
-     */
+
+    /* =====================================================
+       META
+    ===================================================== */
 
     const meta =
         document.createElement(
             "div"
         );
 
+
     meta.className =
         "message-meta";
 
-    meta.textContent =
+
+    const time =
+        document.createElement(
+            "span"
+        );
+
+
+    time.textContent =
         formatTime(
             message.created_at
         );
 
-    /*
-     * READ TICKS
-     */
+
+    meta.appendChild(
+        time
+    );
+
 
     if (isMine) {
 
@@ -716,223 +705,276 @@ function createMessageBubble(message) {
                 "span"
             );
 
+
         ticks.className =
             "message-ticks";
 
+
         ticks.textContent =
             message.read
-                ? " ✓✓"
-                : " ✓";
+                ? "✓✓"
+                : "✓";
+
 
         meta.appendChild(
             ticks
         );
+
     }
+
 
     bubble.appendChild(
         meta
     );
 
+
     wrapper.appendChild(
         bubble
     );
 
+
     return wrapper;
+
 }
 
 
 /* =========================================================
-   SEND MESSAGE
+   FULL HD IMAGE VIEWER
+========================================================= */
+
+function openFullImage(
+    imageUrl
+) {
+
+    const viewer =
+        document.createElement(
+            "div"
+        );
+
+
+    viewer.className =
+        "usanex-image-viewer";
+
+
+    viewer.innerHTML = `
+
+        <button
+            type="button"
+            class="image-viewer-close"
+            aria-label="Close"
+        >
+            ×
+        </button>
+
+        <img
+            src="${escapeHtml(imageUrl)}"
+            alt="HD photo"
+        />
+
+    `;
+
+
+    document.body.appendChild(
+        viewer
+    );
+
+
+    const close =
+        () => {
+
+            viewer.remove();
+
+        };
+
+
+    viewer
+        .querySelector(
+            ".image-viewer-close"
+        )
+        ?.addEventListener(
+            "click",
+            close
+        );
+
+
+    viewer.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === viewer
+            ) {
+
+                close();
+
+            }
+
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        function escapeViewer(event) {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                close();
+
+                document.removeEventListener(
+                    "keydown",
+                    escapeViewer
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SEND TEXT MESSAGE
 ========================================================= */
 
 async function sendMessage() {
 
     if (chatState.sending) {
+
         return;
+
     }
+
 
     const input =
         $("messageInput");
 
+
     if (!input) {
+
         return;
+
     }
 
-    const content =
+
+    const message =
         input.value.trim();
 
-    if (!content) {
+
+    if (!message) {
+
         return;
+
     }
 
-    const receiverId =
-        chatState.selectedUserId;
 
-    if (!receiverId) {
+    if (
+        !chatState.selectedUserId
+    ) {
 
         alert(
             "Please select a chat first."
         );
 
         return;
+
     }
 
-    chatState.sending = true;
+
+    chatState.sending =
+        true;
+
 
     const sendButton =
         $("sendButton");
 
+
     if (sendButton) {
-        sendButton.disabled = true;
+
+        sendButton.disabled =
+            true;
+
     }
 
-    /*
-     * IMPORTANT:
-     * chat.py FormData expect karta hai.
-     */
-
-    const formData =
-        new FormData();
-
-    formData.append(
-        "receiver_id",
-        receiverId
-    );
-
-    formData.append(
-        "content",
-        content
-    );
-
-    /*
-     * Instant UI.
-     *
-     * User ko message turant dikhega.
-     */
-
-    const optimisticMessage = {
-
-        id:
-            "temp-" +
-            Date.now(),
-
-        sender_id:
-            chatState.currentUser?.id,
-
-        receiver_id:
-            receiverId,
-
-        content:
-            content,
-
-        message:
-            content,
-
-        media_url:
-            null,
-
-        media_type:
-            null,
-
-        read:
-            false,
-
-        created_at:
-            new Date().toISOString(),
-
-        optimistic:
-            true
-    };
-
-    chatState.messages.push(
-        optimisticMessage
-    );
-
-    input.value = "";
-
-    renderMessages();
-
-    scrollMessages();
 
     try {
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "receiver_id",
+            chatState.selectedUserId
+        );
+
+
+        formData.append(
+            "content",
+            message
+        );
+
 
         const response =
             await fetch(
                 "/api/chat/send",
                 {
                     method: "POST",
+
                     credentials: "include",
+
                     body: formData
                 }
             );
 
-        if (response.status === 401) {
+
+        if (
+            response.status === 401
+        ) {
 
             window.location.href =
                 "/login";
 
             return;
+
         }
+
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => null
+                );
+
 
         if (!response.ok) {
 
-            const errorData =
-                await response
-                    .json()
-                    .catch(() => null);
-
-            /*
-             * Optimistic message remove.
-             */
-
-            chatState.messages =
-                chatState.messages.filter(
-                    message =>
-                        message.id !==
-                        optimisticMessage.id
-                );
-
-            renderMessages();
-
             throw new Error(
-                errorData?.detail ||
+                data?.detail ||
                 "Message could not be sent."
             );
+
         }
 
-        const data =
-            await response.json();
-
-        /*
-         * Server message mil gaya.
-         */
 
         if (data?.message) {
 
-            const index =
-                chatState.messages.findIndex(
-                    message =>
-                        message.id ===
-                        optimisticMessage.id
-                );
+            chatState.messages.push(
+                data.message
+            );
 
-            if (index !== -1) {
-
-                chatState.messages[
-                    index
-                ] = data.message;
-
-            } else {
-
-                chatState.messages.push(
-                    data.message
-                );
-            }
-
-            renderMessages();
-
-            scrollMessages();
         }
+
+
+        input.value = "";
+
+
+        renderMessages();
+
 
         input.focus();
 
@@ -943,6 +985,7 @@ async function sendMessage() {
             error
         );
 
+
         alert(
             error.message ||
             "Unable to send message."
@@ -950,12 +993,270 @@ async function sendMessage() {
 
     } finally {
 
-        chatState.sending = false;
+        chatState.sending =
+            false;
+
 
         if (sendButton) {
-            sendButton.disabled = false;
+
+            sendButton.disabled =
+                false;
+
         }
+
     }
+
+}
+
+
+/* =========================================================
+   SEND HD IMAGE
+========================================================= */
+
+async function sendImage(
+    file
+) {
+
+    if (
+        chatState.uploading
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !chatState.selectedUserId
+    ) {
+
+        alert(
+            "Please select a chat first."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !file ||
+        !file.type.startsWith(
+            "image/"
+        )
+    ) {
+
+        alert(
+            "Please select an image."
+        );
+
+        return;
+
+    }
+
+
+    /* -----------------------------------------------------
+       25 MB FRONTEND CHECK
+    ----------------------------------------------------- */
+
+    const maxSize =
+        25 * 1024 * 1024;
+
+
+    if (
+        file.size > maxSize
+    ) {
+
+        alert(
+            "Photo must be 25 MB or smaller."
+        );
+
+        return;
+
+    }
+
+
+    chatState.uploading =
+        true;
+
+
+    showUploadStatus(
+        "Uploading HD photo..."
+    );
+
+
+    try {
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "receiver_id",
+            chatState.selectedUserId
+        );
+
+
+        formData.append(
+            "content",
+            ""
+        );
+
+
+        /*
+         * IMPORTANT:
+         *
+         * File is appended directly.
+         *
+         * No resize.
+         * No canvas.
+         * No compression.
+         *
+         * Original HD image is preserved.
+         */
+
+        formData.append(
+            "file",
+            file,
+            file.name
+        );
+
+
+        const response =
+            await fetch(
+                "/api/chat/send",
+                {
+                    method: "POST",
+
+                    credentials: "include",
+
+                    body: formData
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "/login";
+
+            return;
+
+        }
+
+
+        const data =
+            await response
+                .json()
+                .catch(
+                    () => null
+                );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data?.detail ||
+                "Photo upload failed."
+            );
+
+        }
+
+
+        if (data?.message) {
+
+            chatState.messages.push(
+                data.message
+            );
+
+        }
+
+
+        renderMessages();
+
+    } catch (error) {
+
+        console.error(
+            "Image upload error:",
+            error
+        );
+
+
+        alert(
+            error.message ||
+            "Unable to upload photo."
+        );
+
+    } finally {
+
+        chatState.uploading =
+            false;
+
+
+        hideUploadStatus();
+
+    }
+
+}
+
+
+/* =========================================================
+   UPLOAD STATUS
+========================================================= */
+
+function showUploadStatus(
+    text
+) {
+
+    let status =
+        $("chatUploadStatus");
+
+
+    if (!status) {
+
+        status =
+            document.createElement(
+                "div"
+            );
+
+        status.id =
+            "chatUploadStatus";
+
+        status.className =
+            "chat-upload-status";
+
+        document.body.appendChild(
+            status
+        );
+
+    }
+
+
+    status.textContent =
+        text;
+
+
+    status.style.display =
+        "block";
+
+}
+
+
+function hideUploadStatus() {
+
+    const status =
+        $("chatUploadStatus");
+
+
+    if (status) {
+
+        status.style.display =
+            "none";
+
+    }
+
 }
 
 
@@ -968,8 +1269,10 @@ function setupComposer() {
     const composer =
         $("composer");
 
+
     const input =
         $("messageInput");
+
 
     if (composer) {
 
@@ -980,9 +1283,12 @@ function setupComposer() {
                 event.preventDefault();
 
                 sendMessage();
+
             }
         );
+
     }
+
 
     if (input) {
 
@@ -998,33 +1304,14 @@ function setupComposer() {
                     event.preventDefault();
 
                     sendMessage();
+
                 }
+
             }
         );
 
-        input.addEventListener(
-            "input",
-            handleTyping
-        );
     }
-}
 
-
-/* =========================================================
-   TYPING
-========================================================= */
-
-function handleTyping() {
-
-    clearTimeout(
-        chatState.typingTimer
-    );
-
-    chatState.typingTimer =
-        setTimeout(
-            () => {},
-            1000
-        );
 }
 
 
@@ -1037,12 +1324,20 @@ function setupEmoji() {
     const button =
         $("emojiButton");
 
+
     const input =
         $("messageInput");
 
-    if (!button || !input) {
+
+    if (
+        !button ||
+        !input
+    ) {
+
         return;
+
     }
+
 
     button.addEventListener(
         "click",
@@ -1052,13 +1347,15 @@ function setupEmoji() {
                 "😊";
 
             input.focus();
+
         }
     );
+
 }
 
 
 /* =========================================================
-   ATTACHMENT
+   ATTACHMENT / GALLERY
 ========================================================= */
 
 function setupAttachment() {
@@ -1066,46 +1363,74 @@ function setupAttachment() {
     const button =
         $("attachButton");
 
+
     const fileInput =
         $("fileInput");
 
-    if (!button || !fileInput) {
+
+    if (
+        !button ||
+        !fileInput
+    ) {
+
         return;
+
     }
+
 
     button.addEventListener(
         "click",
         () => {
 
-            fileInput.accept =
-                "image/*";
-
             fileInput.removeAttribute(
                 "capture"
             );
 
+
+            /*
+             * Gallery only
+             */
+
+            fileInput.accept =
+                "image/jpeg,image/png,image/webp,image/gif";
+
+
             fileInput.click();
+
         }
     );
+
 
     fileInput.addEventListener(
         "change",
         async () => {
 
-            if (
-                !fileInput.files ||
-                !fileInput.files.length
-            ) {
+            const file =
+                fileInput.files?.[0];
+
+
+            if (!file) {
+
                 return;
+
             }
 
+
             await sendImage(
-                fileInput.files[0]
+                file
             );
 
+
+            /*
+             * Reset input so same
+             * photo can be selected again.
+             */
+
             fileInput.value = "";
+
         }
     );
+
 }
 
 
@@ -1118,12 +1443,20 @@ function setupCamera() {
     const button =
         $("cameraButton");
 
+
     const fileInput =
         $("fileInput");
 
-    if (!button || !fileInput) {
+
+    if (
+        !button ||
+        !fileInput
+    ) {
+
         return;
+
     }
+
 
     button.addEventListener(
         "click",
@@ -1132,132 +1465,18 @@ function setupCamera() {
             fileInput.accept =
                 "image/*";
 
+
             fileInput.setAttribute(
                 "capture",
                 "environment"
             );
 
+
             fileInput.click();
+
         }
     );
-}
 
-
-/* =========================================================
-   SEND IMAGE
-========================================================= */
-
-async function sendImage(file) {
-
-    if (
-        !file ||
-        !chatState.selectedUserId
-    ) {
-        return;
-    }
-
-    if (
-        !file.type.startsWith(
-            "image/"
-        )
-    ) {
-
-        alert(
-            "Only image files are allowed."
-        );
-
-        return;
-    }
-
-    if (
-        file.size >
-        10 * 1024 * 1024
-    ) {
-
-        alert(
-            "Image must be 10 MB or smaller."
-        );
-
-        return;
-    }
-
-    const formData =
-        new FormData();
-
-    formData.append(
-        "receiver_id",
-        chatState.selectedUserId
-    );
-
-    formData.append(
-        "content",
-        ""
-    );
-
-    formData.append(
-        "file",
-        file
-    );
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/chat/send",
-                {
-                    method: "POST",
-                    credentials: "include",
-                    body: formData
-                }
-            );
-
-        if (response.status === 401) {
-
-            window.location.href =
-                "/login";
-
-            return;
-        }
-
-        if (!response.ok) {
-
-            const error =
-                await response
-                    .json()
-                    .catch(() => null);
-
-            throw new Error(
-                error?.detail ||
-                "Image could not be sent."
-            );
-        }
-
-        const data =
-            await response.json();
-
-        if (data?.message) {
-
-            chatState.messages.push(
-                data.message
-            );
-
-            renderMessages();
-
-            scrollMessages();
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Image send error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to send image."
-        );
-    }
 }
 
 
@@ -1270,48 +1489,20 @@ function setupHeaderButtons() {
     const menu =
         $("conversationMenu");
 
+
     if (menu) {
 
         menu.addEventListener(
             "click",
             showConversationMenu
         );
+
     }
 
-    const video =
-        $("videoCallButton");
-
-    if (video) {
-
-        video.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Video call will be available soon."
-                );
-            }
-        );
-    }
-
-    const voice =
-        $("voiceCallButton");
-
-    if (voice) {
-
-        voice.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Voice call will be available soon."
-                );
-            }
-        );
-    }
 
     const avatar =
         $("selectedAvatarButton");
+
 
     if (avatar) {
 
@@ -1328,10 +1519,54 @@ function setupHeaderButtons() {
                         encodeURIComponent(
                             chatState.selectedUserId
                         );
+
                 }
+
             }
         );
+
     }
+
+
+    const voice =
+        $("voiceCallButton");
+
+
+    if (voice) {
+
+        voice.addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Voice calling will be added in the next stage."
+                );
+
+            }
+        );
+
+    }
+
+
+    const video =
+        $("videoCallButton");
+
+
+    if (video) {
+
+        video.addEventListener(
+            "click",
+            () => {
+
+                alert(
+                    "Video calling will be added in the next stage."
+                );
+
+            }
+        );
+
+    }
+
 }
 
 
@@ -1341,25 +1576,18 @@ function setupHeaderButtons() {
 
 function showConversationMenu() {
 
-    const oldMenu =
-        document.querySelector(
-            ".chat-popup-menu"
-        );
-
-    if (oldMenu) {
-        oldMenu.remove();
-        return;
-    }
-
     const menu =
         document.createElement(
             "div"
         );
 
+
     menu.className =
         "chat-popup-menu";
 
+
     menu.innerHTML = `
+
         <button type="button">
             Search messages
         </button>
@@ -1379,21 +1607,30 @@ function showConversationMenu() {
         <button type="button">
             Cancel
         </button>
+
     `;
+
 
     document.body.appendChild(
         menu
     );
+
 
     const cancel =
         menu.querySelector(
             "button:last-child"
         );
 
+
     cancel?.addEventListener(
         "click",
-        () => menu.remove()
+        () => {
+
+            menu.remove();
+
+        }
     );
+
 
     setTimeout(
         () => {
@@ -1414,17 +1651,21 @@ function showConversationMenu() {
                             "click",
                             closeMenu
                         );
+
                     }
+
                 }
             );
+
         },
         0
     );
+
 }
 
 
 /* =========================================================
-   BACK BUTTON
+   BACK
 ========================================================= */
 
 function setupBackButton() {
@@ -1432,20 +1673,24 @@ function setupBackButton() {
     const button =
         $("backButton");
 
+
     if (!button) {
+
         return;
+
     }
+
 
     button.addEventListener(
         "click",
         () => {
 
-            stopFastRefresh();
-
             window.location.href =
                 "/home";
+
         }
     );
+
 }
 
 
@@ -1466,20 +1711,23 @@ function setupNavigation() {
                     "click",
                     () => {
 
-                        stopFastRefresh();
-
                         const page =
                             button.dataset.page;
+
 
                         if (page) {
 
                             window.location.href =
                                 page;
+
                         }
+
                     }
                 );
+
             }
         );
+
 }
 
 
@@ -1492,26 +1740,37 @@ function showEmptyConversation() {
     const name =
         $("selectedName");
 
+
     const status =
         $("selectedStatus");
 
-    if (name) {
-        name.textContent =
-            "Select a chat";
-    }
-
-    if (status) {
-        status.textContent =
-            "Usanex";
-    }
 
     const messages =
         $("messages");
 
+
+    if (name) {
+
+        name.textContent =
+            "Select a chat";
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            "Usanex";
+
+    }
+
+
     if (messages) {
 
         messages.innerHTML = `
+
             <div class="empty-chat">
+
                 <div class="empty-chat-icon">
                     💬
                 </div>
@@ -1523,43 +1782,76 @@ function showEmptyConversation() {
                 <span>
                     Open a connected user's card from Home.
                 </span>
+
             </div>
+
         `;
+
     }
+
 }
 
 
 /* =========================================================
-   ERROR
+   CHAT ERROR
 ========================================================= */
 
-function showChatError(message) {
+function showChatError(
+    message
+) {
 
     const container =
         $("messages");
 
+
     if (!container) {
+
         return;
+
     }
 
+
     container.innerHTML = `
+
         <div class="empty-chat">
+
             <div class="empty-chat-icon">
                 ⚠️
             </div>
 
             <strong>
-                Chat unavailable
+                Unable to load chat
             </strong>
 
             <span>
                 ${escapeHtml(
                     message ||
-                    "Something went wrong."
+                    "Please try again."
                 )}
             </span>
+
+            <button
+                type="button"
+                id="retryChatButton"
+            >
+                Retry
+            </button>
+
         </div>
+
     `;
+
+
+    $("retryChatButton")
+        ?.addEventListener(
+            "click",
+            () => {
+
+                loadChat();
+
+            }
+        );
+
 }
 
 
@@ -1567,22 +1859,31 @@ function showChatError(message) {
    TIME
 ========================================================= */
 
-function formatTime(value) {
+function formatTime(
+    value
+) {
 
     if (!value) {
+
         return "";
+
     }
+
 
     const date =
         new Date(value);
+
 
     if (
         Number.isNaN(
             date.getTime()
         )
     ) {
+
         return "";
+
     }
+
 
     return date.toLocaleTimeString(
         [],
@@ -1591,6 +1892,7 @@ function formatTime(value) {
             minute: "2-digit"
         }
     );
+
 }
 
 
@@ -1598,32 +1900,45 @@ function formatTime(value) {
    DATE
 ========================================================= */
 
-function formatDate(value) {
+function formatDate(
+    value
+) {
 
     if (!value) {
+
         return "Today";
+
     }
+
 
     const date =
         new Date(value);
+
 
     if (
         Number.isNaN(
             date.getTime()
         )
     ) {
+
         return "Today";
+
     }
+
 
     const today =
         new Date();
+
 
     if (
         date.toDateString() ===
         today.toDateString()
     ) {
+
         return "Today";
+
     }
+
 
     return date.toLocaleDateString(
         [],
@@ -1633,6 +1948,7 @@ function formatDate(value) {
             year: "numeric"
         }
     );
+
 }
 
 
@@ -1645,41 +1961,24 @@ function scrollMessages() {
     const container =
         $("messages");
 
+
     if (!container) {
+
         return;
+
     }
+
 
     requestAnimationFrame(
         () => {
 
             container.scrollTop =
                 container.scrollHeight;
+
         }
     );
+
 }
-
-
-function isNearBottom(container) {
-
-    return (
-        container.scrollHeight -
-        container.scrollTop -
-        container.clientHeight
-    ) < 120;
-}
-
-
-/* =========================================================
-   CLEANUP
-========================================================= */
-
-window.addEventListener(
-    "beforeunload",
-    () => {
-
-        stopFastRefresh();
-    }
-);
 
 
 /* =========================================================
@@ -1687,5 +1986,5 @@ window.addEventListener(
 ========================================================= */
 
 console.log(
-    "Usanex Fast Chat JS loaded."
+    "Usanex HD Chat JS loaded successfully."
 );
