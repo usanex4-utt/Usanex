@@ -6,7 +6,6 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import uuid
-import json
 
 from fastapi import (
     APIRouter,
@@ -16,10 +15,7 @@ from fastapi import (
     HTTPException,
     Request,
     UploadFile,
-    WebSocket,
-    WebSocketDisconnect,
 )
-
 from sqlalchemy.orm import Session
 
 from ..database.database import SessionLocal
@@ -30,19 +26,11 @@ from ..database.models import (
 )
 
 
-# =========================================================
-# ROUTER
-# =========================================================
-
 router = APIRouter(
     prefix="/api/chat",
     tags=["Chat"],
 )
 
-
-# =========================================================
-# SESSION COOKIE
-# =========================================================
 
 SESSION_COOKIE_NAME = "usanex_session"
 
@@ -73,96 +61,6 @@ def utc_now():
 
 
 # =========================================================
-# REAL-TIME CONNECTION MANAGER
-# =========================================================
-
-class ChatConnectionManager:
-
-    def __init__(self):
-
-        self.connections = {}
-
-
-    async def connect(
-        self,
-        user_id: int,
-        websocket: WebSocket,
-    ):
-
-        await websocket.accept()
-
-        if user_id not in self.connections:
-
-            self.connections[user_id] = set()
-
-        self.connections[user_id].add(
-            websocket
-        )
-
-
-    def disconnect(
-        self,
-        user_id: int,
-        websocket: WebSocket,
-    ):
-
-        if user_id not in self.connections:
-            return
-
-        self.connections[user_id].discard(
-            websocket
-        )
-
-        if not self.connections[user_id]:
-
-            del self.connections[user_id]
-
-
-    async def send_to_user(
-        self,
-        user_id: int,
-        data: dict,
-    ):
-
-        sockets = list(
-            self.connections.get(
-                user_id,
-                set()
-            )
-        )
-
-        dead = []
-
-        for websocket in sockets:
-
-            try:
-
-                await websocket.send_json(
-                    data
-                )
-
-            except Exception:
-
-                dead.append(
-                    websocket
-                )
-
-        for websocket in dead:
-
-            self.disconnect(
-                user_id,
-                websocket
-            )
-
-
-# =========================================================
-# GLOBAL CONNECTION MANAGER
-# =========================================================
-
-chat_manager = ChatConnectionManager()
-
-
-# =========================================================
 # CURRENT USER
 # =========================================================
 
@@ -170,13 +68,11 @@ def get_current_user(
     request: Request,
     db: Session,
 ):
-
     session_token = request.cookies.get(
         SESSION_COOKIE_NAME
     )
 
     if not session_token:
-
         raise HTTPException(
             status_code=401,
             detail="Not authenticated.",
@@ -191,8 +87,7 @@ def get_current_user(
         .first()
     )
 
-    if session is None:
-
+    if not session:
         raise HTTPException(
             status_code=401,
             detail="Invalid session.",
@@ -201,14 +96,11 @@ def get_current_user(
     expires_at = session.expires_at
 
     if expires_at.tzinfo is None:
-
         expires_at = expires_at.replace(
             tzinfo=timezone.utc
         )
 
-    if datetime.now(
-        timezone.utc
-    ) >= expires_at:
+    if datetime.now(timezone.utc) >= expires_at:
 
         db.delete(session)
         db.commit()
@@ -226,7 +118,10 @@ def get_current_user(
         .first()
     )
 
-    if user is None:
+    if not user:
+
+        db.delete(session)
+        db.commit()
 
         raise HTTPException(
             status_code=401,
@@ -237,70 +132,18 @@ def get_current_user(
 
 
 # =========================================================
-# WEBSOCKET CURRENT USER
-# =========================================================
-
-def get_websocket_user(
-    websocket: WebSocket,
-    db: Session,
-):
-
-    session_token = websocket.cookies.get(
-        SESSION_COOKIE_NAME
-    )
-
-    if not session_token:
-
-        return None
-
-    session = (
-        db.query(UserSession)
-        .filter(
-            UserSession.session_token
-            == session_token
-        )
-        .first()
-    )
-
-    if session is None:
-        return None
-
-    expires_at = session.expires_at
-
-    if expires_at.tzinfo is None:
-
-        expires_at = expires_at.replace(
-            tzinfo=timezone.utc
-        )
-
-    if datetime.now(
-        timezone.utc
-    ) >= expires_at:
-
-        return None
-
-    return (
-        db.query(User)
-        .filter(
-            User.id == session.user_id
-        )
-        .first()
-    )
-
-
-# =========================================================
 # FIND USER
 # =========================================================
 
 def find_user(
     db: Session,
-    user_identifier: str,
+    identifier: str,
 ):
 
     user = (
         db.query(User)
         .filter(
-            User.user_id == user_identifier
+            User.user_id == identifier
         )
         .first()
     )
@@ -309,52 +152,35 @@ def find_user(
         return user
 
     try:
+        numeric_id = int(identifier)
 
-        numeric_id = int(
-            user_identifier
+        return (
+            db.query(User)
+            .filter(
+                User.id == numeric_id
+            )
+            .first()
         )
 
     except (
         ValueError,
         TypeError,
     ):
-
         return None
-
-    return (
-        db.query(User)
-        .filter(
-            User.id == numeric_id
-        )
-        .first()
-    )
 
 
 # =========================================================
 # SERIALIZE USER
 # =========================================================
 
-def serialize_user(
-    user: User,
-):
+def serialize_user(user):
 
     return {
-
-        "id":
-            user.id,
-
-        "user_id":
-            user.user_id,
-
-        "username":
-            user.username,
-
-        "name":
-            user.name,
-
-        "profile_photo":
-            user.profile_photo,
-
+        "id": user.id,
+        "user_id": user.user_id,
+        "username": user.username,
+        "name": user.name,
+        "profile_photo": user.profile_photo,
     }
 
 
@@ -362,55 +188,40 @@ def serialize_user(
 # SERIALIZE MESSAGE
 # =========================================================
 
-def serialize_message(
-    message: ChatMessage,
-):
+def serialize_message(message):
 
     return {
+        "id": message.id,
 
-        "id":
-            message.id,
+        "sender_id": message.sender_id,
 
-        "sender_id":
-            message.sender_id,
+        "receiver_id": message.receiver_id,
 
-        "receiver_id":
-            message.receiver_id,
+        "content": message.content,
 
-        "content":
-            message.content,
+        "message": message.content,
 
-        "message":
-            message.content,
+        "media_url": message.media_url,
 
-        "media_url":
-            message.media_url,
+        "media_type": message.media_type,
 
-        "media_type":
-            message.media_type,
+        "read": bool(
+            message.is_read
+        ),
 
-        "read":
-            bool(
-                message.is_read
-            ),
+        "is_read": bool(
+            message.is_read
+        ),
 
-        "is_read":
-            bool(
-                message.is_read
-            ),
+        "is_deleted": bool(
+            message.is_deleted
+        ),
 
-        "is_deleted":
-            bool(
-                message.is_deleted
-            ),
-
-        "created_at":
-            (
-                message.created_at.isoformat()
-                if message.created_at
-                else None
-            ),
-
+        "created_at": (
+            message.created_at.isoformat()
+            if message.created_at
+            else None
+        ),
     }
 
 
@@ -418,28 +229,14 @@ def serialize_message(
 # CHAT HEALTH
 # =========================================================
 
-@router.get(
-    "/health/status"
-)
+@router.get("/health/status")
 def chat_health():
 
     return {
-
-        "success":
-            True,
-
-        "app":
-            "Usanex",
-
-        "service":
-            "chat",
-
-        "status":
-            "online",
-
-        "realtime":
-            "websocket",
-
+        "success": True,
+        "app": "Usanex",
+        "service": "chat",
+        "status": "online",
     }
 
 
@@ -447,9 +244,7 @@ def chat_health():
 # GET CHAT
 # =========================================================
 
-@router.get(
-    "/{user_id}"
-)
+@router.get("/{user_id}")
 def get_chat(
     user_id: str,
     request: Request,
@@ -457,26 +252,23 @@ def get_chat(
 ):
 
     current_user = get_current_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
     chat_user = find_user(
-        db=db,
-        user_identifier=user_id,
+        db,
+        user_id,
     )
 
-    if chat_user is None:
+    if not chat_user:
 
         raise HTTPException(
             status_code=404,
             detail="Chat user not found.",
         )
 
-    if (
-        chat_user.id
-        == current_user.id
-    ):
+    if chat_user.id == current_user.id:
 
         raise HTTPException(
             status_code=400,
@@ -519,7 +311,9 @@ def get_chat(
         .all()
     )
 
-    unread_messages = (
+    # Mark received messages as read
+
+    unread = (
         db.query(ChatMessage)
         .filter(
             ChatMessage.sender_id
@@ -538,18 +332,14 @@ def get_chat(
         .all()
     )
 
-    for message in unread_messages:
-
+    for message in unread:
         message.is_read = 1
 
-    if unread_messages:
-
+    if unread:
         db.commit()
 
     return {
-
-        "success":
-            True,
+        "success": True,
 
         "current_user":
             serialize_user(
@@ -562,25 +352,19 @@ def get_chat(
             ),
 
         "messages": [
-
             serialize_message(
                 message
             )
-
             for message in messages
-
         ],
-
     }
 
 
 # =========================================================
-# SEND MESSAGE — HTTP
+# SEND MESSAGE
 # =========================================================
 
-@router.post(
-    "/send"
-)
+@router.post("/send")
 async def send_message(
     request: Request,
 
@@ -598,30 +382,27 @@ async def send_message(
 ):
 
     current_user = get_current_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
     receiver = find_user(
-        db=db,
-        user_identifier=receiver_id,
+        db,
+        receiver_id,
     )
 
-    if receiver is None:
+    if not receiver:
 
         raise HTTPException(
             status_code=404,
             detail="Receiver not found.",
         )
 
-    if (
-        receiver.id
-        == current_user.id
-    ):
+    if receiver.id == current_user.id:
 
         raise HTTPException(
             status_code=400,
-            detail="You cannot send a message to yourself.",
+            detail="You cannot message yourself.",
         )
 
     clean_content = (
@@ -633,20 +414,17 @@ async def send_message(
     media_url = None
     media_type = None
 
-    # -----------------------------------------------------
-    # IMAGE
-    # -----------------------------------------------------
+    # =====================================================
+    # HD IMAGE UPLOAD
+    # =====================================================
 
     if file:
 
-        if not file.content_type:
+        content_type = (
+            file.content_type or ""
+        ).lower()
 
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid file.",
-            )
-
-        if not file.content_type.startswith(
+        if not content_type.startswith(
             "image/"
         ):
 
@@ -655,18 +433,54 @@ async def send_message(
                 detail="Only image files are allowed.",
             )
 
-        file_bytes = await file.read()
+        # -------------------------------------------------
+        # 25 MB MAXIMUM
+        #
+        # Original image is NOT resized.
+        # Original quality is preserved.
+        # -------------------------------------------------
 
         max_size = (
-            10 * 1024 * 1024
+            25 * 1024 * 1024
         )
+
+        file_bytes = await file.read()
 
         if len(file_bytes) > max_size:
 
             raise HTTPException(
                 status_code=400,
-                detail="Image must be 10 MB or smaller.",
+                detail="Image must be 25 MB or smaller.",
             )
+
+        # -------------------------------------------------
+        # SAFE EXTENSION
+        # -------------------------------------------------
+
+        extension = (
+            Path(
+                file.filename or ""
+            ).suffix.lower()
+        )
+
+        allowed_extensions = {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".gif",
+        }
+
+        if extension not in allowed_extensions:
+
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported image format.",
+            )
+
+        # -------------------------------------------------
+        # DIRECTORY
+        # -------------------------------------------------
 
         upload_dir = (
             Path(__file__)
@@ -683,25 +497,9 @@ async def send_message(
             exist_ok=True,
         )
 
-        extension = (
-            Path(
-                file.filename or ""
-            ).suffix.lower()
-        )
-
-        allowed_extensions = {
-
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".gif",
-            ".webp",
-
-        }
-
-        if extension not in allowed_extensions:
-
-            extension = ".jpg"
+        # -------------------------------------------------
+        # UNIQUE NAME
+        # -------------------------------------------------
 
         filename = (
             uuid.uuid4().hex
@@ -713,12 +511,16 @@ async def send_message(
             / filename
         )
 
+        # -------------------------------------------------
+        # ORIGINAL FILE SAVE
+        # -------------------------------------------------
+
         with open(
             file_path,
             "wb",
-        ) as buffer:
+        ) as output:
 
-            buffer.write(
+            output.write(
                 file_bytes
             )
 
@@ -729,9 +531,9 @@ async def send_message(
 
         media_type = "image"
 
-    # -----------------------------------------------------
-    # EMPTY
-    # -----------------------------------------------------
+    # =====================================================
+    # EMPTY MESSAGE
+    # =====================================================
 
     if (
         not clean_content
@@ -743,17 +545,15 @@ async def send_message(
             detail="Message cannot be empty.",
         )
 
-    # -----------------------------------------------------
-    # DATABASE
-    # -----------------------------------------------------
+    # =====================================================
+    # DATABASE MESSAGE
+    # =====================================================
 
     message = ChatMessage(
 
-        sender_id=
-            current_user.id,
+        sender_id=current_user.id,
 
-        receiver_id=
-            receiver.id,
+        receiver_id=receiver.id,
 
         content=(
             clean_content
@@ -761,319 +561,38 @@ async def send_message(
             else None
         ),
 
-        media_url=
-            media_url,
+        media_url=media_url,
 
-        media_type=
-            media_type,
+        media_type=media_type,
 
         is_read=0,
 
         is_deleted=0,
 
-        created_at=
-            utc_now(),
-
+        created_at=utc_now(),
     )
 
-    db.add(
-        message
-    )
+    db.add(message)
 
     db.commit()
 
-    db.refresh(
-        message
-    )
-
-    serialized = serialize_message(
-        message
-    )
-
-    # =====================================================
-    # REAL-TIME DELIVERY
-    # =====================================================
-
-    await chat_manager.send_to_user(
-
-        receiver.id,
-
-        {
-
-            "type":
-                "new_message",
-
-            "message":
-                serialized,
-
-        }
-
-    )
+    db.refresh(message)
 
     return {
-
-        "success":
-            True,
+        "success": True,
 
         "message":
-            serialized,
-
+            serialize_message(
+                message
+            ),
     }
 
 
 # =========================================================
-# WEBSOCKET
-# =========================================================
-#
-# WS /api/chat/ws
-#
-# Browser automatically sends the
-# usanex_session cookie.
-#
+# MARK READ
 # =========================================================
 
-@router.websocket(
-    "/ws"
-)
-async def chat_websocket(
-    websocket: WebSocket,
-):
-
-    db = SessionLocal()
-
-    current_user = None
-
-    try:
-
-        # -------------------------------------------------
-        # AUTHENTICATION
-        # -------------------------------------------------
-
-        current_user = get_websocket_user(
-            websocket,
-            db,
-        )
-
-        if current_user is None:
-
-            await websocket.close(
-                code=1008
-            )
-
-            return
-
-        # -------------------------------------------------
-        # CONNECT
-        # -------------------------------------------------
-
-        await chat_manager.connect(
-            current_user.id,
-            websocket,
-        )
-
-        # -------------------------------------------------
-        # CONNECTED EVENT
-        # -------------------------------------------------
-
-        await websocket.send_json({
-
-            "type":
-                "connected",
-
-            "user_id":
-                current_user.user_id,
-
-        })
-
-        # -------------------------------------------------
-        # LISTEN
-        # -------------------------------------------------
-
-        while True:
-
-            data = await websocket.receive_json()
-
-            if not isinstance(
-                data,
-                dict
-            ):
-
-                continue
-
-            event_type = data.get(
-                "type"
-            )
-
-            # =============================================
-            # PING
-            # =============================================
-
-            if event_type == "ping":
-
-                await websocket.send_json({
-
-                    "type":
-                        "pong",
-
-                })
-
-                continue
-
-            # =============================================
-            # TYPING
-            # =============================================
-
-            if event_type == "typing":
-
-                receiver_id = data.get(
-                    "receiver_id"
-                )
-
-                if not receiver_id:
-                    continue
-
-                receiver = find_user(
-                    db,
-                    str(
-                        receiver_id
-                    )
-                )
-
-                if receiver is None:
-                    continue
-
-                await chat_manager.send_to_user(
-
-                    receiver.id,
-
-                    {
-
-                        "type":
-                            "typing",
-
-                        "sender_id":
-                            current_user.id,
-
-                        "sender_user_id":
-                            current_user.user_id,
-
-                        "typing":
-                            bool(
-                                data.get(
-                                    "typing",
-                                    False
-                                )
-                            ),
-
-                    }
-
-                )
-
-                continue
-
-            # =============================================
-            # READ
-            # =============================================
-
-            if event_type == "read":
-
-                sender_id = data.get(
-                    "sender_id"
-                )
-
-                if not sender_id:
-                    continue
-
-                sender = find_user(
-                    db,
-                    str(
-                        sender_id
-                    )
-                )
-
-                if sender is None:
-                    continue
-
-                unread = (
-                    db.query(
-                        ChatMessage
-                    )
-                    .filter(
-                        ChatMessage.sender_id
-                        == sender.id
-                    )
-                    .filter(
-                        ChatMessage.receiver_id
-                        == current_user.id
-                    )
-                    .filter(
-                        ChatMessage.is_read
-                        == 0
-                    )
-                    .filter(
-                        ChatMessage.is_deleted
-                        == 0
-                    )
-                    .all()
-                )
-
-                for message in unread:
-
-                    message.is_read = 1
-
-                db.commit()
-
-                await chat_manager.send_to_user(
-
-                    sender.id,
-
-                    {
-
-                        "type":
-                            "messages_read",
-
-                        "reader_id":
-                            current_user.id,
-
-                        "reader_user_id":
-                            current_user.user_id,
-
-                    }
-
-                )
-
-                continue
-
-    except WebSocketDisconnect:
-
-        pass
-
-    except Exception as exc:
-
-        print(
-            "Chat WebSocket error:",
-            exc
-        )
-
-    finally:
-
-        if current_user is not None:
-
-            chat_manager.disconnect(
-                current_user.id,
-                websocket,
-            )
-
-        db.close()
-
-
-# =========================================================
-# MARK CHAT AS READ
-# =========================================================
-
-@router.post(
-    "/{user_id}/read"
-)
+@router.post("/{user_id}/read")
 def mark_chat_read(
     user_id: str,
     request: Request,
@@ -1081,16 +600,16 @@ def mark_chat_read(
 ):
 
     current_user = get_current_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
     chat_user = find_user(
-        db=db,
-        user_identifier=user_id,
+        db,
+        user_id,
     )
 
-    if chat_user is None:
+    if not chat_user:
 
         raise HTTPException(
             status_code=404,
@@ -1117,19 +636,13 @@ def mark_chat_read(
     )
 
     for message in messages:
-
         message.is_read = 1
 
     db.commit()
 
     return {
-
-        "success":
-            True,
-
-        "marked_read":
-            len(messages),
-
+        "success": True,
+        "marked_read": len(messages),
     }
 
 
@@ -1147,8 +660,8 @@ def delete_message(
 ):
 
     current_user = get_current_user(
-        request=request,
-        db=db,
+        request,
+        db,
     )
 
     message = (
@@ -1160,7 +673,7 @@ def delete_message(
         .first()
     )
 
-    if message is None:
+    if not message:
 
         raise HTTPException(
             status_code=404,
@@ -1181,40 +694,7 @@ def delete_message(
 
     db.commit()
 
-    # -----------------------------------------------------
-    # REAL-TIME DELETE EVENT
-    # -----------------------------------------------------
-
-    await_data = {
-
-        "type":
-            "message_deleted",
-
-        "message_id":
-            message.id,
-
-        "sender_id":
-            message.sender_id,
-
-        "receiver_id":
-            message.receiver_id,
-
-    }
-
-    # WebSocket delivery is intentionally
-    # handled asynchronously only from
-    # async routes. HTTP delete remains
-    # safe here.
-
     return {
-
-        "success":
-            True,
-
-        "message":
-            "Message deleted.",
-
-        "deleted_message_id":
-            message.id,
-
+        "success": True,
+        "message": "Message deleted.",
     }
