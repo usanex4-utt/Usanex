@@ -6,6 +6,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import uuid
+import json
 
 from fastapi import (
     APIRouter,
@@ -15,7 +16,10 @@ from fastapi import (
     HTTPException,
     Request,
     UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
 )
+
 from sqlalchemy.orm import Session
 
 from ..database.database import SessionLocal
@@ -23,7 +27,6 @@ from ..database.models import (
     User,
     UserSession,
     ChatMessage,
-    UserConnection,
 )
 
 
@@ -40,20 +43,12 @@ router = APIRouter(
 # =========================================================
 # SESSION COOKIE
 # =========================================================
-#
-# IMPORTANT:
-# auth.py भी यही cookie बनाता है:
-#
-#     usanex_session
-#
-# इसलिए Chat में भी यही नाम होना चाहिए.
-# =========================================================
 
 SESSION_COOKIE_NAME = "usanex_session"
 
 
 # =========================================================
-# DATABASE DEPENDENCY
+# DATABASE
 # =========================================================
 
 def get_db():
@@ -61,7 +56,6 @@ def get_db():
 
     try:
         yield db
-
     finally:
         db.close()
 
@@ -71,16 +65,101 @@ def get_db():
 # =========================================================
 
 def utc_now():
-    """
-    Return current UTC time without timezone information.
-    This matches the DateTime fields used in models.py.
-    """
-
     return datetime.now(
         timezone.utc
     ).replace(
         tzinfo=None
     )
+
+
+# =========================================================
+# REAL-TIME CONNECTION MANAGER
+# =========================================================
+
+class ChatConnectionManager:
+
+    def __init__(self):
+
+        self.connections = {}
+
+
+    async def connect(
+        self,
+        user_id: int,
+        websocket: WebSocket,
+    ):
+
+        await websocket.accept()
+
+        if user_id not in self.connections:
+
+            self.connections[user_id] = set()
+
+        self.connections[user_id].add(
+            websocket
+        )
+
+
+    def disconnect(
+        self,
+        user_id: int,
+        websocket: WebSocket,
+    ):
+
+        if user_id not in self.connections:
+            return
+
+        self.connections[user_id].discard(
+            websocket
+        )
+
+        if not self.connections[user_id]:
+
+            del self.connections[user_id]
+
+
+    async def send_to_user(
+        self,
+        user_id: int,
+        data: dict,
+    ):
+
+        sockets = list(
+            self.connections.get(
+                user_id,
+                set()
+            )
+        )
+
+        dead = []
+
+        for websocket in sockets:
+
+            try:
+
+                await websocket.send_json(
+                    data
+                )
+
+            except Exception:
+
+                dead.append(
+                    websocket
+                )
+
+        for websocket in dead:
+
+            self.disconnect(
+                user_id,
+                websocket
+            )
+
+
+# =========================================================
+# GLOBAL CONNECTION MANAGER
+# =========================================================
+
+chat_manager = ChatConnectionManager()
 
 
 # =========================================================
@@ -91,17 +170,6 @@ def get_current_user(
     request: Request,
     db: Session,
 ):
-    """
-    Get currently logged-in user.
-
-    Uses the same session cookie created by auth.py:
-
-        usanex_session
-    """
-
-    # -----------------------------------------------------
-    # READ SESSION COOKIE
-    # -----------------------------------------------------
 
     session_token = request.cookies.get(
         SESSION_COOKIE_NAME
@@ -113,10 +181,6 @@ def get_current_user(
             status_code=401,
             detail="Not authenticated.",
         )
-
-    # -----------------------------------------------------
-    # FIND SESSION
-    # -----------------------------------------------------
 
     session = (
         db.query(UserSession)
@@ -134,10 +198,6 @@ def get_current_user(
             detail="Invalid session.",
         )
 
-    # -----------------------------------------------------
-    # CHECK EXPIRATION
-    # -----------------------------------------------------
-
     expires_at = session.expires_at
 
     if expires_at.tzinfo is None:
@@ -146,11 +206,9 @@ def get_current_user(
             tzinfo=timezone.utc
         )
 
-    now = datetime.now(
+    if datetime.now(
         timezone.utc
-    )
-
-    if now >= expires_at:
+    ) >= expires_at:
 
         db.delete(session)
         db.commit()
@@ -159,10 +217,6 @@ def get_current_user(
             status_code=401,
             detail="Session expired.",
         )
-
-    # -----------------------------------------------------
-    # FIND USER
-    # -----------------------------------------------------
 
     user = (
         db.query(User)
@@ -174,15 +228,64 @@ def get_current_user(
 
     if user is None:
 
-        db.delete(session)
-        db.commit()
-
         raise HTTPException(
             status_code=401,
             detail="User not found.",
         )
 
     return user
+
+
+# =========================================================
+# WEBSOCKET CURRENT USER
+# =========================================================
+
+def get_websocket_user(
+    websocket: WebSocket,
+    db: Session,
+):
+
+    session_token = websocket.cookies.get(
+        SESSION_COOKIE_NAME
+    )
+
+    if not session_token:
+
+        return None
+
+    session = (
+        db.query(UserSession)
+        .filter(
+            UserSession.session_token
+            == session_token
+        )
+        .first()
+    )
+
+    if session is None:
+        return None
+
+    expires_at = session.expires_at
+
+    if expires_at.tzinfo is None:
+
+        expires_at = expires_at.replace(
+            tzinfo=timezone.utc
+        )
+
+    if datetime.now(
+        timezone.utc
+    ) >= expires_at:
+
+        return None
+
+    return (
+        db.query(User)
+        .filter(
+            User.id == session.user_id
+        )
+        .first()
+    )
 
 
 # =========================================================
@@ -193,11 +296,6 @@ def find_user(
     db: Session,
     user_identifier: str,
 ):
-    """
-    Find user by public user_id.
-
-    Also supports database integer id as fallback.
-    """
 
     user = (
         db.query(User)
@@ -208,12 +306,7 @@ def find_user(
     )
 
     if user:
-
         return user
-
-    # -----------------------------------------------------
-    # INTEGER ID FALLBACK
-    # -----------------------------------------------------
 
     try:
 
@@ -244,12 +337,24 @@ def find_user(
 def serialize_user(
     user: User,
 ):
+
     return {
-        "id": user.id,
-        "user_id": user.user_id,
-        "username": user.username,
-        "name": user.name,
-        "profile_photo": user.profile_photo,
+
+        "id":
+            user.id,
+
+        "user_id":
+            user.user_id,
+
+        "username":
+            user.username,
+
+        "name":
+            user.name,
+
+        "profile_photo":
+            user.profile_photo,
+
     }
 
 
@@ -260,97 +365,57 @@ def serialize_user(
 def serialize_message(
     message: ChatMessage,
 ):
+
     return {
-        "id": message.id,
 
-        "sender_id": message.sender_id,
+        "id":
+            message.id,
 
-        "receiver_id": message.receiver_id,
+        "sender_id":
+            message.sender_id,
 
-        "content": message.content,
+        "receiver_id":
+            message.receiver_id,
 
-        "message": message.content,
+        "content":
+            message.content,
 
-        "media_url": message.media_url,
+        "message":
+            message.content,
 
-        "media_type": message.media_type,
+        "media_url":
+            message.media_url,
 
-        "read": bool(
-            message.is_read
-        ),
+        "media_type":
+            message.media_type,
 
-        "is_read": bool(
-            message.is_read
-        ),
+        "read":
+            bool(
+                message.is_read
+            ),
 
-        "is_deleted": bool(
-            message.is_deleted
-        ),
+        "is_read":
+            bool(
+                message.is_read
+            ),
 
-        "created_at": (
-            message.created_at.isoformat()
-            if message.created_at
-            else None
-        ),
+        "is_deleted":
+            bool(
+                message.is_deleted
+            ),
+
+        "created_at":
+            (
+                message.created_at.isoformat()
+                if message.created_at
+                else None
+            ),
+
     }
 
 
 # =========================================================
-# CONNECTION CHECK
-# =========================================================
-
-def are_users_connected(
-    db: Session,
-    user_one_id: int,
-    user_two_id: int,
-):
-    """
-    Chat is allowed only when users are connected.
-    """
-
-    connection = (
-        db.query(UserConnection)
-        .filter(
-            UserConnection.status
-            == "connected"
-        )
-        .filter(
-            (
-                (
-                    UserConnection.user_one_id
-                    == user_one_id
-                )
-                &
-                (
-                    UserConnection.user_two_id
-                    == user_two_id
-                )
-            )
-            |
-            (
-                (
-                    UserConnection.user_one_id
-                    == user_two_id
-                )
-                &
-                (
-                    UserConnection.user_two_id
-                    == user_one_id
-                )
-            )
-        )
-        .first()
-    )
-
-    return connection is not None
-
-
-# =========================================================
 # CHAT HEALTH
-# =========================================================
-#
-# GET /api/chat/health/status
-#
 # =========================================================
 
 @router.get(
@@ -359,23 +424,27 @@ def are_users_connected(
 def chat_health():
 
     return {
-        "success": True,
-        "app": "Usanex",
-        "service": "chat",
-        "status": "online",
+
+        "success":
+            True,
+
+        "app":
+            "Usanex",
+
+        "service":
+            "chat",
+
+        "status":
+            "online",
+
+        "realtime":
+            "websocket",
+
     }
 
 
 # =========================================================
 # GET CHAT
-# =========================================================
-#
-# GET /api/chat/{user_id}
-#
-# Example:
-#
-# /api/chat/u_abc123
-#
 # =========================================================
 
 @router.get(
@@ -387,18 +456,10 @@ def get_chat(
     db: Session = Depends(get_db),
 ):
 
-    # -----------------------------------------------------
-    # CURRENT USER
-    # -----------------------------------------------------
-
     current_user = get_current_user(
         request=request,
         db=db,
     )
-
-    # -----------------------------------------------------
-    # CHAT USER
-    # -----------------------------------------------------
 
     chat_user = find_user(
         db=db,
@@ -412,10 +473,6 @@ def get_chat(
             detail="Chat user not found.",
         )
 
-    # -----------------------------------------------------
-    # SELF CHAT
-    # -----------------------------------------------------
-
     if (
         chat_user.id
         == current_user.id
@@ -425,10 +482,6 @@ def get_chat(
             status_code=400,
             detail="You cannot chat with yourself.",
         )
-
-    # -----------------------------------------------------
-    # LOAD MESSAGES
-    # -----------------------------------------------------
 
     messages = (
         db.query(ChatMessage)
@@ -466,10 +519,6 @@ def get_chat(
         .all()
     )
 
-    # -----------------------------------------------------
-    # MARK RECEIVED MESSAGES AS READ
-    # -----------------------------------------------------
-
     unread_messages = (
         db.query(ChatMessage)
         .filter(
@@ -497,12 +546,10 @@ def get_chat(
 
         db.commit()
 
-    # -----------------------------------------------------
-    # RESPONSE
-    # -----------------------------------------------------
-
     return {
-        "success": True,
+
+        "success":
+            True,
 
         "current_user":
             serialize_user(
@@ -515,26 +562,20 @@ def get_chat(
             ),
 
         "messages": [
+
             serialize_message(
                 message
             )
+
             for message in messages
+
         ],
+
     }
 
 
 # =========================================================
-# SEND MESSAGE
-# =========================================================
-#
-# POST /api/chat/send
-#
-# FormData:
-#
-# receiver_id
-# content
-# file
-#
+# SEND MESSAGE — HTTP
 # =========================================================
 
 @router.post(
@@ -556,18 +597,10 @@ async def send_message(
     db: Session = Depends(get_db),
 ):
 
-    # -----------------------------------------------------
-    # CURRENT USER
-    # -----------------------------------------------------
-
     current_user = get_current_user(
         request=request,
         db=db,
     )
-
-    # -----------------------------------------------------
-    # RECEIVER
-    # -----------------------------------------------------
 
     receiver = find_user(
         db=db,
@@ -581,10 +614,6 @@ async def send_message(
             detail="Receiver not found.",
         )
 
-    # -----------------------------------------------------
-    # SELF MESSAGE
-    # -----------------------------------------------------
-
     if (
         receiver.id
         == current_user.id
@@ -595,34 +624,6 @@ async def send_message(
             detail="You cannot send a message to yourself.",
         )
 
-    # -----------------------------------------------------
-    # CONNECTION CHECK
-    # -----------------------------------------------------
-    #
-    # फिलहाल development में connection check
-    # optional रखा गया है ताकि existing users
-    # का chat flow न टूटे.
-    #
-    # जब पूरा connection system stable होगा,
-    # इसे strict किया जा सकता है.
-    # -----------------------------------------------------
-
-    # connected = are_users_connected(
-    #     db,
-    #     current_user.id,
-    #     receiver.id,
-    # )
-
-    # if not connected:
-    #     raise HTTPException(
-    #         status_code=403,
-    #         detail="You can only chat with connected users.",
-    #     )
-
-    # -----------------------------------------------------
-    # CLEAN TEXT
-    # -----------------------------------------------------
-
     clean_content = (
         content.strip()
         if content
@@ -632,15 +633,11 @@ async def send_message(
     media_url = None
     media_type = None
 
-    # =====================================================
-    # FILE UPLOAD
-    # =====================================================
+    # -----------------------------------------------------
+    # IMAGE
+    # -----------------------------------------------------
 
     if file:
-
-        # -------------------------------------------------
-        # CONTENT TYPE
-        # -------------------------------------------------
 
         if not file.content_type:
 
@@ -648,10 +645,6 @@ async def send_message(
                 status_code=400,
                 detail="Invalid file.",
             )
-
-        # -------------------------------------------------
-        # IMAGE ONLY
-        # -------------------------------------------------
 
         if not file.content_type.startswith(
             "image/"
@@ -662,15 +655,7 @@ async def send_message(
                 detail="Only image files are allowed.",
             )
 
-        # -------------------------------------------------
-        # READ FILE
-        # -------------------------------------------------
-
         file_bytes = await file.read()
-
-        # -------------------------------------------------
-        # MAX SIZE = 10 MB
-        # -------------------------------------------------
 
         max_size = (
             10 * 1024 * 1024
@@ -682,10 +667,6 @@ async def send_message(
                 status_code=400,
                 detail="Image must be 10 MB or smaller.",
             )
-
-        # -------------------------------------------------
-        # UPLOAD DIRECTORY
-        # -------------------------------------------------
 
         upload_dir = (
             Path(__file__)
@@ -702,10 +683,6 @@ async def send_message(
             exist_ok=True,
         )
 
-        # -------------------------------------------------
-        # EXTENSION
-        # -------------------------------------------------
-
         extension = (
             Path(
                 file.filename or ""
@@ -713,20 +690,18 @@ async def send_message(
         )
 
         allowed_extensions = {
+
             ".jpg",
             ".jpeg",
             ".png",
             ".gif",
             ".webp",
+
         }
 
         if extension not in allowed_extensions:
 
             extension = ".jpg"
-
-        # -------------------------------------------------
-        # UNIQUE FILE NAME
-        # -------------------------------------------------
 
         filename = (
             uuid.uuid4().hex
@@ -738,10 +713,6 @@ async def send_message(
             / filename
         )
 
-        # -------------------------------------------------
-        # SAVE FILE
-        # -----------------------------------------------------
-
         with open(
             file_path,
             "wb",
@@ -751,10 +722,6 @@ async def send_message(
                 file_bytes
             )
 
-        # -------------------------------------------------
-        # PUBLIC URL
-        # -------------------------------------------------
-
         media_url = (
             "/static/uploads/chat/"
             + filename
@@ -762,9 +729,9 @@ async def send_message(
 
         media_type = "image"
 
-    # =====================================================
-    # EMPTY MESSAGE CHECK
-    # =====================================================
+    # -----------------------------------------------------
+    # EMPTY
+    # -----------------------------------------------------
 
     if (
         not clean_content
@@ -776,15 +743,17 @@ async def send_message(
             detail="Message cannot be empty.",
         )
 
-    # =====================================================
-    # CREATE MESSAGE
-    # =====================================================
+    # -----------------------------------------------------
+    # DATABASE
+    # -----------------------------------------------------
 
     message = ChatMessage(
 
-        sender_id=current_user.id,
+        sender_id=
+            current_user.id,
 
-        receiver_id=receiver.id,
+        receiver_id=
+            receiver.id,
 
         content=(
             clean_content
@@ -792,47 +761,314 @@ async def send_message(
             else None
         ),
 
-        media_url=media_url,
+        media_url=
+            media_url,
 
-        media_type=media_type,
+        media_type=
+            media_type,
 
         is_read=0,
 
         is_deleted=0,
 
-        created_at=utc_now(),
+        created_at=
+            utc_now(),
+
     )
 
-    # -----------------------------------------------------
-    # SAVE
-    # -----------------------------------------------------
-
-    db.add(message)
+    db.add(
+        message
+    )
 
     db.commit()
 
-    db.refresh(message)
+    db.refresh(
+        message
+    )
+
+    serialized = serialize_message(
+        message
+    )
 
     # =====================================================
-    # RESPONSE
+    # REAL-TIME DELIVERY
     # =====================================================
+
+    await chat_manager.send_to_user(
+
+        receiver.id,
+
+        {
+
+            "type":
+                "new_message",
+
+            "message":
+                serialized,
+
+        }
+
+    )
 
     return {
-        "success": True,
+
+        "success":
+            True,
 
         "message":
-            serialize_message(
-                message
-            ),
+            serialized,
+
     }
 
 
 # =========================================================
-# MARK CHAT AS READ
+# WEBSOCKET
 # =========================================================
 #
-# POST /api/chat/{user_id}/read
+# WS /api/chat/ws
 #
+# Browser automatically sends the
+# usanex_session cookie.
+#
+# =========================================================
+
+@router.websocket(
+    "/ws"
+)
+async def chat_websocket(
+    websocket: WebSocket,
+):
+
+    db = SessionLocal()
+
+    current_user = None
+
+    try:
+
+        # -------------------------------------------------
+        # AUTHENTICATION
+        # -------------------------------------------------
+
+        current_user = get_websocket_user(
+            websocket,
+            db,
+        )
+
+        if current_user is None:
+
+            await websocket.close(
+                code=1008
+            )
+
+            return
+
+        # -------------------------------------------------
+        # CONNECT
+        # -------------------------------------------------
+
+        await chat_manager.connect(
+            current_user.id,
+            websocket,
+        )
+
+        # -------------------------------------------------
+        # CONNECTED EVENT
+        # -------------------------------------------------
+
+        await websocket.send_json({
+
+            "type":
+                "connected",
+
+            "user_id":
+                current_user.user_id,
+
+        })
+
+        # -------------------------------------------------
+        # LISTEN
+        # -------------------------------------------------
+
+        while True:
+
+            data = await websocket.receive_json()
+
+            if not isinstance(
+                data,
+                dict
+            ):
+
+                continue
+
+            event_type = data.get(
+                "type"
+            )
+
+            # =============================================
+            # PING
+            # =============================================
+
+            if event_type == "ping":
+
+                await websocket.send_json({
+
+                    "type":
+                        "pong",
+
+                })
+
+                continue
+
+            # =============================================
+            # TYPING
+            # =============================================
+
+            if event_type == "typing":
+
+                receiver_id = data.get(
+                    "receiver_id"
+                )
+
+                if not receiver_id:
+                    continue
+
+                receiver = find_user(
+                    db,
+                    str(
+                        receiver_id
+                    )
+                )
+
+                if receiver is None:
+                    continue
+
+                await chat_manager.send_to_user(
+
+                    receiver.id,
+
+                    {
+
+                        "type":
+                            "typing",
+
+                        "sender_id":
+                            current_user.id,
+
+                        "sender_user_id":
+                            current_user.user_id,
+
+                        "typing":
+                            bool(
+                                data.get(
+                                    "typing",
+                                    False
+                                )
+                            ),
+
+                    }
+
+                )
+
+                continue
+
+            # =============================================
+            # READ
+            # =============================================
+
+            if event_type == "read":
+
+                sender_id = data.get(
+                    "sender_id"
+                )
+
+                if not sender_id:
+                    continue
+
+                sender = find_user(
+                    db,
+                    str(
+                        sender_id
+                    )
+                )
+
+                if sender is None:
+                    continue
+
+                unread = (
+                    db.query(
+                        ChatMessage
+                    )
+                    .filter(
+                        ChatMessage.sender_id
+                        == sender.id
+                    )
+                    .filter(
+                        ChatMessage.receiver_id
+                        == current_user.id
+                    )
+                    .filter(
+                        ChatMessage.is_read
+                        == 0
+                    )
+                    .filter(
+                        ChatMessage.is_deleted
+                        == 0
+                    )
+                    .all()
+                )
+
+                for message in unread:
+
+                    message.is_read = 1
+
+                db.commit()
+
+                await chat_manager.send_to_user(
+
+                    sender.id,
+
+                    {
+
+                        "type":
+                            "messages_read",
+
+                        "reader_id":
+                            current_user.id,
+
+                        "reader_user_id":
+                            current_user.user_id,
+
+                    }
+
+                )
+
+                continue
+
+    except WebSocketDisconnect:
+
+        pass
+
+    except Exception as exc:
+
+        print(
+            "Chat WebSocket error:",
+            exc
+        )
+
+    finally:
+
+        if current_user is not None:
+
+            chat_manager.disconnect(
+                current_user.id,
+                websocket,
+            )
+
+        db.close()
+
+
+# =========================================================
+# MARK CHAT AS READ
 # =========================================================
 
 @router.post(
@@ -844,18 +1080,10 @@ def mark_chat_read(
     db: Session = Depends(get_db),
 ):
 
-    # -----------------------------------------------------
-    # CURRENT USER
-    # -----------------------------------------------------
-
     current_user = get_current_user(
         request=request,
         db=db,
     )
-
-    # -----------------------------------------------------
-    # CHAT USER
-    # -----------------------------------------------------
 
     chat_user = find_user(
         db=db,
@@ -868,10 +1096,6 @@ def mark_chat_read(
             status_code=404,
             detail="Chat user not found.",
         )
-
-    # -----------------------------------------------------
-    # FIND UNREAD
-    # -----------------------------------------------------
 
     messages = (
         db.query(ChatMessage)
@@ -892,10 +1116,6 @@ def mark_chat_read(
         .all()
     )
 
-    # -----------------------------------------------------
-    # MARK READ
-    # -----------------------------------------------------
-
     for message in messages:
 
         message.is_read = 1
@@ -903,19 +1123,18 @@ def mark_chat_read(
     db.commit()
 
     return {
-        "success": True,
-        "marked_read": len(
-            messages
-        ),
+
+        "success":
+            True,
+
+        "marked_read":
+            len(messages),
+
     }
 
 
 # =========================================================
 # DELETE MESSAGE
-# =========================================================
-#
-# POST /api/chat/message/{message_id}/delete
-#
 # =========================================================
 
 @router.post(
@@ -927,18 +1146,10 @@ def delete_message(
     db: Session = Depends(get_db),
 ):
 
-    # -----------------------------------------------------
-    # CURRENT USER
-    # -----------------------------------------------------
-
     current_user = get_current_user(
         request=request,
         db=db,
     )
-
-    # -----------------------------------------------------
-    # MESSAGE
-    # -----------------------------------------------------
 
     message = (
         db.query(ChatMessage)
@@ -956,10 +1167,6 @@ def delete_message(
             detail="Message not found.",
         )
 
-    # -----------------------------------------------------
-    # ONLY SENDER CAN DELETE
-    # -----------------------------------------------------
-
     if (
         message.sender_id
         != current_user.id
@@ -970,15 +1177,44 @@ def delete_message(
             detail="You cannot delete this message.",
         )
 
-    # -----------------------------------------------------
-    # SOFT DELETE
-    # -----------------------------------------------------
-
     message.is_deleted = 1
 
     db.commit()
 
+    # -----------------------------------------------------
+    # REAL-TIME DELETE EVENT
+    # -----------------------------------------------------
+
+    await_data = {
+
+        "type":
+            "message_deleted",
+
+        "message_id":
+            message.id,
+
+        "sender_id":
+            message.sender_id,
+
+        "receiver_id":
+            message.receiver_id,
+
+    }
+
+    # WebSocket delivery is intentionally
+    # handled asynchronously only from
+    # async routes. HTTP delete remains
+    # safe here.
+
     return {
-        "success": True,
-        "message": "Message deleted.",
+
+        "success":
+            True,
+
+        "message":
+            "Message deleted.",
+
+        "deleted_message_id":
+            message.id,
+
     }
