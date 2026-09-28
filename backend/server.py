@@ -15,6 +15,12 @@ from .routes.users import router as users_router
 from .routes.search import router as search_router
 from .routes.connections import router as connections_router
 from .routes.profile import router as profile_router
+from .routes.chat import router as chat_router
+
+
+# =========================================================
+# PATHS
+# =========================================================
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
@@ -24,6 +30,10 @@ STATIC_DIR = (
     / "static"
 )
 
+
+# =========================================================
+# FASTAPI APP
+# =========================================================
 
 app = FastAPI(
     title="Usanex",
@@ -79,9 +89,15 @@ app.include_router(
 app.include_router(
     connections_router
 )
+
 app.include_router(
     profile_router
 )
+
+app.include_router(
+    chat_router
+)
+
 
 # =========================================================
 # DATABASE STARTUP
@@ -126,12 +142,10 @@ def health():
                 text("SELECT 1")
             )
 
-
         return {
             "status": "ok",
             "database": "connected",
         }
-
 
     except Exception as exc:
 
