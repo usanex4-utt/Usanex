@@ -1,12 +1,26 @@
+# =========================================================
+# USANEX — AUTH ROUTES
+# backend/routes/auth.py
+# =========================================================
+
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..database.database import get_db
-from ..database.models import User, UserSession
+from ..database.models import (
+    User,
+    UserSession,
+)
 from ..services.auth_service import (
     generate_user_id,
     generate_username,
@@ -18,6 +32,10 @@ from ..services.otp_service import (
     verify_otp,
 )
 
+
+# =========================================================
+# ROUTER
+# =========================================================
 
 router = APIRouter(
     prefix="/api/auth",
@@ -34,12 +52,34 @@ SESSION_COOKIE_NAME = "usanex_session"
 SESSION_DURATION_DAYS = 30
 
 SESSION_DURATION_SECONDS = (
-    SESSION_DURATION_DAYS * 24 * 60 * 60
+    SESSION_DURATION_DAYS
+    * 24
+    * 60
+    * 60
 )
 
 
 # =========================================================
-# SESSION HELPERS
+# TIME HELPER
+# =========================================================
+
+def utc_now():
+    """
+    Current UTC time as naive datetime.
+
+    Database models use SQLAlchemy DateTime
+    without timezone.
+    """
+
+    return datetime.now(
+        timezone.utc
+    ).replace(
+        tzinfo=None
+    )
+
+
+# =========================================================
+# SESSION CREATION
 # =========================================================
 
 def create_user_session(
@@ -47,9 +87,11 @@ def create_user_session(
     user_id: int,
 ) -> str:
 
-    session_token = secrets.token_urlsafe(48)
+    session_token = secrets.token_urlsafe(
+        48
+    )
 
-    now = datetime.now(timezone.utc)
+    now = utc_now()
 
     expires_at = (
         now
@@ -65,11 +107,18 @@ def create_user_session(
         created_at=now,
     )
 
-    db.add(new_session)
+    db.add(
+        new_session
+    )
+
     db.commit()
 
     return session_token
 
+
+# =========================================================
+# VALIDATE SESSION
+# =========================================================
 
 def get_valid_session(
     db: Session,
@@ -94,15 +143,21 @@ def get_valid_session(
     expires_at = session.expires_at
 
     if expires_at.tzinfo is None:
+
         expires_at = expires_at.replace(
             tzinfo=timezone.utc
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(
+        timezone.utc
+    )
 
     if now >= expires_at:
 
-        db.delete(session)
+        db.delete(
+            session
+        )
+
         db.commit()
 
         return None
@@ -110,13 +165,19 @@ def get_valid_session(
     return session
 
 
+# =========================================================
+# CURRENT USER FROM REQUEST
+# =========================================================
+
 def get_current_user_from_request(
     request: Request,
     db: Session,
 ):
 
-    session_token = request.cookies.get(
-        SESSION_COOKIE_NAME
+    session_token = (
+        request.cookies.get(
+            SESSION_COOKIE_NAME
+        )
     )
 
     session = get_valid_session(
@@ -130,14 +191,18 @@ def get_current_user_from_request(
     user = (
         db.query(User)
         .filter(
-            User.id == session.user_id
+            User.id
+            == session.user_id
         )
         .first()
     )
 
     if user is None:
 
-        db.delete(session)
+        db.delete(
+            session
+        )
+
         db.commit()
 
         return None
@@ -146,10 +211,29 @@ def get_current_user_from_request(
 
 
 # =========================================================
-# REGISTER
+# USER RESPONSE
 # =========================================================
 
-class RegisterOTPRequest(BaseModel):
+def serialize_user(
+    user: User,
+):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "user_id": user.user_id,
+        "name": user.name,
+        "mobile": user.mobile,
+        "profile_photo": user.profile_photo,
+    }
+
+
+# =========================================================
+# REGISTER — SEND OTP
+# =========================================================
+
+class RegisterOTPRequest(
+    BaseModel
+):
 
     name: str = Field(
         min_length=1,
@@ -167,14 +251,20 @@ class RegisterOTPRequest(BaseModel):
     )
 
 
-@router.post("/register/send-otp")
+@router.post(
+    "/register/send-otp"
+)
 def register_send_otp(
     request: RegisterOTPRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
     name = request.name.strip()
+
     mobile = request.mobile.strip()
+
     password = request.password
 
     if not name:
@@ -201,7 +291,8 @@ def register_send_otp(
     existing_user = (
         db.query(User)
         .filter(
-            User.mobile == mobile
+            User.mobile
+            == mobile
         )
         .first()
     )
@@ -226,7 +317,13 @@ def register_send_otp(
     }
 
 
-class RegisterVerifyRequest(BaseModel):
+# =========================================================
+# REGISTER — VERIFY OTP
+# =========================================================
+
+class RegisterVerifyRequest(
+    BaseModel
+):
 
     name: str = Field(
         min_length=1,
@@ -249,21 +346,33 @@ class RegisterVerifyRequest(BaseModel):
     )
 
 
-@router.post("/register/verify")
+@router.post(
+    "/register/verify"
+)
 def register_verify(
     request: RegisterVerifyRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
     name = request.name.strip()
+
     mobile = request.mobile.strip()
+
     password = request.password
+
     otp = request.otp.strip()
+
+    # -----------------------------------------------------
+    # CHECK MOBILE
+    # -----------------------------------------------------
 
     existing_user = (
         db.query(User)
         .filter(
-            User.mobile == mobile
+            User.mobile
+            == mobile
         )
         .first()
     )
@@ -274,6 +383,10 @@ def register_verify(
             status_code=409,
             detail="Mobile number is already registered",
         )
+
+    # -----------------------------------------------------
+    # VERIFY OTP
+    # -----------------------------------------------------
 
     verified = verify_otp(
         db=db,
@@ -289,10 +402,18 @@ def register_verify(
             detail="Invalid or expired OTP",
         )
 
+    # -----------------------------------------------------
+    # GENERATE USERNAME
+    # -----------------------------------------------------
+
     username = generate_username(
         name=name,
         db=db,
     )
+
+    # -----------------------------------------------------
+    # GENERATE UNIQUE USER ID
+    # -----------------------------------------------------
 
     while True:
 
@@ -301,13 +422,19 @@ def register_verify(
         existing_user_id = (
             db.query(User)
             .filter(
-                User.user_id == user_id
+                User.user_id
+                == user_id
             )
             .first()
         )
 
         if existing_user_id is None:
+
             break
+
+    # -----------------------------------------------------
+    # CREATE USER
+    # -----------------------------------------------------
 
     new_user = User(
         username=username,
@@ -320,18 +447,31 @@ def register_verify(
         profile_photo=None,
     )
 
-    db.add(new_user)
+    db.add(
+        new_user
+    )
+
     db.commit()
-    db.refresh(new_user)
+
+    db.refresh(
+        new_user
+    )
 
     return {
         "success": True,
         "message": "Account created successfully",
         "user": {
-            "username": new_user.username,
-            "user_id": new_user.user_id,
-            "name": new_user.name,
-            "mobile": new_user.mobile,
+            "username":
+                new_user.username,
+
+            "user_id":
+                new_user.user_id,
+
+            "name":
+                new_user.name,
+
+            "mobile":
+                new_user.mobile,
         },
     }
 
@@ -340,7 +480,9 @@ def register_verify(
 # LOGIN
 # =========================================================
 
-class LoginRequest(BaseModel):
+class LoginRequest(
+    BaseModel
+):
 
     identifier: str = Field(
         min_length=1,
@@ -353,21 +495,42 @@ class LoginRequest(BaseModel):
     )
 
 
-@router.post("/login")
+@router.post(
+    "/login"
+)
 def login(
     request: LoginRequest,
     response: Response,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
-    identifier = request.identifier.strip()
+    identifier = (
+        request.identifier.strip()
+    )
+
     password = request.password
+
+    # -----------------------------------------------------
+    # FIND USER
+    #
+    # Login supports:
+    # username OR mobile
+    # -----------------------------------------------------
 
     user = (
         db.query(User)
         .filter(
-            (User.username == identifier)
-            | (User.mobile == identifier)
+            (
+                User.username
+                == identifier
+            )
+            |
+            (
+                User.mobile
+                == identifier
+            )
         )
         .first()
     )
@@ -378,6 +541,10 @@ def login(
             status_code=401,
             detail="Invalid username/mobile or password",
         )
+
+    # -----------------------------------------------------
+    # VERIFY PASSWORD
+    # -----------------------------------------------------
 
     password_valid = verify_password(
         password=password,
@@ -392,7 +559,24 @@ def login(
         )
 
     # -----------------------------------------------------
-    # CREATE SECURE SESSION
+    # REMOVE OLD SESSIONS
+    #
+    # Keeps the current account clean.
+    # -----------------------------------------------------
+
+    db.query(
+        UserSession
+    ).filter(
+        UserSession.user_id
+        == user.id
+    ).delete(
+        synchronize_session=False
+    )
+
+    db.commit()
+
+    # -----------------------------------------------------
+    # CREATE NEW SESSION
     # -----------------------------------------------------
 
     session_token = create_user_session(
@@ -401,7 +585,7 @@ def login(
     )
 
     # -----------------------------------------------------
-    # HTTP-ONLY COOKIE
+    # CREATE HTTP-ONLY COOKIE
     # -----------------------------------------------------
 
     response.set_cookie(
@@ -414,32 +598,42 @@ def login(
         path="/",
     )
 
+    # -----------------------------------------------------
+    # RESPONSE
+    # -----------------------------------------------------
+
     return {
         "success": True,
         "message": "Login successful",
-        "user": {
-            "username": user.username,
-            "user_id": user.user_id,
-            "name": user.name,
-            "mobile": user.mobile,
-            "profile_photo": user.profile_photo,
-        },
+        "user": serialize_user(
+            user
+        ),
     }
 
 
 # =========================================================
 # CURRENT USER
 # =========================================================
+#
+# GET /api/auth/me
+#
+# =========================================================
 
-@router.get("/me")
+@router.get(
+    "/me"
+)
 def get_current_user(
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
-    user = get_current_user_from_request(
-        request=request,
-        db=db,
+    user = (
+        get_current_user_from_request(
+            request=request,
+            db=db,
+        )
     )
 
     if user is None:
@@ -451,13 +645,9 @@ def get_current_user(
 
     return {
         "success": True,
-        "user": {
-            "username": user.username,
-            "user_id": user.user_id,
-            "name": user.name,
-            "mobile": user.mobile,
-            "profile_photo": user.profile_photo,
-        },
+        "user": serialize_user(
+            user
+        ),
     }
 
 
@@ -465,21 +655,29 @@ def get_current_user(
 # LOGOUT
 # =========================================================
 
-@router.post("/logout")
+@router.post(
+    "/logout"
+)
 def logout(
     request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
-    session_token = request.cookies.get(
-        SESSION_COOKIE_NAME
+    session_token = (
+        request.cookies.get(
+            SESSION_COOKIE_NAME
+        )
     )
 
     if session_token:
 
         session = (
-            db.query(UserSession)
+            db.query(
+                UserSession
+            )
             .filter(
                 UserSession.session_token
                 == session_token
@@ -489,8 +687,15 @@ def logout(
 
         if session:
 
-            db.delete(session)
+            db.delete(
+                session
+            )
+
             db.commit()
+
+    # -----------------------------------------------------
+    # DELETE COOKIE
+    # -----------------------------------------------------
 
     response.delete_cookie(
         key=SESSION_COOKIE_NAME,
@@ -504,10 +709,12 @@ def logout(
 
 
 # =========================================================
-# FORGOT PASSWORD - SEND OTP
+# FORGOT PASSWORD — SEND OTP
 # =========================================================
 
-class ForgotPasswordOTPRequest(BaseModel):
+class ForgotPasswordOTPRequest(
+    BaseModel
+):
 
     identifier: str = Field(
         min_length=1,
@@ -515,13 +722,19 @@ class ForgotPasswordOTPRequest(BaseModel):
     )
 
 
-@router.post("/forgot-password/send-otp")
+@router.post(
+    "/forgot-password/send-otp"
+)
 def forgot_password_send_otp(
     request: ForgotPasswordOTPRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
-    identifier = request.identifier.strip()
+    identifier = (
+        request.identifier.strip()
+    )
 
     if not identifier:
 
@@ -530,11 +743,22 @@ def forgot_password_send_otp(
             detail="Username or mobile is required",
         )
 
+    # -----------------------------------------------------
+    # FIND ACCOUNT
+    # -----------------------------------------------------
+
     user = (
         db.query(User)
         .filter(
-            (User.username == identifier)
-            | (User.mobile == identifier)
+            (
+                User.username
+                == identifier
+            )
+            |
+            (
+                User.mobile
+                == identifier
+            )
         )
         .first()
     )
@@ -546,6 +770,10 @@ def forgot_password_send_otp(
             detail="Account not found",
         )
 
+    # -----------------------------------------------------
+    # CREATE OTP
+    # -----------------------------------------------------
+
     otp = create_otp(
         db=db,
         identifier=identifier,
@@ -554,16 +782,21 @@ def forgot_password_send_otp(
 
     return {
         "success": True,
-        "message": "Password reset OTP generated successfully",
-        "development_otp": otp,
+        "message":
+            "Password reset OTP generated successfully",
+
+        "development_otp":
+            otp,
     }
 
 
 # =========================================================
-# FORGOT PASSWORD - RESET
+# FORGOT PASSWORD — RESET
 # =========================================================
 
-class ForgotPasswordResetRequest(BaseModel):
+class ForgotPasswordResetRequest(
+    BaseModel
+):
 
     identifier: str = Field(
         min_length=1,
@@ -586,22 +819,38 @@ class ForgotPasswordResetRequest(BaseModel):
     )
 
 
-@router.post("/forgot-password/reset")
+@router.post(
+    "/forgot-password/reset"
+)
 def forgot_password_reset(
     request: ForgotPasswordResetRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(
+        get_db
+    ),
 ):
 
-    identifier = request.identifier.strip()
+    identifier = (
+        request.identifier.strip()
+    )
+
     otp = request.otp.strip()
-    new_password = request.new_password
-    confirm_password = request.confirm_password
+
+    new_password = (
+        request.new_password
+    )
+
+    confirm_password = (
+        request.confirm_password
+    )
 
     # -----------------------------------------------------
     # PASSWORD MATCH
     # -----------------------------------------------------
 
-    if new_password != confirm_password:
+    if (
+        new_password
+        != confirm_password
+    ):
 
         raise HTTPException(
             status_code=400,
@@ -615,8 +864,15 @@ def forgot_password_reset(
     user = (
         db.query(User)
         .filter(
-            (User.username == identifier)
-            | (User.mobile == identifier)
+            (
+                User.username
+                == identifier
+            )
+            |
+            (
+                User.mobile
+                == identifier
+            )
         )
         .first()
     )
@@ -647,7 +903,7 @@ def forgot_password_reset(
         )
 
     # -----------------------------------------------------
-    # UPDATE PASSWORD
+    # CHANGE PASSWORD
     # -----------------------------------------------------
 
     user.password_hash = hash_password(
@@ -655,11 +911,14 @@ def forgot_password_reset(
     )
 
     # -----------------------------------------------------
-    # INVALIDATE OLD SESSIONS
+    # INVALIDATE ALL OLD SESSIONS
     # -----------------------------------------------------
 
-    db.query(UserSession).filter(
-        UserSession.user_id == user.id
+    db.query(
+        UserSession
+    ).filter(
+        UserSession.user_id
+        == user.id
     ).delete(
         synchronize_session=False
     )
@@ -668,5 +927,6 @@ def forgot_password_reset(
 
     return {
         "success": True,
-        "message": "Password reset successfully",
+        "message":
+            "Password reset successfully",
     }
