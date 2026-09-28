@@ -488,3 +488,60 @@ class Post(Base):
         index=True,
         nullable=False
     )
+    # =========================================================
+# CHAT MESSAGE
+# =========================================================
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    sender_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    receiver_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    content = Column(
+        Text,
+        nullable=True
+    )
+
+    media_url = Column(
+        String(500),
+        nullable=True
+    )
+
+    media_type = Column(
+        String(30),
+        nullable=True
+    )
+
+    is_read = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    is_deleted = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
