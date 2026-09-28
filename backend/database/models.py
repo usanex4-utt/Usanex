@@ -483,19 +483,6 @@ class Post(Base):
 # =========================================================
 # CHAT MESSAGE
 # =========================================================
-#
-# Stores:
-#   - sender
-#   - receiver
-#   - text message
-#   - image/video URL
-#   - media type
-#   - read status
-#   - deleted status
-#   - creation time
-#
-# This table is used by chat.py and chat.js.
-# =========================================================
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
