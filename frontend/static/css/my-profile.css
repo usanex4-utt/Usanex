@@ -1,5 +1,6 @@
 /* =========================================================
    USANEX — MY PROFILE
+   COMPACT SIZE — MATCHED WITH HOME
    ========================================================= */
 
 * {
@@ -18,10 +19,17 @@ body {
     background: #080f1d;
     color: #f5f7fb;
     font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
         Arial,
-        Helvetica,
         sans-serif;
     overflow-x: hidden;
+}
+
+button {
+    font-family: inherit;
 }
 
 
@@ -33,15 +41,13 @@ body {
     width: 100%;
     min-height: 100vh;
     background: #080f1d;
-    padding-bottom: 78px;
+    padding-bottom: 70px;
+    overflow-x: hidden;
 }
 
 
 /* =========================================================
-   HEADER
-   + LEFT
-   NAME CENTER
-   MENU RIGHT
+   HEADER — SAME SIZE AS HOME
    ========================================================= */
 
 .profile-header {
@@ -50,31 +56,32 @@ body {
     z-index: 100;
 
     width: 100%;
-    height: 70px;
+    height: 55px;
+    min-height: 55px;
 
     display: grid;
-    grid-template-columns: 52px 1fr 52px;
+    grid-template-columns: 42px 1fr 42px;
     align-items: center;
 
-    padding: 0 12px;
+    padding: 0 14px;
 
-    background: #0d1422;
-    border-bottom: 1px solid #1b2a3e;
+    background: #080f1d;
+    border-bottom: none;
 }
 
 
 /* PLUS */
 
 .profile-add-button {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
 
     border: none;
     background: transparent;
 
     color: #ffffff;
 
-    font-size: 34px;
+    font-size: 25px;
     font-weight: 300;
 
     line-height: 1;
@@ -87,15 +94,17 @@ body {
 }
 
 
-/* NAME */
+/* HEADER NAME */
 
 .profile-header-name {
     min-width: 0;
 
     text-align: center;
 
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 17px;
+    font-weight: 600;
+
+    line-height: 21px;
 
     white-space: nowrap;
     overflow: hidden;
@@ -108,8 +117,8 @@ body {
 /* MENU */
 
 .profile-menu-button {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
 
     border: none;
     background: transparent;
@@ -120,14 +129,14 @@ body {
     justify-content: center;
     align-items: center;
 
-    gap: 5px;
+    gap: 4px;
 
     cursor: pointer;
 }
 
 .profile-menu-button span {
-    width: 5px;
-    height: 5px;
+    width: 4px;
+    height: 4px;
 
     border-radius: 50%;
 
@@ -145,51 +154,49 @@ body {
 
 
 /* =========================================================
-   2ND ROW
-   PROFILE + USER INFO
+   USER ROW — COMPACT
    ========================================================= */
 
 .profile-user-row {
     width: 100%;
 
-    min-height: 175px;
+    min-height: 120px;
 
     display: flex;
     align-items: center;
 
-    gap: 22px;
+    gap: 13px;
 
-    padding: 24px 20px;
+    padding: 12px 14px;
 
     background: #081323;
 }
 
 
-/* PHOTO BUTTON */
+/* =========================================================
+   PROFILE PHOTO
+   ========================================================= */
 
 .profile-photo-button {
     flex: 0 0 auto;
 
-    width: 112px;
-    height: 112px;
+    width: 68px;
+    height: 68px;
 
-    border: 5px solid #1685ff;
+    border: 3px solid #1685ff;
     border-radius: 50%;
 
-    padding: 3px;
+    padding: 2px;
 
     background: #0e1b2e;
 
     box-shadow:
-        0 0 0 5px rgba(22, 133, 255, 0.12);
+        0 0 0 3px rgba(22, 133, 255, 0.10);
 
     overflow: hidden;
 
     cursor: pointer;
 }
-
-
-/* PHOTO */
 
 .profile-photo {
     width: 100%;
@@ -205,7 +212,9 @@ body {
 }
 
 
-/* USER INFO */
+/* =========================================================
+   USER INFO
+   ========================================================= */
 
 .profile-user-info {
     min-width: 0;
@@ -219,12 +228,12 @@ body {
 .profile-user-info h2 {
     color: #ffffff;
 
-    font-size: 22px;
+    font-size: 17px;
     font-weight: 600;
 
-    line-height: 1.25;
+    line-height: 21px;
 
-    margin-bottom: 6px;
+    margin-bottom: 3px;
 
     word-break: break-word;
 }
@@ -232,9 +241,11 @@ body {
 .profile-username {
     color: #aab5c7;
 
-    font-size: 16px;
+    font-size: 12px;
 
-    margin-bottom: 8px;
+    line-height: 15px;
+
+    margin-bottom: 3px;
 
     word-break: break-all;
 }
@@ -245,28 +256,30 @@ body {
     width: fit-content;
     max-width: 100%;
 
-    padding: 7px 13px;
+    padding: 4px 8px;
 
-    border-radius: 18px;
+    border-radius: 12px;
 
     background: #162236;
 
     color: #8290a6;
 
-    font-size: 14px;
+    font-size: 9px;
+
+    line-height: 12px;
 
     word-break: break-all;
 }
 
 
 /* =========================================================
-   3RD ROW — BIO
+   BIO
    ========================================================= */
 
 .profile-bio-section {
     width: 100%;
 
-    padding: 18px 18px 20px;
+    padding: 10px 14px 12px;
 
     background: #091425;
 
@@ -276,9 +289,9 @@ body {
 .profile-bio {
     color: #b5bfce;
 
-    font-size: 16px;
+    font-size: 12px;
 
-    line-height: 1.55;
+    line-height: 1.45;
 
     text-align: center;
 
@@ -296,9 +309,9 @@ body {
 
     justify-content: center;
 
-    gap: 8px;
+    gap: 5px;
 
-    margin-top: 12px;
+    margin-top: 7px;
 }
 
 .profile-link {
@@ -306,18 +319,18 @@ body {
 
     text-decoration: none;
 
-    font-size: 14px;
+    font-size: 11px;
 
-    padding: 5px 10px;
+    padding: 3px 7px;
 
-    border-radius: 14px;
+    border-radius: 10px;
 
     background: #101e31;
 }
 
 
 /* =========================================================
-   4TH ROW — STATS
+   STATS — COMPACT
    ========================================================= */
 
 .profile-stats {
@@ -335,7 +348,7 @@ body {
 .profile-stat {
     min-width: 0;
 
-    min-height: 92px;
+    min-height: 58px;
 
     display: flex;
     flex-direction: column;
@@ -343,7 +356,7 @@ body {
     justify-content: center;
     align-items: center;
 
-    padding: 10px 4px;
+    padding: 6px 3px;
 
     border-right: 1px solid #24344a;
 }
@@ -355,18 +368,20 @@ body {
 .profile-stat strong {
     color: #ffffff;
 
-    font-size: 24px;
+    font-size: 15px;
     font-weight: 700;
 
-    line-height: 1.2;
+    line-height: 18px;
 
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 .profile-stat span {
     color: #e0e5ed;
 
-    font-size: 14px;
+    font-size: 10px;
+
+    line-height: 13px;
 
     text-align: center;
 
@@ -375,13 +390,13 @@ body {
 
 
 /* =========================================================
-   5TH ROW — TABS
+   TABS — COMPACT
    ========================================================= */
 
 .profile-content-tabs {
     width: 100%;
 
-    height: 62px;
+    height: 44px;
 
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -399,7 +414,7 @@ body {
 
     color: #76849a;
 
-    font-size: 15px;
+    font-size: 11px;
 
     cursor: pointer;
 }
@@ -413,11 +428,11 @@ body {
 
     position: absolute;
 
-    left: 18%;
-    right: 18%;
+    left: 20%;
+    right: 20%;
     bottom: 0;
 
-    height: 3px;
+    height: 2px;
 
     border-radius: 4px;
 
@@ -432,27 +447,31 @@ body {
 .profile-content {
     width: 100%;
 
-    min-height: calc(100vh - 450px);
+    min-height: 250px;
 
-    padding-bottom: 30px;
+    padding-bottom: 20px;
 }
 
 
-/* EMPTY */
+/* =========================================================
+   EMPTY
+   ========================================================= */
 
 .empty-content {
     width: 100%;
 
-    min-height: 280px;
+    min-height: 220px;
 
     display: flex;
 
     justify-content: center;
     align-items: center;
 
+    padding: 20px;
+
     color: #68768b;
 
-    font-size: 16px;
+    font-size: 13px;
 
     text-align: center;
 }
@@ -486,7 +505,7 @@ body {
     width: 100%;
     height: 100%;
 
-    padding: 18px;
+    padding: 12px;
 
     display: flex;
 
@@ -507,7 +526,7 @@ body {
     right: 0;
     bottom: 0;
 
-    padding: 8px;
+    padding: 6px;
 
     background:
         linear-gradient(
@@ -519,7 +538,7 @@ body {
 .content-view-count {
     color: #ffffff;
 
-    font-size: 13px;
+    font-size: 10px;
 }
 
 
@@ -544,14 +563,14 @@ body {
 .profile-menu-panel {
     position: absolute;
 
-    top: 62px;
+    top: 60px;
     right: 12px;
 
-    width: 245px;
+    width: 220px;
 
-    padding: 8px;
+    padding: 6px;
 
-    border-radius: 16px;
+    border-radius: 13px;
 
     background: #121d2d;
 
@@ -562,32 +581,32 @@ body {
 }
 
 .profile-menu-title {
-    padding: 14px 14px 10px;
+    padding: 10px 11px 7px;
 
     color: #ffffff;
 
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 700;
 }
 
 .profile-menu-panel button {
     width: 100%;
 
-    min-height: 46px;
+    min-height: 40px;
 
     border: none;
 
-    border-radius: 10px;
+    border-radius: 8px;
 
     background: transparent;
 
     color: #e6ebf2;
 
-    font-size: 15px;
+    font-size: 13px;
 
     text-align: left;
 
-    padding: 0 14px;
+    padding: 0 11px;
 
     cursor: pointer;
 }
@@ -601,7 +620,7 @@ body {
 
     background: #26364b;
 
-    margin: 6px 0;
+    margin: 4px 0;
 }
 
 .profile-menu-panel .logout-menu-button {
@@ -636,7 +655,7 @@ body {
     max-width: 90vw;
     max-height: 80vh;
 
-    border-radius: 14px;
+    border-radius: 12px;
 
     object-fit: contain;
 }
@@ -644,11 +663,11 @@ body {
 .close-photo-viewer {
     position: absolute;
 
-    top: 18px;
-    right: 18px;
+    top: 14px;
+    right: 14px;
 
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
 
     border: none;
 
@@ -658,7 +677,7 @@ body {
 
     color: #ffffff;
 
-    font-size: 30px;
+    font-size: 25px;
 
     cursor: pointer;
 }
@@ -680,7 +699,7 @@ body {
     justify-content: center;
     align-items: center;
 
-    padding: 20px;
+    padding: 14px;
 
     background: rgba(0, 0, 0, 0.72);
 
@@ -693,15 +712,15 @@ body {
 
 .edit-profile-box {
     width: 100%;
-    max-width: 500px;
+    max-width: 440px;
 
     max-height: 90vh;
 
     overflow-y: auto;
 
-    padding: 20px;
+    padding: 16px;
 
-    border-radius: 18px;
+    border-radius: 15px;
 
     background: #101b2b;
 
@@ -714,18 +733,18 @@ body {
     align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .edit-profile-header h2 {
     color: #ffffff;
 
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .edit-profile-header button {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
 
     border: none;
 
@@ -735,7 +754,7 @@ body {
 
     color: #ffffff;
 
-    font-size: 24px;
+    font-size: 21px;
 }
 
 .edit-profile-photo-area {
@@ -745,20 +764,20 @@ body {
 
     align-items: center;
 
-    gap: 10px;
+    gap: 8px;
 
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .edit-profile-photo-area img {
-    width: 92px;
-    height: 92px;
+    width: 76px;
+    height: 76px;
 
     border-radius: 50%;
 
     object-fit: cover;
 
-    border: 3px solid #1685ff;
+    border: 2px solid #1685ff;
 }
 
 #changeProfilePhotoButton {
@@ -768,30 +787,30 @@ body {
 
     color: #168cff;
 
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .edit-profile-box label {
     display: block;
 
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 
     color: #aeb9ca;
 
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .edit-profile-box input,
 .edit-profile-box textarea {
     width: 100%;
 
-    margin-top: 7px;
+    margin-top: 5px;
 
-    padding: 12px 13px;
+    padding: 10px 11px;
 
     border: 1px solid #2b3b51;
 
-    border-radius: 10px;
+    border-radius: 9px;
 
     outline: none;
 
@@ -799,7 +818,7 @@ body {
 
     color: #ffffff;
 
-    font-size: 15px;
+    font-size: 13px;
 }
 
 .edit-profile-box textarea {
@@ -812,416 +831,32 @@ body {
 }
 
 .edit-profile-message {
-    min-height: 22px;
+    min-height: 19px;
 
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 
     color: #63aaff;
 
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .save-profile-button {
     width: 100%;
 
-    height: 46px;
+    height: 42px;
 
     border: none;
 
-    border-radius: 12px;
+    border-radius: 10px;
 
     background: #1685ff;
 
     color: #ffffff;
 
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
 
     cursor: pointer;
-}
-
-
-/* =========================================================
-   BOTTOM NAVIGATION
-   SAME AS HOME / REELS / NOTIFICATIONS
-   ========================================================= */
-
-.bottom-nav {
-    position: fixed;
-
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    z-index: 200;
-
-    height: 76px;
-
-    display: grid;
-
-    grid-template-columns: repeat(5, 1fr);
-
-    background: #0b1422;
-
-    border-top: 1px solid #1c2b3f;
-
-    padding-bottom: env(
-        safe-area-inset-bottom
-    );
-}
-
-.nav-item {
-    position: relative;
-
-    border: none;
-
-    background: transparent;
-
-    color: #718097;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-    justify-content: center;
-
-    gap: 5px;
-
-    font-size: 12px;
-
-    cursor: pointer;
-}
-
-.nav-item svg {
-    width: 27px;
-    height: 27px;
-}
-
-.nav-item.active {
-    color: #1685ff;
-}
-
-.nav-item.active svg {
-    stroke: #1685ff;
-}
-
-.notification-icon-wrapper {
-    position: relative;
-
-    display: flex;
-}
-
-.notification-dot {
-    position: absolute;
-
-    top: -2px;
-    right: -2px;
-
-    width: 7px;
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: #ff3b4d;
-
-    border: 1px solid #0b1422;
-}
-
-
-/* =========================================================
-   HIDDEN
-   ========================================================= */
-
-.hidden {
-    display: none !important;
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 480px) {
-
-    .profile-header {
-        height: 64px;
-        grid-template-columns: 48px 1fr 48px;
-    }
-
-    .profile-header-name {
-        font-size: 20px;
-    }
-
-    .profile-user-row {
-        min-height: 155px;
-
-        gap: 17px;
-
-        padding: 20px 16px;
-    }
-
-    .profile-photo-button {
-        width: 96px;
-        height: 96px;
-    }
-
-    .profile-user-info h2 {
-        font-size: 19px;
-    }
-
-    .profile-username {
-        font-size: 15px;
-    }
-
-    .
-
-
-   /* =========================================================
-   USANEX PROFILE — HOME SIZE MATCH
-   ONLY SIZE / SPACING OVERRIDE
-   DESIGN & COLORS UNCHANGED
-   ========================================================= */
-
-/* PAGE */
-.profile-page {
-    width: 100%;
-    min-height: 100vh;
-    height: auto;
-
-    padding-bottom: 70px;
-
-    overflow-x: hidden;
-    overflow-y: auto;
-}
-
-
-/* =========================================================
-   HEADER — SAME SIZE AS HOME
-   ========================================================= */
-
-.profile-header {
-    width: 100%;
-    height: 55px;
-
-    min-height: 55px;
-
-    padding: 0 14px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-
-/* LEFT HEADER */
-.header-left {
-    gap: 7px;
-}
-
-.back-btn {
-    width: 34px;
-    height: 34px;
-
-    min-width: 34px;
-}
-
-.profile-title {
-    font-size: 17px;
-    line-height: 21px;
-}
-
-
-/* RIGHT HEADER */
-.header-right {
-    gap: 5px;
-}
-
-.share-header-btn {
-    height: 32px;
-    padding: 0 10px;
-
-    font-size: 12px;
-}
-
-.header-menu {
-    width: 32px;
-    height: 32px;
-
-    font-size: 20px;
-}
-
-
-/* =========================================================
-   PROFILE TOP — HOME CONTENT PADDING
-   ========================================================= */
-
-.profile-top {
-    width: 100%;
-
-    padding: 12px 14px 12px;
-}
-
-
-/* PROFILE MAIN */
-.profile-main {
-    gap: 13px;
-}
-
-
-/* =========================================================
-   PROFILE PHOTO
-   ========================================================= */
-
-.profile-avatar {
-    width: 64px;
-    height: 64px;
-
-    min-width: 64px;
-
-    font-size: 27px;
-}
-
-
-/* PLUS BUTTON */
-.dp-add-btn {
-    width: 21px;
-    height: 21px;
-
-    right: -2px;
-    bottom: -1px;
-
-    border-width: 2px;
-
-    font-size: 15px;
-}
-
-
-/* =========================================================
-   PROFILE TEXT
-   ========================================================= */
-
-.display-name {
-    font-size: 17px;
-    line-height: 21px;
-
-    margin-bottom: 3px;
-}
-
-.username {
-    font-size: 12px;
-    line-height: 15px;
-
-    margin-bottom: 2px;
-}
-
-.user-id {
-    font-size: 10px;
-    line-height: 13px;
-}
-
-
-/* =========================================================
-   STATS — COMPACT LIKE HOME CARDS
-   ========================================================= */
-
-.stats {
-    margin-top: 13px;
-
-    padding: 9px 4px;
-
-    border-radius: 12px;
-}
-
-.stat {
-    min-width: 65px;
-}
-
-.stat-number {
-    font-size: 15px;
-    line-height: 18px;
-}
-
-.stat-label {
-    margin-top: 3px;
-
-    font-size: 10px;
-    line-height: 13px;
-}
-
-
-/* =========================================================
-   BIO
-   ========================================================= */
-
-.bio {
-    margin-top: 12px;
-}
-
-.bio-name {
-    font-size: 14px;
-    line-height: 18px;
-}
-
-.bio-text {
-    margin-top: 4px;
-
-    font-size: 12px;
-    line-height: 1.45;
-}
-
-
-/* =========================================================
-   CONTENT TABS
-   ========================================================= */
-
-.content-tabs {
-    height: 44px;
-
-    margin-top: 10px;
-}
-
-.tab {
-    font-size: 11px;
-}
-
-
-/* =========================================================
-   PROFILE GRID
-   ========================================================= */
-
-.content-grid {
-    gap: 2px;
-    padding: 2px;
-}
-
-.post-icon {
-    font-size: 24px;
-}
-
-
-/* =========================================================
-   EMPTY STATE
-   ========================================================= */
-
-.empty {
-    padding: 45px 16px;
-}
-
-.empty-icon {
-    font-size: 34px;
-
-    margin-bottom: 8px;
-}
-
-.empty-title {
-    font-size: 14px;
-}
-
-.empty-text {
-    margin-top: 4px;
-
-    font-size: 11px;
 }
 
 
@@ -1236,58 +871,109 @@ body {
     right: 0;
     bottom: 0;
 
+    z-index: 200;
+
     width: 100%;
     height: 64px;
-
-    min-height: 64px;
-
-    padding: 0;
 
     display: flex;
     align-items: stretch;
     justify-content: space-around;
+
+    background: #070a0f;
+
+    border-top: 1px solid #121923;
+
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
-
-/* NAV BUTTON */
-.nav-btn {
+.nav-item {
     width: 20%;
     height: 64px;
 
-    min-width: 0;
+    border: none;
+    outline: none;
 
-    font-size: 21px;
+    background: transparent;
+
+    color: #687486;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 3px;
+
+    cursor: pointer;
 }
 
+.nav-item svg {
+    width: 21px;
+    height: 21px;
+}
 
-/* CREATE BUTTON */
-.create-btn {
-    width: 40px;
-    height: 40px;
+.nav-item span {
+    font-size: 10px;
+    line-height: 12px;
 
-    border-radius: 12px;
+    font-weight: 500;
+}
 
-    font-size: 24px;
+.nav-item.active {
+    color: #247cff;
+}
+
+.nav-item.active svg {
+    stroke: #247cff;
 }
 
 
 /* =========================================================
-   TOAST — HOME SIZE
+   NOTIFICATION
    ========================================================= */
 
-.toast {
-    bottom: 74px;
+.notification-icon-wrapper {
+    position: relative;
 
-    padding: 9px 14px;
+    width: 21px;
+    height: 21px;
 
-    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    font-size: 11px;
+.notification-dot {
+    position: absolute;
+
+    top: -2px;
+    right: -3px;
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #ff4058;
+
+    border: 1px solid #070a0f;
 }
 
 
 /* =========================================================
-   SMALL PHONE — SAME AS HOME
+   HIDDEN
+   ========================================================= */
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =========================================================
+   SMALL PHONES — SAME AS HOME
    ========================================================= */
 
 @media (max-width: 360px) {
@@ -1297,88 +983,78 @@ body {
         min-height: 52px;
 
         padding: 0 11px;
+
+        grid-template-columns: 38px 1fr 38px;
     }
 
-    .profile-top {
-        padding-left: 11px;
-        padding-right: 11px;
-    }
-
-    .profile-main {
-        gap: 11px;
-    }
-
-    .profile-avatar {
-        width: 58px;
-        height: 58px;
-        min-width: 58px;
-
-        font-size: 24px;
-    }
-
-    .dp-add-btn {
-        width: 19px;
-        height: 19px;
-
-        font-size: 14px;
-    }
-
-    .display-name {
+    .profile-header-name {
         font-size: 16px;
     }
 
-    .username {
+    .profile-add-button,
+    .profile-menu-button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .profile-user-row {
+        min-height: 105px;
+
+        gap: 11px;
+
+        padding: 10px 11px;
+    }
+
+    .profile-photo-button {
+        width: 58px;
+        height: 58px;
+    }
+
+    .profile-user-info h2 {
+        font-size: 16px;
+        line-height: 19px;
+    }
+
+    .profile-username {
         font-size: 11px;
     }
 
-    .user-id {
-        font-size: 9px;
+    .profile-user-id {
+        font-size: 8px;
+        padding: 3px 6px;
     }
 
-    .stats {
-        margin-top: 11px;
-        padding: 8px 3px;
+    .profile-bio-section {
+        padding: 8px 11px 10px;
     }
 
-    .stat {
-        min-width: 58px;
+    .profile-bio {
+        font-size: 11px;
     }
 
-    .stat-number {
+    .profile-stat {
+        min-height: 54px;
+    }
+
+    .profile-stat strong {
         font-size: 14px;
     }
 
-    .stat-label {
+    .profile-stat span {
         font-size: 9px;
     }
 
-    .bio {
-        margin-top: 10px;
-    }
-
-    .bio-name {
-        font-size: 13px;
-    }
-
-    .bio-text {
-        font-size: 11px;
-    }
-
-    .content-tabs {
+    .profile-content-tabs {
         height: 42px;
     }
 
-    .tab {
+    .profile-content-tab {
         font-size: 10px;
     }
 
     .bottom-nav,
-    .nav-btn {
+    .nav-item {
         height: 62px;
-    }
-
-    .nav-btn {
-        font-size: 20px;
     }
 }
 
@@ -1389,18 +1065,13 @@ body {
 
 @media (min-width: 700px) {
 
-    .profile-top {
+    .profile-user-row,
+    .profile-bio-section,
+    .profile-stats,
+    .profile-content-tabs,
+    .profile-content {
         max-width: 680px;
 
-        margin: 0 auto;
-
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
-    .content-tabs,
-    .content-grid {
-        max-width: 680px;
         margin-left: auto;
         margin-right: auto;
     }
@@ -1412,5 +1083,19 @@ body {
         width: min(680px, 100%);
 
         transform: translateX(-50%);
+    }
+}
+
+
+/* =========================================================
+   REDUCE MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
     }
 }
