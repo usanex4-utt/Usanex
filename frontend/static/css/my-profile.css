@@ -975,3 +975,442 @@ body {
     }
 
     .
+
+
+   /* =========================================================
+   USANEX PROFILE — HOME SIZE MATCH
+   ONLY SIZE / SPACING OVERRIDE
+   DESIGN & COLORS UNCHANGED
+   ========================================================= */
+
+/* PAGE */
+.profile-page {
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
+
+    padding-bottom: 70px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+
+/* =========================================================
+   HEADER — SAME SIZE AS HOME
+   ========================================================= */
+
+.profile-header {
+    width: 100%;
+    height: 55px;
+
+    min-height: 55px;
+
+    padding: 0 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+/* LEFT HEADER */
+.header-left {
+    gap: 7px;
+}
+
+.back-btn {
+    width: 34px;
+    height: 34px;
+
+    min-width: 34px;
+}
+
+.profile-title {
+    font-size: 17px;
+    line-height: 21px;
+}
+
+
+/* RIGHT HEADER */
+.header-right {
+    gap: 5px;
+}
+
+.share-header-btn {
+    height: 32px;
+    padding: 0 10px;
+
+    font-size: 12px;
+}
+
+.header-menu {
+    width: 32px;
+    height: 32px;
+
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   PROFILE TOP — HOME CONTENT PADDING
+   ========================================================= */
+
+.profile-top {
+    width: 100%;
+
+    padding: 12px 14px 12px;
+}
+
+
+/* PROFILE MAIN */
+.profile-main {
+    gap: 13px;
+}
+
+
+/* =========================================================
+   PROFILE PHOTO
+   ========================================================= */
+
+.profile-avatar {
+    width: 64px;
+    height: 64px;
+
+    min-width: 64px;
+
+    font-size: 27px;
+}
+
+
+/* PLUS BUTTON */
+.dp-add-btn {
+    width: 21px;
+    height: 21px;
+
+    right: -2px;
+    bottom: -1px;
+
+    border-width: 2px;
+
+    font-size: 15px;
+}
+
+
+/* =========================================================
+   PROFILE TEXT
+   ========================================================= */
+
+.display-name {
+    font-size: 17px;
+    line-height: 21px;
+
+    margin-bottom: 3px;
+}
+
+.username {
+    font-size: 12px;
+    line-height: 15px;
+
+    margin-bottom: 2px;
+}
+
+.user-id {
+    font-size: 10px;
+    line-height: 13px;
+}
+
+
+/* =========================================================
+   STATS — COMPACT LIKE HOME CARDS
+   ========================================================= */
+
+.stats {
+    margin-top: 13px;
+
+    padding: 9px 4px;
+
+    border-radius: 12px;
+}
+
+.stat {
+    min-width: 65px;
+}
+
+.stat-number {
+    font-size: 15px;
+    line-height: 18px;
+}
+
+.stat-label {
+    margin-top: 3px;
+
+    font-size: 10px;
+    line-height: 13px;
+}
+
+
+/* =========================================================
+   BIO
+   ========================================================= */
+
+.bio {
+    margin-top: 12px;
+}
+
+.bio-name {
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.bio-text {
+    margin-top: 4px;
+
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+
+/* =========================================================
+   CONTENT TABS
+   ========================================================= */
+
+.content-tabs {
+    height: 44px;
+
+    margin-top: 10px;
+}
+
+.tab {
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   PROFILE GRID
+   ========================================================= */
+
+.content-grid {
+    gap: 2px;
+    padding: 2px;
+}
+
+.post-icon {
+    font-size: 24px;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.empty {
+    padding: 45px 16px;
+}
+
+.empty-icon {
+    font-size: 34px;
+
+    margin-bottom: 8px;
+}
+
+.empty-title {
+    font-size: 14px;
+}
+
+.empty-text {
+    margin-top: 4px;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   BOTTOM NAV — EXACT HOME SCALE
+   ========================================================= */
+
+.bottom-nav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    width: 100%;
+    height: 64px;
+
+    min-height: 64px;
+
+    padding: 0;
+
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+}
+
+
+/* NAV BUTTON */
+.nav-btn {
+    width: 20%;
+    height: 64px;
+
+    min-width: 0;
+
+    font-size: 21px;
+}
+
+
+/* CREATE BUTTON */
+.create-btn {
+    width: 40px;
+    height: 40px;
+
+    border-radius: 12px;
+
+    font-size: 24px;
+}
+
+
+/* =========================================================
+   TOAST — HOME SIZE
+   ========================================================= */
+
+.toast {
+    bottom: 74px;
+
+    padding: 9px 14px;
+
+    border-radius: 9px;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   SMALL PHONE — SAME AS HOME
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    .profile-header {
+        height: 52px;
+        min-height: 52px;
+
+        padding: 0 11px;
+    }
+
+    .profile-top {
+        padding-left: 11px;
+        padding-right: 11px;
+    }
+
+    .profile-main {
+        gap: 11px;
+    }
+
+    .profile-avatar {
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+
+        font-size: 24px;
+    }
+
+    .dp-add-btn {
+        width: 19px;
+        height: 19px;
+
+        font-size: 14px;
+    }
+
+    .display-name {
+        font-size: 16px;
+    }
+
+    .username {
+        font-size: 11px;
+    }
+
+    .user-id {
+        font-size: 9px;
+    }
+
+    .stats {
+        margin-top: 11px;
+        padding: 8px 3px;
+    }
+
+    .stat {
+        min-width: 58px;
+    }
+
+    .stat-number {
+        font-size: 14px;
+    }
+
+    .stat-label {
+        font-size: 9px;
+    }
+
+    .bio {
+        margin-top: 10px;
+    }
+
+    .bio-name {
+        font-size: 13px;
+    }
+
+    .bio-text {
+        font-size: 11px;
+    }
+
+    .content-tabs {
+        height: 42px;
+    }
+
+    .tab {
+        font-size: 10px;
+    }
+
+    .bottom-nav,
+    .nav-btn {
+        height: 62px;
+    }
+
+    .nav-btn {
+        font-size: 20px;
+    }
+}
+
+
+/* =========================================================
+   TABLET / DESKTOP — SAME HOME WIDTH
+   ========================================================= */
+
+@media (min-width: 700px) {
+
+    .profile-top {
+        max-width: 680px;
+
+        margin: 0 auto;
+
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .content-tabs,
+    .content-grid {
+        max-width: 680px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .bottom-nav {
+        left: 50%;
+        right: auto;
+
+        width: min(680px, 100%);
+
+        transform: translateX(-50%);
+    }
+}
