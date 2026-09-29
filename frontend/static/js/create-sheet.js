@@ -1,719 +1,297 @@
-/* =========================================================
-   USANEX — COMMON CREATE SHEET
-   Home / Reels / Profile / My Profile
-========================================================= */
-
 "use strict";
 
-
 /* =========================================================
-   STATE
+   USANEX — CREATE SHEET
 ========================================================= */
 
-const createSheetState = {
-    initialized: false
-};
+(function () {
+
+    function loadCreateSheet() {
+
+        if (document.getElementById("createOverlay")) {
+            return;
+        }
+
+        const overlay = document.createElement("div");
+
+        overlay.id = "createOverlay";
+
+        overlay.innerHTML = `
+            <div class="create-sheet">
+
+                <div class="create-handle"></div>
+
+                <div class="create-header">
+
+                    <div>
+                        <h2>Create</h2>
+                        <p>Share something on Usanex</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="create-close"
+                        id="closeCreateSheet"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+                <div class="create-options">
+
+                    <button
+                        type="button"
+                        class="create-option"
+                        data-create-type="reel"
+                    >
+                        <span class="create-line-icon reel-icon">
+                            <span></span>
+                        </span>
+
+                        <span class="create-option-text">
+                            <strong>Reel</strong>
+                            <small>Create a video reel</small>
+                        </span>
+
+                        <span class="create-arrow">›</span>
+                    </button>
 
 
-/* =========================================================
-   INITIALIZE
-========================================================= */
+                    <button
+                        type="button"
+                        class="create-option"
+                        data-create-type="image"
+                    >
+                        <span class="create-line-icon image-icon">
+                            <span></span>
+                        </span>
 
-function initCreateSheet() {
+                        <span class="create-option-text">
+                            <strong>Image</strong>
+                            <small>Share photos</small>
+                        </span>
 
-    if (createSheetState.initialized) {
-        return;
-    }
-
-    createSheetState.initialized = true;
-
-    injectCreateSheet();
-
-    bindCreateButtons();
-
-    bindCreateSheetEvents();
-
-}
+                        <span class="create-arrow">›</span>
+                    </button>
 
 
-/* =========================================================
-   INJECT CREATE SHEET
-========================================================= */
+                    <button
+                        type="button"
+                        class="create-option"
+                        data-create-type="moment"
+                    >
+                        <span class="create-line-icon moment-icon">
+                            <span></span>
+                        </span>
 
-function injectCreateSheet() {
+                        <span class="create-option-text">
+                            <strong>Nex Moment</strong>
+                            <small>Share your moment</small>
+                        </span>
 
-    if (
-        document.getElementById("createSheet")
-    ) {
-        return;
-    }
-
-
-    const wrapper =
-        document.createElement("div");
-
-
-    wrapper.innerHTML = `
-
-        <!-- =================================================
-             BACKDROP
-        ================================================== -->
-
-        <div
-            id="createSheetBackdrop"
-            aria-hidden="true"
-        ></div>
+                        <span class="create-arrow">›</span>
+                    </button>
 
 
-        <!-- =================================================
-             CREATE BOTTOM SHEET
-        ================================================== -->
+                    <button
+                        type="button"
+                        class="create-option"
+                        data-create-type="private"
+                    >
+                        <span class="create-line-icon private-icon">
+                            <span></span>
+                        </span>
 
-        <section
-            id="createSheet"
-            aria-hidden="true"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="createSheetTitle"
-        >
+                        <span class="create-option-text">
+                            <strong>Private</strong>
+                            <small>Share privately</small>
+                        </span>
 
-            <!-- DRAG HANDLE -->
+                        <span class="create-arrow">›</span>
+                    </button>
 
-            <div class="create-sheet-handle"></div>
-
-
-            <!-- HEADER -->
-
-            <div class="create-sheet-header">
-
-                <h2
-                    id="createSheetTitle"
-                    class="create-sheet-title"
-                >
-                    Create
-                </h2>
-
-
-                <button
-                    type="button"
-                    id="createSheetClose"
-                    class="create-sheet-close"
-                    aria-label="Close Create"
-                >
-                    ×
-                </button>
+                </div>
 
             </div>
+        `;
 
+        document.body.appendChild(overlay);
 
-            <!-- =================================================
-                 CREATE OPTIONS
-            ================================================== -->
+        setupCreateSheet();
 
-            <div class="create-options">
+    }
 
 
-                <!-- =================================================
-                     REEL
-                ================================================== -->
+    function setupCreateSheet() {
 
-                <button
-                    type="button"
-                    class="create-option"
-                    data-create-type="reel"
-                >
+        const overlay =
+            document.getElementById("createOverlay");
 
-                    <span
-                        class="create-option-icon"
-                        aria-hidden="true"
-                    >
+        if (!overlay) {
+            return;
+        }
 
-                        <svg
-                            viewBox="0 0 24 24"
-                        >
 
-                            <rect
-                                x="3"
-                                y="4"
-                                width="18"
-                                height="16"
-                                rx="3"
-                            ></rect>
+        const closeButton =
+            document.getElementById("closeCreateSheet");
 
-                            <path
-                                d="M8 4l3 4"
-                            ></path>
 
-                            <path
-                                d="M13 4l3 4"
-                            ></path>
-
-                            <path
-                                d="M10 10l5 3-5 3z"
-                            ></path>
-
-                        </svg>
-
-                    </span>
-
-
-                    <span class="create-option-name">
-                        Reel
-                    </span>
-
-                </button>
-
-
-                <!-- =================================================
-                     IMAGE
-                ================================================== -->
-
-                <button
-                    type="button"
-                    class="create-option"
-                    data-create-type="image"
-                >
-
-                    <span
-                        class="create-option-icon"
-                        aria-hidden="true"
-                    >
-
-                        <svg
-                            viewBox="0 0 24 24"
-                        >
-
-                            <rect
-                                x="3"
-                                y="4"
-                                width="18"
-                                height="16"
-                                rx="3"
-                            ></rect>
-
-                            <circle
-                                cx="8.5"
-                                cy="9"
-                                r="1.5"
-                            ></circle>
-
-                            <path
-                                d="M4 17l5-5 3.5 3.5 2.5-2.5 5 5"
-                            ></path>
-
-                        </svg>
-
-                    </span>
-
-
-                    <span class="create-option-name">
-                        Image
-                    </span>
-
-                </button>
-
-
-                <!-- =================================================
-                     NEX MOMENT
-                ================================================== -->
-
-                <button
-                    type="button"
-                    class="create-option"
-                    data-create-type="moment"
-                >
-
-                    <span
-                        class="create-option-icon"
-                        aria-hidden="true"
-                    >
-
-                        <svg
-                            viewBox="0 0 24 24"
-                        >
-
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="8.5"
-                            ></circle>
-
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="5.5"
-                            ></circle>
-
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="2"
-                            ></circle>
-
-                        </svg>
-
-                    </span>
-
-
-                    <span class="create-option-name">
-                        Nex Moment
-                    </span>
-
-                </button>
-
-
-                <!-- =================================================
-                     PRIVATE
-                ================================================== -->
-
-                <button
-                    type="button"
-                    class="create-option"
-                    data-create-type="private"
-                >
-
-                    <span
-                        class="create-option-icon"
-                        aria-hidden="true"
-                    >
-
-                        <svg
-                            viewBox="0 0 24 24"
-                        >
-
-                            <rect
-                                x="5"
-                                y="10"
-                                width="14"
-                                height="10"
-                                rx="2"
-                            ></rect>
-
-                            <path
-                                d="M8 10V7a4 4 0 018 0v3"
-                            ></path>
-
-                            <circle
-                                cx="12"
-                                cy="15"
-                                r="1"
-                            ></circle>
-
-                            <path
-                                d="M12 16v2"
-                            ></path>
-
-                        </svg>
-
-                    </span>
-
-
-                    <span class="create-option-name">
-                        Private
-                    </span>
-
-                </button>
-
-
-            </div>
-
-        </section>
-
-    `;
-
-
-    while (
-        wrapper.firstElementChild
-    ) {
-
-        document.body.appendChild(
-            wrapper.firstElementChild
+        closeButton?.addEventListener(
+            "click",
+            closeCreateSheet
         );
 
-    }
 
-}
+        overlay.addEventListener(
+            "click",
+            function (event) {
 
-
-/* =========================================================
-   FIND EXISTING + BUTTONS
-========================================================= */
-
-function bindCreateButtons() {
-
-    const selectors = [
-
-        "#createButton",
-
-        "#addButton",
-
-        "#plusButton",
-
-        ".create-button",
-
-        ".add-button",
-
-        ".plus-button",
-
-        "[data-action='create']",
-
-        "[data-action='add']",
-
-        "[data-create='true']"
-
-    ];
-
-
-    const buttons = [];
-
-
-    selectors.forEach(
-        selector => {
-
-            document
-                .querySelectorAll(selector)
-                .forEach(button => {
-
-                    if (
-                        !buttons.includes(button)
-                    ) {
-
-                        buttons.push(button);
-
-                    }
-
-                });
-
-        }
-    );
-
-
-    buttons.forEach(
-        button => {
-
-            if (
-                button.dataset.createSheetBound ===
-                "true"
-            ) {
-
-                return;
+                if (event.target === overlay) {
+                    closeCreateSheet();
+                }
 
             }
-
-
-            button.dataset.createSheetBound =
-                "true";
-
-
-            button.addEventListener(
-                "click",
-                event => {
-
-                    event.preventDefault();
-
-                    event.stopPropagation();
-
-                    openCreateSheet();
-
-                }
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SHEET EVENTS
-========================================================= */
-
-function bindCreateSheetEvents() {
-
-    const backdrop =
-        document.getElementById(
-            "createSheetBackdrop"
         );
 
 
-    const closeButton =
-        document.getElementById(
-            "createSheetClose"
-        );
+        overlay
+            .querySelectorAll(".create-option")
+            .forEach(function (button) {
 
-
-    if (backdrop) {
-
-        backdrop.addEventListener(
-            "click",
-            closeCreateSheet
-        );
-
-    }
-
-
-    if (closeButton) {
-
-        closeButton.addEventListener(
-            "click",
-            closeCreateSheet
-        );
-
-    }
-
-
-    document
-        .querySelectorAll(
-            "[data-create-type]"
-        )
-        .forEach(
-            option => {
-
-                option.addEventListener(
+                button.addEventListener(
                     "click",
-                    () => {
+                    function () {
 
                         const type =
-                            option.dataset.createType;
+                            button.dataset.createType;
 
-
-                        handleCreateType(
-                            type
-                        );
+                        openCreateType(type);
 
                     }
                 );
 
-            }
-        );
+            });
+
+    }
 
 
-    document.addEventListener(
-        "keydown",
-        event => {
+    function openCreateSheet() {
 
-            if (
-                event.key === "Escape"
-            ) {
+        loadCreateSheet();
 
-                closeCreateSheet();
+        const overlay =
+            document.getElementById("createOverlay");
 
-            }
-
+        if (!overlay) {
+            return;
         }
-    );
 
-}
+        requestAnimationFrame(function () {
 
+            overlay.classList.add("active");
 
-/* =========================================================
-   OPEN CREATE SHEET
-========================================================= */
+        });
 
-function openCreateSheet() {
+        document.body.style.overflow = "hidden";
 
-    const sheet =
-        document.getElementById(
-            "createSheet"
-        );
+    }
 
 
-    const backdrop =
-        document.getElementById(
-            "createSheetBackdrop"
-        );
+    function closeCreateSheet() {
 
+        const overlay =
+            document.getElementById("createOverlay");
+
+        if (!overlay) {
+            return;
+        }
+
+        overlay.classList.remove("active");
+
+        document.body.style.overflow = "";
+
+    }
+
+
+    function openCreateType(type) {
+
+        closeCreateSheet();
+
+        /*
+         * फिलहाल सभी create options
+         * उसी media upload page पर जाएंगे।
+         *
+         * बाद में अलग-अलग upload flow
+         * जोड़ सकते हैं।
+         */
+
+        const url =
+            "/media-upload?type=" +
+            encodeURIComponent(type);
+
+        window.location.href = url;
+
+    }
+
+
+    /*
+     * Global function
+     *
+     * Home / Reels / Profile /
+     * My Profile किसी भी page से:
+     *
+     * openUsanexCreate()
+     */
+
+    window.openUsanexCreate =
+        openCreateSheet;
+
+
+    /*
+     * Automatically load CSS
+     */
 
     if (
-        !sheet ||
-        !backdrop
+        !document.querySelector(
+            'link[data-usanex-create-css]'
+        )
     ) {
 
-        return;
+        const css =
+            document.createElement("link");
+
+        css.rel = "stylesheet";
+
+        css.href =
+            "/static/css/create-sheet.css?v=1";
+
+        css.dataset.usanexCreateCss =
+            "true";
+
+        document.head.appendChild(css);
 
     }
 
 
-    sheet.classList.add(
-        "active"
-    );
+    /*
+     * Prepare after page loaded
+     */
 
+    if (
+        document.readyState ===
+        "loading"
+    ) {
 
-    backdrop.classList.add(
-        "active"
-    );
-
-
-    sheet.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-
-    backdrop.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-
-    document.body.style.overflow =
-        "hidden";
-
-}
-
-
-/* =========================================================
-   CLOSE CREATE SHEET
-========================================================= */
-
-function closeCreateSheet() {
-
-    const sheet =
-        document.getElementById(
-            "createSheet"
+        document.addEventListener(
+            "DOMContentLoaded",
+            loadCreateSheet
         );
 
+    } else {
 
-    const backdrop =
-        document.getElementById(
-            "createSheetBackdrop"
-        );
-
-
-    if (sheet) {
-
-        sheet.classList.remove(
-            "active"
-        );
-
-
-        sheet.setAttribute(
-            "aria-hidden",
-            "true"
-        );
+        loadCreateSheet();
 
     }
 
-
-    if (backdrop) {
-
-        backdrop.classList.remove(
-            "active"
-        );
-
-
-        backdrop.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-
-    }
-
-
-    document.body.style.overflow =
-        "";
-
-}
-
-
-/* =========================================================
-   HANDLE CREATE OPTION
-========================================================= */
-
-function handleCreateType(
-    type
-) {
-
-    closeCreateSheet();
-
-
-    switch (type) {
-
-
-        /* =================================================
-           REEL
-        ================================================== */
-
-        case "reel":
-
-            window.location.href =
-                "/media-upload?type=reel";
-
-            break;
-
-
-        /* =================================================
-           IMAGE
-        ================================================== */
-
-        case "image":
-
-            window.location.href =
-                "/media-upload?type=image";
-
-            break;
-
-
-        /* =================================================
-           NEX MOMENT
-        ================================================== */
-
-        case "moment":
-
-            window.location.href =
-                "/media-upload?type=moment";
-
-            break;
-
-
-        /* =================================================
-           PRIVATE
-        ================================================== */
-
-        case "private":
-
-            window.location.href =
-                "/media-upload?type=private";
-
-            break;
-
-
-        default:
-
-            console.warn(
-                "Unknown create type:",
-                type
-            );
-
-    }
-
-}
-
-
-/* =========================================================
-   START
-========================================================= */
-
-if (
-    document.readyState === "loading"
-) {
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        initCreateSheet
-    );
-
-} else {
-
-    initCreateSheet();
-
-}
-
-
-/* =========================================================
-   DEBUG
-========================================================= */
-
-console.log(
-    "Usanex Create Sheet loaded — Reel, Image, Nex Moment, Private."
-);
+})();
