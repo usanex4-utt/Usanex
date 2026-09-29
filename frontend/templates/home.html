@@ -15,6 +15,7 @@
         rel="stylesheet"
         href="/static/css/home.css?v=22"
     >
+
 </head>
 
 <body>
@@ -36,15 +37,20 @@
             <span></span>
         </button>
 
+
         <div class="brand">
             <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
         </div>
+
+
+        <!-- ================= CREATE + ================= -->
 
         <button
             type="button"
             class="header-plus"
             id="headerPlus"
             aria-label="Create"
+            onclick="openUsanexCreate()"
         >
             +
         </button>
@@ -57,6 +63,7 @@
     <main class="main-area">
 
         <div class="content-scroll">
+
 
             <!-- ================= NEX MOMENT ================= -->
 
@@ -95,38 +102,68 @@
 
 
                     <div class="moment-item">
-                        <div class="moment-avatar">U</div>
+
+                        <div class="moment-avatar">
+                            U
+                        </div>
+
                         <span>Uttam</span>
+
                     </div>
 
 
                     <div class="moment-item">
-                        <div class="moment-avatar">A</div>
+
+                        <div class="moment-avatar">
+                            A
+                        </div>
+
                         <span>Aman</span>
+
                     </div>
 
 
                     <div class="moment-item">
-                        <div class="moment-avatar">R</div>
+
+                        <div class="moment-avatar">
+                            R
+                        </div>
+
                         <span>Rahul</span>
+
                     </div>
 
 
                     <div class="moment-item">
-                        <div class="moment-avatar">P</div>
+
+                        <div class="moment-avatar">
+                            P
+                        </div>
+
                         <span>Priya</span>
+
                     </div>
 
 
                     <div class="moment-item">
-                        <div class="moment-avatar">S</div>
+
+                        <div class="moment-avatar">
+                            S
+                        </div>
+
                         <span>Shiv</span>
+
                     </div>
 
 
                     <div class="moment-item">
-                        <div class="moment-avatar">K</div>
+
+                        <div class="moment-avatar">
+                            K
+                        </div>
+
                         <span>Karan</span>
+
                     </div>
 
                 </div>
@@ -174,6 +211,9 @@
 
     <nav class="bottom-nav">
 
+
+        <!-- HOME -->
+
         <button
             type="button"
             class="nav-item active"
@@ -194,6 +234,8 @@
 
         </button>
 
+
+        <!-- REEL -->
 
         <button
             type="button"
@@ -225,6 +267,8 @@
         </button>
 
 
+        <!-- SEARCH -->
+
         <button
             type="button"
             class="nav-item"
@@ -250,6 +294,8 @@
 
         </button>
 
+
+        <!-- NOTIFICATION -->
 
         <button
             type="button"
@@ -281,6 +327,8 @@
 
         </button>
 
+
+        <!-- PROFILE -->
 
         <button
             type="button"
@@ -400,7 +448,23 @@
 </div>
 
 
-<script src="/static/js/home.js?v=23"></script>
+<!-- =========================================================
+     HOME JAVASCRIPT
+========================================================= -->
+
+<script
+    src="/static/js/home.js?v=23"
+></script>
+
+
+<!-- =========================================================
+     CREATE BOTTOM SHEET
+========================================================= -->
+
+<script
+    src="/static/js/create-sheet.js?v=1"
+></script>
+
 
 </body>
 </html>
