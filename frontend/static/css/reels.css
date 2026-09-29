@@ -1,1017 +1,664 @@
-/* =========================================================
-   USANEX - REELS
-   Full Screen Mobile Reels UI
-========================================================= */
+<!DOCTYPE html>
+<html lang="en">
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+<head>
 
-html,
-body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+    <meta charset="UTF-8">
 
-    background: #000000;
-    color: #ffffff;
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
 
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-}
+    <meta
+        name="theme-color"
+        content="#000000"
+    >
 
-body {
-    margin: 0;
-    padding: 0;
-}
+    <title>Usanex</title>
 
-button {
-    font: inherit;
-    border: 0;
-    outline: none;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
+    <link
+        rel="stylesheet"
+        href="/static/css/reels.css?v=3"
+    >
 
+</head>
 
-/* =========================================================
-   PAGE
-========================================================= */
 
-.reels-page {
-    position: relative;
+<body>
 
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
+<div class="reels-page">
 
-    overflow: hidden;
 
-    background: #000000;
-}
+    <!-- =====================================================
+         TOP HEADER
+    ====================================================== -->
 
+    <header class="reels-header">
 
-/* =========================================================
-   TOP HEADER
-========================================================= */
+        <button
+            type="button"
+            class="create-reel-button"
+            id="createReelButton"
+            aria-label="Create reel"
+            title="Create reel"
+        >
+            +
+        </button>
 
-.reels-header {
-    position: fixed;
+    </header>
 
-    top: 0;
-    left: 0;
-    right: 0;
 
-    z-index: 100;
+    <!-- =====================================================
+         REELS CONTAINER
+    ====================================================== -->
 
-    height: 64px;
+    <main
+        class="reels-container"
+        id="reelsContainer"
+    >
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+        <!--
+            Real reels are loaded by reels.js.
+        -->
 
-    padding:
-        env(safe-area-inset-top)
-        14px
-        0;
+        <article
+            class="reel-card"
+            data-reel-id="demo-1"
+            data-demo="true"
+        >
 
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(0, 0, 0, 0.72),
-            rgba(0, 0, 0, 0)
-        );
 
-    pointer-events: none;
-}
+            <!-- =================================================
+                 VIDEO
+            ================================================== -->
 
-.reels-title {
-    font-size: 21px;
-    font-weight: 800;
+            <div class="reel-video">
 
-    letter-spacing: 0.2px;
+                <div class="video-placeholder">
 
-    color: #ffffff;
+                    <div class="placeholder-icon">
 
-    text-shadow:
-        0 1px 8px rgba(0, 0, 0, 0.65);
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                        >
 
-    pointer-events: auto;
-}
+                            <rect
+                                x="3"
+                                y="3"
+                                width="18"
+                                height="18"
+                                rx="3"
+                            ></rect>
 
+                            <path
+                                d="M9 8l7 4-7 4V8z"
+                            ></path>
 
-/* =========================================================
-   CREATE REEL PLUS BUTTON
-========================================================= */
+                        </svg>
 
-.create-reel-button {
-    width: 42px;
-    height: 42px;
+                    </div>
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+                    <span>
+                        Loading reels...
+                    </span>
 
-    border-radius: 50%;
+                </div>
+
+            </div>
+
 
-    background:
-        rgba(0, 0, 0, 0.34);
+            <!-- =================================================
+                 RIGHT ACTIONS
+            ================================================== -->
 
-    color: #ffffff;
+            <div class="reel-actions">
+
+
+                <!-- =================================================
+                     3 STAR RATING
+                ================================================== -->
 
-    font-size: 30px;
-    font-weight: 300;
+                <div
+                    class="reel-rating"
+                    aria-label="Rate this reel"
+                >
 
-    line-height: 1;
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="1"
+                        aria-label="1 star"
+                    >
+                        ★
+                    </button>
 
-    pointer-events: auto;
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="2"
+                        aria-label="2 stars"
+                    >
+                        ★
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rating-star"
+                        data-rating="3"
+                        aria-label="3 stars"
+                    >
+                        ★
+                    </button>
 
-    transition:
-        background 0.2s ease,
-        transform 0.15s ease;
-}
+                    <span class="rating-label">
+                        Rate
+                    </span>
 
-.create-reel-button:hover {
-    background:
-        rgba(255, 255, 255, 0.10);
-}
+                </div>
 
-.create-reel-button:active {
-    transform: scale(0.88);
-}
 
+                <!-- =================================================
+                     COMMENT
+                ================================================== -->
 
-/* =========================================================
-   REELS CONTAINER
-========================================================= */
+                <button
+                    type="button"
+                    class="reel-action"
+                    data-action="comment"
+                    aria-label="Comment"
+                >
 
-.reels-container {
-    width: 100%;
-    height: 100%;
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
 
-    overflow-y: auto;
-    overflow-x: hidden;
+                        <path
+                            d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.5-.7L4 20l1.4-3.5A7.3 7.3 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5z"
+                        ></path>
 
-    scroll-snap-type: y mandatory;
+                    </svg>
 
-    scrollbar-width: none;
+                    <span class="comment-count">
+                        0
+                    </span>
 
-    background: #000000;
-}
+                </button>
 
-.reels-container::-webkit-scrollbar {
-    display: none;
-}
 
+                <!-- =================================================
+                     SHARE
+                ================================================== -->
 
-/* =========================================================
-   REEL CARD
-========================================================= */
+                <button
+                    type="button"
+                    class="reel-action"
+                    data-action="share"
+                    aria-label="Share"
+                >
 
-.reel-card {
-    position: relative;
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
 
-    width: 100%;
+                        <path
+                            d="M21 3L10 14"
+                        ></path>
 
-    height: 100vh;
-    height: 100dvh;
+                        <path
+                            d="M21 3l-7 18-4-7-7-4 18-7z"
+                        ></path>
 
-    min-height: 100vh;
-    min-height: 100dvh;
+                    </svg>
+
+                    <span>
+                        Share
+                    </span>
+
+                </button>
+
+
+                <!-- =================================================
+                     SAVE
+                ================================================== -->
+
+                <button
+                    type="button"
+                    class="reel-action"
+                    data-action="save"
+                    aria-label="Save"
+                >
 
-    overflow: hidden;
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
 
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+                        <path
+                            d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5z"
+                        ></path>
 
-    background: #10151c;
-}
+                    </svg>
 
+                    <span>
+                        Save
+                    </span>
 
-/* =========================================================
-   VIDEO AREA
-========================================================= */
+                </button>
 
-.reel-video {
-    position: absolute;
 
-    inset: 0;
+                <!-- =================================================
+                     DOWNLOAD
+                ================================================== -->
 
-    display: flex;
+                <button
+                    type="button"
+                    class="reel-action"
+                    data-action="download"
+                    aria-label="Download"
+                >
 
-    align-items: center;
-    justify-content: center;
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
 
-    background:
-        radial-gradient(
-            circle at 50% 35%,
-            #1b2735,
-            #0b1017 55%,
-            #05070a 100%
-        );
-}
+                        <path
+                            d="M12 3v12"
+                        ></path>
 
-.video-placeholder {
-    display: flex;
+                        <path
+                            d="M7 10l5 5 5-5"
+                        ></path>
 
-    flex-direction: column;
+                        <path
+                            d="M5 21h14"
+                        ></path>
 
-    align-items: center;
-    justify-content: center;
+                    </svg>
 
-    gap: 12px;
+                    <span>
+                        Download
+                    </span>
 
-    color: #7e8997;
+                </button>
 
-    text-align: center;
 
-    pointer-events: none;
-}
+                <!-- =================================================
+                     MORE
+                ================================================== -->
 
-.placeholder-icon {
-    width: 68px;
-    height: 68px;
+                <button
+                    type="button"
+                    class="reel-action more-action"
+                    data-action="more"
+                    aria-label="More"
+                >
 
-    display: flex;
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
 
-    align-items: center;
-    justify-content: center;
+                        <circle
+                            cx="5"
+                            cy="12"
+                            r="1"
+                        ></circle>
 
-    border-radius: 22px;
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="1"
+                        ></circle>
 
-    background:
-        rgba(255, 255, 255, 0.055);
+                        <circle
+                            cx="19"
+                            cy="12"
+                            r="1"
+                        ></circle>
 
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.10);
-}
+                    </svg>
 
-.placeholder-icon svg {
-    width: 32px;
-    height: 32px;
-}
+                </button>
 
-.video-placeholder span {
-    font-size: 13px;
-}
+            </div>
 
 
-/* =========================================================
-   VIDEO OVERLAY
-========================================================= */
+            <!-- =================================================
+                 USER INFORMATION
+            ================================================== -->
 
-.reel-card::after {
-    content: "";
+            <div class="reel-info">
 
-    position: absolute;
+                <div class="reel-user-row">
 
-    inset: 0;
+                    <div class="reel-avatar">
+                        U
+                    </div>
 
-    pointer-events: none;
 
-    background:
-        linear-gradient(
-            to top,
-            rgba(0, 0, 0, 0.80) 0%,
-            rgba(0, 0, 0, 0.38) 25%,
-            rgba(0, 0, 0, 0.03) 55%,
-            rgba(0, 0, 0, 0.10) 100%
-        );
-}
+                    <div class="reel-user-details">
 
+                        <strong>
+                            Usanex User
+                        </strong>
 
-/* =========================================================
-   RIGHT ACTIONS
-========================================================= */
+                        <span>
+                            @usanex
+                        </span>
 
-.reel-actions {
-    position: absolute;
+                    </div>
 
-    right: 9px;
-    bottom: 148px;
 
-    z-index: 30;
+                    <button
+                        type="button"
+                        class="follow-button"
+                    >
+                        Follow
+                    </button>
 
-    width: 58px;
+                </div>
 
-    display: flex;
 
-    flex-direction: column;
+                <!-- =================================================
+                     CAPTION
+                ================================================== -->
 
-    align-items: center;
+                <p class="reel-caption">
+                    Welcome to Usanex Reels.
+                </p>
 
-    gap: 16px;
-}
 
-.reel-action {
-    width: 54px;
+                <!-- =================================================
+                     INTEREST
+                ================================================== -->
 
-    display: flex;
+                <div class="interest-controls">
 
-    flex-direction: column;
+                    <button
+                        type="button"
+                        class="interest-button"
+                        data-interest="interested"
+                    >
+                        Interested
+                    </button>
 
-    align-items: center;
-    justify-content: center;
 
-    gap: 4px;
+                    <button
+                        type="button"
+                        class="interest-button"
+                        data-interest="not_interested"
+                    >
+                        Not interested
+                    </button>
 
-    background: transparent;
+                </div>
 
-    color: #ffffff;
 
-    text-shadow:
-        0 1px 6px rgba(0, 0, 0, 0.85);
+                <!-- =================================================
+                     AUDIO
+                ================================================== -->
 
-    transition:
-        transform 0.15s ease,
-        color 0.15s ease;
-}
+                <div class="reel-audio">
 
-.reel-action svg {
-    width: 28px;
-    height: 28px;
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                    >
 
-    display: block;
+                        <path
+                            d="M9 18V6l10-2v12"
+                        ></path>
 
-    filter:
-        drop-shadow(
-            0 2px 5px
-            rgba(0, 0, 0, 0.65)
-        );
-}
+                        <circle
+                            cx="6"
+                            cy="18"
+                            r="3"
+                        ></circle>
 
-.reel-action span {
-    max-width: 58px;
+                        <circle
+                            cx="16"
+                            cy="16"
+                            r="3"
+                        ></circle>
 
-    font-size: 10px;
-    font-weight: 600;
+                    </svg>
 
-    white-space: nowrap;
+                    <span>
+                        Original audio
+                    </span>
 
-    overflow: hidden;
+                </div>
 
-    text-overflow: ellipsis;
-}
+            </div>
 
-.reel-action:active {
-    transform: scale(0.86);
-}
+        </article>
 
+    </main>
 
-/* LIKE */
 
-.reel-action.liked {
-    color: #ff3d67;
-}
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+    ====================================================== -->
 
-.reel-action.liked svg {
-    fill: currentColor;
-}
+    <nav class="bottom-nav">
 
 
-/* SAVE */
+        <!-- HOME -->
 
-.reel-action.saved {
-    color: #1683ff;
-}
+        <button
+            type="button"
+            class="nav-item"
+            id="homeNav"
+            aria-label="Home"
+        >
 
-.reel-action.saved svg {
-    fill: currentColor;
-}
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
 
+                <path
+                    d="M3 10.5L12 3l9 7.5"
+                ></path>
 
-/* DOWNLOAD */
+                <path
+                    d="M5.5 9.5V21h13V9.5"
+                ></path>
 
-.reel-action.downloaded {
-    color: #1683ff;
-}
+            </svg>
 
+            <span>
+                Home
+            </span>
 
-/* MORE */
+        </button>
 
-.more-action {
-    margin-top: 1px;
-}
 
+        <!-- REEL -->
 
-/* =========================================================
-   USER / CAPTION AREA
-========================================================= */
+        <button
+            type="button"
+            class="nav-item active"
+            id="reelNav"
+            aria-label="Reel"
+        >
 
-.reel-info {
-    position: absolute;
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
 
-    left: 14px;
-    right: 78px;
+                <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="16"
+                    rx="3"
+                ></rect>
 
-    bottom: 91px;
+                <path
+                    d="M8 4l3 5"
+                ></path>
 
-    z-index: 30;
+                <path
+                    d="M14 4l3 5"
+                ></path>
 
-    display: flex;
+                <path
+                    d="M10 12l5 3-5 3v-6z"
+                ></path>
 
-    flex-direction: column;
+            </svg>
 
-    pointer-events: none;
+            <span>
+                Reel
+            </span>
 
-    text-shadow:
-        0 1px 7px
-        rgba(0, 0, 0, 0.80);
-}
+        </button>
 
-.reel-user-row {
-    display: flex;
 
-    align-items: center;
+        <!-- SEARCH -->
 
-    min-width: 0;
+        <button
+            type="button"
+            class="nav-item"
+            id="searchNav"
+            aria-label="Search"
+        >
 
-    gap: 9px;
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
 
-    pointer-events: auto;
-}
+                <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                ></circle>
 
+                <path
+                    d="M20 20l-4-4"
+                ></path>
 
-/* =========================================================
-   AVATAR
-========================================================= */
+            </svg>
 
-.reel-avatar {
-    width: 42px;
-    height: 42px;
+            <span>
+                Search
+            </span>
 
-    flex: 0 0 42px;
+        </button>
 
-    display: flex;
 
-    align-items: center;
-    justify-content: center;
+        <!-- NOTIFICATION -->
 
-    border-radius: 50%;
+        <button
+            type="button"
+            class="nav-item"
+            id="notificationNav"
+            aria-label="Notification"
+        >
 
-    background:
-        linear-gradient(
-            145deg,
-            #1d73d1,
-            #0d3567
-        );
+            <span class="notification-icon-wrapper">
 
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.28);
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                >
 
-    color: #ffffff;
+                    <path
+                        d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                    ></path>
 
-    font-size: 16px;
-    font-weight: 800;
-}
+                    <path
+                        d="M10 21h4"
+                    ></path>
 
+                </svg>
 
-/* =========================================================
-   USER DETAILS
-========================================================= */
+                <span
+                    class="notification-dot"
+                    id="notificationDot"
+                    hidden
+                ></span>
 
-.reel-user-details {
-    min-width: 0;
+            </span>
 
-    display: flex;
+            <span>
+                Notification
+            </span>
 
-    flex-direction: column;
+        </button>
 
-    gap: 2px;
-}
 
-.reel-user-details strong {
-    max-width: 150px;
+        <!-- PROFILE -->
 
-    overflow: hidden;
+        <button
+            type="button"
+            class="nav-item"
+            id="profileNav"
+            aria-label="Profile"
+        >
 
-    color: #ffffff;
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+            >
 
-    font-size: 14px;
-    font-weight: 750;
+                <circle
+                    cx="12"
+                    cy="8"
+                    r="4"
+                ></circle>
 
-    white-space: nowrap;
+                <path
+                    d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
+                ></path>
 
-    text-overflow: ellipsis;
-}
+            </svg>
 
-.reel-user-details span {
-    max-width: 150px;
+            <span>
+                Profile
+            </span>
 
-    overflow: hidden;
+        </button>
 
-    color: #c0c7d0;
+    </nav>
 
-    font-size: 11px;
+</div>
 
-    white-space: nowrap;
 
-    text-overflow: ellipsis;
-}
+<script src="/static/js/reels.js?v=3"></script>
 
+</body>
 
-/* =========================================================
-   FOLLOW BUTTON
-========================================================= */
-
-.follow-button {
-    min-width: 72px;
-    height: 32px;
-
-    margin-left: 3px;
-
-    padding:
-        0 12px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.42);
-
-    border-radius: 9px;
-
-    background:
-        rgba(0, 0, 0, 0.32);
-
-    color: #ffffff;
-
-    font-size: 12px;
-    font-weight: 700;
-
-    pointer-events: auto;
-
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.15s ease;
-}
-
-.follow-button.following {
-    background:
-        rgba(255, 255, 255, 0.14);
-
-    border-color:
-        rgba(255, 255, 255, 0.25);
-}
-
-.follow-button:active {
-    transform: scale(0.95);
-}
-
-
-/* =========================================================
-   CAPTION
-========================================================= */
-
-.reel-caption {
-    max-width: 310px;
-
-    margin-top: 10px;
-
-    color: #ffffff;
-
-    font-size: 13px;
-
-    line-height: 1.45;
-
-    pointer-events: auto;
-}
-
-
-/* =========================================================
-   INTEREST CONTROLS
-========================================================= */
-
-.interest-controls {
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    margin-top: 9px;
-
-    pointer-events: auto;
-}
-
-.interest-button {
-    min-height: 29px;
-
-    padding:
-        0 11px;
-
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.25);
-
-    border-radius: 8px;
-
-    background:
-        rgba(0, 0, 0, 0.32);
-
-    color: #dce1e8;
-
-    font-size: 10px;
-    font-weight: 600;
-
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease,
-        transform 0.15s ease;
-}
-
-.interest-button:hover {
-    background:
-        rgba(255, 255, 255, 0.09);
-}
-
-.interest-button:active {
-    transform: scale(0.95);
-}
-
-.interest-button.selected {
-    background:
-        rgba(22, 131, 255, 0.20);
-
-    border-color:
-        rgba(22, 131, 255, 0.65);
-
-    color: #70b5ff;
-}
-
-
-/* =========================================================
-   AUDIO
-========================================================= */
-
-.reel-audio {
-    display: flex;
-
-    align-items: center;
-
-    gap: 7px;
-
-    margin-top: 8px;
-
-    color: #d5d9df;
-
-    font-size: 11px;
-}
-
-.reel-audio svg {
-    width: 15px;
-    height: 15px;
-}
-
-
-/* =========================================================
-   BOTTOM NAVIGATION
-   EXACTLY AT SCREEN BOTTOM
-========================================================= */
-
-.bottom-nav {
-    position: fixed;
-
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    z-index: 200;
-
-    width: 100%;
-
-    height: 64px;
-
-    display: grid;
-
-    grid-template-columns:
-        1fr
-        1fr
-        1fr
-        1fr
-        1fr;
-
-    align-items: center;
-
-    margin: 0;
-
-    padding:
-        0
-        max(4px, env(safe-area-inset-right))
-        env(safe-area-inset-bottom)
-        max(4px, env(safe-area-inset-left));
-
-    background:
-        rgba(7, 9, 13, 0.98);
-
-    border-top:
-        1px solid #171d26;
-
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-}
-
-
-/* =========================================================
-   NAV ITEMS
-========================================================= */
-
-.nav-item {
-    width: 100%;
-    height: 64px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-    justify-content: center;
-
-    gap: 3px;
-
-    padding: 0;
-    margin: 0;
-
-    background: transparent;
-
-    color: #697482;
-
-    font-size: 10px;
-    font-weight: 500;
-
-    transition:
-        color 0.15s ease,
-        transform 0.15s ease;
-}
-
-.nav-item svg {
-    width: 22px;
-    height: 22px;
-
-    flex: 0 0 auto;
-}
-
-.nav-item.active {
-    color: #1683ff;
-}
-
-.nav-item:active {
-    transform: scale(0.94);
-}
-
-
-/* =========================================================
-   NOTIFICATION ICON
-========================================================= */
-
-.notification-icon-wrapper {
-    position: relative;
-
-    width: 22px;
-    height: 22px;
-}
-
-.notification-icon-wrapper svg {
-    width: 22px;
-    height: 22px;
-}
-
-
-/* =========================================================
-   NOTIFICATION DOT
-========================================================= */
-
-.notification-dot {
-    position: absolute;
-
-    top: -1px;
-    right: -2px;
-
-    width: 7px;
-    height: 7px;
-
-    border-radius: 50%;
-
-    background: #1683ff;
-
-    border:
-        1px solid #07090d;
-}
-
-
-/* =========================================================
-   TABLET / DESKTOP
-========================================================= */
-
-@media (min-width: 768px) {
-
-    .reels-container {
-        max-width: 620px;
-
-        margin: 0 auto;
-    }
-
-    .reels-header {
-        left: 50%;
-        right: auto;
-
-        width: 620px;
-
-        transform:
-            translateX(-50%);
-
-        padding-left: 14px;
-        padding-right: 14px;
-    }
-
-    .bottom-nav {
-        left: 50%;
-        right: auto;
-
-        width: 680px;
-
-        transform:
-            translateX(-50%);
-
-        border-left:
-            1px solid #171d26;
-
-        border-right:
-            1px solid #171d26;
-    }
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-@media (max-width: 430px) {
-
-    .reels-title {
-        font-size: 20px;
-    }
-
-    .create-reel-button {
-        width: 40px;
-        height: 40px;
-
-        font-size: 29px;
-    }
-
-
-    .reel-actions {
-        right: 6px;
-
-        bottom: 143px;
-
-        gap: 14px;
-    }
-
-    .reel-action {
-        width: 50px;
-    }
-
-    .reel-action svg {
-        width: 27px;
-        height: 27px;
-    }
-
-    .reel-action span {
-        font-size: 9.5px;
-    }
-
-
-    .reel-info {
-        left: 12px;
-        right: 68px;
-
-        bottom: 90px;
-    }
-
-
-    .reel-avatar {
-        width: 40px;
-        height: 40px;
-
-        flex-basis: 40px;
-    }
-
-
-    .follow-button {
-        min-width: 68px;
-
-        height: 31px;
-
-        padding:
-            0 10px;
-    }
-
-
-    .interest-controls {
-        gap: 6px;
-    }
-
-    .interest-button {
-        padding:
-            0 9px;
-
-        font-size: 9.5px;
-    }
-
-
-    /* Bottom navigation */
-
-    .bottom-nav {
-        height: 62px;
-
-        padding-bottom:
-            env(safe-area-inset-bottom);
-    }
-
-    .nav-item {
-        height: 62px;
-
-        font-size: 9.5px;
-    }
-
-    .nav-item svg,
-    .notification-icon-wrapper,
-    .notification-icon-wrapper svg {
-        width: 21px;
-        height: 21px;
-    }
-}
-
-
-/* =========================================================
-   VERY SMALL MOBILE
-========================================================= */
-
-@media (max-width: 350px) {
-
-    .reel-user-details strong,
-    .reel-user-details span {
-        max-width: 105px;
-    }
-
-
-    .follow-button {
-        min-width: 62px;
-
-        padding-left: 8px;
-        padding-right: 8px;
-
-        font-size: 11px;
-    }
-
-
-    .reel-caption {
-        max-width: 235px;
-
-        font-size: 12px;
-    }
-
-
-    .interest-controls {
-        gap: 5px;
-    }
-
-    .interest-button {
-        min-height: 27px;
-
-        padding:
-            0 7px;
-
-        font-size: 8.5px;
-    }
-
-
-    .nav-item {
-        font-size: 9px;
-    }
-
-
-    .nav-item svg,
-    .notification-icon-wrapper,
-    .notification-icon-wrapper svg {
-        width: 21px;
-        height: 21px;
-    }
-}
+</html>
