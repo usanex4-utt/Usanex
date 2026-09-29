@@ -12,9 +12,10 @@
 
     <title>Create | Usanex</title>
 
+    <!-- CORRECT CSS FILE -->
     <link
         rel="stylesheet"
-        href="/static/css/upload.css?v=1"
+        href="/static/css/media-upload.css?v=2"
     >
 </head>
 
@@ -22,13 +23,15 @@
 
 <div class="upload-app">
 
-    <!-- HEADER -->
+    <!-- ================= HEADER ================= -->
+
     <header class="upload-header">
 
         <button
             type="button"
             id="backButton"
             class="header-button"
+            aria-label="Go back"
         >
             ‹
         </button>
@@ -46,10 +49,12 @@
     </header>
 
 
-    <!-- CONTENT -->
+    <!-- ================= MAIN CONTENT ================= -->
+
     <main class="upload-content">
 
-        <!-- MEDIA TYPE -->
+        <!-- ================= MEDIA TYPE ================= -->
+
         <section class="media-types">
 
             <button
@@ -82,7 +87,8 @@
         </section>
 
 
-        <!-- PHOTO UPLOAD -->
+        <!-- ================= PHOTO ================= -->
+
         <section
             class="upload-section"
             id="photoSection"
@@ -125,6 +131,7 @@
 
 
             <!-- SELECTED PHOTOS -->
+
             <div
                 class="photo-preview-section"
                 id="photoPreviewSection"
@@ -143,12 +150,10 @@
 
                 </div>
 
-
                 <div
                     class="photo-grid"
                     id="photoGrid"
                 ></div>
-
 
                 <button
                     type="button"
@@ -163,7 +168,8 @@
         </section>
 
 
-        <!-- REEL -->
+        <!-- ================= REEL ================= -->
+
         <section
             class="upload-section"
             id="reelSection"
@@ -201,7 +207,6 @@
 
             </div>
 
-
             <div
                 id="videoPreview"
                 class="video-preview"
@@ -211,7 +216,8 @@
         </section>
 
 
-        <!-- PRIVATE -->
+        <!-- ================= PRIVATE MEDIA ================= -->
+
         <section
             class="upload-section"
             id="privateSection"
@@ -253,7 +259,8 @@
         </section>
 
 
-        <!-- CAPTION -->
+        <!-- ================= CAPTION ================= -->
+
         <section class="caption-section">
 
             <textarea
@@ -263,21 +270,28 @@
             ></textarea>
 
             <div class="caption-counter">
+
                 <span id="captionCount">
                     0
                 </span>
+
                 / 2200
+
             </div>
 
         </section>
 
 
-        <!-- VISIBILITY -->
+        <!-- ================= VISIBILITY ================= -->
+
         <section class="visibility-section">
 
             <h3>
                 Visibility
             </h3>
+
+
+            <!-- PUBLIC -->
 
             <button
                 type="button"
@@ -305,6 +319,8 @@
 
             </button>
 
+
+            <!-- PRIVATE -->
 
             <button
                 type="button"
@@ -335,7 +351,8 @@
         </section>
 
 
-        <!-- SELECTED PRIVATE USERS -->
+        <!-- ================= PRIVATE USERS ================= -->
+
         <section
             class="private-users"
             id="privateUsers"
@@ -361,8 +378,10 @@
 </div>
 
 
+<!-- ================= JAVASCRIPT ================= -->
+
 <script
-    src="/static/js/upload.js?v=1"
+    src="/static/js/upload.js?v=2"
     defer
 ></script>
 
