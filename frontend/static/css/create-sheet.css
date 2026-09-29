@@ -1,565 +1,754 @@
 /* =========================================================
-   USANEX CREATE SHEET — FINAL MINIMAL LINE UI
-========================================================= */
+   USANEX CREATE SHEET
+   FINAL SIMPLE STYLE
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   OVERLAY
+   ========================================================= */
 
 .create-overlay {
     position: fixed !important;
     inset: 0 !important;
+
     z-index: 99999 !important;
 
     display: flex !important;
     align-items: flex-end !important;
     justify-content: center !important;
 
-    background: rgba(0, 0, 0, 0.72) !important;
-}
+    background: rgba(0, 0, 0, 0.72);
 
-.create-overlay[hidden] {
-    display: none !important;
-}
+    padding: 0;
 
+    opacity: 1;
+    visibility: visible;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+}
 
 /* =========================================================
-   SHEET
-========================================================= */
+   CREATE SHEET
+   ========================================================= */
 
 .create-sheet {
-    position: relative !important;
+    position: relative;
 
-    width: 100% !important;
-    max-width: 720px !important;
+    width: 100%;
+    max-width: 700px;
 
-    max-height: 92vh !important;
-    overflow-y: auto !important;
+    min-height: 620px;
+    max-height: 92vh;
 
-    box-sizing: border-box !important;
-
-    padding: 18px 22px 32px !important;
+    overflow-y: auto;
+    overflow-x: hidden;
 
     background:
         linear-gradient(
             180deg,
             #071827 0%,
-            #071725 100%
-        ) !important;
+            #081a2b 100%
+        );
 
-    border-radius: 38px 38px 0 0 !important;
+    border-radius: 34px 34px 0 0;
 
-    border: 1px solid rgba(150, 180, 210, 0.10) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 
     box-shadow:
-        0 -15px 50px rgba(0, 0, 0, 0.55) !important;
+        0 -10px 50px rgba(0, 0, 0, 0.55);
 
-    animation: usanexCreateUp .28s ease-out !important;
+    padding: 18px 20px 28px;
+
+    color: #ffffff;
+
+    animation: createSheetUp 0.25s ease-out;
 }
 
-@keyframes usanexCreateUp {
+/* =========================================================
+   OPEN ANIMATION
+   ========================================================= */
+
+@keyframes createSheetUp {
     from {
         transform: translateY(100%);
+        opacity: 0;
     }
 
     to {
         transform: translateY(0);
+        opacity: 1;
     }
 }
 
-
 /* =========================================================
    HANDLE
-========================================================= */
+   ========================================================= */
 
 .create-handle {
-    width: 82px !important;
-    height: 6px !important;
+    width: 76px;
+    height: 7px;
 
-    margin: 3px auto 28px !important;
+    margin: 0 auto 26px;
 
-    background: #9eabba !important;
+    border-radius: 20px;
 
-    border-radius: 999px !important;
+    background: #8e9baa;
 }
-
 
 /* =========================================================
    HEADER
-========================================================= */
+   ========================================================= */
 
 .create-header {
-    position: relative !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-    display: block !important;
-
-    text-align: center !important;
-
-    padding: 0 5px 25px !important;
-
-    border-bottom:
-        1px solid rgba(180, 200, 220, 0.10) !important;
+    padding: 0 14px 22px;
 }
 
-.create-header-text {
-    width: 100% !important;
-    text-align: center !important;
+.create-header > div {
+    min-width: 0;
 }
 
 .create-header h2 {
-    margin: 0 !important;
+    margin: 0;
 
-    color: #ffffff !important;
+    font-size: 38px;
+    line-height: 1.1;
 
-    font-size: 36px !important;
-    line-height: 1.1 !important;
+    font-weight: 800;
 
-    font-weight: 700 !important;
+    letter-spacing: -0.8px;
 
-    letter-spacing: -0.8px !important;
+    color: #ffffff;
 }
 
 .create-header p {
-    margin: 12px 0 0 !important;
+    margin: 10px 0 0;
 
-    color: #9eafc2 !important;
+    font-size: 20px;
+    line-height: 1.3;
 
-    font-size: 17px !important;
-    line-height: 1.35 !important;
+    font-weight: 400;
 
-    font-weight: 400 !important;
+    color: #9aaabd;
 }
-
 
 /* =========================================================
    CLOSE BUTTON
-========================================================= */
+   ========================================================= */
 
 .create-close {
-    position: absolute !important;
+    width: 64px;
+    height: 64px;
 
-    right: 0 !important;
-    top: -3px !important;
+    flex: 0 0 64px;
 
-    width: 54px !important;
-    height: 54px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    padding: 0 !important;
+    border: none;
+    border-radius: 50%;
 
-    border: 0 !important;
-    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.07);
 
-    background: rgba(255,255,255,0.06) !important;
+    color: #ffffff;
 
-    color: #ffffff !important;
+    font-size: 42px;
+    line-height: 1;
 
-    font-size: 38px !important;
-    font-weight: 300 !important;
+    font-weight: 300;
 
-    line-height: 1 !important;
+    cursor: pointer;
 
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    transition:
+        background 0.18s ease,
+        transform 0.18s ease;
 }
 
+.create-close:hover {
+    background: rgba(255, 255, 255, 0.13);
+}
+
+.create-close:active {
+    transform: scale(0.92);
+}
 
 /* =========================================================
    OPTIONS
-========================================================= */
+   ========================================================= */
 
 .create-options {
-    padding-top: 18px !important;
+    display: flex;
+    flex-direction: column;
+
+    gap: 14px;
+
+    padding: 0 14px;
 }
 
+/* =========================================================
+   OPTION CARD
+   ========================================================= */
 
 .create-option {
-    position: relative !important;
+    width: 100%;
 
-    width: 100% !important;
-    min-height: 112px !important;
+    min-height: 138px;
 
-    display: flex !important;
-    align-items: center !important;
+    display: flex;
+    align-items: center;
 
-    box-sizing: border-box !important;
+    position: relative;
 
-    padding: 18px 22px !important;
+    padding: 20px 22px;
 
-    margin: 0 !important;
+    border: 1px solid rgba(125, 160, 190, 0.16);
+
+    border-radius: 30px;
 
     background:
-        rgba(13, 31, 47, 0.78) !important;
+        rgba(255, 255, 255, 0.035);
 
-    border:
-        1px solid rgba(115, 150, 180, 0.20) !important;
+    color: #ffffff;
 
-    border-radius: 27px !important;
+    text-align: left;
 
-    color: #ffffff !important;
+    cursor: pointer;
 
-    outline: none !important;
+    -webkit-tap-highlight-color: transparent;
 
-    box-shadow: none !important;
-
-    text-align: left !important;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease;
 }
 
-.create-option + .create-option {
-    margin-top: 17px !important;
-}
-
-
-/* REMOVE ALL OLD COLOR EFFECTS */
-
-.create-option,
-.create-option:hover,
-.create-option:focus,
-.create-option:active {
+.create-option:hover {
     background:
-        rgba(13, 31, 47, 0.78) !important;
+        rgba(255, 255, 255, 0.055);
 
     border-color:
-        rgba(115, 150, 180, 0.20) !important;
-
-    box-shadow: none !important;
+        rgba(150, 185, 215, 0.25);
 }
 
+.create-option:active {
+    transform: scale(0.985);
+
+    background:
+        rgba(255, 255, 255, 0.075);
+}
 
 /* =========================================================
-   TEXT
-========================================================= */
-
-.create-option-text {
-    display: flex !important;
-    flex-direction: column !important;
-
-    min-width: 0 !important;
-
-    padding-left: 27px !important;
-    padding-right: 45px !important;
-}
-
-.create-option-text strong {
-    color: #ffffff !important;
-
-    font-size: 24px !important;
-    line-height: 1.2 !important;
-
-    font-weight: 700 !important;
-}
-
-.create-option-text small {
-    display: block !important;
-
-    margin-top: 7px !important;
-
-    color: #9aadc1 !important;
-
-    font-size: 16px !important;
-    line-height: 1.35 !important;
-
-    font-weight: 400 !important;
-}
-
-
-/* =========================================================
-   ARROW
-========================================================= */
-
-.create-arrow {
-    position: absolute !important;
-
-    right: 22px !important;
-    top: 50% !important;
-
-    transform: translateY(-50%) !important;
-
-    color: #93a9bd !important;
-
-    font-size: 36px !important;
-    font-weight: 300 !important;
-
-    line-height: 1 !important;
-}
-
-
-/* =========================================================
-   ALL ICONS
-   IMPORTANT: NO COLORS
-========================================================= */
+   ICON
+   IMPORTANT:
+   NO COLORED BOX
+   NO COLOR BACKGROUND
+   WHITE ONLY
+   ========================================================= */
 
 .create-line-icon {
-    position: relative !important;
+    width: 94px;
+    height: 94px;
 
-    flex: 0 0 66px !important;
+    flex: 0 0 94px;
 
-    width: 66px !important;
-    height: 66px !important;
+    position: relative;
 
-    color: #f4f6f8 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-right: 26px;
+
+    color: #ffffff;
 
     background: transparent !important;
 
-    border: 0 !important;
+    border: none !important;
 
     box-shadow: none !important;
 }
 
+/* =========================================================
+   REEL ICON
+   ========================================================= */
 
-/* Remove possible old icon backgrounds */
+.reel-icon {
+    width: 72px;
+    height: 72px;
+
+    border: 5px solid #ffffff !important;
+
+    border-radius: 20px;
+
+    background: transparent !important;
+}
+
+.reel-icon::before {
+    content: "";
+
+    position: absolute;
+
+    top: 8px;
+    left: 8px;
+
+    right: 8px;
+
+    height: 12px;
+
+    border-top: 4px solid #ffffff;
+
+    transform: skewX(-18deg);
+}
+
+.reel-icon::after {
+    content: "";
+
+    position: absolute;
+
+    left: 27px;
+    top: 25px;
+
+    width: 0;
+    height: 0;
+
+    border-top: 11px solid transparent;
+    border-bottom: 11px solid transparent;
+    border-left: 18px solid #ffffff;
+}
+
+.reel-icon span {
+    display: none;
+}
+
+/* =========================================================
+   IMAGE ICON
+   ========================================================= */
+
+.image-icon {
+    width: 72px;
+    height: 72px;
+
+    border: 5px solid #ffffff !important;
+
+    border-radius: 18px;
+
+    background: transparent !important;
+}
+
+.image-icon::before {
+    content: "";
+
+    position: absolute;
+
+    left: 13px;
+    right: 13px;
+
+    bottom: 13px;
+
+    height: 25px;
+
+    border-left: 5px solid #ffffff;
+    border-bottom: 5px solid #ffffff;
+
+    transform: skewY(-32deg);
+}
+
+.image-icon::after {
+    content: "";
+
+    position: absolute;
+
+    width: 9px;
+    height: 9px;
+
+    top: 15px;
+    right: 15px;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+}
+
+.image-icon span {
+    display: none;
+}
+
+/* =========================================================
+   NEX MOMENT ICON
+   ========================================================= */
+
+.moment-icon {
+    width: 78px;
+    height: 78px;
+
+    border: 5px solid #ffffff !important;
+
+    border-radius: 50%;
+
+    background: transparent !important;
+
+    border-left-color: transparent !important;
+    border-right-color: transparent !important;
+}
+
+.moment-icon::before {
+    content: "";
+
+    position: absolute;
+
+    width: 30px;
+    height: 5px;
+
+    background: #ffffff;
+
+    border-radius: 10px;
+
+    left: 21px;
+    top: 36px;
+}
+
+.moment-icon::after {
+    content: "";
+
+    position: absolute;
+
+    width: 5px;
+    height: 30px;
+
+    background: #ffffff;
+
+    border-radius: 10px;
+
+    left: 34px;
+    top: 23px;
+}
+
+.moment-icon span {
+    display: none;
+}
+
+/* =========================================================
+   PRIVATE ICON
+   ========================================================= */
+
+.private-icon {
+    width: 70px;
+    height: 70px;
+
+    background: transparent !important;
+
+    border: none !important;
+
+    transform: rotate(45deg);
+}
+
+.private-icon::before {
+    content: "";
+
+    width: 48px;
+    height: 48px;
+
+    position: absolute;
+
+    border: 5px solid #ffffff;
+
+    border-radius: 8px;
+}
+
+.private-icon::after {
+    content: "";
+
+    width: 7px;
+    height: 7px;
+
+    position: absolute;
+
+    background: #ffffff;
+
+    border-radius: 50%;
+
+    transform: rotate(-45deg);
+}
+
+.private-icon span {
+    display: none;
+}
+
+/* =========================================================
+   TEXT
+   ========================================================= */
+
+.create-option-text {
+    min-width: 0;
+
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+}
+
+.create-option-text strong {
+    display: block;
+
+    margin: 0;
+
+    color: #ffffff;
+
+    font-size: 29px;
+    line-height: 1.15;
+
+    font-weight: 750;
+
+    letter-spacing: -0.4px;
+}
+
+.create-option-text small {
+    display: block;
+
+    margin-top: 10px;
+
+    color: #94a8bc;
+
+    font-size: 19px;
+    line-height: 1.35;
+
+    font-weight: 400;
+}
+
+/* =========================================================
+   ARROW
+   ========================================================= */
+
+.create-arrow {
+    flex: 0 0 auto;
+
+    margin-left: 12px;
+
+    color: #8da2b5;
+
+    font-size: 42px;
+    line-height: 1;
+
+    font-weight: 300;
+}
+
+/* =========================================================
+   HIDE OLD SPECIAL COLORS
+   ========================================================= */
 
 .reel-icon,
 .image-icon,
 .moment-icon,
 .private-icon {
-    background: transparent !important;
-    box-shadow: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
 }
-
-
-/* =========================================================
-   REEL
-========================================================= */
-
-.reel-icon {
-    border: 4px solid #f4f6f8 !important;
-
-    border-radius: 17px !important;
-
-    box-sizing: border-box !important;
-}
-
-.reel-top-line {
-    position: absolute !important;
-
-    left: 8px !important;
-    right: 8px !important;
-    top: 14px !important;
-
-    height: 4px !important;
-
-    background: #f4f6f8 !important;
-
-    border-radius: 4px !important;
-
-    transform: rotate(-7deg) !important;
-}
-
-.reel-play {
-    position: absolute !important;
-
-    left: 25px !important;
-    top: 25px !important;
-
-    width: 0 !important;
-    height: 0 !important;
-
-    border-top: 9px solid transparent !important;
-    border-bottom: 9px solid transparent !important;
-    border-left: 15px solid #f4f6f8 !important;
-}
-
-
-/* =========================================================
-   IMAGE
-========================================================= */
-
-.image-icon {
-    border:
-        4px solid #f4f6f8 !important;
-
-    border-radius: 14px !important;
-
-    box-sizing: border-box !important;
-}
-
-.image-sun {
-    position: absolute !important;
-
-    width: 9px !important;
-    height: 9px !important;
-
-    right: 12px !important;
-    top: 12px !important;
-
-    background: #f4f6f8 !important;
-
-    border-radius: 50% !important;
-}
-
-.image-mountain {
-    position: absolute !important;
-
-    left: 12px !important;
-    bottom: 12px !important;
-
-    width: 37px !important;
-    height: 25px !important;
-
-    border-left: 4px solid #f4f6f8 !important;
-    border-top: 4px solid #f4f6f8 !important;
-
-    transform: rotate(45deg) !important;
-
-    border-radius: 2px !important;
-}
-
-
-/* =========================================================
-   NEX MOMENT
-========================================================= */
-
-.moment-icon {
-    display: flex !important;
-
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.moment-ring {
-    position: absolute !important;
-
-    inset: 7px !important;
-
-    border:
-        4px solid #f4f6f8 !important;
-
-    border-left-color: transparent !important;
-    border-right-color: transparent !important;
-
-    border-radius: 50% !important;
-
-    background: transparent !important;
-}
-
-.moment-plus-horizontal {
-    position: absolute !important;
-
-    width: 31px !important;
-    height: 4px !important;
-
-    background: #f4f6f8 !important;
-
-    border-radius: 4px !important;
-}
-
-.moment-plus-vertical {
-    position: absolute !important;
-
-    width: 4px !important;
-    height: 31px !important;
-
-    background: #f4f6f8 !important;
-
-    border-radius: 4px !important;
-}
-
-
-/* =========================================================
-   PRIVATE LOCK
-========================================================= */
-
-.private-icon {
-    position: relative !important;
-}
-
-.lock-body {
-    position: absolute !important;
-
-    left: 11px !important;
-    bottom: 8px !important;
-
-    width: 44px !important;
-    height: 38px !important;
-
-    border:
-        4px solid #f4f6f8 !important;
-
-    border-radius: 9px !important;
-
-    box-sizing: border-box !important;
-
-    background: transparent !important;
-}
-
-.lock-shackle {
-    position: absolute !important;
-
-    left: 21px !important;
-    top: 7px !important;
-
-    width: 24px !important;
-    height: 31px !important;
-
-    border:
-        4px solid #f4f6f8 !important;
-
-    border-bottom: 0 !important;
-
-    border-radius: 14px 14px 0 0 !important;
-
-    box-sizing: border-box !important;
-
-    background: transparent !important;
-}
-
 
 /* =========================================================
    MOBILE
-========================================================= */
+   ========================================================= */
 
 @media (max-width: 600px) {
 
     .create-sheet {
-        padding:
-            17px
-            18px
-            calc(28px + env(safe-area-inset-bottom))
-            !important;
+        min-height: 0;
 
-        border-radius:
-            35px 35px 0 0 !important;
+        max-height: 94vh;
+
+        border-radius: 32px 32px 0 0;
+
+        padding:
+            16px 14px 24px;
+    }
+
+    .create-handle {
+        width: 72px;
+        height: 6px;
+
+        margin-bottom: 22px;
+    }
+
+    .create-header {
+        padding:
+            0 12px 20px;
     }
 
     .create-header h2 {
-        font-size: 35px !important;
+        font-size: 34px;
     }
 
     .create-header p {
-        font-size: 16px !important;
+        font-size: 18px;
+        margin-top: 8px;
+    }
+
+    .create-close {
+        width: 60px;
+        height: 60px;
+
+        flex-basis: 60px;
+
+        font-size: 38px;
+    }
+
+    .create-options {
+        gap: 12px;
+
+        padding: 0 8px;
     }
 
     .create-option {
-        min-height: 108px !important;
+        min-height: 128px;
 
-        padding:
-            17px 18px !important;
+        padding: 18px 18px;
 
-        border-radius: 25px !important;
-    }
-
-    .create-option + .create-option {
-        margin-top: 16px !important;
+        border-radius: 28px;
     }
 
     .create-line-icon {
-        flex-basis: 62px !important;
+        width: 82px;
+        height: 82px;
 
-        width: 62px !important;
-        height: 62px !important;
+        flex-basis: 82px;
+
+        margin-right: 20px;
     }
 
-    .create-option-text {
-        padding-left: 24px !important;
+    .reel-icon,
+    .image-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .moment-icon {
+        width: 70px;
+        height: 70px;
+    }
+
+    .private-icon {
+        width: 64px;
+        height: 64px;
     }
 
     .create-option-text strong {
-        font-size: 23px !important;
+        font-size: 26px;
     }
 
     .create-option-text small {
-        font-size: 15px !important;
+        font-size: 17px;
+
+        margin-top: 8px;
     }
 
     .create-arrow {
-        right: 17px !important;
-        font-size: 34px !important;
+        font-size: 38px;
     }
+}
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 390px) {
+
+    .create-sheet {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .create-header h2 {
+        font-size: 31px;
+    }
+
+    .create-header p {
+        font-size: 16px;
+    }
+
+    .create-option {
+        min-height: 116px;
+
+        padding: 15px;
+    }
+
+    .create-line-icon {
+        width: 70px;
+        height: 70px;
+
+        flex-basis: 70px;
+
+        margin-right: 15px;
+    }
+
+    .reel-icon,
+    .image-icon {
+        width: 58px;
+        height: 58px;
+    }
+
+    .moment-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .private-icon {
+        width: 58px;
+        height: 58px;
+    }
+
+    .create-option-text strong {
+        font-size: 23px;
+    }
+
+    .create-option-text small {
+        font-size: 15px;
+    }
+
+    .create-arrow {
+        font-size: 34px;
+    }
+}
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+.create-option:focus-visible,
+.create-close:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.create-sheet::-webkit-scrollbar {
+    width: 4px;
+}
+
+.create-sheet::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.create-sheet::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+
+    border-radius: 10px;
 }
