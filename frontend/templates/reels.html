@@ -13,7 +13,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/reels.css?v=2"
+        href="/static/css/reels.css?v=3"
     >
 </head>
 
@@ -23,13 +23,12 @@
 
     <!-- =====================================================
          TOP HEADER
+         "Reels" TEXT REMOVED
     ====================================================== -->
 
     <header class="reels-header">
 
-        <div class="reels-title">
-            Reels
-        </div>
+        <div class="reels-header-spacer"></div>
 
         <button
             type="button"
@@ -55,7 +54,9 @@
             data-reel-id="demo-1"
         >
 
-            <!-- VIDEO -->
+            <!-- =================================================
+                 VIDEO
+            ================================================== -->
 
             <div class="reel-video">
 
@@ -78,6 +79,7 @@
                             ></rect>
 
                             <path d="M9 8l7 4-7 4V8z"></path>
+
                         </svg>
 
                     </div>
@@ -97,34 +99,65 @@
 
             <div class="reel-actions">
 
-                <!-- LIKE -->
+
+                <!-- =================================================
+                     3 STAR RATING
+                     1 TAP  = 1 STAR
+                     2 TAPS = 2 STARS
+                     3 TAPS = 3 STARS
+                     4 TAPS = RESET
+                ================================================== -->
 
                 <button
                     type="button"
-                    class="reel-action"
-                    data-action="like"
-                    aria-label="Like"
+                    class="reel-action star-rating-action"
+                    data-action="rating"
+                    id="reelRatingButton"
+                    aria-label="Rate reel"
                 >
 
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
+                    <div
+                        class="star-rating-display"
+                        id="starRatingDisplay"
+                        aria-hidden="true"
                     >
-                        <path
-                            d="M20.8 8.7c0 5.5-8.8 11-8.8 11S3.2 14.2 3.2 8.7A4.7 4.7 0 0 1 8 4c1.7 0 3.2.9 4 2.2A4.7 4.7 0 0 1 20.8 8.7z"
-                        ></path>
-                    </svg>
 
-                    <span>
+                        <span
+                            class="rating-star"
+                            data-star="1"
+                        >
+                            ★
+                        </span>
+
+                        <span
+                            class="rating-star"
+                            data-star="2"
+                        >
+                            ★
+                        </span>
+
+                        <span
+                            class="rating-star"
+                            data-star="3"
+                        >
+                            ★
+                        </span>
+
+                    </div>
+
+                    <span
+                        class="rating-count"
+                        id="ratingCount"
+                    >
                         0
                     </span>
 
                 </button>
 
 
-                <!-- COMMENT -->
+                <!-- =================================================
+                     COMMENT
+                ================================================== -->
 
                 <button
                     type="button"
@@ -139,9 +172,11 @@
                         stroke="currentColor"
                         stroke-width="1.8"
                     >
+
                         <path
                             d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.5-.7L4 20l1.4-3.5A7.3 7.3 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5z"
                         ></path>
+
                     </svg>
 
                     <span>
@@ -151,7 +186,9 @@
                 </button>
 
 
-                <!-- SHARE -->
+                <!-- =================================================
+                     SHARE
+                ================================================== -->
 
                 <button
                     type="button"
@@ -166,8 +203,11 @@
                         stroke="currentColor"
                         stroke-width="1.8"
                     >
+
                         <path d="M21 3L10 14"></path>
+
                         <path d="M21 3l-7 18-4-7-7-4 18-7z"></path>
+
                     </svg>
 
                     <span>
@@ -177,7 +217,9 @@
                 </button>
 
 
-                <!-- SAVE -->
+                <!-- =================================================
+                     SAVE
+                ================================================== -->
 
                 <button
                     type="button"
@@ -192,9 +234,11 @@
                         stroke="currentColor"
                         stroke-width="1.8"
                     >
+
                         <path
                             d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5z"
                         ></path>
+
                     </svg>
 
                     <span>
@@ -204,7 +248,9 @@
                 </button>
 
 
-                <!-- DOWNLOAD -->
+                <!-- =================================================
+                     DOWNLOAD
+                ================================================== -->
 
                 <button
                     type="button"
@@ -219,11 +265,13 @@
                         stroke="currentColor"
                         stroke-width="1.8"
                     >
+
                         <path d="M12 3v12"></path>
 
                         <path d="M7 10l5 5 5-5"></path>
 
                         <path d="M5 21h14"></path>
+
                     </svg>
 
                     <span>
@@ -233,7 +281,9 @@
                 </button>
 
 
-                <!-- MORE -->
+                <!-- =================================================
+                     MORE
+                ================================================== -->
 
                 <button
                     type="button"
@@ -248,6 +298,7 @@
                         stroke="currentColor"
                         stroke-width="2"
                     >
+
                         <circle
                             cx="5"
                             cy="12"
@@ -265,6 +316,7 @@
                             cy="12"
                             r="1"
                         ></circle>
+
                     </svg>
 
                 </button>
@@ -312,7 +364,9 @@
                 </p>
 
 
-                <!-- INTEREST CONTROLS -->
+                <!-- =================================================
+                     INTEREST CONTROLS
+                ================================================== -->
 
                 <div class="interest-controls">
 
@@ -335,7 +389,9 @@
                 </div>
 
 
-                <!-- AUDIO -->
+                <!-- =================================================
+                     AUDIO
+                ================================================== -->
 
                 <div class="reel-audio">
 
@@ -345,6 +401,7 @@
                         stroke="currentColor"
                         stroke-width="1.7"
                     >
+
                         <path d="M9 18V6l10-2v12"></path>
 
                         <circle
@@ -358,6 +415,7 @@
                             cy="16"
                             r="3"
                         ></circle>
+
                     </svg>
 
                     <span>
@@ -394,8 +452,11 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <path d="M3 10.5L12 3l9 7.5"></path>
+
                 <path d="M5.5 9.5V21h13V9.5"></path>
+
             </svg>
 
             <span>
@@ -420,6 +481,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <rect
                     x="3"
                     y="4"
@@ -429,8 +491,11 @@
                 ></rect>
 
                 <path d="M8 4l3 5"></path>
+
                 <path d="M14 4l3 5"></path>
+
                 <path d="M10 12l5 3-5 3v-6z"></path>
+
             </svg>
 
             <span>
@@ -455,6 +520,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <circle
                     cx="11"
                     cy="11"
@@ -462,6 +528,7 @@
                 ></circle>
 
                 <path d="M20 20l-4-4"></path>
+
             </svg>
 
             <span>
@@ -488,6 +555,7 @@
                     stroke="currentColor"
                     stroke-width="1.8"
                 >
+
                     <path
                         d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
                     ></path>
@@ -526,6 +594,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <circle
                     cx="12"
                     cy="8"
@@ -549,12 +618,11 @@
 </div>
 
 
-<script src="/static/js/reels.js?v=2"></script>
+<script src="/static/js/reels.js?v=3"></script>
 
 
 <!-- =====================================================
      REELS PAGE NAVIGATION
-     Profile ALWAYS opens My Profile
 ====================================================== -->
 
 <script>
@@ -620,13 +688,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
-
-    /*
-    =========================================================
-       PROFILE
-       ALWAYS → MY PROFILE
-    =========================================================
-    */
 
     if (profileNav) {
 
