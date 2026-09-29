@@ -1,6 +1,7 @@
 /* =========================================================
    USANEX CREATE SHEET
-   FINAL SIMPLE STYLE
+   HOME / PROFILE / NOTIFICATION — SAME COMPACT SIZE
+   SIMPLE WHITE ICON STYLE
    ========================================================= */
 
 * {
@@ -21,63 +22,54 @@
     align-items: flex-end !important;
     justify-content: center !important;
 
-    background: rgba(0, 0, 0, 0.72);
-
     padding: 0;
 
-    opacity: 1;
-    visibility: visible;
+    background: rgba(0, 0, 0, 0.68);
 
     font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         Roboto,
-        Helvetica,
         Arial,
         sans-serif;
 }
 
+.create-overlay[hidden] {
+    display: none !important;
+}
+
 /* =========================================================
    CREATE SHEET
+   SAME WIDTH / SCALE AS HOME
    ========================================================= */
 
 .create-sheet {
     position: relative;
 
     width: 100%;
-    max-width: 700px;
+    max-width: 680px;
 
-    min-height: 620px;
-    max-height: 92vh;
+    max-height: 90vh;
 
     overflow-y: auto;
     overflow-x: hidden;
 
-    background:
-        linear-gradient(
-            180deg,
-            #071827 0%,
-            #081a2b 100%
-        );
+    padding: 12px 14px 24px;
 
-    border-radius: 34px 34px 0 0;
+    background: #071322;
 
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px 24px 0 0;
+
+    border: 1px solid #172637;
 
     box-shadow:
-        0 -10px 50px rgba(0, 0, 0, 0.55);
-
-    padding: 18px 20px 28px;
+        0 -12px 40px rgba(0, 0, 0, 0.45);
 
     color: #ffffff;
 
-    animation: createSheetUp 0.25s ease-out;
+    animation: createSheetUp 0.22s ease-out;
 }
-
-/* =========================================================
-   OPEN ANIMATION
-   ========================================================= */
 
 @keyframes createSheetUp {
     from {
@@ -96,14 +88,14 @@
    ========================================================= */
 
 .create-handle {
-    width: 76px;
-    height: 7px;
+    width: 42px;
+    height: 5px;
 
-    margin: 0 auto 26px;
+    margin: 2px auto 16px;
 
-    border-radius: 20px;
+    border-radius: 10px;
 
-    background: #8e9baa;
+    background: #687687;
 }
 
 /* =========================================================
@@ -111,11 +103,13 @@
    ========================================================= */
 
 .create-header {
+    width: 100%;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    padding: 0 14px 22px;
+    padding: 0 4px 16px;
 }
 
 .create-header > div {
@@ -125,49 +119,51 @@
 .create-header h2 {
     margin: 0;
 
-    font-size: 38px;
-    line-height: 1.1;
-
-    font-weight: 800;
-
-    letter-spacing: -0.8px;
-
     color: #ffffff;
+
+    font-size: 24px;
+    line-height: 29px;
+
+    font-weight: 700;
+
+    letter-spacing: -0.3px;
 }
 
 .create-header p {
-    margin: 10px 0 0;
+    margin: 4px 0 0;
 
-    font-size: 20px;
-    line-height: 1.3;
+    color: #8996a7;
+
+    font-size: 12px;
+    line-height: 16px;
 
     font-weight: 400;
-
-    color: #9aaabd;
 }
 
 /* =========================================================
-   CLOSE BUTTON
+   CLOSE
    ========================================================= */
 
 .create-close {
-    width: 64px;
-    height: 64px;
+    width: 34px;
+    height: 34px;
 
-    flex: 0 0 64px;
+    flex: 0 0 34px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
+    padding: 0;
+
     border: none;
     border-radius: 50%;
 
-    background: rgba(255, 255, 255, 0.07);
+    background: #111b28;
 
     color: #ffffff;
 
-    font-size: 42px;
+    font-size: 24px;
     line-height: 1;
 
     font-weight: 300;
@@ -175,12 +171,12 @@
     cursor: pointer;
 
     transition:
-        background 0.18s ease,
-        transform 0.18s ease;
+        background 0.15s ease,
+        transform 0.15s ease;
 }
 
 .create-close:hover {
-    background: rgba(255, 255, 255, 0.13);
+    background: #172435;
 }
 
 .create-close:active {
@@ -192,12 +188,14 @@
    ========================================================= */
 
 .create-options {
+    width: 100%;
+
     display: flex;
     flex-direction: column;
 
-    gap: 14px;
+    gap: 8px;
 
-    padding: 0 14px;
+    padding: 0;
 }
 
 /* =========================================================
@@ -207,21 +205,20 @@
 .create-option {
     width: 100%;
 
-    min-height: 138px;
+    min-height: 68px;
 
     display: flex;
     align-items: center;
 
     position: relative;
 
-    padding: 20px 22px;
+    padding: 9px 11px;
 
-    border: 1px solid rgba(125, 160, 190, 0.16);
+    border: 1px solid #1a2938;
 
-    border-radius: 30px;
+    border-radius: 14px;
 
-    background:
-        rgba(255, 255, 255, 0.035);
+    background: #0a111b;
 
     color: #ffffff;
 
@@ -232,39 +229,35 @@
     -webkit-tap-highlight-color: transparent;
 
     transition:
-        background 0.18s ease,
-        border-color 0.18s ease,
-        transform 0.18s ease;
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.15s ease;
 }
 
 .create-option:hover {
-    background:
-        rgba(255, 255, 255, 0.055);
+    background: #0d1723;
 
-    border-color:
-        rgba(150, 185, 215, 0.25);
+    border-color: #26394d;
 }
 
 .create-option:active {
     transform: scale(0.985);
 
-    background:
-        rgba(255, 255, 255, 0.075);
+    background: #101b28;
 }
 
 /* =========================================================
-   ICON
-   IMPORTANT:
-   NO COLORED BOX
-   NO COLOR BACKGROUND
+   ICON AREA
+   NO BOX
+   NO COLOR
    WHITE ONLY
    ========================================================= */
 
 .create-line-icon {
-    width: 94px;
-    height: 94px;
+    width: 48px;
+    height: 48px;
 
-    flex: 0 0 94px;
+    flex: 0 0 48px;
 
     position: relative;
 
@@ -272,7 +265,7 @@
     align-items: center;
     justify-content: center;
 
-    margin-right: 26px;
+    margin-right: 11px;
 
     color: #ffffff;
 
@@ -284,16 +277,16 @@
 }
 
 /* =========================================================
-   REEL ICON
+   REEL
    ========================================================= */
 
 .reel-icon {
-    width: 72px;
-    height: 72px;
+    width: 39px;
+    height: 39px;
 
-    border: 5px solid #ffffff !important;
+    border: 3px solid #ffffff !important;
 
-    border-radius: 20px;
+    border-radius: 11px;
 
     background: transparent !important;
 }
@@ -303,14 +296,13 @@
 
     position: absolute;
 
-    top: 8px;
-    left: 8px;
+    top: 5px;
+    left: 5px;
+    right: 5px;
 
-    right: 8px;
+    height: 7px;
 
-    height: 12px;
-
-    border-top: 4px solid #ffffff;
+    border-top: 2px solid #ffffff;
 
     transform: skewX(-18deg);
 }
@@ -320,15 +312,15 @@
 
     position: absolute;
 
-    left: 27px;
-    top: 25px;
+    left: 15px;
+    top: 12px;
 
     width: 0;
     height: 0;
 
-    border-top: 11px solid transparent;
-    border-bottom: 11px solid transparent;
-    border-left: 18px solid #ffffff;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 10px solid #ffffff;
 }
 
 .reel-icon span {
@@ -336,16 +328,16 @@
 }
 
 /* =========================================================
-   IMAGE ICON
+   IMAGE
    ========================================================= */
 
 .image-icon {
-    width: 72px;
-    height: 72px;
+    width: 39px;
+    height: 39px;
 
-    border: 5px solid #ffffff !important;
+    border: 3px solid #ffffff !important;
 
-    border-radius: 18px;
+    border-radius: 10px;
 
     background: transparent !important;
 }
@@ -355,15 +347,15 @@
 
     position: absolute;
 
-    left: 13px;
-    right: 13px;
+    left: 7px;
+    right: 7px;
 
-    bottom: 13px;
+    bottom: 7px;
 
-    height: 25px;
+    height: 14px;
 
-    border-left: 5px solid #ffffff;
-    border-bottom: 5px solid #ffffff;
+    border-left: 3px solid #ffffff;
+    border-bottom: 3px solid #ffffff;
 
     transform: skewY(-32deg);
 }
@@ -373,11 +365,11 @@
 
     position: absolute;
 
-    width: 9px;
-    height: 9px;
+    width: 5px;
+    height: 5px;
 
-    top: 15px;
-    right: 15px;
+    top: 7px;
+    right: 7px;
 
     border-radius: 50%;
 
@@ -389,14 +381,14 @@
 }
 
 /* =========================================================
-   NEX MOMENT ICON
+   NEX MOMENT
    ========================================================= */
 
 .moment-icon {
-    width: 78px;
-    height: 78px;
+    width: 42px;
+    height: 42px;
 
-    border: 5px solid #ffffff !important;
+    border: 3px solid #ffffff !important;
 
     border-radius: 50%;
 
@@ -411,15 +403,15 @@
 
     position: absolute;
 
-    width: 30px;
-    height: 5px;
+    width: 17px;
+    height: 3px;
 
     background: #ffffff;
 
     border-radius: 10px;
 
-    left: 21px;
-    top: 36px;
+    left: 12px;
+    top: 19px;
 }
 
 .moment-icon::after {
@@ -427,15 +419,15 @@
 
     position: absolute;
 
-    width: 5px;
-    height: 30px;
+    width: 3px;
+    height: 17px;
 
     background: #ffffff;
 
     border-radius: 10px;
 
-    left: 34px;
-    top: 23px;
+    left: 19px;
+    top: 12px;
 }
 
 .moment-icon span {
@@ -443,12 +435,12 @@
 }
 
 /* =========================================================
-   PRIVATE ICON
+   PRIVATE
    ========================================================= */
 
 .private-icon {
-    width: 70px;
-    height: 70px;
+    width: 40px;
+    height: 40px;
 
     background: transparent !important;
 
@@ -460,21 +452,21 @@
 .private-icon::before {
     content: "";
 
-    width: 48px;
-    height: 48px;
+    width: 28px;
+    height: 28px;
 
     position: absolute;
 
-    border: 5px solid #ffffff;
+    border: 3px solid #ffffff;
 
-    border-radius: 8px;
+    border-radius: 6px;
 }
 
 .private-icon::after {
     content: "";
 
-    width: 7px;
-    height: 7px;
+    width: 5px;
+    height: 5px;
 
     position: absolute;
 
@@ -511,23 +503,23 @@
 
     color: #ffffff;
 
-    font-size: 29px;
-    line-height: 1.15;
+    font-size: 16px;
+    line-height: 20px;
 
-    font-weight: 750;
+    font-weight: 600;
 
-    letter-spacing: -0.4px;
+    letter-spacing: 0;
 }
 
 .create-option-text small {
     display: block;
 
-    margin-top: 10px;
+    margin-top: 2px;
 
-    color: #94a8bc;
+    color: #7f8c9d;
 
-    font-size: 19px;
-    line-height: 1.35;
+    font-size: 10px;
+    line-height: 14px;
 
     font-weight: 400;
 }
@@ -539,18 +531,18 @@
 .create-arrow {
     flex: 0 0 auto;
 
-    margin-left: 12px;
+    margin-left: 8px;
 
-    color: #8da2b5;
+    color: #687789;
 
-    font-size: 42px;
+    font-size: 24px;
     line-height: 1;
 
     font-weight: 300;
 }
 
 /* =========================================================
-   HIDE OLD SPECIAL COLORS
+   REMOVE OLD COLORS
    ========================================================= */
 
 .reel-icon,
@@ -562,166 +554,207 @@
 }
 
 /* =========================================================
+   BODY LOCK
+   ========================================================= */
+
+body.create-open {
+    overflow: hidden;
+}
+
+/* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 600px) {
 
     .create-sheet {
-        min-height: 0;
+        width: 100%;
 
-        max-height: 94vh;
+        max-width: 100%;
 
-        border-radius: 32px 32px 0 0;
+        max-height: 92vh;
 
         padding:
-            16px 14px 24px;
+            10px 11px 22px;
+
+        border-radius: 24px 24px 0 0;
     }
 
     .create-handle {
-        width: 72px;
-        height: 6px;
+        width: 42px;
+        height: 5px;
 
-        margin-bottom: 22px;
+        margin-bottom: 15px;
     }
 
     .create-header {
         padding:
-            0 12px 20px;
+            0 3px 14px;
     }
 
     .create-header h2 {
-        font-size: 34px;
+        font-size: 23px;
+        line-height: 28px;
     }
 
     .create-header p {
-        font-size: 18px;
-        margin-top: 8px;
+        font-size: 11px;
+        line-height: 15px;
     }
 
     .create-close {
-        width: 60px;
-        height: 60px;
+        width: 33px;
+        height: 33px;
 
-        flex-basis: 60px;
+        flex-basis: 33px;
 
-        font-size: 38px;
+        font-size: 23px;
     }
 
     .create-options {
-        gap: 12px;
-
-        padding: 0 8px;
+        gap: 7px;
     }
 
     .create-option {
-        min-height: 128px;
+        min-height: 66px;
 
-        padding: 18px 18px;
+        padding: 8px 10px;
 
-        border-radius: 28px;
+        border-radius: 13px;
     }
 
     .create-line-icon {
-        width: 82px;
-        height: 82px;
+        width: 46px;
+        height: 46px;
 
-        flex-basis: 82px;
+        flex-basis: 46px;
 
-        margin-right: 20px;
+        margin-right: 10px;
     }
 
     .reel-icon,
     .image-icon {
-        width: 64px;
-        height: 64px;
+        width: 37px;
+        height: 37px;
     }
 
     .moment-icon {
-        width: 70px;
-        height: 70px;
+        width: 40px;
+        height: 40px;
     }
 
     .private-icon {
-        width: 64px;
-        height: 64px;
+        width: 38px;
+        height: 38px;
     }
 
     .create-option-text strong {
-        font-size: 26px;
+        font-size: 15px;
+        line-height: 19px;
     }
 
     .create-option-text small {
-        font-size: 17px;
+        font-size: 10px;
+        line-height: 13px;
 
-        margin-top: 8px;
+        margin-top: 1px;
     }
 
     .create-arrow {
-        font-size: 38px;
+        font-size: 23px;
+
+        margin-left: 6px;
     }
 }
 
 /* =========================================================
    SMALL PHONES
+   SAME AS HOME <= 360px
    ========================================================= */
 
-@media (max-width: 390px) {
+@media (max-width: 360px) {
 
     .create-sheet {
-        padding-left: 10px;
-        padding-right: 10px;
+        padding:
+            9px 10px 20px;
+
+        border-radius: 22px 22px 0 0;
     }
 
     .create-header h2 {
-        font-size: 31px;
+        font-size: 21px;
     }
 
     .create-header p {
-        font-size: 16px;
+        font-size: 10px;
     }
 
     .create-option {
-        min-height: 116px;
+        min-height: 61px;
 
-        padding: 15px;
+        padding: 7px 9px;
+
+        border-radius: 12px;
     }
 
     .create-line-icon {
-        width: 70px;
-        height: 70px;
+        width: 42px;
+        height: 42px;
 
-        flex-basis: 70px;
+        flex-basis: 42px;
 
-        margin-right: 15px;
+        margin-right: 9px;
     }
 
     .reel-icon,
     .image-icon {
-        width: 58px;
-        height: 58px;
+        width: 34px;
+        height: 34px;
+
+        border-width: 2.5px !important;
     }
 
     .moment-icon {
-        width: 64px;
-        height: 64px;
+        width: 37px;
+        height: 37px;
+
+        border-width: 2.5px !important;
     }
 
     .private-icon {
-        width: 58px;
-        height: 58px;
+        width: 35px;
+        height: 35px;
+    }
+
+    .private-icon::before {
+        width: 25px;
+        height: 25px;
+
+        border-width: 2.5px;
     }
 
     .create-option-text strong {
-        font-size: 23px;
+        font-size: 14px;
     }
 
     .create-option-text small {
-        font-size: 15px;
+        font-size: 9px;
     }
 
     .create-arrow {
-        font-size: 34px;
+        font-size: 21px;
+    }
+}
+
+/* =========================================================
+   DESKTOP
+   SAME HOME MAX WIDTH
+   ========================================================= */
+
+@media (min-width: 700px) {
+
+    .create-sheet {
+        max-width: 680px;
     }
 }
 
@@ -732,7 +765,7 @@
 .create-option:focus-visible,
 .create-close:focus-visible {
     outline: 2px solid #ffffff;
-    outline-offset: 3px;
+    outline-offset: 2px;
 }
 
 /* =========================================================
@@ -740,7 +773,7 @@
    ========================================================= */
 
 .create-sheet::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
 }
 
 .create-sheet::-webkit-scrollbar-track {
