@@ -1,2409 +1,1719 @@
 /* =========================================================
-   USANEX — CHAT PAGE
-   chat.js
-   ========================================================= */
-
-"use strict";
-
-document.addEventListener("DOMContentLoaded", () => {
-    initChat();
-});
-
-
-/* =========================================================
-   GLOBAL STATE
+   USANEX — CHAT.JS
+   Fast WhatsApp-style chat
+   Text + HD Image Upload
 ========================================================= */
 
-const ChatState = {
-    userId: null,
-    currentUser: null,
-    chatUser: null,
+(() => {
+    "use strict";
 
-    selectedFile: null,
-    selectedPreviewUrl: null,
+    /* =====================================================
+       CONFIG
+    ===================================================== */
 
-    sending: false,
-    loading: false,
+    const API_BASE = "/api/chat";
 
-    messages: [],
-};
+    const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
 
+    /*
+       HD image settings
 
-/* =========================================================
-   API
-========================================================= */
+       Original gallery image:
+       - stays high quality
+       - resized only when extremely large
+       - JPEG quality 0.88
+    */
 
-const API = {
-    me: "/api/auth/me",
-
-    chat: (userId) =>
-        `/api/chat/${encodeURIComponent(userId)}`,
-
-    send: "/api/chat/send",
-
-    read: (userId) =>
-        `/api/chat/${encodeURIComponent(userId)}/read`,
-};
+    const MAX_IMAGE_WIDTH = 2560;
+    const MAX_IMAGE_HEIGHT = 2560;
+    const JPEG_QUALITY = 0.88;
 
 
-/* =========================================================
-   DOM
-========================================================= */
+    /* =====================================================
+       DOM HELPERS
+    ===================================================== */
 
-const DOM = {};
+    function $(selector) {
+        return document.querySelector(selector);
+    }
+
+    function $all(selector) {
+        return document.querySelectorAll(selector);
+    }
 
 
-function cacheDOM() {
+    /* =====================================================
+       FIND ELEMENTS
+    ===================================================== */
 
-    DOM.messages =
-        document.querySelector("#messages") ||
-        document.querySelector(".messages");
-
-    DOM.messageInput =
-        document.querySelector("#messageInput");
-
-    DOM.sendButton =
-        document.querySelector(".send-button") ||
-        document.querySelector("#sendButton");
-
-    DOM.fileInput =
+    const messageInput =
+        $("#messageInput") ||
         document.querySelector(
-            "#fileInput"
-        ) ||
+            'textarea[name="content"], input[name="content"]'
+        );
+
+    const messagesContainer =
+        $("#messages") ||
+        $(".messages");
+
+    const sendButton =
+        $(".send-button") ||
+        $("#sendButton");
+
+    const fileInput =
+        $("#fileInput") ||
+        $("#attachmentInput") ||
+        $("#imageInput") ||
         document.querySelector(
             'input[type="file"]'
         );
 
-    DOM.attachmentButton =
+    const attachmentButton =
+        $("#attachmentButton") ||
+        $(".attachment-button") ||
         document.querySelector(
-            ".attachment-button"
-        ) ||
-        document.querySelector(
-            "#attachmentButton"
+            '[data-action="attachment"]'
         );
 
-    DOM.cameraButton =
+    const chatForm =
+        $("#chatForm") ||
+        $(".chat-form") ||
         document.querySelector(
-            ".camera-button"
-        ) ||
-        document.querySelector(
-            "#cameraButton"
+            "form"
         );
 
-    DOM.emptyChat =
-        document.querySelector(
-            ".empty-chat"
-        );
 
-    DOM.chatUserName =
-        document.querySelector(
-            "#chatUserName"
-        ) ||
-        document.querySelector(
-            ".selected-info strong"
-        );
+    /* =====================================================
+       GET CHAT USER ID
+    ===================================================== */
 
-    DOM.chatUserUsername =
-        document.querySelector(
-            "#chatUserUsername"
-        ) ||
-        document.querySelector(
-            ".selected-info span"
-        );
+    function getChatUserId() {
 
-    DOM.chatAvatar =
-        document.querySelector(
-            "#chatAvatar"
-        ) ||
-        document.querySelector(
-            ".selected-avatar-wrap img"
-        );
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
 
-    DOM.typingIndicator =
-        document.querySelector(
-            ".typing-indicator"
-        );
-}
+        let userId =
+            params.get("user_id") ||
+            params.get("userid") ||
+            params.get("id") ||
+            params.get("user");
 
+        if (userId) {
+            return userId;
+        }
 
-/* =========================================================
-   INITIALIZE
-========================================================= */
+        /*
+         * Fallback:
+         * /chat/u_xxxxx
+         */
 
-async function initChat() {
-
-    cacheDOM();
-
-    setupFileInput();
-
-    setupSendButton();
-
-    setupMessageInput();
-
-    setupBackButton();
-
-    setupAttachmentButton();
-
-    setupCameraButton();
-
-    ChatState.userId =
-        getChatUserIdFromURL();
-
-    if (!ChatState.userId) {
-
-        showError(
-            "Chat user not found."
-        );
-
-        return;
-    }
-
-    await checkAuthentication();
-
-    await loadChat();
-}
-
-
-/* =========================================================
-   GET CHAT USER ID
-========================================================= */
-
-function getChatUserIdFromURL() {
-
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-    let userId =
-        params.get("user_id");
-
-    if (!userId) {
-        userId =
-            params.get("userId");
-    }
-
-    if (!userId) {
-        userId =
-            params.get("id");
-    }
-
-    /*
-       Also support:
-       /chat/u_abc123
-    */
-
-    if (!userId) {
-
-        const parts =
+        const path =
             window.location.pathname
                 .split("/")
                 .filter(Boolean);
 
-        const last =
-            parts[parts.length - 1];
+        if (path.length > 0) {
 
-        if (
-            last &&
-            last !== "chat" &&
-            last !== "chat.html"
-        ) {
-            userId = decodeURIComponent(last);
-        }
-    }
+            const last =
+                path[path.length - 1];
 
-    /*
-       Support localStorage fallback
-    */
-
-    if (!userId) {
-
-        const storedUser =
-            localStorage.getItem(
-                "usanexChatUser"
-            );
-
-        if (storedUser) {
-
-            try {
-
-                const parsed =
-                    JSON.parse(storedUser);
-
-                userId =
-                    parsed.user_id ||
-                    parsed.userId ||
-                    parsed.id;
-
-            } catch (error) {
-                console.warn(
-                    "Invalid usanexChatUser",
-                    error
+            if (
+                last !== "chat" &&
+                last !== "chat.html"
+            ) {
+                return decodeURIComponent(
+                    last
                 );
             }
         }
-    }
 
-    return userId
-        ? String(userId)
-        : null;
-}
+        /*
+         * localStorage fallback
+         */
 
-
-/* =========================================================
-   AUTH CHECK
-========================================================= */
-
-async function checkAuthentication() {
-
-    try {
-
-        const response =
-            await fetch(
-                API.me,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    cache: "no-store",
-                }
+        const saved =
+            localStorage.getItem(
+                "chatUserId"
+            ) ||
+            localStorage.getItem(
+                "selectedUserId"
+            ) ||
+            localStorage.getItem(
+                "usanexChatUserId"
             );
 
-        if (!response.ok) {
+        return saved;
+    }
 
-            redirectToLogin();
 
-            return false;
-        }
+    const chatUserId =
+        getChatUserId();
 
-        const data =
-            await response.json();
+
+    /* =====================================================
+       STATE
+    ===================================================== */
+
+    let selectedFile = null;
+
+    let sending = false;
+
+    let loadingMessages = false;
+
+    let destroyed = false;
+
+
+    /* =====================================================
+       DEBUG
+    ===================================================== */
+
+    function log(...args) {
+
+        console.log(
+            "[Usanex Chat]",
+            ...args
+        );
+    }
+
+
+    /* =====================================================
+       ESCAPE HTML
+    ===================================================== */
+
+    function escapeHTML(value) {
 
         if (
-            !data ||
-            !data.success ||
-            !data.user
+            value === null ||
+            value === undefined
         ) {
-
-            redirectToLogin();
-
-            return false;
+            return "";
         }
 
-        ChatState.currentUser =
-            data.user;
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
 
-        return true;
 
-    } catch (error) {
+    /* =====================================================
+       FORMAT TIME
+    ===================================================== */
 
-        console.error(
-            "Authentication check failed:",
-            error
+    function formatTime(value) {
+
+        if (!value) {
+            return "";
+        }
+
+        const date =
+            new Date(value);
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "";
+        }
+
+        return date.toLocaleTimeString(
+            [],
+            {
+                hour: "numeric",
+                minute: "2-digit",
+            }
+        );
+    }
+
+
+    /* =====================================================
+       SCROLL TO BOTTOM
+    ===================================================== */
+
+    function scrollToBottom(
+        smooth = true
+    ) {
+
+        if (!messagesContainer) {
+            return;
+        }
+
+        messagesContainer.scrollTo({
+            top:
+                messagesContainer.scrollHeight,
+            behavior:
+                smooth
+                    ? "smooth"
+                    : "auto",
+        });
+    }
+
+
+    /* =====================================================
+       SHOW STATUS
+    ===================================================== */
+
+    function showStatus(
+        message,
+        type = "normal"
+    ) {
+
+        log(
+            `${type}:`,
+            message
         );
 
-        redirectToLogin();
+        /*
+         * Browser alert is intentionally avoided
+         * for normal messages.
+         */
 
-        return false;
+        if (
+            type === "error"
+        ) {
+
+            let existing =
+                document.querySelector(
+                    ".chat-error-message"
+                );
+
+            if (!existing) {
+
+                existing =
+                    document.createElement(
+                        "div"
+                    );
+
+                existing.className =
+                    "chat-error-message";
+
+                existing.style.cssText = `
+                    position: fixed;
+                    left: 50%;
+                    bottom: 90px;
+                    transform: translateX(-50%);
+                    z-index: 9999;
+                    max-width: 90%;
+                    padding: 10px 15px;
+                    border-radius: 12px;
+                    background: #b91c1c;
+                    color: white;
+                    font-size: 13px;
+                    text-align: center;
+                    box-shadow: 0 5px 20px rgba(0,0,0,.3);
+                `;
+
+                document.body.appendChild(
+                    existing
+                );
+            }
+
+            existing.textContent =
+                message;
+
+            clearTimeout(
+                existing._timer
+            );
+
+            existing._timer =
+                setTimeout(() => {
+
+                    existing.remove();
+
+                }, 3000);
+        }
     }
-}
 
 
-/* =========================================================
-   LOGIN REDIRECT
-========================================================= */
+    /* =====================================================
+       IMAGE COMPRESSION
+    ===================================================== */
 
-function redirectToLogin() {
+    async function prepareImage(
+        file
+    ) {
 
-    /*
-       Do not redirect immediately if
-       this is a temporary network failure.
-    */
+        /*
+         * Non-image should never reach here.
+         */
 
-    console.warn(
-        "Usanex session is not authenticated."
-    );
+        if (
+            !file ||
+            !file.type.startsWith(
+                "image/"
+            )
+        ) {
 
-    window.location.href =
-        "/static/login.html";
-}
+            throw new Error(
+                "Please select a valid image."
+            );
+        }
 
 
-/* =========================================================
-   LOAD CHAT
-========================================================= */
+        /*
+         * Small images:
+         * keep original file.
+         */
 
-async function loadChat() {
+        if (
+            file.size <=
+            MAX_UPLOAD_SIZE
+        ) {
 
-    if (ChatState.loading) {
-        return;
-    }
+            return file;
+        }
 
-    ChatState.loading = true;
 
-    showLoading();
+        /*
+         * Large image:
+         * load into canvas.
+         */
 
-    try {
+        const objectURL =
+            URL.createObjectURL(
+                file
+            );
 
-        const response =
-            await fetch(
-                API.chat(
-                    ChatState.userId
-                ),
+        try {
+
+            const image =
+                await new Promise(
+                    (
+                        resolve,
+                        reject
+                    ) => {
+
+                        const img =
+                            new Image();
+
+                        img.onload =
+                            () => resolve(
+                                img
+                            );
+
+                        img.onerror =
+                            () => reject(
+                                new Error(
+                                    "Image could not be loaded."
+                                )
+                            );
+
+                        img.src =
+                            objectURL;
+                    }
+                );
+
+
+            let width =
+                image.naturalWidth;
+
+            let height =
+                image.naturalHeight;
+
+
+            /*
+             * Resize only if necessary.
+             */
+
+            const scale =
+                Math.min(
+                    1,
+                    MAX_IMAGE_WIDTH /
+                        width,
+                    MAX_IMAGE_HEIGHT /
+                        height
+                );
+
+            width =
+                Math.round(
+                    width * scale
+                );
+
+            height =
+                Math.round(
+                    height * scale
+                );
+
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+            canvas.width =
+                width;
+
+            canvas.height =
+                height;
+
+
+            const ctx =
+                canvas.getContext(
+                    "2d"
+                );
+
+            if (!ctx) {
+
+                throw new Error(
+                    "Image processing is not supported."
+                );
+            }
+
+
+            /*
+             * High quality rendering.
+             */
+
+            ctx.imageSmoothingEnabled =
+                true;
+
+            ctx.imageSmoothingQuality =
+                "high";
+
+
+            ctx.drawImage(
+                image,
+                0,
+                0,
+                width,
+                height
+            );
+
+
+            /*
+             * Convert to JPEG.
+             */
+
+            const blob =
+                await new Promise(
+                    resolve => {
+
+                        canvas.toBlob(
+                            resolve,
+                            "image/jpeg",
+                            JPEG_QUALITY
+                        );
+                    }
+                );
+
+
+            if (!blob) {
+
+                throw new Error(
+                    "Image compression failed."
+                );
+            }
+
+
+            /*
+             * If still too large,
+             * compress a little more.
+             */
+
+            let finalBlob =
+                blob;
+
+
+            if (
+                finalBlob.size >
+                MAX_UPLOAD_SIZE
+            ) {
+
+                finalBlob =
+                    await new Promise(
+                        resolve => {
+
+                            canvas.toBlob(
+                                resolve,
+                                "image/jpeg",
+                                0.78
+                            );
+                        }
+                    );
+            }
+
+
+            const finalName =
+                (
+                    file.name
+                        ?.replace(
+                            /\.[^/.]+$/,
+                            ""
+                        ) ||
+                    "usanex-photo"
+                ) +
+                ".jpg";
+
+
+            return new File(
+                [finalBlob],
+                finalName,
                 {
-                    method: "GET",
-                    credentials: "include",
-                    cache: "no-store",
+                    type:
+                        "image/jpeg",
+                    lastModified:
+                        Date.now(),
                 }
             );
 
+        } finally {
+
+            URL.revokeObjectURL(
+                objectURL
+            );
+        }
+    }
+
+
+    /* =====================================================
+       SELECT IMAGE
+    ===================================================== */
+
+    function handleFileSelected(
+        event
+    ) {
+
+        const files =
+            event.target.files;
+
         if (
-            response.status === 401
+            !files ||
+            !files.length
+        ) {
+            selectedFile = null;
+            return;
+        }
+
+
+        const file =
+            files[0];
+
+
+        if (
+            !file.type.startsWith(
+                "image/"
+            )
         ) {
 
-            redirectToLogin();
+            showStatus(
+                "Sirf image select karein.",
+                "error"
+            );
+
+            event.target.value = "";
+
+            selectedFile = null;
 
             return;
         }
 
-        const data =
-            await response.json();
 
-        if (!response.ok) {
+        /*
+         * We don't reject large images.
+         * They will be compressed automatically.
+         */
 
-            throw new Error(
-                data.detail ||
-                "Unable to load chat."
+        selectedFile = file;
+
+        log(
+            "Photo selected:",
+            file.name,
+            file.size,
+            file.type
+        );
+
+
+        /*
+         * Show selected filename
+         * if preview element exists.
+         */
+
+        const fileNameElement =
+            $("#selectedFileName") ||
+            $(".selected-file-name");
+
+        if (
+            fileNameElement
+        ) {
+
+            fileNameElement.textContent =
+                file.name;
+        }
+
+
+        /*
+         * Optional image preview.
+         */
+
+        showSelectedPreview(
+            file
+        );
+    }
+
+
+    /* =====================================================
+       IMAGE PREVIEW
+    ===================================================== */
+
+    function showSelectedPreview(
+        file
+    ) {
+
+        const preview =
+            $("#imagePreview") ||
+            $(".image-preview");
+
+        if (!preview) {
+            return;
+        }
+
+
+        const url =
+            URL.createObjectURL(
+                file
+            );
+
+
+        if (
+            preview.tagName ===
+            "IMG"
+        ) {
+
+            preview.src =
+                url;
+
+            preview.style.display =
+                "block";
+
+        } else {
+
+            preview.innerHTML = `
+                <img
+                    src="${url}"
+                    alt="Selected image"
+                    style="
+                        max-width:120px;
+                        max-height:120px;
+                        object-fit:cover;
+                        border-radius:12px;
+                    "
+                >
+            `;
+
+            preview.style.display =
+                "block";
+        }
+
+
+        setTimeout(
+            () => {
+                URL.revokeObjectURL(
+                    url
+                );
+            },
+            10000
+        );
+    }
+
+
+    /* =====================================================
+       CLEAR FILE
+    ===================================================== */
+
+    function clearSelectedFile() {
+
+        selectedFile = null;
+
+        if (fileInput) {
+            fileInput.value = "";
+        }
+
+
+        const preview =
+            $("#imagePreview") ||
+            $(".image-preview");
+
+        if (preview) {
+
+            preview.innerHTML = "";
+
+            preview.style.display =
+                "none";
+        }
+
+
+        const fileNameElement =
+            $("#selectedFileName") ||
+            $(".selected-file-name");
+
+        if (
+            fileNameElement
+        ) {
+
+            fileNameElement.textContent =
+                "";
+        }
+    }
+
+
+    /* =====================================================
+       OPEN GALLERY
+    ===================================================== */
+
+    function openGallery() {
+
+        if (!fileInput) {
+
+            showStatus(
+                "Gallery input nahi mila. Chat HTML me file input check karein.",
+                "error"
+            );
+
+            return;
+        }
+
+        fileInput.click();
+    }
+
+
+    /* =====================================================
+       CREATE MESSAGE ELEMENT
+    ===================================================== */
+
+    function createMessageElement(
+        message,
+        currentUserId
+    ) {
+
+        const senderId =
+            Number(
+                message.sender_id
+            );
+
+        const isMine =
+            senderId ===
+            Number(
+                currentUserId
+            );
+
+
+        const row =
+            document.createElement(
+                "div"
+            );
+
+        row.className =
+            "message-row " +
+            (
+                isMine
+                    ? "mine"
+                    : "received"
+            );
+
+
+        const bubble =
+            document.createElement(
+                "div"
+            );
+
+        bubble.className =
+            "message-bubble";
+
+
+        /*
+         * IMAGE
+         */
+
+        if (
+            message.media_url
+        ) {
+
+            const image =
+                document.createElement(
+                    "img"
+                );
+
+            image.src =
+                message.media_url;
+
+            image.alt =
+                "Photo";
+
+            image.loading =
+                "lazy";
+
+            image.decoding =
+                "async";
+
+            image.style.cssText = `
+                display:block;
+                max-width:100%;
+                width:auto;
+                height:auto;
+                max-height:420px;
+                object-fit:contain;
+                border-radius:10px;
+                cursor:pointer;
+            `;
+
+
+            image.addEventListener(
+                "click",
+                () => {
+
+                    window.open(
+                        message.media_url,
+                        "_blank"
+                    );
+                }
+            );
+
+
+            bubble.appendChild(
+                image
             );
         }
 
-        if (!data.success) {
 
-            throw new Error(
-                "Unable to load chat."
+        /*
+         * TEXT
+         */
+
+        const text =
+            message.content ||
+            message.message;
+
+
+        if (text) {
+
+            const textElement =
+                document.createElement(
+                    "div"
+                );
+
+            textElement.className =
+                "message-text";
+
+            textElement.textContent =
+                text;
+
+            bubble.appendChild(
+                textElement
             );
         }
 
-        ChatState.chatUser =
-            data.user;
 
-        ChatState.messages =
+        /*
+         * META
+         */
+
+        const meta =
+            document.createElement(
+                "div"
+            );
+
+        meta.className =
+            "message-meta";
+
+
+        const time =
+            document.createElement(
+                "span"
+            );
+
+        time.textContent =
+            formatTime(
+                message.created_at
+            );
+
+
+        meta.appendChild(
+            time
+        );
+
+
+        if (isMine) {
+
+            const ticks =
+                document.createElement(
+                    "span"
+                );
+
+            ticks.className =
+                "message-ticks";
+
+            ticks.textContent =
+                message.is_read
+                    ? "✓✓"
+                    : "✓";
+
+            meta.appendChild(
+                ticks
+            );
+        }
+
+
+        bubble.appendChild(
+            meta
+        );
+
+
+        row.appendChild(
+            bubble
+        );
+
+
+        return row;
+    }
+
+
+    /* =====================================================
+       RENDER MESSAGES
+    ===================================================== */
+
+    function renderMessages(
+        data
+    ) {
+
+        if (!messagesContainer) {
+            return;
+        }
+
+
+        const messages =
             Array.isArray(
                 data.messages
             )
                 ? data.messages
                 : [];
 
-        updateHeader();
 
-        renderMessages();
-
-        scrollToBottom(
-            false
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Load chat error:",
-            error
-        );
-
-        showError(
-            error.message ||
-            "Unable to load chat."
-        );
-
-    } finally {
-
-        ChatState.loading = false;
-    }
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-function showLoading() {
-
-    if (!DOM.messages) {
-        return;
-    }
-
-    DOM.messages.innerHTML = `
-        <div class="messages-loading">
-            Loading messages...
-        </div>
-    `;
-}
-
-
-/* =========================================================
-   HEADER
-========================================================= */
-
-function updateHeader() {
-
-    const user =
-        ChatState.chatUser;
-
-    if (!user) {
-        return;
-    }
-
-    if (DOM.chatUserName) {
-
-        DOM.chatUserName.textContent =
-            user.name ||
-            user.username ||
-            "Usanex User";
-    }
-
-    if (DOM.chatUserUsername) {
-
-        DOM.chatUserUsername.textContent =
-            user.username ||
-            user.user_id ||
-            "Usanex";
-    }
-
-    if (DOM.chatAvatar) {
-
-        if (user.profile_photo) {
-
-            DOM.chatAvatar.src =
-                normalizeMediaURL(
-                    user.profile_photo
-                );
-
-        } else {
-
-            DOM.chatAvatar.src =
-                createAvatarPlaceholder(
-                    user.name ||
-                    user.username ||
-                    "U"
-                );
-        }
-
-        DOM.chatAvatar.onerror =
-            function () {
-
-                this.onerror = null;
-
-                this.src =
-                    createAvatarPlaceholder(
-                        user.name ||
-                        "U"
-                    );
-            };
-    }
-}
-
-
-/* =========================================================
-   RENDER MESSAGES
-========================================================= */
-
-function renderMessages() {
-
-    if (!DOM.messages) {
-        return;
-    }
-
-    DOM.messages.innerHTML = "";
-
-    if (
-        !ChatState.messages.length
-    ) {
-
-        showEmptyChat();
-
-        return;
-    }
-
-    hideEmptyChat();
-
-    const fragment =
-        document.createDocumentFragment();
-
-    ChatState.messages.forEach(
-        (message) => {
-
-            const row =
-                createMessageElement(
-                    message
-                );
-
-            if (row) {
-                fragment.appendChild(row);
-            }
-        }
-    );
-
-    DOM.messages.appendChild(
-        fragment
-    );
-}
-
-
-/* =========================================================
-   EMPTY CHAT
-========================================================= */
-
-function showEmptyChat() {
-
-    if (DOM.emptyChat) {
-
-        DOM.emptyChat.style.display =
-            "flex";
-    }
-
-    if (
-        DOM.messages &&
-        !DOM.messages.querySelector(
-            ".empty-chat"
-        )
-    ) {
-
-        const empty =
-            document.createElement(
-                "div"
-            );
-
-        empty.className =
-            "empty-chat";
-
-        empty.innerHTML = `
-            <div class="empty-chat-icon">
-                💬
-            </div>
-
-            <strong>
-                Start chatting
-            </strong>
-
-            <span>
-                Send a message or photo to start your conversation.
-            </span>
-        `;
-
-        DOM.messages.appendChild(
-            empty
-        );
-    }
-}
-
-
-function hideEmptyChat() {
-
-    if (DOM.emptyChat) {
-
-        DOM.emptyChat.style.display =
-            "none";
-    }
-}
-
-
-/* =========================================================
-   CREATE MESSAGE ELEMENT
-========================================================= */
-
-function createMessageElement(
-    message
-) {
-
-    if (!message) {
-        return null;
-    }
-
-    const currentId =
-        ChatState.currentUser
-            ? Number(
-                ChatState.currentUser.id
-            )
-            : null;
-
-    const senderId =
-        Number(
-            message.sender_id
-        );
-
-    const isMine =
-        currentId !== null &&
-        senderId === currentId;
-
-    const row =
-        document.createElement(
-            "div"
-        );
-
-    row.className =
-        "message-row " +
-        (
-            isMine
-                ? "mine"
-                : "received"
-        );
-
-    const bubble =
-        document.createElement(
-            "div"
-        );
-
-    bubble.className =
-        "message-bubble";
-
-    /*
-       TEXT
-    */
-
-    const hasText =
-        message.content ||
-        message.message;
-
-    if (hasText) {
-
-        const text =
-            document.createElement(
-                "div"
-            );
-
-        text.className =
-            "message-text";
-
-        text.textContent =
-            message.content ||
-            message.message ||
-            "";
-
-        bubble.appendChild(
-            text
-        );
-    }
-
-    /*
-       IMAGE
-    */
-
-    if (
-        message.media_url &&
-        (
-            message.media_type ===
-            "image" ||
-            !message.media_type
-        )
-    ) {
-
-        const imageWrap =
-            document.createElement(
-                "div"
-            );
-
-        imageWrap.className =
-            "message-image-wrap";
-
-        const image =
-            document.createElement(
-                "img"
-            );
-
-        image.className =
-            "message-image";
-
-        image.loading =
-            "lazy";
-
-        image.decoding =
-            "async";
-
-        image.src =
-            normalizeMediaURL(
-                message.media_url
-            );
-
-        image.alt =
-            "Photo";
-
-        /*
-           Tap photo = full image
-        */
-
-        image.addEventListener(
-            "click",
-            () => {
-
-                openFullImage(
-                    image.src
-                );
-            }
-        );
-
-        imageWrap.appendChild(
-            image
-        );
-
-        bubble.appendChild(
-            imageWrap
-        );
-    }
-
-    /*
-       META
-    */
-
-    const meta =
-        document.createElement(
-            "div"
-        );
-
-    meta.className =
-        "message-meta";
-
-    const time =
-        document.createElement(
-            "span"
-        );
-
-    time.textContent =
-        formatMessageTime(
-            message.created_at
-        );
-
-    meta.appendChild(
-        time
-    );
-
-    /*
-       TICKS
-    */
-
-    if (isMine) {
-
-        const ticks =
-            document.createElement(
-                "span"
-            );
-
-        ticks.className =
-            "message-ticks";
-
-        ticks.textContent =
-            message.is_read
-                ? "✓✓"
-                : "✓";
-
-        meta.appendChild(
-            ticks
-        );
-    }
-
-    bubble.appendChild(
-        meta
-    );
-
-    row.appendChild(
-        bubble
-    );
-
-    return row;
-}
-
-
-/* =========================================================
-   IMAGE URL
-========================================================= */
-
-function normalizeMediaURL(
-    url
-) {
-
-    if (!url) {
-        return "";
-    }
-
-    if (
-        url.startsWith(
-            "http://"
-        ) ||
-        url.startsWith(
-            "https://"
-        )
-    ) {
-
-        return url;
-    }
-
-    if (
-        url.startsWith("/")
-    ) {
-
-        return url;
-    }
-
-    return "/" + url;
-}
-
-
-/* =========================================================
-   OPEN FULL IMAGE
-========================================================= */
-
-function openFullImage(
-    imageURL
-) {
-
-    const overlay =
-        document.createElement(
-            "div"
-        );
-
-    overlay.style.position =
-        "fixed";
-
-    overlay.style.inset =
-        "0";
-
-    overlay.style.zIndex =
-        "99999";
-
-    overlay.style.background =
-        "rgba(0,0,0,0.96)";
-
-    overlay.style.display =
-        "flex";
-
-    overlay.style.alignItems =
-        "center";
-
-    overlay.style.justifyContent =
-        "center";
-
-    overlay.style.padding =
-        "15px";
-
-    const image =
-        document.createElement(
-            "img"
-        );
-
-    image.src =
-        imageURL;
-
-    image.style.maxWidth =
-        "100%";
-
-    image.style.maxHeight =
-        "100%";
-
-    image.style.objectFit =
-        "contain";
-
-    image.style.borderRadius =
-        "8px";
-
-    overlay.appendChild(
-        image
-    );
-
-    overlay.addEventListener(
-        "click",
-        () => {
-
-            overlay.remove();
-        }
-    );
-
-    document.body.appendChild(
-        overlay
-    );
-}
-
-
-/* =========================================================
-   FILE INPUT
-========================================================= */
-
-function setupFileInput() {
-
-    if (!DOM.fileInput) {
-
-        console.warn(
-            "File input not found."
-        );
-
-        return;
-    }
-
-    DOM.fileInput.accept =
-        "image/jpeg,image/png,image/webp,image/gif";
-
-    DOM.fileInput.addEventListener(
-        "change",
-        handleFileSelection
-    );
-}
-
-
-/* =========================================================
-   FILE SELECTED
-========================================================= */
-
-async function handleFileSelection(
-    event
-) {
-
-    const file =
-        event.target.files &&
-        event.target.files[0];
-
-    if (!file) {
-        return;
-    }
-
-    if (
-        !file.type ||
-        !file.type.startsWith(
-            "image/"
-        )
-    ) {
-
-        alert(
-            "Please select an image."
-        );
-
-        clearSelectedFile();
-
-        return;
-    }
-
-    /*
-       Browser file size check.
-
-       Backend allows 10 MB.
-    */
-
-    const maxInputSize =
-        50 * 1024 * 1024;
-
-    if (
-        file.size >
-        maxInputSize
-    ) {
-
-        alert(
-            "Photo is too large. Please select a smaller image."
-        );
-
-        clearSelectedFile();
-
-        return;
-    }
-
-    try {
-
-        /*
-           Compress while preserving HD quality.
-        */
-
-        const optimizedFile =
-            await optimizeImage(
-                file
-            );
-
-        ChatState.selectedFile =
-            optimizedFile;
-
-        showSelectedPhotoPreview(
-            optimizedFile
-        );
-
-        updateSendButton();
-
-    } catch (error) {
-
-        console.error(
-            "Image processing error:",
-            error
-        );
-
-        /*
-           Fallback to original file.
-        */
-
-        ChatState.selectedFile =
-            file;
-
-        showSelectedPhotoPreview(
-            file
-        );
-
-        updateSendButton();
-    }
-}
-
-
-/* =========================================================
-   IMAGE OPTIMIZATION
-========================================================= */
-
-async function optimizeImage(
-    file
-) {
-
-    /*
-       GIF is kept as-is.
-       This prevents animated GIF from becoming
-       a static JPEG.
-    */
-
-    if (
-        file.type ===
-        "image/gif"
-    ) {
-
-        return file;
-    }
-
-    const image =
-        await loadImageFromFile(
-            file
-        );
-
-    /*
-       HD maximum resolution.
-
-       This does NOT make the image tiny.
-       It keeps enough resolution for mobile
-       viewing while greatly reducing file size.
-    */
-
-    const MAX_WIDTH =
-        1920;
-
-    const MAX_HEIGHT =
-        1920;
-
-    let width =
-        image.naturalWidth;
-
-    let height =
-        image.naturalHeight;
-
-    const scale =
-        Math.min(
-            1,
-            MAX_WIDTH / width,
-            MAX_HEIGHT / height
-        );
-
-    width =
-        Math.round(
-            width * scale
-        );
-
-    height =
-        Math.round(
-            height * scale
-        );
-
-    const canvas =
-        document.createElement(
-            "canvas"
-        );
-
-    canvas.width =
-        width;
-
-    canvas.height =
-        height;
-
-    const ctx =
-        canvas.getContext(
-            "2d",
-            {
-                alpha: false,
-            }
-        );
-
-    if (!ctx) {
-        throw new Error(
-            "Canvas is not supported."
-        );
-    }
-
-    /*
-       High-quality rendering.
-    */
-
-    ctx.imageSmoothingEnabled =
-        true;
-
-    ctx.imageSmoothingQuality =
-        "high";
-
-    /*
-       White background prevents
-       transparent PNG from turning black.
-    */
-
-    ctx.fillStyle =
-        "#ffffff";
-
-    ctx.fillRect(
-        0,
-        0,
-        width,
-        height
-    );
-
-    ctx.drawImage(
-        image,
-        0,
-        0,
-        width,
-        height
-    );
-
-    const blob =
-        await canvasToBlob(
-            canvas,
-            "image/jpeg",
-            0.88
-        );
-
-    if (!blob) {
-
-        throw new Error(
-            "Image compression failed."
-        );
-    }
-
-    /*
-       Very important:
-       Give the Blob a .jpg filename.
-
-       Backend checks extension.
-    */
-
-    const originalName =
-        file.name
-            ? file.name
-                .replace(
-                    /\.[^/.]+$/,
-                    ""
-                )
-            : "usanex-photo";
-
-    return new File(
-        [
-            blob
-        ],
-        `${originalName}.jpg`,
-        {
-            type:
-                "image/jpeg",
-            lastModified:
-                Date.now(),
-        }
-    );
-}
-
-
-/* =========================================================
-   LOAD IMAGE
-========================================================= */
-
-function loadImageFromFile(
-    file
-) {
-
-    return new Promise(
-        (
-            resolve,
-            reject
-        ) => {
-
-            const url =
-                URL.createObjectURL(
-                    file
-                );
-
-            const image =
-                new Image();
-
-            image.onload =
-                () => {
-
-                    URL.revokeObjectURL(
-                        url
-                    );
-
-                    resolve(
-                        image
-                    );
-                };
-
-            image.onerror =
-                () => {
-
-                    URL.revokeObjectURL(
-                        url
-                    );
-
-                    reject(
-                        new Error(
-                            "Unable to read image."
-                        )
-                    );
-                };
-
-            image.src =
-                url;
-        }
-    );
-}
-
-
-/* =========================================================
-   CANVAS TO BLOB
-========================================================= */
-
-function canvasToBlob(
-    canvas,
-    type,
-    quality
-) {
-
-    return new Promise(
-        (
-            resolve
-        ) => {
-
-            canvas.toBlob(
-                resolve,
-                type,
-                quality
-            );
-        }
-    );
-}
-
-
-/* =========================================================
-   PHOTO PREVIEW
-========================================================= */
-
-function showSelectedPhotoPreview(
-    file
-) {
-
-    removeSelectedPhotoPreview();
-
-    const previewURL =
-        URL.createObjectURL(
-            file
-        );
-
-    ChatState.selectedPreviewUrl =
-        previewURL;
-
-    const preview =
-        document.createElement(
-            "div"
-        );
-
-    preview.id =
-        "selectedPhotoPreview";
-
-    preview.style.position =
-        "fixed";
-
-    preview.style.left =
-        "12px";
-
-    preview.style.right =
-        "12px";
-
-    preview.style.bottom =
-        "72px";
-
-    preview.style.zIndex =
-        "1000";
-
-    preview.style.display =
-        "flex";
-
-    preview.style.alignItems =
-        "center";
-
-    preview.style.gap =
-        "10px";
-
-    preview.style.padding =
-        "8px 10px";
-
-    preview.style.borderRadius =
-        "14px";
-
-    preview.style.background =
-        "#142638";
-
-    preview.style.border =
-        "1px solid rgba(255,255,255,0.10)";
-
-    preview.style.boxShadow =
-        "0 8px 25px rgba(0,0,0,0.35)";
-
-    const image =
-        document.createElement(
-            "img"
-        );
-
-    image.src =
-        previewURL;
-
-    image.style.width =
-        "58px";
-
-    image.style.height =
-        "58px";
-
-    image.style.objectFit =
-        "cover";
-
-    image.style.borderRadius =
-        "10px";
-
-    const info =
-        document.createElement(
-            "div"
-        );
-
-    info.style.flex =
-        "1";
-
-    info.style.minWidth =
-        "0";
-
-    const title =
-        document.createElement(
-            "div"
-        );
-
-    title.textContent =
-        "Photo ready";
-
-    title.style.color =
-        "#ffffff";
-
-    title.style.fontSize =
-        "13px";
-
-    title.style.fontWeight =
-        "600";
-
-    const size =
-        document.createElement(
-            "div"
-        );
-
-    size.textContent =
-        formatFileSize(
-            file.size
-        );
-
-    size.style.color =
-        "#8fa2b5";
-
-    size.style.fontSize =
-        "11px";
-
-    size.style.marginTop =
-        "3px";
-
-    info.appendChild(
-        title
-    );
-
-    info.appendChild(
-        size
-    );
-
-    const close =
-        document.createElement(
-            "button"
-        );
-
-    close.type =
-        "button";
-
-    close.textContent =
-        "✕";
-
-    close.style.width =
-        "34px";
-
-    close.style.height =
-        "34px";
-
-    close.style.border =
-        "0";
-
-    close.style.borderRadius =
-        "50%";
-
-    close.style.background =
-        "rgba(255,255,255,0.08)";
-
-    close.style.color =
-        "#ffffff";
-
-    close.style.cursor =
-        "pointer";
-
-    close.addEventListener(
-        "click",
-        () => {
-
-            clearSelectedFile();
-        }
-    );
-
-    preview.appendChild(
-        image
-    );
-
-    preview.appendChild(
-        info
-    );
-
-    preview.appendChild(
-        close
-    );
-
-    document.body.appendChild(
-        preview
-    );
-}
-
-
-/* =========================================================
-   REMOVE PHOTO PREVIEW
-========================================================= */
-
-function removeSelectedPhotoPreview() {
-
-    const preview =
-        document.querySelector(
-            "#selectedPhotoPreview"
-        );
-
-    if (preview) {
-        preview.remove();
-    }
-
-    if (
-        ChatState.selectedPreviewUrl
-    ) {
-
-        URL.revokeObjectURL(
-            ChatState.selectedPreviewUrl
-        );
-
-        ChatState.selectedPreviewUrl =
+        const currentUser =
+            data.current_user ||
+            data.currentUser ||
             null;
-    }
-}
 
 
-/* =========================================================
-   CLEAR FILE
-========================================================= */
+        const currentUserId =
+            currentUser?.id;
 
-function clearSelectedFile() {
 
-    ChatState.selectedFile =
-        null;
-
-    removeSelectedPhotoPreview();
-
-    if (DOM.fileInput) {
-
-        DOM.fileInput.value =
+        messagesContainer.innerHTML =
             "";
-    }
 
-    updateSendButton();
-}
-
-
-/* =========================================================
-   ATTACHMENT BUTTON
-========================================================= */
-
-function setupAttachmentButton() {
-
-    if (!DOM.attachmentButton) {
-        return;
-    }
-
-    DOM.attachmentButton.addEventListener(
-        "click",
-        (event) => {
-
-            event.preventDefault();
-
-            if (DOM.fileInput) {
-
-                DOM.fileInput.click();
-            }
-        }
-    );
-}
-
-
-/* =========================================================
-   CAMERA BUTTON
-========================================================= */
-
-function setupCameraButton() {
-
-    if (!DOM.cameraButton) {
-        return;
-    }
-
-    DOM.cameraButton.addEventListener(
-        "click",
-        (event) => {
-
-            event.preventDefault();
-
-            if (!DOM.fileInput) {
-                return;
-            }
-
-            /*
-               Open camera on supported phones.
-            */
-
-            DOM.fileInput.setAttribute(
-                "capture",
-                "environment"
-            );
-
-            DOM.fileInput.click();
-
-            /*
-               Reset so next attachment can
-               normally select gallery.
-            */
-
-            setTimeout(
-                () => {
-
-                    DOM.fileInput.removeAttribute(
-                        "capture"
-                    );
-
-                },
-                500
-            );
-        }
-    );
-}
-
-
-/* =========================================================
-   SEND BUTTON
-========================================================= */
-
-function setupSendButton() {
-
-    if (!DOM.sendButton) {
-
-        console.warn(
-            "Send button not found."
-        );
-
-        return;
-    }
-
-    DOM.sendButton.addEventListener(
-        "click",
-        async (event) => {
-
-            event.preventDefault();
-
-            event.stopPropagation();
-
-            await sendMessage();
-        }
-    );
-
-    updateSendButton();
-}
-
-
-/* =========================================================
-   MESSAGE INPUT
-========================================================= */
-
-function setupMessageInput() {
-
-    if (!DOM.messageInput) {
-        return;
-    }
-
-    DOM.messageInput.addEventListener(
-        "keydown",
-        async (event) => {
-
-            /*
-               Enter = send
-               Shift + Enter = new line
-            */
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey
-            ) {
-
-                event.preventDefault();
-
-                await sendMessage();
-            }
-
-            updateSendButton();
-        }
-    );
-
-    DOM.messageInput.addEventListener(
-        "input",
-        updateSendButton
-    );
-}
-
-
-/* =========================================================
-   UPDATE SEND BUTTON
-========================================================= */
-
-function updateSendButton() {
-
-    if (!DOM.sendButton) {
-        return;
-    }
-
-    const text =
-        DOM.messageInput
-            ? DOM.messageInput.value.trim()
-            : "";
-
-    const hasText =
-        Boolean(text);
-
-    const hasFile =
-        Boolean(
-            ChatState.selectedFile
-        );
-
-    DOM.sendButton.disabled =
-        ChatState.sending ||
-        (
-            !hasText &&
-            !hasFile
-        );
-}
-
-
-/* =========================================================
-   SEND MESSAGE
-========================================================= */
-
-async function sendMessage() {
-
-    if (ChatState.sending) {
-        return;
-    }
-
-    if (!ChatState.userId) {
-
-        alert(
-            "Chat user not found."
-        );
-
-        return;
-    }
-
-    const text =
-        DOM.messageInput
-            ? DOM.messageInput.value.trim()
-            : "";
-
-    const file =
-        ChatState.selectedFile;
-
-    /*
-       Must have either text or photo.
-    */
-
-    if (
-        !text &&
-        !file
-    ) {
-
-        return;
-    }
-
-    ChatState.sending =
-        true;
-
-    updateSendButton();
-
-    /*
-       =====================================================
-       VERY IMPORTANT
-       Backend expects multipart/form-data:
-
-       receiver_id
-       content
-       file
-
-       DO NOT set Content-Type manually.
-       Browser will automatically add boundary.
-       =====================================================
-    */
-
-    const formData =
-        new FormData();
-
-    formData.append(
-        "receiver_id",
-        String(
-            ChatState.userId
-        )
-    );
-
-    formData.append(
-        "content",
-        text
-    );
-
-    if (file) {
-
-        formData.append(
-            "file",
-            file,
-            file.name ||
-                "usanex-photo.jpg"
-        );
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                API.send,
-                {
-                    method: "POST",
-
-                    credentials:
-                        "include",
-
-                    body:
-                        formData,
-                }
-            );
-
-        /*
-           Read response safely.
-        */
-
-        let data = null;
-
-        try {
-
-            data =
-                await response.json();
-
-        } catch (jsonError) {
-
-            console.error(
-                "Invalid server response:",
-                jsonError
-            );
-        }
 
         if (
-            response.status === 401
+            messages.length === 0
         ) {
 
-            redirectToLogin();
+            const empty =
+                document.createElement(
+                    "div"
+                );
+
+            empty.className =
+                "empty-chat";
+
+            empty.innerHTML = `
+                <div class="empty-chat-icon">
+                    💬
+                </div>
+
+                <strong>
+                    Start a conversation
+                </strong>
+
+                <span>
+                    Send a message or photo
+                    to start chatting.
+                </span>
+            `;
+
+            messagesContainer.appendChild(
+                empty
+            );
 
             return;
         }
 
-        if (!response.ok) {
 
-            throw new Error(
-                data &&
-                data.detail
-                    ? data.detail
-                    : "Message could not be sent."
-            );
-        }
-
-        if (
-            !data ||
-            !data.success ||
-            !data.message
+        for (
+            const message
+            of messages
         ) {
 
-            throw new Error(
-                "Server did not confirm the message."
+            messagesContainer.appendChild(
+                createMessageElement(
+                    message,
+                    currentUserId
+                )
             );
         }
 
-        /*
-           =================================================
-           SUCCESS
-           =================================================
-        */
 
-        const sentMessage =
-            data.message;
-
-        ChatState.messages.push(
-            sentMessage
-        );
-
-        /*
-           Remove empty state.
-        */
-
-        hideEmptyChat();
-
-        /*
-           Render the new message
-           immediately.
-        */
-
-        const messageElement =
-            createMessageElement(
-                sentMessage
-            );
-
-        if (
-            messageElement &&
-            DOM.messages
-        ) {
-
-            DOM.messages.appendChild(
-                messageElement
-            );
-        }
-
-        /*
-           Clear text.
-        */
-
-        if (DOM.messageInput) {
-
-            DOM.messageInput.value =
-                "";
-        }
-
-        /*
-           Clear selected photo.
-        */
-
-        clearSelectedFile();
-
-        /*
-           Scroll to latest message.
-        */
-
-        scrollToBottom(
-            true
-        );
-
-    } catch (error) {
-
-        console.error(
-            "SEND MESSAGE ERROR:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Message send failed."
-        );
-
-    } finally {
-
-        ChatState.sending =
-            false;
-
-        updateSendButton();
-    }
-}
-
-
-/* =========================================================
-   MARK CHAT READ
-========================================================= */
-
-async function markChatRead() {
-
-    if (!ChatState.userId) {
-        return;
-    }
-
-    try {
-
-        await fetch(
-            API.read(
-                ChatState.userId
-            ),
-            {
-                method: "POST",
-
-                credentials:
-                    "include",
+        requestAnimationFrame(
+            () => {
+                scrollToBottom(
+                    false
+                );
             }
         );
-
-    } catch (error) {
-
-        console.warn(
-            "Unable to mark chat read:",
-            error
-        );
-    }
-}
-
-
-/* =========================================================
-   BACK BUTTON
-========================================================= */
-
-function setupBackButton() {
-
-    const button =
-        document.querySelector(
-            ".back-button"
-        );
-
-    if (!button) {
-        return;
     }
 
-    button.addEventListener(
-        "click",
-        () => {
+
+    /* =====================================================
+       LOAD CHAT
+    ===================================================== */
+
+    async function loadChat() {
+
+        if (
+            loadingMessages ||
+            !chatUserId
+        ) {
+            return;
+        }
+
+
+        loadingMessages = true;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_BASE}/${encodeURIComponent(
+                        chatUserId
+                    )}`,
+                    {
+                        method:
+                            "GET",
+
+                        credentials:
+                            "include",
+
+                        cache:
+                            "no-store",
+                    }
+                );
+
 
             if (
-                window.history.length >
-                1
+                response.status ===
+                401
             ) {
 
-                window.history.back();
-
-            } else {
+                /*
+                 * IMPORTANT:
+                 * Don't immediately redirect from
+                 * every random API failure.
+                 *
+                 * Only redirect when session is
+                 * actually invalid.
+                 */
 
                 window.location.href =
-                    "/static/home.html";
+                    "/static/login.html";
+
+                return;
             }
-        }
-    );
-}
 
 
-/* =========================================================
-   SCROLL
-========================================================= */
+            const data =
+                await response.json()
+                    .catch(
+                        () => ({})
+                    );
 
-function scrollToBottom(
-    smooth = true
-) {
 
-    if (!DOM.messages) {
-        return;
-    }
+            if (
+                !response.ok
+            ) {
 
-    requestAnimationFrame(
-        () => {
+                throw new Error(
+                    data.detail ||
+                    "Chat load failed."
+                );
+            }
 
-            DOM.messages.scrollTo(
-                {
-                    top:
-                        DOM.messages.scrollHeight,
 
-                    behavior:
-                        smooth
-                            ? "smooth"
-                            : "auto",
-                }
+            renderMessages(
+                data
             );
+
+        } catch (error) {
+
+            console.error(
+                "[Usanex Chat] Load error:",
+                error
+            );
+
+            showStatus(
+                error.message ||
+                "Chat load nahi ho paaya.",
+                "error"
+            );
+
+        } finally {
+
+            loadingMessages =
+                false;
         }
-    );
-}
-
-
-/* =========================================================
-   MESSAGE TIME
-========================================================= */
-
-function formatMessageTime(
-    value
-) {
-
-    if (!value) {
-        return "";
     }
 
-    const date =
-        new Date(value);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    /* =====================================================
+       SEND MESSAGE
+    ===================================================== */
 
-        return "";
-    }
+    async function sendMessage() {
 
-    return date.toLocaleTimeString(
-        [],
-        {
-            hour: "2-digit",
-            minute: "2-digit",
+        if (sending) {
+            return;
         }
-    );
-}
 
 
-/* =========================================================
-   FILE SIZE
-========================================================= */
-
-function formatFileSize(
-    bytes
-) {
-
-    if (
-        !Number.isFinite(
-            bytes
-        )
-    ) {
-
-        return "";
-    }
-
-    if (
-        bytes <
-        1024
-    ) {
-
-        return `${bytes} B`;
-    }
-
-    if (
-        bytes <
-        1024 * 1024
-    ) {
-
-        return (
-            `${(
-                bytes / 1024
-            ).toFixed(1)} KB`
-        );
-    }
-
-    return (
-        `${(
-            bytes /
-            (1024 * 1024)
-        ).toFixed(2)} MB`
-    );
-}
+        const text =
+            messageInput
+                ? messageInput.value.trim()
+                : "";
 
 
-/* =========================================================
-   AVATAR PLACEHOLDER
-========================================================= */
+        /*
+         * Nothing to send
+         */
 
-function createAvatarPlaceholder(
-    name
-) {
-
-    const letter =
-        String(
-            name || "U"
-        )
-            .trim()
-            .charAt(0)
-            .toUpperCase() ||
-        "U";
-
-    const svg = `
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="100"
-            height="100"
-            viewBox="0 0 100 100"
-        >
-            <rect
-                width="100"
-                height="100"
-                rx="50"
-                fill="#18283a"
-            />
-
-            <text
-                x="50"
-                y="58"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="42"
-                fill="white"
-            >
-                ${escapeHTML(letter)}
-            </text>
-        </svg>
-    `;
-
-    return (
-        "data:image/svg+xml;charset=UTF-8," +
-        encodeURIComponent(svg)
-    );
-}
+        if (
+            !text &&
+            !selectedFile
+        ) {
+            return;
+        }
 
 
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
+        if (!chatUserId) {
 
-function escapeHTML(
-    value
-) {
+            showStatus(
+                "Chat user ID nahi mila.",
+                "error"
+            );
 
-    return String(
-        value
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-}
+            return;
+        }
 
 
-/* =========================================================
-   ERROR
-========================================================= */
-
-function showError(
-    message
-) {
-
-    if (!DOM.messages) {
-        return;
-    }
-
-    DOM.messages.innerHTML = `
-        <div class="messages-loading">
-            ${escapeHTML(
-                message ||
-                "Something went wrong."
-            )}
-        </div>
-    `;
-}
+        sending = true;
 
 
-/* =========================================================
-   PERIODIC CHAT REFRESH
-========================================================= */
+        if (sendButton) {
 
-let refreshTimer = null;
+            sendButton.disabled =
+                true;
 
-function startChatRefresh() {
+            sendButton.style.opacity =
+                "0.55";
+        }
 
-    if (refreshTimer) {
-        clearInterval(
-            refreshTimer
-        );
-    }
 
-    refreshTimer =
-        setInterval(
-            async () => {
+        try {
+
+            let uploadFile =
+                selectedFile;
+
+
+            /*
+             * Prepare HD image
+             */
+
+            if (
+                uploadFile
+            ) {
+
+                log(
+                    "Original image:",
+                    uploadFile.size
+                );
+
+
+                uploadFile =
+                    await prepareImage(
+                        uploadFile
+                    );
+
+
+                log(
+                    "Final image:",
+                    uploadFile.size
+                );
+
 
                 if (
-                    ChatState.sending ||
-                    ChatState.loading
+                    uploadFile.size >
+                    MAX_UPLOAD_SIZE
                 ) {
-                    return;
+
+                    throw new Error(
+                        "Photo 10 MB se kam nahi ho pa rahi. Dusri photo try karein."
+                    );
                 }
+            }
+
+
+            /*
+             * IMPORTANT
+             *
+             * FormData automatically sets
+             * multipart/form-data boundary.
+             *
+             * DON'T manually set Content-Type.
+             */
+
+            const formData =
+                new FormData();
+
+
+            formData.append(
+                "receiver_id",
+                chatUserId
+            );
+
+
+            formData.append(
+                "content",
+                text
+            );
+
+
+            if (
+                uploadFile
+            ) {
+
+                formData.append(
+                    "file",
+                    uploadFile,
+                    uploadFile.name ||
+                    "usanex-photo.jpg"
+                );
+            }
+
+
+            log(
+                "Sending message...",
+                {
+                    receiver_id:
+                        chatUserId,
+
+                    hasText:
+                        Boolean(text),
+
+                    hasFile:
+                        Boolean(uploadFile),
+
+                    fileSize:
+                        uploadFile
+                            ? uploadFile.size
+                            : 0,
+                }
+            );
+
+
+            const response =
+                await fetch(
+                    `${API_BASE}/send`,
+                    {
+                        method:
+                            "POST",
+
+                        credentials:
+                            "include",
+
+                        /*
+                         * DO NOT ADD:
+                         *
+                         * headers: {
+                         *   "Content-Type":
+                         *     "multipart/form-data"
+                         * }
+                         */
+
+                        body:
+                            formData,
+                    }
+                );
+
+
+            const data =
+                await response.json()
+                    .catch(
+                        () => ({})
+                    );
+
+
+            log(
+                "Send response:",
+                response.status,
+                data
+            );
+
+
+            if (
+                response.status ===
+                401
+            ) {
+
+                throw new Error(
+                    "Login session expire ho gayi hai. Please login again."
+                );
+            }
+
+
+            if (
+                !response.ok ||
+                !data.success
+            ) {
+
+                throw new Error(
+                    data.detail ||
+                    data.message ||
+                    "Message send nahi hua."
+                );
+            }
+
+
+            /*
+             * Clear input only after
+             * successful server response.
+             */
+
+            if (messageInput) {
+                messageInput.value = "";
+            }
+
+
+            clearSelectedFile();
+
+
+            /*
+             * Add returned message instantly
+             */
+
+            if (
+                messagesContainer &&
+                data.message
+            ) {
+
+                /*
+                 * Remove empty screen
+                 */
+
+                const empty =
+                    messagesContainer.querySelector(
+                        ".empty-chat"
+                    );
+
+                if (empty) {
+                    empty.remove();
+                }
+
+
+                /*
+                 * We need current user ID.
+                 * Get it from localStorage if available.
+                 */
+
+                let currentUserId = null;
+
 
                 try {
 
-                    const response =
-                        await fetch(
-                            API.chat(
-                                ChatState.userId
-                            ),
-                            {
-                                method:
-                                    "GET",
-
-                                credentials:
-                                    "include",
-
-                                cache:
-                                    "no-store",
-                            }
+                    const saved =
+                        localStorage.getItem(
+                            "currentUser"
+                        ) ||
+                        localStorage.getItem(
+                            "usanexUser"
                         );
 
-                    if (
-                        response.status ===
-                        401
-                    ) {
 
-                        return;
+                    if (saved) {
+
+                        const parsed =
+                            JSON.parse(
+                                saved
+                            );
+
+                        currentUserId =
+                            parsed.id ||
+                            parsed.user_id ||
+                            parsed.userId;
                     }
 
-                    if (
-                        !response.ok
-                    ) {
-
-                        return;
-                    }
-
-                    const data =
-                        await response.json();
-
-                    if (
-                        !data.success
-                    ) {
-
-                        return;
-                    }
-
-                    const oldLength =
-                        ChatState.messages.length;
-
-                    ChatState.messages =
-                        Array.isArray(
-                            data.messages
-                        )
-                            ? data.messages
-                            : [];
-
-                    /*
-                       Only rerender when
-                       message count changes.
-                    */
-
-                    if (
-                        ChatState.messages.length !==
-                        oldLength
-                    ) {
-
-                        renderMessages();
-
-                        scrollToBottom(
-                            true
-                        );
-                    }
-
-                } catch (error) {
-
-                    console.warn(
-                        "Chat refresh error:",
-                        error
-                    );
+                } catch {
+                    currentUserId =
+                        null;
                 }
 
-            },
-            3000
-        );
-}
+
+                /*
+                 * If current ID is not available,
+                 * reload chat to render correctly.
+                 */
+
+                if (
+                    currentUserId ===
+                    null
+                ) {
+
+                    await loadChat();
+
+                } else {
+
+                    messagesContainer.appendChild(
+                        createMessageElement(
+                            data.message,
+                            currentUserId
+                        )
+                    );
 
 
-/* =========================================================
-   VISIBILITY / PAGE RESUME
-========================================================= */
+                    requestAnimationFrame(
+                        () => {
+                            scrollToBottom(
+                                true
+                            );
+                        }
+                    );
+                }
+            }
 
-document.addEventListener(
-    "visibilitychange",
-    () => {
 
-        if (
-            document.visibilityState ===
-            "visible"
-        ) {
+            log(
+                "Message sent successfully."
+            );
 
-            markChatRead();
+        } catch (error) {
+
+            console.error(
+                "[Usanex Chat] Send error:",
+                error
+            );
+
+
+            showStatus(
+                error.message ||
+                "Message send nahi hua.",
+                "error"
+            );
+
+        } finally {
+
+            sending = false;
+
+
+            if (sendButton) {
+
+                sendButton.disabled =
+                    false;
+
+                sendButton.style.opacity =
+                    "";
+            }
         }
     }
-);
 
 
-/* =========================================================
-   CLEANUP
-========================================================= */
+    /* =====================================================
+       ENTER TO SEND
+    ===================================================== */
 
-window.addEventListener(
-    "beforeunload",
-    () => {
+    function handleInputKeydown(
+        event
+    ) {
 
-        if (refreshTimer) {
+        if (
+            event.key ===
+            "Enter" &&
+            !event.shiftKey
+        ) {
 
-            clearInterval(
-                refreshTimer
+            event.preventDefault();
+
+            sendMessage();
+        }
+    }
+
+
+    /* =====================================================
+       FORM SUBMIT
+    ===================================================== */
+
+    function handleFormSubmit(
+        event
+    ) {
+
+        event.preventDefault();
+
+        sendMessage();
+    }
+
+
+    /* =====================================================
+       INITIALIZE
+    ===================================================== */
+
+    function init() {
+
+        log(
+            "Chat initialized.",
+            {
+                chatUserId,
+                messageInput:
+                    Boolean(
+                        messageInput
+                    ),
+                messagesContainer:
+                    Boolean(
+                        messagesContainer
+                    ),
+                sendButton:
+                    Boolean(
+                        sendButton
+                    ),
+                fileInput:
+                    Boolean(
+                        fileInput
+                    ),
+            }
+        );
+
+
+        /*
+         * Gallery
+         */
+
+        if (
+            fileInput
+        ) {
+
+            fileInput.addEventListener(
+                "change",
+                handleFileSelected
             );
         }
 
-        removeSelectedPhotoPreview();
-    }
-);
 
-
-/* =========================================================
-   START REFRESH AFTER INIT
-========================================================= */
-
-setTimeout(
-    () => {
+        /*
+         * Attachment button
+         */
 
         if (
-            ChatState.userId
+            attachmentButton
         ) {
 
-            startChatRefresh();
+            attachmentButton.addEventListener(
+                "click",
+                event => {
 
-            markChatRead();
+                    event.preventDefault();
+
+                    openGallery();
+                }
+            );
         }
 
-    },
-    1500
-);
+
+        /*
+         * Send button
+         */
+
+        if (
+            sendButton
+        ) {
+
+            sendButton.addEventListener(
+                "click",
+                event => {
+
+                    event.preventDefault();
+
+                    sendMessage();
+                }
+            );
+        }
+
+
+        /*
+         * Input Enter
+         */
+
+        if (
+            messageInput
+        ) {
+
+            messageInput.addEventListener(
+                "keydown",
+                handleInputKeydown
+            );
+        }
+
+
+        /*
+         * Form
+         */
+
+        if (
+            chatForm
+        ) {
+
+            chatForm.addEventListener(
+                "submit",
+                handleFormSubmit
+            );
+        }
+
+
+        /*
+         * Initial chat
+         */
+
+        if (
+            chatUserId
+        ) {
+
+            loadChat();
+
+        } else {
+
+            showStatus(
+                "Chat user ID nahi mila.",
+                "error"
+            );
+        }
+    }
+
+
+    /* =====================================================
+       START
+    ===================================================== */
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            init
+        );
+
+    } else {
+
+        init();
+    }
+
+})();
