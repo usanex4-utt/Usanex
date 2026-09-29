@@ -1,0 +1,392 @@
+/* =========================================================
+   USANEX — CREATE BOTTOM SHEET
+========================================================= */
+
+.create-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition:
+        opacity 0.25s ease,
+        visibility 0.25s ease;
+}
+
+.create-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/* =========================================================
+   SHEET
+========================================================= */
+
+.create-sheet {
+    width: 100%;
+    max-width: 620px;
+
+    background:
+        linear-gradient(
+            180deg,
+            #0d1b2a,
+            #071322
+        );
+
+    border-radius: 26px 26px 0 0;
+
+    padding:
+        10px 18px
+        calc(18px + env(safe-area-inset-bottom));
+
+    box-sizing: border-box;
+
+    transform: translateY(100%);
+
+    transition:
+        transform 0.3s
+        cubic-bezier(.22,.61,.36,1);
+
+    box-shadow:
+        0 -12px 40px
+        rgba(0, 0, 0, 0.35);
+}
+
+.create-overlay.active .create-sheet {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   HANDLE
+========================================================= */
+
+.create-handle {
+    width: 42px;
+    height: 4px;
+
+    margin: 2px auto 16px;
+
+    border-radius: 10px;
+
+    background: rgba(255,255,255,0.28);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.create-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+}
+
+.create-header h2 {
+    margin: 0;
+
+    color: #ffffff;
+
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.create-header p {
+    margin: 4px 0 0;
+
+    color: #8ea3b8;
+
+    font-size: 12px;
+}
+
+.create-close {
+    width: 38px;
+    height: 38px;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: rgba(255,255,255,0.07);
+
+    color: #ffffff;
+
+    font-size: 25px;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   OPTIONS
+========================================================= */
+
+.create-options {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.create-option {
+    width: 100%;
+
+    min-height: 72px;
+
+    padding: 10px 12px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+
+    border: 1px solid rgba(255,255,255,0.07);
+
+    border-radius: 18px;
+
+    background:
+        rgba(255,255,255,0.035);
+
+    color: #ffffff;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.create-option:active {
+    transform: scale(0.98);
+
+    background:
+        rgba(255,255,255,0.09);
+}
+
+
+/* =========================================================
+   LINE ICON
+========================================================= */
+
+.create-line-icon {
+    width: 44px;
+    height: 44px;
+
+    flex: 0 0 44px;
+
+    position: relative;
+
+    border: 1.8px solid #91a7ba;
+
+    border-radius: 13px;
+
+    box-sizing: border-box;
+}
+
+
+/* REEL */
+
+.reel-icon::before {
+    content: "";
+
+    position: absolute;
+
+    left: 11px;
+    top: 10px;
+
+    width: 18px;
+    height: 18px;
+
+    border: 1.7px solid #91a7ba;
+
+    border-radius: 5px;
+}
+
+.reel-icon::after {
+    content: "";
+
+    position: absolute;
+
+    left: 18px;
+    top: 15px;
+
+    border-left: 7px solid #91a7ba;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+
+
+/* IMAGE */
+
+.image-icon::before {
+    content: "";
+
+    position: absolute;
+
+    left: 8px;
+    top: 9px;
+
+    width: 24px;
+    height: 22px;
+
+    border: 1.7px solid #91a7ba;
+
+    border-radius: 5px;
+}
+
+.image-icon::after {
+    content: "";
+
+    position: absolute;
+
+    left: 13px;
+    bottom: 13px;
+
+    width: 15px;
+    height: 9px;
+
+    border-left: 1.7px solid #91a7ba;
+    border-bottom: 1.7px solid #91a7ba;
+
+    transform: rotate(-45deg);
+}
+
+
+/* NEX MOMENT */
+
+.moment-icon::before {
+    content: "";
+
+    position: absolute;
+
+    left: 14px;
+    top: 8px;
+
+    width: 13px;
+    height: 26px;
+
+    border: 1.7px solid #91a7ba;
+
+    border-radius: 50% 50% 45% 45%;
+}
+
+.moment-icon::after {
+    content: "";
+
+    position: absolute;
+
+    left: 18px;
+    top: 17px;
+
+    width: 5px;
+    height: 5px;
+
+    border-radius: 50%;
+
+    background: #91a7ba;
+}
+
+
+/* PRIVATE */
+
+.private-icon::before {
+    content: "";
+
+    position: absolute;
+
+    left: 11px;
+    top: 18px;
+
+    width: 20px;
+    height: 16px;
+
+    border: 1.7px solid #91a7ba;
+
+    border-radius: 4px;
+}
+
+.private-icon::after {
+    content: "";
+
+    position: absolute;
+
+    left: 16px;
+    top: 10px;
+
+    width: 10px;
+    height: 12px;
+
+    border: 1.7px solid #91a7ba;
+
+    border-bottom: 0;
+
+    border-radius: 8px 8px 0 0;
+}
+
+
+/* =========================================================
+   TEXT
+========================================================= */
+
+.create-option-text {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.create-option-text strong {
+    color: #ffffff;
+
+    font-size: 15px;
+}
+
+.create-option-text small {
+    color: #8297aa;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   ARROW
+========================================================= */
+
+.create-arrow {
+    color: #73899c;
+
+    font-size: 25px;
+
+    line-height: 1;
+}
+
+
+/* =========================================================
+   DESKTOP
+========================================================= */
+
+@media (min-width: 700px) {
+
+    .create-sheet {
+        margin-bottom: 18px;
+
+        border-radius: 26px;
+
+        max-height: 520px;
+    }
+
+}
