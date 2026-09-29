@@ -1,103 +1,213 @@
-<!-- USANEX CREATE SHEET -->
+<!-- ================= USANEX CREATE SHEET ================= -->
 
-<div id="createOverlay" class="create-overlay">
+<div id="createOverlay" class="create-overlay" hidden>
 
-    <div id="createSheet" class="create-sheet">
+    <div
+        id="createSheet"
+        class="create-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="createTitle"
+    >
 
+        <!-- Drag Handle -->
         <div class="create-handle"></div>
 
+
+        <!-- Header -->
         <div class="create-header">
-            <div>
-                <h2>Create</h2>
-                <p>Share something on Usanex</p>
+
+            <div class="create-header-text">
+
+                <h2 id="createTitle">
+                    Create
+                </h2>
+
+                <p>
+                    What do you want to create?
+                </p>
+
             </div>
 
             <button
                 type="button"
                 id="closeCreateSheet"
                 class="create-close"
-                aria-label="Close"
+                aria-label="Close Create"
             >
                 ×
             </button>
+
         </div>
 
+
+        <!-- Options -->
         <div class="create-options">
 
-            <!-- REEL -->
+
+            <!-- ================= REEL ================= -->
+
             <button
                 type="button"
                 class="create-option"
                 data-create-type="reel"
             >
-                <span class="create-line-icon reel-icon">
-                    <span></span>
+
+                <span
+                    class="create-line-icon reel-icon"
+                    aria-hidden="true"
+                >
+                    <span class="reel-top-line"></span>
+                    <span class="reel-play"></span>
                 </span>
+
 
                 <span class="create-option-text">
-                    <strong>Reel</strong>
-                    <small>Create a video reel</small>
+
+                    <strong>
+                        Reel
+                    </strong>
+
+                    <small>
+                        Create a short video
+                    </small>
+
                 </span>
 
-                <span class="create-arrow">›</span>
+
+                <span
+                    class="create-arrow"
+                    aria-hidden="true"
+                >
+                    ›
+                </span>
+
             </button>
 
 
-            <!-- IMAGE -->
+
+            <!-- ================= IMAGE ================= -->
+
             <button
                 type="button"
                 class="create-option"
                 data-create-type="image"
             >
-                <span class="create-line-icon image-icon">
-                    <span></span>
+
+                <span
+                    class="create-line-icon image-icon"
+                    aria-hidden="true"
+                >
+                    <span class="image-sun"></span>
+                    <span class="image-mountain"></span>
                 </span>
+
 
                 <span class="create-option-text">
-                    <strong>Image</strong>
-                    <small>Share photos</small>
+
+                    <strong>
+                        Image
+                    </strong>
+
+                    <small>
+                        Share photos with people
+                    </small>
+
                 </span>
 
-                <span class="create-arrow">›</span>
+
+                <span
+                    class="create-arrow"
+                    aria-hidden="true"
+                >
+                    ›
+                </span>
+
             </button>
 
 
-            <!-- NEX MOMENT -->
+
+            <!-- ================= NEX MOMENT ================= -->
+
             <button
                 type="button"
                 class="create-option"
                 data-create-type="moment"
             >
-                <span class="create-line-icon moment-icon">
-                    <span></span>
+
+                <span
+                    class="create-line-icon moment-icon"
+                    aria-hidden="true"
+                >
+                    <span class="moment-ring"></span>
+                    <span class="moment-plus-horizontal"></span>
+                    <span class="moment-plus-vertical"></span>
                 </span>
+
 
                 <span class="create-option-text">
-                    <strong>Nex Moment</strong>
-                    <small>Share your moment</small>
+
+                    <strong>
+                        Nex Moment
+                    </strong>
+
+                    <small>
+                        Share a moment with your connections
+                    </small>
+
                 </span>
 
-                <span class="create-arrow">›</span>
+
+                <span
+                    class="create-arrow"
+                    aria-hidden="true"
+                >
+                    ›
+                </span>
+
             </button>
 
 
-            <!-- PRIVATE -->
+
+            <!-- ================= PRIVATE ================= -->
+
             <button
                 type="button"
                 class="create-option"
                 data-create-type="private"
             >
-                <span class="create-line-icon private-icon">
-                    <span></span>
+
+                <span
+                    class="create-line-icon private-icon"
+                    aria-hidden="true"
+                >
+                    <span class="lock-body"></span>
+                    <span class="lock-shackle"></span>
                 </span>
+
 
                 <span class="create-option-text">
-                    <strong>Private</strong>
-                    <small>Share privately</small>
+
+                    <strong>
+                        Private
+                    </strong>
+
+                    <small>
+                        Share media privately
+                    </small>
+
                 </span>
 
-                <span class="create-arrow">›</span>
+
+                <span
+                    class="create-arrow"
+                    aria-hidden="true"
+                >
+                    ›
+                </span>
+
             </button>
+
 
         </div>
 
