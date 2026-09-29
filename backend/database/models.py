@@ -537,3 +537,84 @@ class ChatMessage(Base):
         index=True,
         nullable=False
     )
+# =========================================================
+# REELS
+# =========================================================
+
+class Reel(Base):
+    __tablename__ = "reels"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    # Reel kis user ne upload ki
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    # Uploaded video
+    video_url = Column(
+        String(500),
+        nullable=False
+    )
+
+    # Optional thumbnail
+    thumbnail_url = Column(
+        String(500),
+        nullable=True
+    )
+
+    # Reel caption
+    caption = Column(
+        Text,
+        nullable=True
+    )
+
+    # Upload location
+    location = Column(
+        String(255),
+        nullable=True
+    )
+
+    # Basic counters
+    views_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    likes_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    comments_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    # Status
+    status = Column(
+        String(20),
+        index=True,
+        nullable=False,
+        default="published"
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=True
+    )
