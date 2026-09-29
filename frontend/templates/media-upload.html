@@ -9,17 +9,13 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
-    <meta
-        name="theme-color"
-        content="#071322"
-    >
+    <meta name="theme-color" content="#071322">
 
     <title>Create | Usanex</title>
 
-    <!-- Usanex Media Upload CSS -->
     <link
         rel="stylesheet"
-        href="/static/css/media-upload.css?v=3"
+        href="/static/css/media-upload.css?v=4"
     >
 </head>
 
@@ -27,9 +23,7 @@
 
 <div class="upload-app">
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+    <!-- ================= HEADER ================= -->
 
     <header class="upload-header">
 
@@ -55,27 +49,22 @@
     </header>
 
 
-    <!-- =====================================================
-         MAIN CONTENT
-    ====================================================== -->
+    <!-- ================= MAIN ================= -->
 
     <main class="upload-content">
 
 
-        <!-- =================================================
-             MEDIA TYPE
-        ================================================== -->
+        <!-- ================= MEDIA TYPES ================= -->
 
         <section class="media-types">
 
-            <!-- PHOTO -->
+            <!-- PHOTO STRUCTURE -->
 
             <button
                 type="button"
                 class="media-type active"
                 data-type="photo"
             >
-
                 <span class="media-type-icon">
                     📸
                 </span>
@@ -83,18 +72,16 @@
                 <strong>
                     Photo
                 </strong>
-
             </button>
 
 
-            <!-- REEL -->
+            <!-- REEL STRUCTURE -->
 
             <button
                 type="button"
                 class="media-type"
                 data-type="reel"
             >
-
                 <span class="media-type-icon">
                     🎬
                 </span>
@@ -102,18 +89,16 @@
                 <strong>
                     Reel
                 </strong>
-
             </button>
 
 
-            <!-- PRIVATE -->
+            <!-- PRIVATE STRUCTURE -->
 
             <button
                 type="button"
                 class="media-type"
                 data-type="private"
             >
-
                 <span class="media-type-icon">
                     🔒
                 </span>
@@ -121,14 +106,13 @@
                 <strong>
                     Private
                 </strong>
-
             </button>
 
         </section>
 
 
         <!-- =================================================
-             PHOTO UPLOAD
+             PHOTO SECTION
         ================================================== -->
 
         <section
@@ -141,7 +125,11 @@
                 id="photoDropArea"
             >
 
-                <div class="upload-icon">
+                <!-- VISUAL ICON ONLY -->
+                <div
+                    class="upload-icon"
+                    aria-hidden="true"
+                >
                     📷
                 </div>
 
@@ -153,6 +141,9 @@
                     Select multiple photos for one post
                 </p>
 
+
+                <!-- ACTUAL ACTION BUTTON -->
+
                 <button
                     type="button"
                     id="selectPhotosButton"
@@ -160,6 +151,9 @@
                 >
                     Select Photos
                 </button>
+
+
+                <!-- REAL FILE INPUT -->
 
                 <input
                     type="file"
@@ -172,7 +166,7 @@
             </div>
 
 
-            <!-- SELECTED PHOTO PREVIEW -->
+            <!-- PHOTO PREVIEW -->
 
             <div
                 class="photo-preview-section"
@@ -192,13 +186,10 @@
 
                 </div>
 
-
                 <div
                     class="photo-grid"
                     id="photoGrid"
-                >
-                </div>
-
+                ></div>
 
                 <button
                     type="button"
@@ -214,7 +205,7 @@
 
 
         <!-- =================================================
-             REEL UPLOAD
+             REEL SECTION
         ================================================== -->
 
         <section
@@ -228,7 +219,11 @@
                 id="reelDropArea"
             >
 
-                <div class="upload-icon">
+                <!-- VISUAL ICON ONLY -->
+                <div
+                    class="upload-icon"
+                    aria-hidden="true"
+                >
                     🎬
                 </div>
 
@@ -240,6 +235,9 @@
                     Upload your video directly
                 </p>
 
+
+                <!-- ACTUAL ACTION BUTTON -->
+
                 <button
                     type="button"
                     id="selectReelButton"
@@ -247,6 +245,9 @@
                 >
                     Select Video
                 </button>
+
+
+                <!-- REAL FILE INPUT -->
 
                 <input
                     type="file"
@@ -264,14 +265,13 @@
                 id="videoPreview"
                 class="video-preview"
                 hidden
-            >
-            </div>
+            ></div>
 
         </section>
 
 
         <!-- =================================================
-             PRIVATE MEDIA
+             PRIVATE MEDIA SECTION
         ================================================== -->
 
         <section
@@ -285,7 +285,11 @@
                 id="privateDropArea"
             >
 
-                <div class="private-icon">
+                <!-- VISUAL ICON ONLY -->
+                <div
+                    class="private-icon"
+                    aria-hidden="true"
+                >
                     🔒
                 </div>
 
@@ -297,6 +301,9 @@
                     Share photos or videos privately.
                 </p>
 
+
+                <!-- ACTUAL ACTION BUTTON -->
+
                 <button
                     type="button"
                     id="selectPrivateButton"
@@ -304,6 +311,9 @@
                 >
                     Select Media
                 </button>
+
+
+                <!-- REAL FILE INPUT -->
 
                 <input
                     type="file"
@@ -364,7 +374,10 @@
                 data-visibility="public"
             >
 
-                <div class="visibility-icon">
+                <div
+                    class="visibility-icon"
+                    aria-hidden="true"
+                >
                     🌍
                 </div>
 
@@ -383,8 +396,7 @@
                 <span
                     class="radio"
                     aria-hidden="true"
-                >
-                </span>
+                ></span>
 
             </button>
 
@@ -397,7 +409,10 @@
                 data-visibility="private"
             >
 
-                <div class="visibility-icon">
+                <div
+                    class="visibility-icon"
+                    aria-hidden="true"
+                >
                     🔒
                 </div>
 
@@ -416,8 +431,7 @@
                 <span
                     class="radio"
                     aria-hidden="true"
-                >
-                </span>
+                ></span>
 
             </button>
 
@@ -448,19 +462,15 @@
 
         </section>
 
-
     </main>
 
 </div>
 
 
-<!-- =====================================================
-     JAVASCRIPT
-     IMPORTANT: actual file is media-upload.js
-====================================================== -->
+<!-- ================= JAVASCRIPT ================= -->
 
 <script
-    src="/static/js/media-upload.js?v=3"
+    src="/static/js/media-upload.js?v=4"
     defer
 ></script>
 
