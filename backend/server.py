@@ -16,6 +16,7 @@ from .routes.search import router as search_router
 from .routes.connections import router as connections_router
 from .routes.profile import router as profile_router
 from .routes.chat import router as chat_router
+from .routes import reels
 
 
 # =========================================================
@@ -96,6 +97,9 @@ app.include_router(
 
 app.include_router(
     chat_router
+)
+app.include_router(
+    reels.router
 )
 
 
