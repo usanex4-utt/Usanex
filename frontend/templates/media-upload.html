@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
 
@@ -8,14 +9,17 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
-    <meta name="theme-color" content="#071322">
+    <meta
+        name="theme-color"
+        content="#071322"
+    >
 
     <title>Create | Usanex</title>
 
-    <!-- CORRECT CSS FILE -->
+    <!-- Usanex Media Upload CSS -->
     <link
         rel="stylesheet"
-        href="/static/css/media-upload.css?v=2"
+        href="/static/css/media-upload.css?v=3"
     >
 </head>
 
@@ -23,7 +27,9 @@
 
 <div class="upload-app">
 
-    <!-- ================= HEADER ================= -->
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
     <header class="upload-header">
 
@@ -49,45 +55,81 @@
     </header>
 
 
-    <!-- ================= MAIN CONTENT ================= -->
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
 
     <main class="upload-content">
 
-        <!-- ================= MEDIA TYPE ================= -->
+
+        <!-- =================================================
+             MEDIA TYPE
+        ================================================== -->
 
         <section class="media-types">
+
+            <!-- PHOTO -->
 
             <button
                 type="button"
                 class="media-type active"
                 data-type="photo"
             >
-                <span>📸</span>
-                <strong>Photo</strong>
+
+                <span class="media-type-icon">
+                    📸
+                </span>
+
+                <strong>
+                    Photo
+                </strong>
+
             </button>
+
+
+            <!-- REEL -->
 
             <button
                 type="button"
                 class="media-type"
                 data-type="reel"
             >
-                <span>🎬</span>
-                <strong>Reel</strong>
+
+                <span class="media-type-icon">
+                    🎬
+                </span>
+
+                <strong>
+                    Reel
+                </strong>
+
             </button>
+
+
+            <!-- PRIVATE -->
 
             <button
                 type="button"
                 class="media-type"
                 data-type="private"
             >
-                <span>🔒</span>
-                <strong>Private</strong>
+
+                <span class="media-type-icon">
+                    🔒
+                </span>
+
+                <strong>
+                    Private
+                </strong>
+
             </button>
 
         </section>
 
 
-        <!-- ================= PHOTO ================= -->
+        <!-- =================================================
+             PHOTO UPLOAD
+        ================================================== -->
 
         <section
             class="upload-section"
@@ -130,7 +172,7 @@
             </div>
 
 
-            <!-- SELECTED PHOTOS -->
+            <!-- SELECTED PHOTO PREVIEW -->
 
             <div
                 class="photo-preview-section"
@@ -150,10 +192,13 @@
 
                 </div>
 
+
                 <div
                     class="photo-grid"
                     id="photoGrid"
-                ></div>
+                >
+                </div>
+
 
                 <button
                     type="button"
@@ -168,7 +213,9 @@
         </section>
 
 
-        <!-- ================= REEL ================= -->
+        <!-- =================================================
+             REEL UPLOAD
+        ================================================== -->
 
         <section
             class="upload-section"
@@ -176,7 +223,10 @@
             hidden
         >
 
-            <div class="drop-area">
+            <div
+                class="drop-area"
+                id="reelDropArea"
+            >
 
                 <div class="upload-icon">
                     🎬
@@ -207,16 +257,22 @@
 
             </div>
 
+
+            <!-- VIDEO PREVIEW -->
+
             <div
                 id="videoPreview"
                 class="video-preview"
                 hidden
-            ></div>
+            >
+            </div>
 
         </section>
 
 
-        <!-- ================= PRIVATE MEDIA ================= -->
+        <!-- =================================================
+             PRIVATE MEDIA
+        ================================================== -->
 
         <section
             class="upload-section"
@@ -224,7 +280,10 @@
             hidden
         >
 
-            <div class="private-box">
+            <div
+                class="private-box"
+                id="privateDropArea"
+            >
 
                 <div class="private-icon">
                     🔒
@@ -259,7 +318,9 @@
         </section>
 
 
-        <!-- ================= CAPTION ================= -->
+        <!-- =================================================
+             CAPTION
+        ================================================== -->
 
         <section class="caption-section">
 
@@ -275,14 +336,18 @@
                     0
                 </span>
 
-                / 2200
+                <span>
+                    / 2200
+                </span>
 
             </div>
 
         </section>
 
 
-        <!-- ================= VISIBILITY ================= -->
+        <!-- =================================================
+             VISIBILITY
+        ================================================== -->
 
         <section class="visibility-section">
 
@@ -315,7 +380,11 @@
 
                 </div>
 
-                <span class="radio"></span>
+                <span
+                    class="radio"
+                    aria-hidden="true"
+                >
+                </span>
 
             </button>
 
@@ -344,14 +413,20 @@
 
                 </div>
 
-                <span class="radio"></span>
+                <span
+                    class="radio"
+                    aria-hidden="true"
+                >
+                </span>
 
             </button>
 
         </section>
 
 
-        <!-- ================= PRIVATE USERS ================= -->
+        <!-- =================================================
+             PRIVATE USERS
+        ================================================== -->
 
         <section
             class="private-users"
@@ -373,17 +448,22 @@
 
         </section>
 
+
     </main>
 
 </div>
 
 
-<!-- ================= JAVASCRIPT ================= -->
+<!-- =====================================================
+     JAVASCRIPT
+     IMPORTANT: actual file is media-upload.js
+====================================================== -->
 
 <script
-    src="/static/js/upload.js?v=2"
+    src="/static/js/media-upload.js?v=3"
     defer
 ></script>
 
 </body>
+
 </html>
