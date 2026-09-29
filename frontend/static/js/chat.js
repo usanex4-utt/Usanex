@@ -1,6 +1,7 @@
 /* =========================================================
    USANEX — CHAT PAGE
    Text + HD Image Messaging
+   DIRECT PHOTO SEND VERSION
 ========================================================= */
 
 "use strict";
@@ -386,6 +387,9 @@ function updateChatHeader(
     const status =
         $("selectedStatus");
 
+    const onlineDot =
+        $("headerOnlineDot");
+
 
     const photo =
         user.profile_photo ||
@@ -424,6 +428,18 @@ function updateChatHeader(
 
         status.textContent =
             getUserStatus(user);
+
+    }
+
+
+    if (onlineDot) {
+
+        const online =
+            user.online === true ||
+            user.is_online === true;
+
+        onlineDot.hidden =
+            !online;
 
     }
 
@@ -539,13 +555,6 @@ async function loadMessages(
 
 
     try {
-
-        /*
-         * IMPORTANT:
-         * chat.py uses:
-         *
-         * GET /api/chat/{user_id}
-         */
 
         const response =
             await fetch(
@@ -771,12 +780,17 @@ function createMessageBubble(
 
 
     /* =====================================================
-       IMAGE MESSAGE
+       IMAGE
     ===================================================== */
 
     if (
         message.media_url
     ) {
+
+        bubble.classList.add(
+            "has-image"
+        );
+
 
         const image =
             document.createElement(
@@ -790,14 +804,11 @@ function createMessageBubble(
         image.alt =
             "Photo";
 
-
         image.loading =
             "lazy";
 
-
         image.decoding =
             "async";
-
 
         image.className =
             "chat-message-image";
@@ -808,6 +819,19 @@ function createMessageBubble(
             () => {
 
                 openImageViewer(
+                    message.media_url
+                );
+
+            }
+        );
+
+
+        image.addEventListener(
+            "error",
+            () => {
+
+                console.error(
+                    "Chat image failed to load:",
                     message.media_url
                 );
 
@@ -981,6 +1005,10 @@ function openImageViewer(
     image.src =
         url;
 
+    image.alt =
+        "Photo";
+
+
     image.style.maxWidth =
         "100%";
 
@@ -1131,7 +1159,7 @@ async function sendMessage() {
 
 
         /* =================================================
-           SEND TO BACKEND
+           BACKEND
         ================================================= */
 
         const response =
@@ -1177,7 +1205,7 @@ async function sendMessage() {
 
 
         /* =================================================
-           ADD SERVER MESSAGE
+           SERVER MESSAGE
         ================================================= */
 
         if (
@@ -1192,16 +1220,16 @@ async function sendMessage() {
 
 
         /* =================================================
-           CLEAR INPUT
+           CLEAR INPUT + PHOTO
         ================================================= */
 
         input.value = "";
 
         clearSelectedFile();
 
-
         renderMessages();
 
+        scrollMessages();
 
         input.focus();
 
@@ -1249,7 +1277,8 @@ async function prepareImageForUpload(
 ) {
 
     /*
-     * Small files are kept as-is.
+     * 2 MB se chhoti photo ko
+     * original form me bhejenge.
      */
 
     if (
@@ -1263,13 +1292,29 @@ async function prepareImageForUpload(
 
 
     /*
-     * Read image.
+     * Browser image decode.
      */
 
-    const bitmap =
-        await createImageBitmap(
-            file
+    let bitmap;
+
+
+    try {
+
+        bitmap =
+            await createImageBitmap(
+                file
+            );
+
+    } catch (error) {
+
+        console.warn(
+            "Image compression unavailable. Sending original.",
+            error
         );
+
+        return file;
+
+    }
 
 
     const maxWidth =
@@ -1286,9 +1331,9 @@ async function prepareImageForUpload(
         bitmap.height;
 
 
-    /*
-     * Keep aspect ratio.
-     */
+    /* =====================================================
+       KEEP ASPECT RATIO
+    ===================================================== */
 
     if (
         width > maxWidth ||
@@ -1338,6 +1383,15 @@ async function prepareImageForUpload(
         );
 
 
+    if (!context) {
+
+        bitmap.close();
+
+        return file;
+
+    }
+
+
     context.imageSmoothingEnabled =
         true;
 
@@ -1357,11 +1411,9 @@ async function prepareImageForUpload(
     bitmap.close();
 
 
-    /*
-     * Convert to JPEG.
-     *
-     * 0.88 = HD-friendly quality.
-     */
+    /* =====================================================
+       JPEG
+    ===================================================== */
 
     const blob =
         await new Promise(
@@ -1385,8 +1437,8 @@ async function prepareImageForUpload(
 
 
     /*
-     * If compression somehow becomes
-     * larger, use original file.
+     * Agar compressed file original se
+     * badi ho gayi to original bhejo.
      */
 
     if (
@@ -1406,6 +1458,7 @@ async function prepareImageForUpload(
         {
             type:
                 "image/jpeg",
+
             lastModified:
                 Date.now()
         }
@@ -1538,7 +1591,7 @@ function setupEmoji() {
 
 
 /* =========================================================
-   ATTACHMENT
+   ATTACHMENT — GALLERY
 ========================================================= */
 
 function setupAttachment() {
@@ -1565,12 +1618,27 @@ function setupAttachment() {
         "click",
         () => {
 
+            /*
+             * Gallery mode
+             */
+
             fileInput.accept =
                 "image/*";
+
 
             fileInput.removeAttribute(
                 "capture"
             );
+
+
+            /*
+             * Reset value so same photo
+             * can be selected again.
+             */
+
+            fileInput.value =
+                "";
+
 
             fileInput.click();
 
@@ -1620,13 +1688,23 @@ function setupCamera() {
         "click",
         () => {
 
+            /*
+             * Camera mode
+             */
+
             fileInput.accept =
                 "image/*";
+
 
             fileInput.setAttribute(
                 "capture",
                 "environment"
             );
+
+
+            fileInput.value =
+                "";
+
 
             fileInput.click();
 
@@ -1638,6 +1716,8 @@ function setupCamera() {
 
 /* =========================================================
    SELECTED FILE
+   IMPORTANT:
+   Photo select hote hi DIRECT SEND
 ========================================================= */
 
 function handleSelectedFile(
@@ -1658,6 +1738,10 @@ function handleSelectedFile(
         fileInput.files[0];
 
 
+    /* =====================================================
+       IMAGE CHECK
+    ===================================================== */
+
     if (
         !file.type.startsWith(
             "image/"
@@ -1668,19 +1752,19 @@ function handleSelectedFile(
             "Please select an image."
         );
 
-        fileInput.value = "";
+
+        fileInput.value =
+            "";
+
 
         return;
 
     }
 
 
-    /*
-     * Maximum original selection:
-     * 25 MB.
-     *
-     * It will be compressed before upload.
-     */
+    /* =====================================================
+       SIZE CHECK
+    ===================================================== */
 
     if (
         file.size >
@@ -1691,191 +1775,33 @@ function handleSelectedFile(
             "Photo must be 25 MB or smaller."
         );
 
-        fileInput.value = "";
+
+        fileInput.value =
+            "";
+
 
         return;
 
     }
 
 
+    /* =====================================================
+       STORE FILE
+    ===================================================== */
+
     chatState.selectedFile =
         file;
 
 
-    showSelectedFile(
-        file
-    );
-
-}
-
-
-/* =========================================================
-   FILE PREVIEW
-========================================================= */
-
-function showSelectedFile(
-    file
-) {
-
-    let preview =
-        $("chatFilePreview");
-
-
-    if (!preview) {
-
-        preview =
-            document.createElement(
-                "div"
-            );
-
-        preview.id =
-            "chatFilePreview";
-
-
-        preview.style.display =
-            "flex";
-
-        preview.style.alignItems =
-            "center";
-
-        preview.style.gap =
-            "8px";
-
-        preview.style.padding =
-            "6px 10px";
-
-        preview.style.marginBottom =
-            "4px";
-
-        preview.style.background =
-            "#142638";
-
-        preview.style.borderRadius =
-            "12px";
-
-
-        const composer =
-            $("composer");
-
-
-        if (composer) {
-
-            composer.parentNode.insertBefore(
-                preview,
-                composer
-            );
-
-        }
-
-    }
-
-
-    preview.innerHTML = "";
-
-
-    const thumbnail =
-        document.createElement(
-            "img"
-        );
-
-
-    thumbnail.src =
-        URL.createObjectURL(
-            file
-        );
-
-
-    thumbnail.style.width =
-        "44px";
-
-    thumbnail.style.height =
-        "44px";
-
-    thumbnail.style.objectFit =
-        "cover";
-
-    thumbnail.style.borderRadius =
-        "8px";
-
-
-    const name =
-        document.createElement(
-            "span"
-        );
-
-
-    name.textContent =
-        file.name;
-
-
-    name.style.flex =
-        "1";
-
-    name.style.fontSize =
-        "12px";
-
-    name.style.color =
-        "#c9d6e2";
-
-    name.style.overflow =
-        "hidden";
-
-    name.style.textOverflow =
-        "ellipsis";
-
-    name.style.whiteSpace =
-        "nowrap";
-
-
-    const remove =
-        document.createElement(
-            "button"
-        );
-
-
-    remove.type =
-        "button";
-
-    remove.textContent =
-        "✕";
-
-    remove.style.border =
-        "0";
-
-    remove.style.background =
-        "transparent";
-
-    remove.style.color =
-        "#ffffff";
-
-    remove.style.fontSize =
-        "18px";
-
-    remove.style.cursor =
-        "pointer";
-
-
-    remove.addEventListener(
-        "click",
-        () => {
-
-            clearSelectedFile();
-
-        }
-    );
-
-
-    preview.appendChild(
-        thumbnail
-    );
-
-    preview.appendChild(
-        name
-    );
-
-    preview.appendChild(
-        remove
-    );
+    /*
+     * IMPORTANT:
+     *
+     * Preview create nahi hoga.
+     *
+     * Photo directly send hogi.
+     */
+
+    sendMessage();
 
 }
 
@@ -1901,6 +1827,11 @@ function clearSelectedFile() {
 
     }
 
+
+    /*
+     * Agar old preview DOM me ho,
+     * usko bhi remove kar do.
+     */
 
     const preview =
         $("chatFilePreview");
@@ -2444,5 +2375,5 @@ function scrollMessages() {
 ========================================================= */
 
 console.log(
-    "Usanex Chat JS loaded — text + HD image messaging."
+    "Usanex Chat JS loaded — DIRECT IMAGE SEND enabled."
 );
