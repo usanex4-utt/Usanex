@@ -1,6 +1,4 @@
-# =========================================================
-# USANEX - DATABASE MODELS
-# =========================================================
+# backend/database/models.py
 
 from datetime import datetime
 
@@ -107,7 +105,6 @@ class OTPVerification(Base):
 
     purpose = Column(
         String(30),
-        index=True,
         nullable=False,
     )
 
@@ -153,7 +150,6 @@ class UserSession(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
 
@@ -188,13 +184,11 @@ class ConnectionRequest(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
 
@@ -251,7 +245,6 @@ class ConnectionVerification(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     verified_at = Column(
@@ -313,7 +306,6 @@ class ConnectionNotification(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
 
@@ -348,13 +340,11 @@ class UserConnection(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -397,20 +387,18 @@ class UserConnectionCategory(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     __table_args__ = (
         UniqueConstraint(
             "user_id",
             "connected_user_id",
-            name="uq_connection_category",
+            name="uq_user_connection_category",
         ),
     )
 
@@ -440,7 +428,6 @@ class UserFollow(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -486,7 +473,6 @@ class Post(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
     )
 
 
@@ -530,8 +516,8 @@ class Reel(Base):
 
     duration = Column(
         Float,
-        default=0,
         nullable=False,
+        default=0,
     )
 
     file_size = Column(
@@ -539,7 +525,7 @@ class Reel(Base):
         nullable=True,
     )
 
-    # User content
+    # User information
     caption = Column(
         Text,
         nullable=True,
@@ -557,12 +543,6 @@ class Reel(Base):
     )
 
     category = Column(
-        String(100),
-        index=True,
-        nullable=True,
-    )
-
-    subcategory = Column(
         String(100),
         index=True,
         nullable=True,
@@ -609,10 +589,6 @@ class Reel(Base):
         default=0,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # ACTION COUNTS
-    # -----------------------------------------------------
 
     share_count = Column(
         Integer,
@@ -661,7 +637,7 @@ class Reel(Base):
     )
 
     # -----------------------------------------------------
-    # INTEREST SIGNALS
+    # INTEREST
     # -----------------------------------------------------
 
     interested_count = Column(
@@ -695,13 +671,6 @@ class Reel(Base):
 
     ai_category = Column(
         String(100),
-        index=True,
-        nullable=True,
-    )
-
-    ai_subcategory = Column(
-        String(100),
-        index=True,
         nullable=True,
     )
 
@@ -710,19 +679,11 @@ class Reel(Base):
         nullable=True,
     )
 
-    ai_quality_score = Column(
-        Float,
-        nullable=True,
+    is_safe = Column(
+        Boolean,
+        default=True,
+        nullable=False,
     )
-
-    ai_safety_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    # -----------------------------------------------------
-    # TIMESTAMPS
-    # -----------------------------------------------------
 
     created_at = Column(
         DateTime,
@@ -780,6 +741,18 @@ class ReelAIFeature(Base):
     # CONTENT UNDERSTANDING
     # -----------------------------------------------------
 
+    category = Column(
+        String(100),
+        index=True,
+        nullable=True,
+    )
+
+    subcategory = Column(
+        String(100),
+        index=True,
+        nullable=True,
+    )
+
     topics = Column(
         Text,
         nullable=True,
@@ -800,6 +773,10 @@ class ReelAIFeature(Base):
         nullable=True,
     )
 
+    # -----------------------------------------------------
+    # SPEECH / AUDIO
+    # -----------------------------------------------------
+
     transcript = Column(
         Text,
         nullable=True,
@@ -807,29 +784,8 @@ class ReelAIFeature(Base):
 
     detected_language = Column(
         String(50),
-        index=True,
         nullable=True,
     )
-
-    # -----------------------------------------------------
-    # CLASSIFICATION
-    # -----------------------------------------------------
-
-    category = Column(
-        String(100),
-        index=True,
-        nullable=True,
-    )
-
-    subcategory = Column(
-        String(100),
-        index=True,
-        nullable=True,
-    )
-
-    # -----------------------------------------------------
-    # AUDIO
-    # -----------------------------------------------------
 
     audio_name = Column(
         String(300),
@@ -842,7 +798,7 @@ class ReelAIFeature(Base):
     )
 
     # -----------------------------------------------------
-    # EMBEDDING
+    # ML / EMBEDDING
     # -----------------------------------------------------
 
     embedding_reference = Column(
@@ -855,8 +811,13 @@ class ReelAIFeature(Base):
         nullable=True,
     )
 
+    ai_model_version = Column(
+        String(100),
+        nullable=True,
+    )
+
     # -----------------------------------------------------
-    # AI SCORES
+    # QUALITY / SAFETY
     # -----------------------------------------------------
 
     content_quality_score = Column(
@@ -871,15 +832,6 @@ class ReelAIFeature(Base):
 
     ai_confidence = Column(
         Float,
-        nullable=True,
-    )
-
-    # -----------------------------------------------------
-    # AI VERSION
-    # -----------------------------------------------------
-
-    ai_version = Column(
-        String(50),
         nullable=True,
     )
 
@@ -902,7 +854,7 @@ class ReelAIFeature(Base):
 
 
 # =========================================================
-# REEL USER INTERACTION
+# REEL INTERACTION EVENTS
 # =========================================================
 
 class ReelInteraction(Base):
@@ -949,7 +901,6 @@ class ReelInteraction(Base):
 
     source = Column(
         String(50),
-        index=True,
         nullable=True,
     )
 
@@ -962,6 +913,23 @@ class ReelInteraction(Base):
         index=True,
         nullable=False,
     )
+
+    # Examples:
+    # impression
+    # play
+    # pause
+    # complete
+    # replay
+    # star
+    # save
+    # download
+    # share
+    # comment
+    # interested
+    # not_interested
+    # mute
+    # unmute
+    # skip
 
     # -----------------------------------------------------
     # WATCH BEHAVIOUR
@@ -999,10 +967,6 @@ class ReelInteraction(Base):
 
     # -----------------------------------------------------
     # 3 STAR RATING
-    # 0 = no rating
-    # 1 = one star
-    # 2 = two stars
-    # 3 = three stars
     # -----------------------------------------------------
 
     star_rating = Column(
@@ -1012,7 +976,7 @@ class ReelInteraction(Base):
     )
 
     # -----------------------------------------------------
-    # INTEREST
+    # ACTION SIGNALS
     # -----------------------------------------------------
 
     interested = Column(
@@ -1026,10 +990,6 @@ class ReelInteraction(Base):
         default=False,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # ACTIONS
-    # -----------------------------------------------------
 
     saved = Column(
         Boolean,
@@ -1055,21 +1015,11 @@ class ReelInteraction(Base):
         nullable=False,
     )
 
-    skipped = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
     muted = Column(
         Boolean,
         default=False,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # TIMESTAMP
-    # -----------------------------------------------------
 
     created_at = Column(
         DateTime,
@@ -1095,11 +1045,17 @@ class ReelInteraction(Base):
             "user_id",
             "created_at",
         ),
+        Index(
+            "ix_reel_interactions_reel_created",
+            "reel_id",
+            "created_at",
+        ),
     )
 
 
 # =========================================================
 # CURRENT REEL RATING
+# One rating per user/reel
 # =========================================================
 
 class ReelRating(Base):
@@ -1379,6 +1335,10 @@ class UserReelInterest(Base):
         nullable=True,
     )
 
+    # -----------------------------------------------------
+    # ML SCORES
+    # -----------------------------------------------------
+
     interest_score = Column(
         Float,
         default=0,
@@ -1396,6 +1356,10 @@ class UserReelInterest(Base):
         default=0,
         nullable=False,
     )
+
+    # -----------------------------------------------------
+    # BEHAVIOUR
+    # -----------------------------------------------------
 
     videos_seen = Column(
         Integer,
@@ -1560,8 +1524,8 @@ class UserReelHistory(Base):
 # USER REEL PROFILE
 # =========================================================
 
-class UserReelProfile(Base):
-    __tablename__ = "user_reel_profiles"
+class UserInterestProfile(Base):
+    __tablename__ = "user_interest_profiles"
 
     id = Column(
         Integer,
@@ -1576,18 +1540,13 @@ class UserReelProfile(Base):
         nullable=False,
     )
 
-    # Serialized AI profiles
+    # Serialized ML profiles
     topic_scores = Column(
         Text,
         nullable=True,
     )
 
     category_scores = Column(
-        Text,
-        nullable=True,
-    )
-
-    subcategory_scores = Column(
         Text,
         nullable=True,
     )
@@ -1602,13 +1561,13 @@ class UserReelProfile(Base):
         nullable=True,
     )
 
-    audio_scores = Column(
+    embedding_reference = Column(
         Text,
         nullable=True,
     )
 
-    embedding_reference = Column(
-        Text,
+    embedding_model = Column(
+        String(100),
         nullable=True,
     )
 
@@ -1631,36 +1590,6 @@ class UserReelProfile(Base):
         nullable=False,
     )
 
-    average_watch_percentage = Column(
-        Float,
-        default=0,
-        nullable=False,
-    )
-
-    total_replays = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    total_saves = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    total_shares = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    total_downloads = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
     last_updated = Column(
         DateTime,
         index=True,
@@ -1670,7 +1599,7 @@ class UserReelProfile(Base):
 
 
 # =========================================================
-# REEL RECOMMENDATION LOG
+# RECOMMENDATION LOG
 # =========================================================
 
 class ReelRecommendationLog(Base):
@@ -1699,12 +1628,13 @@ class ReelRecommendationLog(Base):
         nullable=True,
     )
 
+    # Final score
     recommendation_score = Column(
         Float,
         nullable=True,
     )
 
-    # Individual scoring signals
+    # Individual ranking signals
     interest_score = Column(
         Float,
         nullable=True,
@@ -1716,11 +1646,6 @@ class ReelRecommendationLog(Base):
     )
 
     creator_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    language_score = Column(
         Float,
         nullable=True,
     )
@@ -1740,18 +1665,14 @@ class ReelRecommendationLog(Base):
         nullable=True,
     )
 
-    quality_score = Column(
+    diversity_score = Column(
         Float,
         nullable=True,
     )
 
-    safety_score = Column(
-        Float,
-        nullable=True,
-    )
-
+    # Why this reel was recommended
     reason = Column(
-        String(150),
+        String(100),
         nullable=True,
     )
 
@@ -1776,7 +1697,7 @@ class ReelRecommendationLog(Base):
 
 
 # =========================================================
-# REEL ANALYTICS
+# REEL AGGREGATE ANALYTICS
 # =========================================================
 
 class ReelAnalytics(Base):
@@ -1795,7 +1716,6 @@ class ReelAnalytics(Base):
         nullable=False,
     )
 
-    # Views
     view_count = Column(
         Integer,
         default=0,
@@ -1808,13 +1728,6 @@ class ReelAnalytics(Base):
         nullable=False,
     )
 
-    completed_views = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    # Watch
     total_watch_seconds = Column(
         Float,
         default=0,
@@ -1827,20 +1740,18 @@ class ReelAnalytics(Base):
         nullable=False,
     )
 
-    average_watch_percentage = Column(
+    average_completion = Column(
         Float,
         default=0,
         nullable=False,
     )
 
-    # Replay
     replay_count = Column(
         Integer,
         default=0,
         nullable=False,
     )
 
-    # Stars
     one_star_count = Column(
         Integer,
         default=0,
@@ -1859,7 +1770,6 @@ class ReelAnalytics(Base):
         nullable=False,
     )
 
-    # Actions
     save_count = Column(
         Integer,
         default=0,
@@ -1898,18 +1808,19 @@ class ReelAnalytics(Base):
 
     updated_at = Column(
         DateTime,
+        index=True,
         nullable=False,
         default=datetime.utcnow,
     )
 
 
 # =========================================================
-# AREA-LEVEL REEL ANALYTICS
+# AREA ANALYTICS
 # =========================================================
-# Only broad location:
-# country / state / city
-#
-# Exact GPS/address is NOT stored.
+# IMPORTANT:
+# Only broad aggregate location is stored.
+# Exact GPS/address should NOT be stored for recommendation
+# analytics.
 # =========================================================
 
 class ReelAreaAnalytics(Base):
@@ -1952,12 +1863,6 @@ class ReelAreaAnalytics(Base):
     )
 
     views = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    unique_viewers = Column(
         Integer,
         default=0,
         nullable=False,
