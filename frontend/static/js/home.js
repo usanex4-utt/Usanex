@@ -38,88 +38,841 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       CREATE SHEET
+       HOME + BUTTON
+    ===================================================== */
+
+    let createSheet = null;
+
+    function createCreateSheet() {
+
+        if (createSheet) {
+            return createSheet;
+        }
+
+        const overlay =
+            document.createElement("div");
+
+        overlay.id =
+            "usanexCreateOverlay";
+
+        overlay.className =
+            "usanex-create-overlay";
+
+        overlay.innerHTML = `
+
+            <div
+                class="usanex-create-sheet"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Create"
+            >
+
+                <div class="usanex-create-handle"></div>
+
+                <div class="usanex-create-header">
+
+                    <div>
+                        <h2>Create</h2>
+                        <p>What do you want to create?</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="usanex-create-close"
+                        id="usanexCreateClose"
+                        aria-label="Close Create"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="usanex-create-options">
+
+                    <button
+                        type="button"
+                        class="usanex-create-option"
+                        data-create-type="reel"
+                    >
+                        <span class="create-option-icon reel-icon">
+                            ▶
+                        </span>
+
+                        <span class="create-option-text">
+                            <strong>Reel</strong>
+                            <small>Create a short video</small>
+                        </span>
+
+                        <span class="create-option-arrow">
+                            ›
+                        </span>
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="usanex-create-option"
+                        data-create-type="image"
+                    >
+                        <span class="create-option-icon image-icon">
+                            ▧
+                        </span>
+
+                        <span class="create-option-text">
+                            <strong>Image</strong>
+                            <small>Share photos with people</small>
+                        </span>
+
+                        <span class="create-option-arrow">
+                            ›
+                        </span>
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="usanex-create-option"
+                        data-create-type="moment"
+                    >
+                        <span class="create-option-icon moment-icon">
+                            ◉
+                        </span>
+
+                        <span class="create-option-text">
+                            <strong>Nex Moment</strong>
+                            <small>Share a moment with your connections</small>
+                        </span>
+
+                        <span class="create-option-arrow">
+                            ›
+                        </span>
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="usanex-create-option"
+                        data-create-type="private"
+                    >
+                        <span class="create-option-icon private-icon">
+                            ◈
+                        </span>
+
+                        <span class="create-option-text">
+                            <strong>Private</strong>
+                            <small>Share media privately</small>
+                        </span>
+
+                        <span class="create-option-arrow">
+                            ›
+                        </span>
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        createSheet = overlay;
+
+        addCreateSheetStyles();
+
+        return createSheet;
+    }
+
+
+    /* =====================================================
+       CREATE SHEET CSS
+       Injected from JS so home.css ko change
+       karne ki zarurat nahi.
+    ===================================================== */
+
+    function addCreateSheetStyles() {
+
+        if (
+            document.getElementById(
+                "usanexCreateSheetStyles"
+            )
+        ) {
+            return;
+        }
+
+        const style =
+            document.createElement("style");
+
+        style.id =
+            "usanexCreateSheetStyles";
+
+        style.textContent = `
+
+            .usanex-create-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 99999;
+
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+
+                background: rgba(0, 0, 0, 0.58);
+
+                opacity: 0;
+                visibility: hidden;
+
+                transition:
+                    opacity 0.25s ease,
+                    visibility 0.25s ease;
+
+                overscroll-behavior: contain;
+            }
+
+
+            .usanex-create-overlay.open {
+                opacity: 1;
+                visibility: visible;
+            }
+
+
+            .usanex-create-sheet {
+                width: 100%;
+                max-width: 650px;
+
+                max-height: 72vh;
+
+                background:
+                    linear-gradient(
+                        180deg,
+                        #0d1d2d 0%,
+                        #071322 100%
+                    );
+
+                border-top:
+                    1px solid rgba(255,255,255,0.08);
+
+                border-radius:
+                    26px 26px 0 0;
+
+                padding:
+                    10px 18px
+                    calc(20px + env(safe-area-inset-bottom))
+                    18px;
+
+                box-sizing: border-box;
+
+                transform:
+                    translateY(100%);
+
+                transition:
+                    transform 0.30s
+                    cubic-bezier(.22,.61,.36,1);
+
+                box-shadow:
+                    0 -15px 45px
+                    rgba(0,0,0,0.40);
+
+                overflow-y: auto;
+
+                -webkit-overflow-scrolling: touch;
+            }
+
+
+            .usanex-create-overlay.open
+            .usanex-create-sheet {
+                transform:
+                    translateY(0);
+            }
+
+
+            .usanex-create-handle {
+                width: 42px;
+                height: 5px;
+
+                margin:
+                    2px auto 15px;
+
+                border-radius: 20px;
+
+                background:
+                    rgba(255,255,255,0.28);
+            }
+
+
+            .usanex-create-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+
+                gap: 15px;
+
+                margin-bottom: 18px;
+            }
+
+
+            .usanex-create-header h2 {
+                margin: 0;
+
+                color: #ffffff;
+
+                font-size: 25px;
+                font-weight: 750;
+
+                letter-spacing: -0.3px;
+            }
+
+
+            .usanex-create-header p {
+                margin:
+                    4px 0 0;
+
+                color:
+                    #91a2b5;
+
+                font-size: 13px;
+            }
+
+
+            .usanex-create-close {
+                width: 42px;
+                height: 42px;
+
+                flex: 0 0 42px;
+
+                border: 0;
+                border-radius: 50%;
+
+                background:
+                    rgba(255,255,255,0.07);
+
+                color: #ffffff;
+
+                font-size: 28px;
+                line-height: 1;
+
+                cursor: pointer;
+
+                -webkit-tap-highlight-color:
+                    transparent;
+            }
+
+
+            .usanex-create-close:active {
+                transform: scale(0.94);
+            }
+
+
+            .usanex-create-options {
+                display: flex;
+                flex-direction: column;
+
+                gap: 10px;
+            }
+
+
+            .usanex-create-option {
+                width: 100%;
+
+                min-height: 72px;
+
+                display: flex;
+                align-items: center;
+
+                gap: 14px;
+
+                padding:
+                    12px 14px;
+
+                border:
+                    1px solid
+                    rgba(255,255,255,0.07);
+
+                border-radius: 18px;
+
+                background:
+                    rgba(255,255,255,0.035);
+
+                color: #ffffff;
+
+                text-align: left;
+
+                cursor: pointer;
+
+                transition:
+                    transform 0.15s ease,
+                    background 0.15s ease,
+                    border-color 0.15s ease;
+
+                -webkit-tap-highlight-color:
+                    transparent;
+            }
+
+
+            .usanex-create-option:active {
+                transform: scale(0.985);
+
+                background:
+                    rgba(30,145,255,0.13);
+
+                border-color:
+                    rgba(30,145,255,0.45);
+            }
+
+
+            .create-option-icon {
+                width: 48px;
+                height: 48px;
+
+                flex: 0 0 48px;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                border-radius: 15px;
+
+                font-size: 25px;
+                font-weight: 700;
+
+                color: #ffffff;
+            }
+
+
+            .reel-icon {
+                background:
+                    rgba(255,76,110,0.16);
+            }
+
+
+            .image-icon {
+                background:
+                    rgba(30,145,255,0.16);
+            }
+
+
+            .moment-icon {
+                background:
+                    rgba(76,210,145,0.15);
+            }
+
+
+            .private-icon {
+                background:
+                    rgba(175,110,255,0.16);
+            }
+
+
+            .create-option-text {
+                min-width: 0;
+
+                flex: 1;
+
+                display: flex;
+                flex-direction: column;
+
+                gap: 3px;
+            }
+
+
+            .create-option-text strong {
+                color: #ffffff;
+
+                font-size: 17px;
+                font-weight: 700;
+            }
+
+
+            .create-option-text small {
+                color: #8fa1b4;
+
+                font-size: 12px;
+
+                line-height: 1.35;
+            }
+
+
+            .create-option-arrow {
+                color:
+                    #73879b;
+
+                font-size: 28px;
+
+                line-height: 1;
+
+                padding-left: 5px;
+            }
+
+
+            body.usanex-create-open {
+                overflow: hidden;
+            }
+
+
+            @media (min-width: 700px) {
+
+                .usanex-create-sheet {
+                    margin-bottom: 0;
+
+                    border-radius:
+                        28px 28px 0 0;
+                }
+
+            }
+
+        `;
+
+        document.head.appendChild(style);
+    }
+
+
+    /* =====================================================
+       OPEN CREATE SHEET
+    ===================================================== */
+
+    function openCreateSheet() {
+
+        const sheet =
+            createCreateSheet();
+
+        sheet.classList.add("open");
+
+        document.body.classList.add(
+            "usanex-create-open"
+        );
+
+        const closeButton =
+            $("usanexCreateClose");
+
+        setTimeout(() => {
+
+            closeButton?.focus();
+
+        }, 250);
+    }
+
+
+    /* =====================================================
+       CLOSE CREATE SHEET
+    ===================================================== */
+
+    function closeCreateSheet() {
+
+        if (!createSheet) {
+            return;
+        }
+
+        createSheet.classList.remove("open");
+
+        document.body.classList.remove(
+            "usanex-create-open"
+        );
+    }
+
+
+    /* =====================================================
+       CREATE OPTION ACTION
+    ===================================================== */
+
+    function handleCreateOption(type) {
+
+        closeCreateSheet();
+
+        /*
+         * All normal media creation starts
+         * from the existing upload page.
+         *
+         * Query parameter allows upload.js
+         * to know which type was selected later.
+         */
+
+        if (type === "reel") {
+
+            go("/upload?type=reel");
+
+            return;
+        }
+
+
+        if (type === "image") {
+
+            go("/upload?type=image");
+
+            return;
+        }
+
+
+        if (type === "private") {
+
+            go("/upload?type=private");
+
+            return;
+        }
+
+
+        if (type === "moment") {
+
+            /*
+             * Nex Moment currently has its own
+             * status/moment page.
+             */
+
+            go("/status");
+
+            return;
+        }
+    }
+
+
+    /* =====================================================
+       CREATE EVENTS
+    ===================================================== */
+
+    const headerPlus =
+        $("headerPlus");
+
+    headerPlus?.addEventListener(
+        "click",
+        (event) => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            openCreateSheet();
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        (event) => {
+
+            const option =
+                event.target.closest(
+                    ".usanex-create-option"
+                );
+
+            if (!option) {
+                return;
+            }
+
+            const type =
+                option.dataset.createType;
+
+            if (!type) {
+                return;
+            }
+
+            handleCreateOption(type);
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target.id ===
+                "usanexCreateClose"
+            ) {
+
+                closeCreateSheet();
+
+                return;
+            }
+
+
+            if (
+                event.target.id ===
+                "usanexCreateOverlay"
+            ) {
+
+                closeCreateSheet();
+            }
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        (event) => {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                closeCreateSheet();
+            }
+        }
+    );
+
+
+    /*
+     * Android/browser back button
+     * support.
+     */
+    window.addEventListener(
+        "popstate",
+        () => {
+
+            closeCreateSheet();
+        }
+    );
+
+
+    /*
+     * Make Create available to other
+     * page scripts if needed later.
+     */
+    window.UsanexCreate = {
+        open: openCreateSheet,
+        close: closeCreateSheet
+    };
+
+
+    /* =====================================================
        BOTTOM NAVIGATION
     ===================================================== */
 
-    $("homeNav")?.addEventListener("click", () => {
-        go("/home");
-    });
+    $("homeNav")?.addEventListener(
+        "click",
+        () => {
+            go("/home");
+        }
+    );
 
-    $("reelNav")?.addEventListener("click", () => {
-        go("/reels");
-    });
 
-    $("searchNav")?.addEventListener("click", () => {
-        go("/search");
-    });
+    $("reelNav")?.addEventListener(
+        "click",
+        () => {
+            go("/reels");
+        }
+    );
 
-    $("notificationNav")?.addEventListener("click", () => {
-        go("/notifications");
-    });
 
-    /*
-     * OWN PROFILE
-     *
-     * Bottom Profile button opens own profile.
-     */
+    $("searchNav")?.addEventListener(
+        "click",
+        () => {
+            go("/search");
+        }
+    );
 
-    $("profileNav")?.addEventListener("click", () => {
-        go("/my-profile");
-    });
+
+    $("notificationNav")?.addEventListener(
+        "click",
+        () => {
+            go("/notifications");
+        }
+    );
+
+
+    $("profileNav")?.addEventListener(
+        "click",
+        () => {
+            go("/my-profile");
+        }
+    );
 
 
     /* =====================================================
        SIDE MENU
     ===================================================== */
 
-    const menuButton = $("menuButton");
-    const menuOverlay = $("menuOverlay");
-    const closeMenu = $("closeMenu");
+    const menuButton =
+        $("menuButton");
+
+    const menuOverlay =
+        $("menuOverlay");
+
+    const closeMenu =
+        $("closeMenu");
+
 
     function openMenu() {
+
         if (!menuOverlay) {
             return;
         }
 
+        closeCreateSheet();
+
         menuOverlay.hidden = false;
-        document.body.classList.add("menu-open");
+
+        document.body.classList.add(
+            "menu-open"
+        );
     }
 
+
     function closeSideMenu() {
+
         if (!menuOverlay) {
             return;
         }
 
         menuOverlay.hidden = true;
-        document.body.classList.remove("menu-open");
+
+        document.body.classList.remove(
+            "menu-open"
+        );
     }
 
-    menuButton?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
 
-        openMenu();
-    });
+    menuButton?.addEventListener(
+        "click",
+        (event) => {
 
-    closeMenu?.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+            event.preventDefault();
+            event.stopPropagation();
 
-        closeSideMenu();
-    });
+            openMenu();
+        }
+    );
 
-    menuOverlay?.addEventListener("click", (event) => {
-        if (event.target === menuOverlay) {
+
+    closeMenu?.addEventListener(
+        "click",
+        (event) => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
             closeSideMenu();
         }
-    });
+    );
 
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-            closeSideMenu();
-            closeCategoryPopup();
+
+    menuOverlay?.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target ===
+                menuOverlay
+            ) {
+
+                closeSideMenu();
+            }
         }
-    });
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        (event) => {
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                closeSideMenu();
+                closeCategoryPopup();
+                closeCreateSheet();
+            }
+        }
+    );
 
 
     /* =====================================================
@@ -148,6 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function getConnectionUser(item) {
+
         if (!item) {
             return {};
         }
@@ -166,21 +920,24 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function isConnectedUser(item) {
+
         if (!item) {
             return false;
         }
 
-        const user = getConnectionUser(item);
+        const user =
+            getConnectionUser(item);
 
-        const status = String(
-            item.connection_status ??
-            item.status ??
-            user.connection_status ??
-            user.status ??
-            "connected"
-        )
-            .trim()
-            .toLowerCase();
+        const status =
+            String(
+                item.connection_status ??
+                item.status ??
+                user.connection_status ??
+                user.status ??
+                "connected"
+            )
+                .trim()
+                .toLowerCase();
 
         if (!status) {
             return true;
@@ -198,6 +955,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ===================================================== */
 
     function getUserCategory(item) {
+
         if (!item) {
             return "";
         }
@@ -226,7 +984,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function getFilteredUsers() {
 
-        if (currentCategory === "all") {
+        if (
+            currentCategory === "all"
+        ) {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -244,7 +1004,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        if (currentCategory === "friend") {
+        if (
+            currentCategory === "friend"
+        ) {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -261,7 +1023,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        if (currentCategory === "family") {
+        if (
+            currentCategory === "family"
+        ) {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -269,13 +1033,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     const category =
                         getUserCategory(item);
 
-                    return category === "family";
+                    return (
+                        category === "family"
+                    );
                 }
             );
         }
 
 
-        if (currentCategory === "couple") {
+        if (
+            currentCategory === "couple"
+        ) {
 
             return allConnectedUsers.filter(
                 (item) => {
@@ -307,22 +1075,30 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (currentCategory === "all") {
+        if (
+            currentCategory === "all"
+        ) {
 
             connectedTitle.textContent =
                 "All Connected";
 
-        } else if (currentCategory === "friend") {
+        } else if (
+            currentCategory === "friend"
+        ) {
 
             connectedTitle.textContent =
                 "Friends";
 
-        } else if (currentCategory === "family") {
+        } else if (
+            currentCategory === "family"
+        ) {
 
             connectedTitle.textContent =
                 "Family";
 
-        } else if (currentCategory === "couple") {
+        } else if (
+            currentCategory === "couple"
+        ) {
 
             connectedTitle.textContent =
                 "Couple Chat";
@@ -343,17 +1119,23 @@ document.addEventListener("DOMContentLoaded", () => {
         let message =
             "No connected people yet.";
 
-        if (currentCategory === "friend") {
+        if (
+            currentCategory === "friend"
+        ) {
 
             message =
                 "No friends added yet.";
 
-        } else if (currentCategory === "family") {
+        } else if (
+            currentCategory === "family"
+        ) {
 
             message =
                 "No family members added yet.";
 
-        } else if (currentCategory === "couple") {
+        } else if (
+            currentCategory === "couple"
+        ) {
 
             message =
                 "No couple chat connection yet.";
@@ -373,6 +1155,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let categoryPopup = null;
 
+
     function closeCategoryPopup() {
 
         if (!categoryPopup) {
@@ -380,6 +1163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         categoryPopup.remove();
+
         categoryPopup = null;
 
         document.body.classList.remove(
@@ -412,6 +1196,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "true"
         );
 
+
         const box =
             document.createElement("div");
 
@@ -431,9 +1216,7 @@ document.addEventListener("DOMContentLoaded", () => {
         box.appendChild(title);
 
 
-        /* =================================================
-           FRIEND
-        ================================================= */
+        /* FRIEND */
 
         const friendButton =
             document.createElement("div");
@@ -454,6 +1237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "0"
         );
 
+
         friendButton.addEventListener(
             "click",
             async (event) => {
@@ -466,6 +1250,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
         );
+
 
         friendButton.addEventListener(
             "keydown",
@@ -486,12 +1271,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-        box.appendChild(friendButton);
+
+        box.appendChild(
+            friendButton
+        );
 
 
-        /* =================================================
-           FAMILY
-        ================================================= */
+        /* FAMILY */
 
         const familyButton =
             document.createElement("div");
@@ -512,6 +1298,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "0"
         );
 
+
         familyButton.addEventListener(
             "click",
             async (event) => {
@@ -524,6 +1311,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
         );
+
 
         familyButton.addEventListener(
             "keydown",
@@ -544,12 +1332,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-        box.appendChild(familyButton);
+
+        box.appendChild(
+            familyButton
+        );
 
 
-        /* =================================================
-           REMOVE
-        ================================================= */
+        /* REMOVE */
 
         if (
             currentUserCategory === "friend" ||
@@ -576,6 +1365,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "0"
             );
 
+
             removeButton.addEventListener(
                 "click",
                 async (event) => {
@@ -588,6 +1378,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                 }
             );
+
 
             removeButton.addEventListener(
                 "keydown",
@@ -608,13 +1399,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             );
 
-            box.appendChild(removeButton);
+
+            box.appendChild(
+                removeButton
+            );
         }
 
 
-        /* =================================================
-           CANCEL
-        ================================================= */
+        /* CANCEL */
 
         const cancelButton =
             document.createElement("div");
@@ -635,6 +1427,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "0"
         );
 
+
         cancelButton.addEventListener(
             "click",
             (event) => {
@@ -644,6 +1437,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 closeCategoryPopup();
             }
         );
+
 
         cancelButton.addEventListener(
             "keydown",
@@ -661,7 +1455,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         );
 
-        box.appendChild(cancelButton);
+
+        box.appendChild(
+            cancelButton
+        );
 
 
         overlay.appendChild(box);
@@ -672,7 +1469,8 @@ document.addEventListener("DOMContentLoaded", () => {
             (event) => {
 
                 if (
-                    event.target === overlay
+                    event.target ===
+                    overlay
                 ) {
 
                     closeCategoryPopup();
@@ -685,8 +1483,10 @@ document.addEventListener("DOMContentLoaded", () => {
             overlay
         );
 
+
         categoryPopup =
             overlay;
+
 
         document.body.classList.add(
             "category-popup-open"
@@ -694,7 +1494,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         setTimeout(() => {
+
             friendButton.focus();
+
         }, 50);
     }
 
@@ -728,7 +1530,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         ),
                         {
                             method: "DELETE",
-                            credentials: "include",
+
+                            credentials:
+                                "include",
+
                             headers: {
                                 "Accept":
                                     "application/json"
@@ -736,12 +1541,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     );
 
-                if (response.status === 401) {
+
+                if (
+                    response.status === 401
+                ) {
 
                     go("/login");
 
                     return false;
                 }
+
 
                 if (!response.ok) {
 
@@ -750,6 +1559,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         response.status
                     );
                 }
+
 
                 return true;
             }
@@ -760,7 +1570,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     "/api/connections/category",
                     {
                         method: "POST",
-                        credentials: "include",
+
+                        credentials:
+                            "include",
 
                         headers: {
                             "Content-Type":
@@ -781,7 +1593,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            if (response.status === 401) {
+            if (
+                response.status === 401
+            ) {
 
                 go("/login");
 
@@ -810,10 +1624,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 } catch (_) {}
 
+
                 throw new Error(
                     errorMessage
                 );
             }
+
 
             return true;
 
@@ -853,14 +1669,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 newCategory
             );
 
+
         if (!success) {
             return;
         }
+
 
         updateLocalUserCategory(
             userId,
             newCategory
         );
+
 
         closeCategoryPopup();
 
@@ -878,37 +1697,44 @@ document.addEventListener("DOMContentLoaded", () => {
     ) {
 
         allConnectedUsers =
-            allConnectedUsers.map((item) => {
+            allConnectedUsers.map(
+                (item) => {
 
-                const user =
-                    getConnectionUser(item);
+                    const user =
+                        getConnectionUser(
+                            item
+                        );
 
-                const itemUserId =
-                    user.user_id ||
-                    item.user_id ||
-                    "";
 
-                if (
-                    String(itemUserId) !==
-                    String(connectedUserId)
-                ) {
+                    const itemUserId =
+                        user.user_id ||
+                        item.user_id ||
+                        "";
 
-                    return item;
+
+                    if (
+                        String(itemUserId) !==
+                        String(connectedUserId)
+                    ) {
+
+                        return item;
+                    }
+
+
+                    return {
+                        ...item,
+
+                        category:
+                            category || null,
+
+                        connection_category:
+                            category || null,
+
+                        personal_category:
+                            category || null
+                    };
                 }
-
-                return {
-                    ...item,
-
-                    category:
-                        category || null,
-
-                    connection_category:
-                        category || null,
-
-                    personal_category:
-                        category || null
-                };
-            });
+            );
     }
 
 
@@ -927,11 +1753,17 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        let pressTimer = null;
-        let longPressTriggered = false;
-        let pointerDown = false;
 
-        const LONG_PRESS_TIME = 600;
+        let pressTimer = null;
+
+        let longPressTriggered =
+            false;
+
+        let pointerDown =
+            false;
+
+        const LONG_PRESS_TIME =
+            600;
 
 
         function clearPressTimer() {
@@ -949,50 +1781,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function startLongPress(event) {
 
-            if (!userId || !isConnected) {
-                return;
-            }
-
             if (
-                event.pointerType === "mouse" &&
-                event.button !== 0
+                !userId ||
+                !isConnected
             ) {
                 return;
             }
 
+
+            if (
+                event.pointerType ===
+                    "mouse" &&
+                event.button !== 0
+            ) {
+
+                return;
+            }
+
+
             pointerDown = true;
-            longPressTriggered = false;
+
+            longPressTriggered =
+                false;
 
             clearPressTimer();
 
+
             pressTimer =
-                setTimeout(() => {
+                setTimeout(
+                    () => {
 
-                    if (!pointerDown) {
-                        return;
-                    }
-
-                    longPressTriggered = true;
-
-                    if (window.getSelection) {
-
-                        const selection =
-                            window.getSelection();
-
-                        if (selection) {
-                            selection.removeAllRanges();
+                        if (!pointerDown) {
+                            return;
                         }
-                    }
 
-                    createCategoryPopup(
-                        userId,
-                        userName,
-                        getCurrentCategoryForUser(
-                            userId
-                        )
-                    );
 
-                }, LONG_PRESS_TIME);
+                        longPressTriggered =
+                            true;
+
+
+                        if (
+                            window.getSelection
+                        ) {
+
+                            const selection =
+                                window.getSelection();
+
+                            if (selection) {
+
+                                selection
+                                    .removeAllRanges();
+                            }
+                        }
+
+
+                        createCategoryPopup(
+                            userId,
+                            userName,
+                            getCurrentCategoryForUser(
+                                userId
+                            )
+                        );
+
+                    },
+                    LONG_PRESS_TIME
+                );
         }
 
 
@@ -1009,28 +1862,33 @@ document.addEventListener("DOMContentLoaded", () => {
             startLongPress
         );
 
+
         card.addEventListener(
             "pointerup",
             endLongPress
         );
+
 
         card.addEventListener(
             "pointercancel",
             endLongPress
         );
 
+
         card.addEventListener(
             "pointerleave",
             (event) => {
 
                 if (
-                    event.pointerType === "mouse"
+                    event.pointerType ===
+                    "mouse"
                 ) {
 
                     endLongPress();
                 }
             }
         );
+
 
         card.addEventListener(
             "contextmenu",
@@ -1039,14 +1897,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 event.preventDefault();
             }
         );
-
-
-        /*
-         * IMPORTANT:
-         *
-         * Card click is handled separately
-         * after this function.
-         */
     }
 
 
@@ -1067,17 +1917,22 @@ document.addEventListener("DOMContentLoaded", () => {
                             connection
                         );
 
+
                     const currentUserId =
                         user.user_id ||
                         connection.user_id ||
                         "";
 
+
                     return (
-                        String(currentUserId) ===
+                        String(
+                            currentUserId
+                        ) ===
                         String(userId)
                     );
                 }
             );
+
 
         return getUserCategory(item);
     }
@@ -1085,7 +1940,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        OPEN CONNECTED USER PROFILE
-       ONLY DP USES THIS
     ===================================================== */
 
     function openConnectedUserProfile(
@@ -1098,14 +1952,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         go(
             "/profile?user_id=" +
-            encodeURIComponent(userId)
+            encodeURIComponent(
+                userId
+            )
         );
     }
 
 
     /* =====================================================
        OPEN CONNECTED USER CHAT
-       CARD EXCEPT DP
     ===================================================== */
 
     function openConnectedUserChat(
@@ -1118,7 +1973,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         go(
             "/chat?user_id=" +
-            encodeURIComponent(userId)
+            encodeURIComponent(
+                userId
+            )
         );
     }
 
@@ -1136,12 +1993,17 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+
         updateSectionTitle();
+
 
         const users =
             getFilteredUsers();
 
-        connectedList.innerHTML = "";
+
+        connectedList.innerHTML =
+            "";
+
 
         if (connectedCount) {
 
@@ -1149,7 +2011,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 String(users.length);
         }
 
-        connectedSection.hidden = false;
+
+        connectedSection.hidden =
+            false;
 
 
         if (users.length === 0) {
@@ -1160,310 +2024,278 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        users.forEach((item) => {
+        users.forEach(
+            (item) => {
 
-            /*
-             * ONLY ACTUAL CONNECTIONS
-             */
-
-            if (!isConnectedUser(item)) {
-                return;
-            }
-
-
-            const user =
-                getConnectionUser(item);
-
-            const name =
-                user.name ||
-                user.full_name ||
-                "User";
-
-            const username =
-                user.username ||
-                "";
-
-            const userId =
-                user.user_id ||
-                item.user_id ||
-                "";
-
-            const photo =
-                user.profile_photo ||
-                item.profile_photo ||
-                "";
+                if (
+                    !isConnectedUser(item)
+                ) {
+                    return;
+                }
 
 
-            const card =
-                document.createElement(
-                    "article"
-                );
-
-            card.className =
-                "connected-person-card";
+                const user =
+                    getConnectionUser(item);
 
 
-            if (userId) {
-
-                card.dataset.userId =
-                    userId;
-            }
-
-
-            card.style.userSelect =
-                "none";
-
-            card.style.webkitUserSelect =
-                "none";
-
-            card.style.touchAction =
-                "manipulation";
+                const name =
+                    user.name ||
+                    user.full_name ||
+                    "User";
 
 
-            /* =============================================
-               AVATAR
-            ============================================= */
+                const username =
+                    user.username ||
+                    "";
 
-            let avatarHtml;
 
-            if (photo) {
+                const userId =
+                    user.user_id ||
+                    item.user_id ||
+                    "";
 
-                avatarHtml = `
-                    <div
-                        class="connected-person-avatar"
-                        role="button"
-                        tabindex="0"
-                        aria-label="Open ${escapeHtml(name)} profile"
-                    >
-                        <img
-                            src="${escapeHtml(photo)}"
-                            alt="${escapeHtml(name)}"
-                            draggable="false"
+
+                const photo =
+                    user.profile_photo ||
+                    item.profile_photo ||
+                    "";
+
+
+                const card =
+                    document.createElement(
+                        "article"
+                    );
+
+
+                card.className =
+                    "connected-person-card";
+
+
+                if (userId) {
+
+                    card.dataset.userId =
+                        userId;
+                }
+
+
+                card.style.userSelect =
+                    "none";
+
+
+                card.style.webkitUserSelect =
+                    "none";
+
+
+                card.style.touchAction =
+                    "manipulation";
+
+
+                /* AVATAR */
+
+                let avatarHtml;
+
+
+                if (photo) {
+
+                    avatarHtml = `
+                        <div
+                            class="connected-person-avatar"
+                            role="button"
+                            tabindex="0"
+                            aria-label="Open ${escapeHtml(name)} profile"
                         >
-                    </div>
-                `;
+                            <img
+                                src="${escapeHtml(photo)}"
+                                alt="${escapeHtml(name)}"
+                                draggable="false"
+                            >
+                        </div>
+                    `;
 
-            } else {
+                } else {
 
-                avatarHtml = `
-                    <div
-                        class="connected-person-avatar"
-                        role="button"
-                        tabindex="0"
-                        aria-label="Open ${escapeHtml(name)} profile"
-                    >
-                        ${escapeHtml(
-                            getInitial(name)
-                        )}
-                    </div>
-                `;
-            }
-
-
-            /* =============================================
-               USER INFO
-               
-               IMPORTANT:
-               These are NOT clickable separately.
-               Clicking them opens CHAT through card.
-            ============================================= */
-
-            const infoHtml = `
-                <div
-                    class="connected-person-info"
-                >
-
-                    <strong>
-                        ${escapeHtml(name)}
-                    </strong>
-
-                    ${
-                        username
-                            ? `
-                                <span>
-                                    @${escapeHtml(username)}
-                                </span>
-                              `
-                            : ""
-                    }
-
-                    ${
-                        userId
-                            ? `
-                                <small>
-                                    ${escapeHtml(userId)}
-                                </small>
-                              `
-                            : ""
-                    }
-
-                </div>
-            `;
+                    avatarHtml = `
+                        <div
+                            class="connected-person-avatar"
+                            role="button"
+                            tabindex="0"
+                            aria-label="Open ${escapeHtml(name)} profile"
+                        >
+                            ${escapeHtml(
+                                getInitial(name)
+                            )}
+                        </div>
+                    `;
+                }
 
 
-            /* =============================================
-               ARROW
-               
-               IMPORTANT:
-               Arrow is also part of chat area.
-            ============================================= */
+                /* INFO */
 
-            const arrowHtml = `
-                <div
-                    class="connected-person-arrow"
-                    aria-hidden="true"
-                >
-                    ›
-                </div>
-            `;
+                const infoHtml = `
+                    <div class="connected-person-info">
 
+                        <strong>
+                            ${escapeHtml(name)}
+                        </strong>
 
-            card.innerHTML =
-                avatarHtml +
-                infoHtml +
-                arrowHtml;
+                        ${
+                            username
+                                ? `
+                                    <span>
+                                        @${escapeHtml(username)}
+                                    </span>
+                                  `
+                                : ""
+                        }
 
-
-            /* =============================================
-               AVATAR ELEMENT
-               
-               DP ONLY = PROFILE
-            ============================================= */
-
-            const avatar =
-                card.querySelector(
-                    ".connected-person-avatar"
-                );
-
-
-            if (avatar) {
-
-                const openProfile =
-                    (event) => {
-
-                        event.preventDefault();
-                        event.stopPropagation();
-
-                        openConnectedUserProfile(
+                        ${
                             userId
-                        );
-                    };
+                                ? `
+                                    <small>
+                                        ${escapeHtml(userId)}
+                                    </small>
+                                  `
+                                : ""
+                        }
+
+                    </div>
+                `;
 
 
-                /*
-                 * CLICK DP
-                 */
+                /* ARROW */
 
-                avatar.addEventListener(
+                const arrowHtml = `
+                    <div
+                        class="connected-person-arrow"
+                        aria-hidden="true"
+                    >
+                        ›
+                    </div>
+                `;
+
+
+                card.innerHTML =
+                    avatarHtml +
+                    infoHtml +
+                    arrowHtml;
+
+
+                /* DP = PROFILE */
+
+                const avatar =
+                    card.querySelector(
+                        ".connected-person-avatar"
+                    );
+
+
+                if (avatar) {
+
+                    const openProfile =
+                        (event) => {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+
+                            openConnectedUserProfile(
+                                userId
+                            );
+                        };
+
+
+                    avatar.addEventListener(
+                        "click",
+                        openProfile
+                    );
+
+
+                    avatar.addEventListener(
+                        "keydown",
+                        (event) => {
+
+                            if (
+                                event.key ===
+                                    "Enter" ||
+                                event.key ===
+                                    " "
+                            ) {
+
+                                openProfile(
+                                    event
+                                );
+                            }
+                        }
+                    );
+
+
+                    avatar.addEventListener(
+                        "contextmenu",
+                        (event) => {
+
+                            event.preventDefault();
+
+                            event.stopPropagation();
+                        }
+                    );
+                }
+
+
+                /* CARD = CHAT */
+
+                card.addEventListener(
                     "click",
-                    openProfile
-                );
-
-
-                /*
-                 * KEYBOARD
-                 */
-
-                avatar.addEventListener(
-                    "keydown",
                     (event) => {
 
                         if (
-                            event.key === "Enter" ||
-                            event.key === " "
+                            event.target.closest(
+                                ".connected-person-avatar"
+                            )
                         ) {
 
-                            openProfile(event);
+                            return;
                         }
+
+
+                        if (
+                            categoryPopup
+                        ) {
+
+                            return;
+                        }
+
+
+                        openConnectedUserChat(
+                            userId
+                        );
                     }
                 );
 
 
-                /*
-                 * Prevent image long-press/context menu
-                 */
+                /* LONG PRESS */
 
-                avatar.addEventListener(
-                    "contextmenu",
-                    (event) => {
+                addLongPressToCard(
+                    card,
+                    userId,
+                    name,
+                    true
+                );
 
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
+
+                connectedList.appendChild(
+                    card
                 );
             }
-
-
-            /* =============================================
-               CARD CLICK
-               
-               DP = PROFILE
-               EVERYTHING ELSE = CHAT
-            ============================================= */
-
-            card.addEventListener(
-                "click",
-                (event) => {
-
-                    /*
-                     * DP click is already handled
-                     * by avatar handler.
-                     */
-                    if (
-                        event.target.closest(
-                            ".connected-person-avatar"
-                        )
-                    ) {
-                        return;
-                    }
-
-
-                    /*
-                     * Do not open chat when
-                     * category popup is active.
-                     */
-                    if (
-                        categoryPopup
-                    ) {
-                        return;
-                    }
-
-
-                    /*
-                     * Open chat.
-                     */
-                    openConnectedUserChat(
-                        userId
-                    );
-                }
-            );
-
-
-            /* =============================================
-               LONG PRESS
-            ============================================= */
-
-            addLongPressToCard(
-                card,
-                userId,
-                name,
-                true
-            );
-
-
-            connectedList.appendChild(
-                card
-            );
-
-        });
+        );
     }
 
 
     /* =====================================================
-       SHOW CATEGORY ON HOME
+       SHOW CATEGORY
     ===================================================== */
 
-    function showCategory(category) {
+    function showCategory(
+        category
+    ) {
 
         currentCategory =
             category;
@@ -1472,19 +2304,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         renderConnectedPeople();
 
+
         if (connectedSection) {
 
             connectedSection.hidden =
                 false;
 
-            setTimeout(() => {
 
-                connectedSection.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
+            setTimeout(
+                () => {
 
-            }, 50);
+                    connectedSection.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
+
+                },
+                50
+            );
         }
     }
 
@@ -1496,6 +2333,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuAllConnected")?.addEventListener(
         "click",
         () => {
+
             showCategory("all");
         }
     );
@@ -1508,6 +2346,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuFamily")?.addEventListener(
         "click",
         () => {
+
             showCategory("family");
         }
     );
@@ -1520,6 +2359,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuFriends")?.addEventListener(
         "click",
         () => {
+
             showCategory("friend");
         }
     );
@@ -1532,6 +2372,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("menuCoupleChat")?.addEventListener(
         "click",
         () => {
+
             showCategory("couple");
         }
     );
@@ -1563,9 +2404,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const button =
                 $("logoutButton");
 
+
             if (button) {
-                button.disabled = true;
+
+                button.disabled =
+                    true;
             }
+
 
             try {
 
@@ -1573,7 +2418,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     "/api/auth/logout",
                     {
                         method: "POST",
-                        credentials: "include"
+
+                        credentials:
+                            "include"
                     }
                 );
 
@@ -1593,31 +2440,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       HEADER PLUS
-    ===================================================== */
-
-    $("headerPlus")?.addEventListener(
-        "click",
-        () => {
-
-            alert(
-                "Create feature will be available soon."
-            );
-        }
-    );
-
-
-    /* =====================================================
-       NEX MOMENT
+       NEX MOMENT SEE ALL
     ===================================================== */
 
     $("momentSeeAll")?.addEventListener(
         "click",
         () => {
 
-            alert(
-                "Nex Moment will be available soon."
-            );
+            /*
+             * Existing Nex Moment page.
+             */
+            go("/status");
         }
     );
 
@@ -1636,7 +2469,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     {
                         method: "GET",
 
-                        credentials: "include",
+                        credentials:
+                            "include",
 
                         headers: {
                             "Accept":
@@ -1646,7 +2480,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            if (response.status === 401) {
+            if (
+                response.status === 401
+            ) {
 
                 go("/login");
 
@@ -1666,41 +2502,51 @@ document.addEventListener("DOMContentLoaded", () => {
             const data =
                 await response.json();
 
+
             let users = [];
 
 
-            if (Array.isArray(data)) {
+            if (
+                Array.isArray(data)
+            ) {
 
                 users = data;
 
             } else if (
-                Array.isArray(data.connections)
+                Array.isArray(
+                    data.connections
+                )
             ) {
 
-                users = data.connections;
+                users =
+                    data.connections;
 
             } else if (
-                Array.isArray(data.users)
+                Array.isArray(
+                    data.users
+                )
             ) {
 
-                users = data.users;
+                users =
+                    data.users;
 
             } else if (
-                Array.isArray(data.data)
+                Array.isArray(
+                    data.data
+                )
             ) {
 
-                users = data.data;
+                users =
+                    data.data;
             }
 
-
-            /*
-             * Keep ONLY actual connected users.
-             */
 
             allConnectedUsers =
                 users.filter(
                     (item) =>
-                        isConnectedUser(item)
+                        isConnectedUser(
+                            item
+                        )
                 );
 
 
@@ -1717,9 +2563,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-            allConnectedUsers = [];
 
-            currentCategory = "all";
+            allConnectedUsers =
+                [];
+
+
+            currentCategory =
+                "all";
+
 
             renderConnectedPeople();
         }
@@ -1734,7 +2585,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     console.log(
-        "Usanex Home loaded - DP opens profile, card opens chat."
+        "Usanex Home loaded - Create sheet enabled."
     );
 
 });
