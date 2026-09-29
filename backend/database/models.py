@@ -1334,3 +1334,966 @@ class ChatMessage(Base):
         index=True,
         nullable=False,
     )
+
+
+# =========================================================
+# USANEX REELS SYSTEM
+# AI + RECOMMENDATION + ANALYTICS
+# =========================================================
+
+from sqlalchemy import (
+    Boolean,
+    Float,
+)
+
+
+# =========================================================
+# REELS
+# =========================================================
+
+class Reel(Base):
+    __tablename__ = "reels"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    # Reel creator
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    # Video information
+    video_url = Column(
+        String(1000),
+        nullable=False
+    )
+
+    thumbnail_url = Column(
+        String(1000),
+        nullable=True
+    )
+
+    duration = Column(
+        Float,
+        nullable=False,
+        default=0
+    )
+
+    file_size = Column(
+        Integer,
+        nullable=True
+    )
+
+    # User supplied information
+    caption = Column(
+        Text,
+        nullable=True
+    )
+
+    hashtags = Column(
+        Text,
+        nullable=True
+    )
+
+    language = Column(
+        String(50),
+        nullable=True
+    )
+
+    # Content type
+    category = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    visibility = Column(
+        String(30),
+        nullable=False,
+        default="public"
+    )
+
+    # -----------------------------------------------------
+    # BASIC COUNTS
+    # -----------------------------------------------------
+
+    views_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    unique_views_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    completed_views_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    replay_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    share_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    save_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    download_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    comment_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # 3 STAR SYSTEM
+    # -----------------------------------------------------
+
+    one_star_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    two_star_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    three_star_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # INTEREST SYSTEM
+    # -----------------------------------------------------
+
+    interested_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    not_interested_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # AI MODERATION / PROCESSING
+    # -----------------------------------------------------
+
+    ai_processed = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    ai_processing_status = Column(
+        String(30),
+        default="pending",
+        nullable=False
+    )
+
+    ai_category = Column(
+        String(100),
+        nullable=True
+    )
+
+    ai_confidence = Column(
+        Float,
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL AI FEATURES
+# =========================================================
+
+class ReelAIFeature(Base):
+    __tablename__ = "reel_ai_features"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    reel_id = Column(
+        Integer,
+        unique=True,
+        index=True,
+        nullable=False
+    )
+
+    # AI detected information
+    category = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    subcategory = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    keywords = Column(
+        Text,
+        nullable=True
+    )
+
+    detected_objects = Column(
+        Text,
+        nullable=True
+    )
+
+    detected_scenes = Column(
+        Text,
+        nullable=True
+    )
+
+    transcript = Column(
+        Text,
+        nullable=True
+    )
+
+    detected_language = Column(
+        String(50),
+        nullable=True
+    )
+
+    # Audio information
+    audio_name = Column(
+        String(300),
+        nullable=True
+    )
+
+    audio_type = Column(
+        String(50),
+        nullable=True
+    )
+
+    # AI embeddings / feature reference
+    embedding_reference = Column(
+        Text,
+        nullable=True
+    )
+
+    # AI quality/safety signals
+    content_quality_score = Column(
+        Float,
+        nullable=True
+    )
+
+    safety_score = Column(
+        Float,
+        nullable=True
+    )
+
+    ai_confidence = Column(
+        Float,
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL USER INTERACTIONS
+# =========================================================
+
+class ReelInteraction(Base):
+    __tablename__ = "reel_interactions"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # WATCH DATA
+    # -----------------------------------------------------
+
+    watch_time = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    watch_percentage = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    completed = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    replayed = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # 3 STAR RATING
+    #
+    # 0 = no rating
+    # 1 = one star
+    # 2 = two stars
+    # 3 = three stars
+    # -----------------------------------------------------
+
+    star_rating = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # OTHER USER ACTIONS
+    # -----------------------------------------------------
+
+    interested = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    not_interested = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    saved = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    downloaded = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    shared = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    commented = Column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+
+    # -----------------------------------------------------
+    # SESSION / FEED INFORMATION
+    # -----------------------------------------------------
+
+    session_id = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    feed_position = Column(
+        Integer,
+        nullable=True
+    )
+
+    source = Column(
+        String(50),
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+
+# =========================================================
+# USER REEL INTEREST PROFILE
+# =========================================================
+
+class UserReelInterest(Base):
+    __tablename__ = "user_reel_interests"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    category = Column(
+        String(100),
+        index=True,
+        nullable=False
+    )
+
+    subcategory = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    # AI calculated interest score
+    interest_score = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    # Positive / negative signals
+    positive_score = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    negative_score = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    # Behavior statistics
+    videos_seen = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    videos_completed = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_watch_time = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    average_watch_percentage = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    total_replays = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_saves = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_shares = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_downloads = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_one_star = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_two_star = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    total_three_star = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    last_updated = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+
+# =========================================================
+# USER REEL HISTORY
+# =========================================================
+
+class UserReelHistory(Base):
+    __tablename__ = "user_reel_history"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    first_seen_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+    last_seen_at = Column(
+        DateTime,
+        nullable=False
+    )
+
+    times_seen = Column(
+        Integer,
+        default=1,
+        nullable=False
+    )
+
+    total_watch_time = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    max_watch_percentage = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    completed_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    replay_count = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL SAVES
+# =========================================================
+
+class ReelSave(Base):
+    __tablename__ = "reel_saves"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL DOWNLOADS
+# =========================================================
+
+class ReelDownload(Base):
+    __tablename__ = "reel_downloads"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL SHARES
+# =========================================================
+
+class ReelShare(Base):
+    __tablename__ = "reel_shares"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    share_type = Column(
+        String(50),
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL REPORTS
+# =========================================================
+
+class ReelReport(Base):
+    __tablename__ = "reel_reports"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reason = Column(
+        String(100),
+        nullable=False
+    )
+
+    description = Column(
+        Text,
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+
+# =========================================================
+# REEL AREA ANALYTICS
+# =========================================================
+
+class ReelAreaAnalytics(Base):
+    __tablename__ = "reel_area_analytics"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    # Broad location only
+    country = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    state = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    city = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    category = Column(
+        String(100),
+        index=True,
+        nullable=True
+    )
+
+    views = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    completed_views = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    average_watch_percentage = Column(
+        Float,
+        default=0,
+        nullable=False
+    )
+
+    one_star = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    two_star = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    three_star = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    saves = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    shares = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    downloads = Column(
+        Integer,
+        default=0,
+        nullable=False
+    )
+
+    updated_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
+
+
+# =========================================================
+# RECOMMENDATION LOG
+# =========================================================
+
+class ReelRecommendationLog(Base):
+    __tablename__ = "reel_recommendation_logs"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False
+    )
+
+    position = Column(
+        Integer,
+        nullable=True
+    )
+
+    recommendation_score = Column(
+        Float,
+        nullable=True
+    )
+
+    interest_score = Column(
+        Float,
+        nullable=True
+    )
+
+    content_score = Column(
+        Float,
+        nullable=True
+    )
+
+    popularity_score = Column(
+        Float,
+        nullable=True
+    )
+
+    freshness_score = Column(
+        Float,
+        nullable=True
+    )
+
+    exploration_score = Column(
+        Float,
+        nullable=True
+    )
+
+    reason = Column(
+        String(100),
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False
+    )
