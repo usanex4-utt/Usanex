@@ -1,30 +1,22 @@
 /* =========================================================
-   USANEX CREATE SHEET
-   HOME / PROFILE / NOTIFICATION — SAME COMPACT SIZE
-   SIMPLE WHITE ICON STYLE
+   USANEX — CREATE SHEET
+   HOME SIZE • WHITE OUTLINE ICONS
    ========================================================= */
 
 * {
     box-sizing: border-box;
 }
 
-/* =========================================================
-   OVERLAY
-   ========================================================= */
-
 .create-overlay {
-    position: fixed !important;
-    inset: 0 !important;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
 
-    z-index: 99999 !important;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
 
-    display: flex !important;
-    align-items: flex-end !important;
-    justify-content: center !important;
-
-    padding: 0;
-
-    background: rgba(0, 0, 0, 0.68);
+    background: rgba(0, 0, 0, 0.65);
 
     font-family:
         -apple-system,
@@ -39,32 +31,29 @@
     display: none !important;
 }
 
+
 /* =========================================================
    CREATE SHEET
-   SAME WIDTH / SCALE AS HOME
    ========================================================= */
 
 .create-sheet {
-    position: relative;
-
     width: 100%;
     max-width: 680px;
 
-    max-height: 90vh;
+    max-height: 55vh;
 
     overflow-y: auto;
-    overflow-x: hidden;
 
-    padding: 12px 14px 24px;
+    padding: 10px 14px 24px;
 
-    background: #071322;
+    background: #081323;
 
     border-radius: 24px 24px 0 0;
 
-    border: 1px solid #172637;
+    border-top: 1px solid #24364c;
 
     box-shadow:
-        0 -12px 40px rgba(0, 0, 0, 0.45);
+        0 -10px 35px rgba(0, 0, 0, 0.45);
 
     color: #ffffff;
 
@@ -74,46 +63,48 @@
 @keyframes createSheetUp {
     from {
         transform: translateY(100%);
-        opacity: 0;
     }
 
     to {
         transform: translateY(0);
-        opacity: 1;
     }
 }
+
 
 /* =========================================================
    HANDLE
    ========================================================= */
 
 .create-handle {
-    width: 42px;
-    height: 5px;
+    width: 48px;
+    height: 4px;
 
-    margin: 2px auto 16px;
+    margin: 2px auto 14px;
 
     border-radius: 10px;
 
-    background: #687687;
+    background: #718096;
 }
+
 
 /* =========================================================
    HEADER
    ========================================================= */
 
 .create-header {
-    width: 100%;
+    position: relative;
 
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
 
-    padding: 0 4px 16px;
+    min-height: 42px;
+
+    margin-bottom: 12px;
 }
 
-.create-header > div {
-    min-width: 0;
+.create-header-content {
+    text-align: center;
 }
 
 .create-header h2 {
@@ -121,67 +112,52 @@
 
     color: #ffffff;
 
-    font-size: 24px;
-    line-height: 29px;
+    font-size: 18px;
+    line-height: 22px;
 
     font-weight: 700;
-
-    letter-spacing: -0.3px;
 }
 
 .create-header p {
-    margin: 4px 0 0;
-
-    color: #8996a7;
-
-    font-size: 12px;
-    line-height: 16px;
-
-    font-weight: 400;
+    display: none;
 }
+
 
 /* =========================================================
    CLOSE
    ========================================================= */
 
 .create-close {
+    position: absolute;
+
+    right: 2px;
+    top: 50%;
+
     width: 34px;
     height: 34px;
 
-    flex: 0 0 34px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 0;
+    transform: translateY(-50%);
 
     border: none;
     border-radius: 50%;
 
-    background: #111b28;
+    background: transparent;
 
     color: #ffffff;
 
-    font-size: 24px;
+    font-size: 28px;
+    font-weight: 300;
     line-height: 1;
 
-    font-weight: 300;
-
     cursor: pointer;
-
-    transition:
-        background 0.15s ease,
-        transform 0.15s ease;
-}
-
-.create-close:hover {
-    background: #172435;
 }
 
 .create-close:active {
-    transform: scale(0.92);
+    transform:
+        translateY(-50%)
+        scale(0.9);
 }
+
 
 /* =========================================================
    OPTIONS
@@ -190,39 +166,43 @@
 .create-options {
     width: 100%;
 
-    display: flex;
-    flex-direction: column;
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
 
     gap: 8px;
 
     padding: 0;
 }
 
+
 /* =========================================================
-   OPTION CARD
+   OPTION
    ========================================================= */
 
 .create-option {
-    width: 100%;
+    min-width: 0;
 
-    min-height: 68px;
+    min-height: 108px;
 
     display: flex;
+    flex-direction: column;
+
     align-items: center;
+    justify-content: center;
 
-    position: relative;
+    gap: 8px;
 
-    padding: 9px 11px;
+    padding: 10px 5px;
 
-    border: 1px solid #1a2938;
+    border: 1px solid #1d3046;
 
-    border-radius: 14px;
+    border-radius: 16px;
 
-    background: #0a111b;
+    background: #0d1a2b;
 
     color: #ffffff;
-
-    text-align: left;
 
     cursor: pointer;
 
@@ -230,42 +210,33 @@
 
     transition:
         background 0.15s ease,
-        border-color 0.15s ease,
         transform 0.15s ease;
 }
 
 .create-option:hover {
-    background: #0d1723;
-
-    border-color: #26394d;
+    background: #112239;
 }
 
 .create-option:active {
-    transform: scale(0.985);
-
-    background: #101b28;
+    transform: scale(0.96);
 }
 
+
 /* =========================================================
-   ICON AREA
-   NO BOX
-   NO COLOR
-   WHITE ONLY
+   ICON CONTAINER
    ========================================================= */
 
 .create-line-icon {
-    width: 48px;
-    height: 48px;
-
-    flex: 0 0 48px;
-
     position: relative;
+
+    width: 46px;
+    height: 46px;
+
+    flex: 0 0 46px;
 
     display: flex;
     align-items: center;
     justify-content: center;
-
-    margin-right: 11px;
 
     color: #ffffff;
 
@@ -274,341 +245,164 @@
     border: none !important;
 
     box-shadow: none !important;
+
+    transform: none;
 }
+
+
+/* =========================================================
+   SVG
+   ========================================================= */
+
+.create-line-icon svg {
+    width: 42px;
+    height: 42px;
+
+    display: block;
+
+    color: #ffffff;
+
+    stroke: #ffffff;
+}
+
+.create-line-icon svg * {
+    stroke: #ffffff;
+}
+
+.create-line-icon svg path[fill="currentColor"],
+.create-line-icon svg circle[fill="currentColor"] {
+    fill: #ffffff;
+}
+
 
 /* =========================================================
    REEL
    ========================================================= */
 
-.reel-icon {
-    width: 39px;
-    height: 39px;
-
-    border: 3px solid #ffffff !important;
-
-    border-radius: 11px;
-
-    background: transparent !important;
+.reel-icon svg {
+    width: 43px;
+    height: 43px;
 }
 
-.reel-icon::before {
-    content: "";
-
-    position: absolute;
-
-    top: 5px;
-    left: 5px;
-    right: 5px;
-
-    height: 7px;
-
-    border-top: 2px solid #ffffff;
-
-    transform: skewX(-18deg);
-}
-
-.reel-icon::after {
-    content: "";
-
-    position: absolute;
-
-    left: 15px;
-    top: 12px;
-
-    width: 0;
-    height: 0;
-
-    border-top: 6px solid transparent;
-    border-bottom: 6px solid transparent;
-    border-left: 10px solid #ffffff;
-}
-
-.reel-icon span {
-    display: none;
-}
 
 /* =========================================================
    IMAGE
    ========================================================= */
 
-.image-icon {
-    width: 39px;
-    height: 39px;
-
-    border: 3px solid #ffffff !important;
-
-    border-radius: 10px;
-
-    background: transparent !important;
+.image-icon svg {
+    width: 43px;
+    height: 43px;
 }
 
-.image-icon::before {
-    content: "";
-
-    position: absolute;
-
-    left: 7px;
-    right: 7px;
-
-    bottom: 7px;
-
-    height: 14px;
-
-    border-left: 3px solid #ffffff;
-    border-bottom: 3px solid #ffffff;
-
-    transform: skewY(-32deg);
-}
-
-.image-icon::after {
-    content: "";
-
-    position: absolute;
-
-    width: 5px;
-    height: 5px;
-
-    top: 7px;
-    right: 7px;
-
-    border-radius: 50%;
-
-    background: #ffffff;
-}
-
-.image-icon span {
-    display: none;
-}
 
 /* =========================================================
    NEX MOMENT
    ========================================================= */
 
-.moment-icon {
-    width: 42px;
-    height: 42px;
-
-    border: 3px solid #ffffff !important;
-
-    border-radius: 50%;
-
-    background: transparent !important;
-
-    border-left-color: transparent !important;
-    border-right-color: transparent !important;
+.moment-icon svg {
+    width: 43px;
+    height: 43px;
 }
 
-.moment-icon::before {
-    content: "";
-
-    position: absolute;
-
-    width: 17px;
-    height: 3px;
-
-    background: #ffffff;
-
-    border-radius: 10px;
-
-    left: 12px;
-    top: 19px;
-}
-
-.moment-icon::after {
-    content: "";
-
-    position: absolute;
-
-    width: 3px;
-    height: 17px;
-
-    background: #ffffff;
-
-    border-radius: 10px;
-
-    left: 19px;
-    top: 12px;
-}
-
-.moment-icon span {
-    display: none;
-}
 
 /* =========================================================
    PRIVATE
    ========================================================= */
 
-.private-icon {
-    width: 40px;
-    height: 40px;
-
-    background: transparent !important;
-
-    border: none !important;
-
-    transform: rotate(45deg);
+.private-icon svg {
+    width: 43px;
+    height: 43px;
 }
 
-.private-icon::before {
-    content: "";
-
-    width: 28px;
-    height: 28px;
-
-    position: absolute;
-
-    border: 3px solid #ffffff;
-
-    border-radius: 6px;
-}
-
-.private-icon::after {
-    content: "";
-
-    width: 5px;
-    height: 5px;
-
-    position: absolute;
-
-    background: #ffffff;
-
-    border-radius: 50%;
-
-    transform: rotate(-45deg);
-}
-
-.private-icon span {
-    display: none;
-}
 
 /* =========================================================
    TEXT
    ========================================================= */
 
 .create-option-text {
-    min-width: 0;
+    width: 100%;
 
-    flex: 1;
+    min-width: 0;
 
     display: flex;
     flex-direction: column;
 
-    justify-content: center;
+    align-items: center;
 }
 
 .create-option-text strong {
     display: block;
 
-    margin: 0;
-
     color: #ffffff;
 
-    font-size: 16px;
-    line-height: 20px;
+    font-size: 13px;
+    line-height: 17px;
 
     font-weight: 600;
 
-    letter-spacing: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    max-width: 100%;
 }
 
 .create-option-text small {
-    display: block;
-
-    margin-top: 2px;
-
-    color: #7f8c9d;
-
-    font-size: 10px;
-    line-height: 14px;
-
-    font-weight: 400;
+    display: none;
 }
 
+
 /* =========================================================
-   ARROW
+   ARROW HIDDEN
    ========================================================= */
 
 .create-arrow {
-    flex: 0 0 auto;
-
-    margin-left: 8px;
-
-    color: #687789;
-
-    font-size: 24px;
-    line-height: 1;
-
-    font-weight: 300;
+    display: none;
 }
 
-/* =========================================================
-   REMOVE OLD COLORS
-   ========================================================= */
-
-.reel-icon,
-.image-icon,
-.moment-icon,
-.private-icon {
-    background-color: transparent !important;
-    background-image: none !important;
-}
-
-/* =========================================================
-   BODY LOCK
-   ========================================================= */
-
-body.create-open {
-    overflow: hidden;
-}
 
 /* =========================================================
    MOBILE
    ========================================================= */
 
-@media (max-width: 600px) {
+@media (max-width: 480px) {
 
     .create-sheet {
-        width: 100%;
-
-        max-width: 100%;
-
-        max-height: 92vh;
+        max-height: 52vh;
 
         padding:
-            10px 11px 22px;
+            9px
+            10px
+            18px;
 
-        border-radius: 24px 24px 0 0;
+        border-radius: 22px 22px 0 0;
     }
 
     .create-handle {
-        width: 42px;
-        height: 5px;
+        width: 44px;
+        height: 4px;
 
-        margin-bottom: 15px;
+        margin-bottom: 11px;
     }
 
     .create-header {
-        padding:
-            0 3px 14px;
+        min-height: 38px;
+
+        margin-bottom: 9px;
     }
 
     .create-header h2 {
-        font-size: 23px;
-        line-height: 28px;
-    }
-
-    .create-header p {
-        font-size: 11px;
-        line-height: 15px;
+        font-size: 17px;
+        line-height: 21px;
     }
 
     .create-close {
-        width: 33px;
-        height: 33px;
+        width: 32px;
+        height: 32px;
 
-        flex-basis: 33px;
+        right: 0;
 
-        font-size: 23px;
+        font-size: 26px;
     }
 
     .create-options {
@@ -616,139 +410,73 @@ body.create-open {
     }
 
     .create-option {
-        min-height: 66px;
+        min-height: 94px;
 
-        padding: 8px 10px;
+        padding: 8px 3px;
 
-        border-radius: 13px;
+        border-radius: 14px;
     }
 
     .create-line-icon {
-        width: 46px;
-        height: 46px;
-
-        flex-basis: 46px;
-
-        margin-right: 10px;
-    }
-
-    .reel-icon,
-    .image-icon {
-        width: 37px;
-        height: 37px;
-    }
-
-    .moment-icon {
         width: 40px;
         height: 40px;
+
+        flex-basis: 40px;
     }
 
-    .private-icon {
+    .create-line-icon svg {
         width: 38px;
         height: 38px;
     }
 
     .create-option-text strong {
-        font-size: 15px;
-        line-height: 19px;
-    }
-
-    .create-option-text small {
-        font-size: 10px;
-        line-height: 13px;
-
-        margin-top: 1px;
-    }
-
-    .create-arrow {
-        font-size: 23px;
-
-        margin-left: 6px;
+        font-size: 12px;
+        line-height: 15px;
     }
 }
 
+
 /* =========================================================
-   SMALL PHONES
-   SAME AS HOME <= 360px
+   VERY SMALL PHONES
    ========================================================= */
 
 @media (max-width: 360px) {
 
     .create-sheet {
-        padding:
-            9px 10px 20px;
-
-        border-radius: 22px 22px 0 0;
+        padding-left: 8px;
+        padding-right: 8px;
     }
 
-    .create-header h2 {
-        font-size: 21px;
-    }
-
-    .create-header p {
-        font-size: 10px;
+    .create-options {
+        gap: 5px;
     }
 
     .create-option {
-        min-height: 61px;
-
-        padding: 7px 9px;
+        min-height: 88px;
 
         border-radius: 12px;
     }
 
     .create-line-icon {
-        width: 42px;
-        height: 42px;
+        width: 36px;
+        height: 36px;
 
-        flex-basis: 42px;
-
-        margin-right: 9px;
+        flex-basis: 36px;
     }
 
-    .reel-icon,
-    .image-icon {
+    .create-line-icon svg {
         width: 34px;
         height: 34px;
-
-        border-width: 2.5px !important;
-    }
-
-    .moment-icon {
-        width: 37px;
-        height: 37px;
-
-        border-width: 2.5px !important;
-    }
-
-    .private-icon {
-        width: 35px;
-        height: 35px;
-    }
-
-    .private-icon::before {
-        width: 25px;
-        height: 25px;
-
-        border-width: 2.5px;
     }
 
     .create-option-text strong {
-        font-size: 14px;
-    }
-
-    .create-option-text small {
-        font-size: 9px;
-    }
-
-    .create-arrow {
-        font-size: 21px;
+        font-size: 11px;
     }
 }
 
+
 /* =========================================================
-   DESKTOP
-   SAME HOME MAX WIDTH
+   DESKTOP / TABLET
    ========================================================= */
 
 @media (min-width: 700px) {
@@ -756,32 +484,19 @@ body.create-open {
     .create-sheet {
         max-width: 680px;
     }
+
+    .create-option {
+        min-height: 110px;
+    }
 }
 
+
 /* =========================================================
-   ACCESSIBILITY
+   FOCUS
    ========================================================= */
 
 .create-option:focus-visible,
 .create-close:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 2px;
-}
-
-/* =========================================================
-   SCROLLBAR
-   ========================================================= */
-
-.create-sheet::-webkit-scrollbar {
-    width: 3px;
-}
-
-.create-sheet::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.create-sheet::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.18);
-
-    border-radius: 10px;
 }
