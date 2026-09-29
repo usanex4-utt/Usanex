@@ -1061,3 +1061,46 @@ button:focus-visible {
         transition: none;
     }
 }
+/* =========================================================
+   CHAT IMAGE
+========================================================= */
+
+.chat-message-image {
+    display: block;
+
+    width: auto;
+    max-width: min(280px, 70vw);
+
+    max-height: 360px;
+
+    object-fit: cover;
+
+    border-radius: 10px;
+
+    margin: 1px 0 4px;
+
+    cursor: pointer;
+
+    background: #101d2a;
+}
+
+.message-bubble:has(.chat-message-image) {
+    padding: 5px;
+}
+
+.message-bubble:has(.chat-message-image)
+.message-meta {
+    padding: 0 4px;
+}
+
+
+/* Mobile */
+
+@media (max-width: 380px) {
+
+    .chat-message-image {
+        max-width: 68vw;
+        max-height: 300px;
+    }
+
+}
