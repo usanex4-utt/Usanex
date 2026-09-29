@@ -1,297 +1,296 @@
-"use strict";
-
 /* =========================================================
    USANEX — CREATE SHEET
-========================================================= */
+   create-sheet.js
+   ========================================================= */
 
 (function () {
+    "use strict";
 
-    function loadCreateSheet() {
+    /* =======================================================
+       ELEMENTS
+       ======================================================= */
 
-        if (document.getElementById("createOverlay")) {
-            return;
-        }
+    const overlay = document.getElementById("createOverlay");
+    const sheet = document.getElementById("createSheet");
+    const closeButton = document.getElementById("closeCreateSheet");
 
-        const overlay = document.createElement("div");
-
-        overlay.id = "createOverlay";
-
-        overlay.innerHTML = `
-            <div class="create-sheet">
-
-                <div class="create-handle"></div>
-
-                <div class="create-header">
-
-                    <div>
-                        <h2>Create</h2>
-                        <p>Share something on Usanex</p>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="create-close"
-                        id="closeCreateSheet"
-                    >
-                        ×
-                    </button>
-
-                </div>
-
-                <div class="create-options">
-
-                    <button
-                        type="button"
-                        class="create-option"
-                        data-create-type="reel"
-                    >
-                        <span class="create-line-icon reel-icon">
-                            <span></span>
-                        </span>
-
-                        <span class="create-option-text">
-                            <strong>Reel</strong>
-                            <small>Create a video reel</small>
-                        </span>
-
-                        <span class="create-arrow">›</span>
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="create-option"
-                        data-create-type="image"
-                    >
-                        <span class="create-line-icon image-icon">
-                            <span></span>
-                        </span>
-
-                        <span class="create-option-text">
-                            <strong>Image</strong>
-                            <small>Share photos</small>
-                        </span>
-
-                        <span class="create-arrow">›</span>
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="create-option"
-                        data-create-type="moment"
-                    >
-                        <span class="create-line-icon moment-icon">
-                            <span></span>
-                        </span>
-
-                        <span class="create-option-text">
-                            <strong>Nex Moment</strong>
-                            <small>Share your moment</small>
-                        </span>
-
-                        <span class="create-arrow">›</span>
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="create-option"
-                        data-create-type="private"
-                    >
-                        <span class="create-line-icon private-icon">
-                            <span></span>
-                        </span>
-
-                        <span class="create-option-text">
-                            <strong>Private</strong>
-                            <small>Share privately</small>
-                        </span>
-
-                        <span class="create-arrow">›</span>
-                    </button>
-
-                </div>
-
-            </div>
-        `;
-
-        document.body.appendChild(overlay);
-
-        setupCreateSheet();
-
+    if (!overlay || !sheet) {
+        console.warn("Usanex Create Sheet: required elements not found.");
+        return;
     }
 
 
-    function setupCreateSheet() {
-
-        const overlay =
-            document.getElementById("createOverlay");
-
-        if (!overlay) {
-            return;
-        }
-
-
-        const closeButton =
-            document.getElementById("closeCreateSheet");
-
-
-        closeButton?.addEventListener(
-            "click",
-            closeCreateSheet
-        );
-
-
-        overlay.addEventListener(
-            "click",
-            function (event) {
-
-                if (event.target === overlay) {
-                    closeCreateSheet();
-                }
-
-            }
-        );
-
-
-        overlay
-            .querySelectorAll(".create-option")
-            .forEach(function (button) {
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        const type =
-                            button.dataset.createType;
-
-                        openCreateType(type);
-
-                    }
-                );
-
-            });
-
-    }
-
+    /* =======================================================
+       OPEN
+       ======================================================= */
 
     function openCreateSheet() {
+        overlay.hidden = false;
+        overlay.setAttribute("aria-hidden", "false");
 
-        loadCreateSheet();
+        document.body.classList.add("create-sheet-open");
 
-        const overlay =
-            document.getElementById("createOverlay");
-
-        if (!overlay) {
-            return;
-        }
-
-        requestAnimationFrame(function () {
-
-            overlay.classList.add("active");
-
-        });
-
+        // Prevent background scrolling
         document.body.style.overflow = "hidden";
 
+        // Reset animation
+        sheet.style.animation = "none";
+
+        requestAnimationFrame(() => {
+            sheet.style.animation = "";
+        });
+
+        // Focus close button
+        setTimeout(() => {
+            if (closeButton) {
+                closeButton.focus();
+            }
+        }, 100);
     }
 
 
+    /* =======================================================
+       CLOSE
+       ======================================================= */
+
     function closeCreateSheet() {
+        overlay.setAttribute("aria-hidden", "true");
 
-        const overlay =
-            document.getElementById("createOverlay");
-
-        if (!overlay) {
-            return;
-        }
-
-        overlay.classList.remove("active");
+        document.body.classList.remove("create-sheet-open");
 
         document.body.style.overflow = "";
 
+        overlay.hidden = true;
     }
 
 
-    function openCreateType(type) {
+    /* =======================================================
+       CLOSE BUTTON
+       ======================================================= */
 
-        closeCreateSheet();
+    if (closeButton) {
+        closeButton.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
 
-        /*
-         * फिलहाल सभी create options
-         * उसी media upload page पर जाएंगे।
-         *
-         * बाद में अलग-अलग upload flow
-         * जोड़ सकते हैं।
-         */
-
-        const url =
-            "/media-upload?type=" +
-            encodeURIComponent(type);
-
-        window.location.href = url;
-
+            closeCreateSheet();
+        });
     }
 
 
-    /*
-     * Global function
-     *
-     * Home / Reels / Profile /
-     * My Profile किसी भी page से:
-     *
-     * openUsanexCreate()
-     */
+    /* =======================================================
+       CLICK OUTSIDE
+       ======================================================= */
 
-    window.openUsanexCreate =
+    overlay.addEventListener("click", function (event) {
+
+        // Only close when clicking dark background
+        if (event.target === overlay) {
+            closeCreateSheet();
+        }
+    });
+
+
+    /* =======================================================
+       PREVENT SHEET CLICK FROM CLOSING
+       ======================================================= */
+
+    sheet.addEventListener("click", function (event) {
+        event.stopPropagation();
+    });
+
+
+    /* =======================================================
+       ESCAPE KEY
+       ======================================================= */
+
+    document.addEventListener("keydown", function (event) {
+
+        if (event.key === "Escape") {
+
+            if (!overlay.hidden) {
+                closeCreateSheet();
+            }
+        }
+    });
+
+
+    /* =======================================================
+       CREATE OPTIONS
+       ======================================================= */
+
+    const createOptions =
+        document.querySelectorAll(".create-option");
+
+
+    createOptions.forEach(function (option) {
+
+        option.addEventListener("click", function () {
+
+            const type =
+                option.dataset.createType;
+
+            if (!type) {
+                return;
+            }
+
+
+            /* ===============================================
+               REEL
+               =============================================== */
+
+            if (type === "reel") {
+
+                closeCreateSheet();
+
+                window.location.href =
+                    "/static/reels.html?create=reel";
+
+                return;
+            }
+
+
+            /* ===============================================
+               IMAGE
+               =============================================== */
+
+            if (type === "image") {
+
+                closeCreateSheet();
+
+                window.location.href =
+                    "/static/create-image.html";
+
+                return;
+            }
+
+
+            /* ===============================================
+               PRIVATE
+               =============================================== */
+
+            if (type === "private") {
+
+                closeCreateSheet();
+
+                window.location.href =
+                    "/static/private.html";
+
+                return;
+            }
+
+
+            /* ===============================================
+               NEX MOMENT
+               =============================================== */
+
+            if (type === "moment") {
+
+                closeCreateSheet();
+
+                window.location.href =
+                    "/static/status.html?create=moment";
+
+                return;
+            }
+
+        });
+
+    });
+
+
+    /* =======================================================
+       GLOBAL OPEN FUNCTION
+       ======================================================= */
+
+    window.openCreateSheet =
         openCreateSheet;
 
-
-    /*
-     * Automatically load CSS
-     */
-
-    if (
-        !document.querySelector(
-            'link[data-usanex-create-css]'
-        )
-    ) {
-
-        const css =
-            document.createElement("link");
-
-        css.rel = "stylesheet";
-
-        css.href =
-            "/static/css/create-sheet.css?v=1";
-
-        css.dataset.usanexCreateCss =
-            "true";
-
-        document.head.appendChild(css);
-
-    }
+    window.closeCreateSheet =
+        closeCreateSheet;
 
 
-    /*
-     * Prepare after page loaded
-     */
+    /* =======================================================
+       HOME CREATE BUTTON SUPPORT
+       ======================================================= */
 
-    if (
-        document.readyState ===
-        "loading"
-    ) {
+    document.addEventListener("click", function (event) {
 
-        document.addEventListener(
-            "DOMContentLoaded",
-            loadCreateSheet
-        );
+        const button =
+            event.target.closest(
+                ".create-btn, [data-open-create], #openCreateSheet"
+            );
 
-    } else {
+        if (!button) {
+            return;
+        }
 
-        loadCreateSheet();
+        event.preventDefault();
 
-    }
+        openCreateSheet();
+    });
+
+
+    /* =======================================================
+       TOUCH SWIPE DOWN TO CLOSE
+       ======================================================= */
+
+    let touchStartY = 0;
+    let touchCurrentY = 0;
+
+    sheet.addEventListener("touchstart", function (event) {
+
+        if (!event.touches.length) {
+            return;
+        }
+
+        touchStartY =
+            event.touches[0].clientY;
+
+        touchCurrentY =
+            touchStartY;
+
+    }, { passive: true });
+
+
+    sheet.addEventListener("touchmove", function (event) {
+
+        if (!event.touches.length) {
+            return;
+        }
+
+        touchCurrentY =
+            event.touches[0].clientY;
+
+    }, { passive: true });
+
+
+    sheet.addEventListener("touchend", function () {
+
+        const difference =
+            touchCurrentY - touchStartY;
+
+        // Swipe down more than 80px
+        if (difference > 80) {
+            closeCreateSheet();
+        }
+
+        touchStartY = 0;
+        touchCurrentY = 0;
+
+    });
+
+
+    /* =======================================================
+       INITIAL STATE
+       ======================================================= */
+
+    overlay.hidden = true;
+    overlay.setAttribute("aria-hidden", "true");
+
+
+    console.log(
+        "Usanex Create Sheet loaded successfully."
+    );
 
 })();
