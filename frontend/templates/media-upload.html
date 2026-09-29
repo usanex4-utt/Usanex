@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta name="theme-color" content="#071322">
+
+    <title>Create | Usanex</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/upload.css?v=1"
+    >
+</head>
+
+<body>
+
+<div class="upload-app">
+
+    <!-- HEADER -->
+    <header class="upload-header">
+
+        <button
+            type="button"
+            id="backButton"
+            class="header-button"
+        >
+            ‹
+        </button>
+
+        <h1>Create</h1>
+
+        <button
+            type="button"
+            id="postButton"
+            class="post-button"
+        >
+            Post
+        </button>
+
+    </header>
+
+
+    <!-- CONTENT -->
+    <main class="upload-content">
+
+        <!-- MEDIA TYPE -->
+        <section class="media-types">
+
+            <button
+                type="button"
+                class="media-type active"
+                data-type="photo"
+            >
+                <span>📸</span>
+                <strong>Photo</strong>
+            </button>
+
+            <button
+                type="button"
+                class="media-type"
+                data-type="reel"
+            >
+                <span>🎬</span>
+                <strong>Reel</strong>
+            </button>
+
+            <button
+                type="button"
+                class="media-type"
+                data-type="private"
+            >
+                <span>🔒</span>
+                <strong>Private</strong>
+            </button>
+
+        </section>
+
+
+        <!-- PHOTO UPLOAD -->
+        <section
+            class="upload-section"
+            id="photoSection"
+        >
+
+            <div
+                class="drop-area"
+                id="photoDropArea"
+            >
+
+                <div class="upload-icon">
+                    📷
+                </div>
+
+                <h2>
+                    Add photos
+                </h2>
+
+                <p>
+                    Select multiple photos for one post
+                </p>
+
+                <button
+                    type="button"
+                    id="selectPhotosButton"
+                    class="select-button"
+                >
+                    Select Photos
+                </button>
+
+                <input
+                    type="file"
+                    id="photoInput"
+                    accept="image/*"
+                    multiple
+                    hidden
+                >
+
+            </div>
+
+
+            <!-- SELECTED PHOTOS -->
+            <div
+                class="photo-preview-section"
+                id="photoPreviewSection"
+                hidden
+            >
+
+                <div class="preview-header">
+
+                    <strong>
+                        Selected Photos
+                    </strong>
+
+                    <span id="photoCount">
+                        0 photos
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="photo-grid"
+                    id="photoGrid"
+                ></div>
+
+
+                <button
+                    type="button"
+                    id="addMorePhotos"
+                    class="add-more-button"
+                >
+                    + Add more photos
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- REEL -->
+        <section
+            class="upload-section"
+            id="reelSection"
+            hidden
+        >
+
+            <div class="drop-area">
+
+                <div class="upload-icon">
+                    🎬
+                </div>
+
+                <h2>
+                    Create Reel
+                </h2>
+
+                <p>
+                    Upload your video directly
+                </p>
+
+                <button
+                    type="button"
+                    id="selectReelButton"
+                    class="select-button"
+                >
+                    Select Video
+                </button>
+
+                <input
+                    type="file"
+                    id="reelInput"
+                    accept="video/*"
+                    hidden
+                >
+
+            </div>
+
+
+            <div
+                id="videoPreview"
+                class="video-preview"
+                hidden
+            ></div>
+
+        </section>
+
+
+        <!-- PRIVATE -->
+        <section
+            class="upload-section"
+            id="privateSection"
+            hidden
+        >
+
+            <div class="private-box">
+
+                <div class="private-icon">
+                    🔒
+                </div>
+
+                <h2>
+                    Private Media
+                </h2>
+
+                <p>
+                    Share photos or videos privately.
+                </p>
+
+                <button
+                    type="button"
+                    id="selectPrivateButton"
+                    class="select-button"
+                >
+                    Select Media
+                </button>
+
+                <input
+                    type="file"
+                    id="privateInput"
+                    accept="image/*,video/*"
+                    multiple
+                    hidden
+                >
+
+            </div>
+
+        </section>
+
+
+        <!-- CAPTION -->
+        <section class="caption-section">
+
+            <textarea
+                id="captionInput"
+                maxlength="2200"
+                placeholder="Write a caption..."
+            ></textarea>
+
+            <div class="caption-counter">
+                <span id="captionCount">
+                    0
+                </span>
+                / 2200
+            </div>
+
+        </section>
+
+
+        <!-- VISIBILITY -->
+        <section class="visibility-section">
+
+            <h3>
+                Visibility
+            </h3>
+
+            <button
+                type="button"
+                class="visibility-option active"
+                data-visibility="public"
+            >
+
+                <div class="visibility-icon">
+                    🌍
+                </div>
+
+                <div class="visibility-info">
+
+                    <strong>
+                        Public
+                    </strong>
+
+                    <span>
+                        Anyone can see this post
+                    </span>
+
+                </div>
+
+                <span class="radio"></span>
+
+            </button>
+
+
+            <button
+                type="button"
+                class="visibility-option"
+                data-visibility="private"
+            >
+
+                <div class="visibility-icon">
+                    🔒
+                </div>
+
+                <div class="visibility-info">
+
+                    <strong>
+                        Private
+                    </strong>
+
+                    <span>
+                        Only selected people can see it
+                    </span>
+
+                </div>
+
+                <span class="radio"></span>
+
+            </button>
+
+        </section>
+
+
+        <!-- SELECTED PRIVATE USERS -->
+        <section
+            class="private-users"
+            id="privateUsers"
+            hidden
+        >
+
+            <h3>
+                Share with
+            </h3>
+
+            <button
+                type="button"
+                id="selectPeopleButton"
+                class="people-button"
+            >
+                Select people
+            </button>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script
+    src="/static/js/upload.js?v=1"
+    defer
+></script>
+
+</body>
+</html>
