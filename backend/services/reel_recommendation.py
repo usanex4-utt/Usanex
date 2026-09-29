@@ -1,45 +1,25 @@
-# backend/services/reel_recommendation.py
-
 """
-USANEX - REEL RECOMMENDATION ENGINE
+USANEX REELS
+Personalized Recommendation Engine
 
-Production-style personalized recommendation service.
+Features:
+- User interest matching
+- AI content matching
+- Watch-history filtering
+- Watch-time signals
+- Completion signals
+- Replay signals
+- 1/2/3-star signals
+- Save/download/share signals
+- Popularity
+- Freshness
+- Exploration
+- Creator diversity
+- Category diversity
+- Cold-start recommendation
+- Recommendation logging
 
-Signals used:
-    - Watch time
-    - Completion percentage
-    - Replay
-    - 1 / 2 / 3 star rating
-    - Save
-    - Download
-    - Share
-    - Interested
-    - Not interested
-    - Category preference
-    - Subcategory preference
-    - Creator preference
-    - Language preference
-    - Reel popularity
-    - Reel freshness
-    - Exploration
-    - Watch history
-    - Creator diversity
-
-Architecture:
-
-    User behaviour
-          ↓
-    Interest profile
-          ↓
-    Candidate generation
-          ↓
-    Feature scoring
-          ↓
-    Ranking
-          ↓
-    Diversity / exploration
-          ↓
-    Final reels
+This service does NOT modify database models.
 """
 
 from __future__ import annotations
@@ -49,9 +29,8 @@ import math
 import random
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from ..database.models import (
@@ -64,51 +43,62 @@ from ..database.models import (
 )
 
 
-# ============================================================
+# =========================================================
 # CONFIGURATION
-# ============================================================
+# =========================================================
 
-DEFAULT_REEL_LIMIT = 10
+DEFAULT_LIMIT = 10
+MAX_LIMIT = 50
 
-MAX_CANDIDATES = 250
+MAX_CANDIDATES = 300
 
-HISTORY_LOOKBACK_DAYS = 90
+HISTORY_DAYS = 90
 
 FRESHNESS_HALF_LIFE_HOURS = 72.0
 
-MIN_EXPLORATION_RATIO = 0.10
+MAX_SAME_CREATOR = 2
+MAX_SAME_CATEGORY = 3
 
-MAX_SAME_CREATOR_IN_BATCH = 2
+# Main ranking weights
+PROFILE_WEIGHT = 0.30
+CONTENT_WEIGHT = 0.23
+BEHAVIOR_WEIGHT = 0.20
+POPULARITY_WEIGHT = 0.09
+FRESHNESS_WEIGHT = 0.08
+EXPLORATION_WEIGHT = 0.10
 
-PROFILE_WEIGHT = 0.34
-CONTENT_WEIGHT = 0.22
-BEHAVIOUR_WEIGHT = 0.18
-POPULARITY_WEIGHT = 0.10
-FRESHNESS_WEIGHT = 0.07
-EXPLORATION_WEIGHT = 0.09
+
+# =========================================================
+# BASIC HELPERS
+# =========================================================
+
+def now_utc() -> datetime:
+    return datetime.utcnow()
 
 
-# ============================================================
-# SAFE HELPERS
-# ============================================================
-
-def _safe_float(value: Any, default: float = 0.0) -> float:
+def safe_float(
+    value: Any,
+    default: float = 0.0,
+) -> float:
     try:
         if value is None:
             return default
 
-        number = float(value)
+        result = float(value)
 
-        if not math.isfinite(number):
+        if not math.isfinite(result):
             return default
 
-        return number
+        return result
 
     except (TypeError, ValueError):
         return default
 
 
-def _safe_int(value: Any, default: int = 0) -> int:
+def safe_int(
+    value: Any,
+    default: int = 0,
+) -> int:
     try:
         if value is None:
             return default
@@ -119,61 +109,29 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
-def _clamp(
+def clamp(
     value: float,
     minimum: float = 0.0,
     maximum: float = 1.0,
 ) -> float:
-    return max(minimum, min(maximum, value))
+    return max(
+        minimum,
+        min(maximum, value),
+    )
 
 
-def _normalize_text(value: Optional[str]) -> str:
+def normalize(
+    value: Optional[str],
+) -> str:
     if not value:
         return ""
 
-    return value.strip().lower()
+    return str(value).strip().lower()
 
 
-def _parse_json_dict(value: Optional[str]) -> Dict[str, float]:
-    """
-    Safely parse serialized score dictionaries.
-
-    Example:
-        '{"comedy": 8.2, "education": 4.5}'
-    """
-
-    if not value:
-        return {}
-
-    try:
-        data = json.loads(value)
-
-        if not isinstance(data, dict):
-            return {}
-
-        result: Dict[str, float] = {}
-
-        for key, score in data.items():
-            if key is None:
-                continue
-
-            result[str(key).lower()] = _safe_float(score)
-
-        return result
-
-    except (TypeError, ValueError, json.JSONDecodeError):
-        return {}
-
-
-def _parse_json_list(value: Optional[str]) -> List[str]:
-    """
-    Parse AI keyword/topic lists.
-
-    Supports:
-        ["football", "sports"]
-
-    and also simple comma-separated text.
-    """
+def parse_json_list(
+    value: Optional[str],
+) -> List[str]:
 
     if not value:
         return []
@@ -183,174 +141,176 @@ def _parse_json_list(value: Optional[str]) -> List[str]:
 
         if isinstance(data, list):
             return [
-                str(item).strip().lower()
+                normalize(item)
                 for item in data
-                if str(item).strip()
+                if normalize(item)
             ]
 
-    except (TypeError, ValueError, json.JSONDecodeError):
+    except Exception:
         pass
 
     return [
-        item.strip().lower()
+        normalize(item)
         for item in value.split(",")
-        if item.strip()
+        if normalize(item)
     ]
 
 
-def _tokenize(value: Optional[str]) -> Set[str]:
-    if not value:
-        return set()
-
-    separators = [
-        ",",
-        "|",
-        "/",
-        "#",
-        ".",
-        ":",
-        ";",
-        "\n",
-        "\t",
-    ]
-
-    text = value.lower()
-
-    for separator in separators:
-        text = text.replace(separator, " ")
-
-    return {
-        token.strip()
-        for token in text.split()
-        if len(token.strip()) >= 2
-    }
-
-
-def _now() -> datetime:
-    return datetime.utcnow()
-
-
-# ============================================================
+# =========================================================
 # RECOMMENDATION ENGINE
-# ============================================================
+# =========================================================
 
 class ReelRecommendationEngine:
-    """
-    Personalized reel recommendation engine.
 
-    This class does NOT modify the database schema.
-
-    It only reads the existing models and creates
-    ReelRecommendationLog records.
-    """
-
-    def __init__(self, db: Session):
+    def __init__(
+        self,
+        db: Session,
+    ):
         self.db = db
 
-    # ========================================================
-    # PUBLIC API
-    # ========================================================
+    # =====================================================
+    # PUBLIC METHOD
+    # =====================================================
 
-    def get_recommendations(
+    def recommend(
         self,
         user_id: int,
-        limit: int = DEFAULT_REEL_LIMIT,
+        limit: int = DEFAULT_LIMIT,
         session_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        Main recommendation function.
 
-        Returns ranked personalized reels.
-        """
+        limit = max(
+            1,
+            min(
+                safe_int(limit, DEFAULT_LIMIT),
+                MAX_LIMIT,
+            ),
+        )
 
-        limit = max(1, min(int(limit), 50))
+        # -------------------------------------------------
+        # 1. Load user history
+        # -------------------------------------------------
 
-        history = self._load_history(user_id)
-
-        profile = self._load_interest_profile(user_id)
-
-        candidates = self._generate_candidates(
+        history = self.load_history(
             user_id=user_id,
-            profile=profile,
+        )
+
+        # -------------------------------------------------
+        # 2. Load interest profile
+        # -------------------------------------------------
+
+        profile = self.load_interest_profile(
+            user_id=user_id,
+        )
+
+        # -------------------------------------------------
+        # 3. Generate candidates
+        # -------------------------------------------------
+
+        candidates = self.generate_candidates(
+            user_id=user_id,
             history=history,
-            limit=MAX_CANDIDATES,
+            profile=profile,
         )
 
         if not candidates:
             return []
 
+        # -------------------------------------------------
+        # 4. Score every candidate
+        # -------------------------------------------------
+
         scored = []
 
-        for reel, ai_feature, analytics in candidates:
-            score_data = self._score_reel(
-                user_id=user_id,
+        for reel, ai, analytics in candidates:
+
+            score = self.calculate_score(
                 reel=reel,
-                ai_feature=ai_feature,
+                ai=ai,
                 analytics=analytics,
                 profile=profile,
-                history=history,
             )
 
             scored.append(
                 (
                     reel,
-                    ai_feature,
+                    ai,
                     analytics,
-                    score_data,
+                    score,
                 )
             )
+
+        # -------------------------------------------------
+        # 5. Sort by recommendation score
+        # -------------------------------------------------
 
         scored.sort(
             key=lambda item: item[3]["final_score"],
             reverse=True,
         )
 
-        selected = self._apply_diversity(
+        # -------------------------------------------------
+        # 6. Apply diversity
+        # -------------------------------------------------
+
+        selected = self.apply_diversity(
             scored=scored,
             limit=limit,
         )
 
-        results = []
+        # -------------------------------------------------
+        # 7. Save recommendation logs
+        # -------------------------------------------------
 
-        for position, item in enumerate(selected, start=1):
-            reel, ai_feature, analytics, score_data = item
+        result = []
 
-            self._create_recommendation_log(
+        for position, item in enumerate(
+            selected,
+            start=1,
+        ):
+
+            reel, ai, analytics, score = item
+
+            self.save_recommendation_log(
                 user_id=user_id,
                 reel_id=reel.id,
                 position=position,
-                score_data=score_data,
-                session_id=session_id,
+                score=score,
             )
 
-            results.append(
-                self._serialize_recommendation(
+            result.append(
+                self.serialize_reel(
                     reel=reel,
-                    ai_feature=ai_feature,
+                    ai=ai,
                     analytics=analytics,
-                    score_data=score_data,
+                    score=score,
                 )
             )
 
         self.db.commit()
 
-        return results
+        return result
 
-    # ========================================================
-    # LOAD USER HISTORY
-    # ========================================================
+    # =====================================================
+    # USER HISTORY
+    # =====================================================
 
-    def _load_history(
+    def load_history(
         self,
         user_id: int,
     ) -> Dict[str, Any]:
 
-        cutoff = _now() - timedelta(
-            days=HISTORY_LOOKBACK_DAYS
+        cutoff = (
+            now_utc()
+            - timedelta(
+                days=HISTORY_DAYS
+            )
         )
 
         rows = (
-            self.db.query(UserReelHistory)
+            self.db.query(
+                UserReelHistory
+            )
             .filter(
                 UserReelHistory.user_id == user_id,
                 UserReelHistory.last_seen_at >= cutoff,
@@ -360,110 +320,117 @@ class ReelRecommendationEngine:
 
         seen_reels: Set[int] = set()
 
-        reel_watch_time: Dict[int, float] = {}
+        watch_time = {}
 
-        reel_completion: Dict[int, float] = {}
+        completion = {}
 
-        reel_replays: Dict[int, int] = {}
+        replay = {}
 
         for row in rows:
-            seen_reels.add(row.reel_id)
 
-            reel_watch_time[row.reel_id] = _safe_float(
+            reel_id = row.reel_id
+
+            seen_reels.add(
+                reel_id
+            )
+
+            watch_time[reel_id] = safe_float(
                 row.total_watch_time
             )
 
-            reel_completion[row.reel_id] = _safe_float(
+            completion[reel_id] = safe_float(
                 row.max_watch_percentage
             )
 
-            reel_replays[row.reel_id] = _safe_int(
+            replay[reel_id] = safe_int(
                 row.replay_count
             )
 
         return {
-            "seen_reels": seen_reels,
-            "watch_time": reel_watch_time,
-            "completion": reel_completion,
-            "replays": reel_replays,
+            "seen": seen_reels,
+            "watch_time": watch_time,
+            "completion": completion,
+            "replay": replay,
         }
 
-    # ========================================================
-    # LOAD USER INTEREST PROFILE
-    # ========================================================
+    # =====================================================
+    # USER INTEREST PROFILE
+    # =====================================================
 
-    def _load_interest_profile(
+    def load_interest_profile(
         self,
         user_id: int,
     ) -> Dict[str, Any]:
 
-        interests = (
-            self.db.query(UserReelInterest)
+        rows = (
+            self.db.query(
+                UserReelInterest
+            )
             .filter(
                 UserReelInterest.user_id == user_id
             )
             .all()
         )
 
-        category_scores: Dict[str, float] = defaultdict(float)
+        categories = defaultdict(float)
 
-        subcategory_scores: Dict[str, float] = defaultdict(float)
+        subcategories = defaultdict(float)
 
-        for interest in interests:
-
-            category = _normalize_text(
-                interest.category
-            )
-
-            if not category:
-                continue
-
-            score = _safe_float(
-                interest.interest_score
-            )
-
-            category_scores[category] += score
-
-            subcategory = _normalize_text(
-                interest.subcategory
-            )
-
-            if subcategory:
-                subcategory_scores[subcategory] += score
-
-        total_seen = 0
+        total_videos = 0
 
         total_watch = 0.0
 
-        if interests:
-            total_seen = max(
-                _safe_int(i.videos_seen)
-                for i in interests
+        for row in rows:
+
+            category = normalize(
+                row.category
             )
 
-            total_watch = sum(
-                _safe_float(i.total_watch_time)
-                for i in interests
+            score = safe_float(
+                row.interest_score
+            )
+
+            if category:
+                categories[
+                    category
+                ] += score
+
+            subcategory = normalize(
+                row.subcategory
+            )
+
+            if subcategory:
+                subcategories[
+                    subcategory
+                ] += score
+
+            total_videos += safe_int(
+                row.videos_seen
+            )
+
+            total_watch += safe_float(
+                row.total_watch_time
             )
 
         return {
-            "category_scores": dict(category_scores),
-            "subcategory_scores": dict(subcategory_scores),
-            "total_seen": total_seen,
-            "total_watch_time": total_watch,
-            "cold_start": total_seen < 10,
+            "categories": dict(categories),
+            "subcategories": dict(subcategories),
+            "total_videos": total_videos,
+            "total_watch": total_watch,
+
+            # First 10 videos = cold start
+            "cold_start": total_videos < 10,
         }
 
-    # ========================================================
+    # =====================================================
     # CANDIDATE GENERATION
-    # ========================================================
+    # =====================================================
 
-    def _generate_candidates(
+    def generate_candidates(
         self,
         user_id: int,
-        profile: Dict[str, Any],
         history: Dict[str, Any],
-        limit: int,
+        profile: Dict[str, Any],
     ):
 
         query = (
@@ -474,11 +441,13 @@ class ReelRecommendationEngine:
             )
             .outerjoin(
                 ReelAIFeature,
-                ReelAIFeature.reel_id == Reel.id,
+                ReelAIFeature.reel_id
+                == Reel.id,
             )
             .outerjoin(
                 ReelAnalytics,
-                ReelAnalytics.reel_id == Reel.id,
+                ReelAnalytics.reel_id
+                == Reel.id,
             )
             .filter(
                 Reel.user_id != user_id,
@@ -486,27 +455,37 @@ class ReelRecommendationEngine:
             )
         )
 
-        seen_reels = history["seen_reels"]
+        seen = history["seen"]
 
-        if seen_reels:
+        # -------------------------------------------------
+        # Don't repeatedly recommend watched reels
+        # -------------------------------------------------
+
+        if seen:
+
             query = query.filter(
-                ~Reel.id.in_(seen_reels)
+                ~Reel.id.in_(seen)
             )
+
+        # -------------------------------------------------
+        # Recent content first
+        # -------------------------------------------------
 
         query = query.order_by(
             Reel.created_at.desc()
         )
 
-        rows = query.limit(limit).all()
+        rows = query.limit(
+            MAX_CANDIDATES
+        ).all()
+
+        # -------------------------------------------------
+        # If no unseen content remains,
+        # use all available reels.
+        # -------------------------------------------------
 
         if rows:
             return rows
-
-        # ----------------------------------------------------
-        # Fallback:
-        # If user has already seen everything available,
-        # allow previously seen reels.
-        # ----------------------------------------------------
 
         fallback = (
             self.db.query(
@@ -516,11 +495,13 @@ class ReelRecommendationEngine:
             )
             .outerjoin(
                 ReelAIFeature,
-                ReelAIFeature.reel_id == Reel.id,
+                ReelAIFeature.reel_id
+                == Reel.id,
             )
             .outerjoin(
                 ReelAnalytics,
-                ReelAnalytics.reel_id == Reel.id,
+                ReelAnalytics.reel_id
+                == Reel.id,
             )
             .filter(
                 Reel.user_id != user_id,
@@ -529,208 +510,268 @@ class ReelRecommendationEngine:
             .order_by(
                 Reel.created_at.desc()
             )
-            .limit(limit)
+            .limit(
+                MAX_CANDIDATES
+            )
             .all()
         )
 
         return fallback
 
-    # ========================================================
-    # SCORE ONE REEL
-    # ========================================================
+    # =====================================================
+    # MASTER SCORE
+    # =====================================================
 
-    def _score_reel(
+    def calculate_score(
         self,
-        user_id: int,
         reel: Reel,
-        ai_feature: Optional[ReelAIFeature],
+        ai: Optional[ReelAIFeature],
         analytics: Optional[ReelAnalytics],
         profile: Dict[str, Any],
-        history: Dict[str, Any],
     ) -> Dict[str, float]:
 
-        profile_score = self._profile_score(
+        profile_score = self.profile_match(
             reel=reel,
-            ai_feature=ai_feature,
+            ai=ai,
             profile=profile,
         )
 
-        content_score = self._content_score(
+        content_score = self.content_match(
             reel=reel,
-            ai_feature=ai_feature,
+            ai=ai,
             profile=profile,
         )
 
-        behaviour_score = self._behaviour_score(
+        behavior_score = self.behavior_score(
             analytics=analytics,
         )
 
-        popularity_score = self._popularity_score(
+        popularity_score = self.popularity_score(
             analytics=analytics,
         )
 
-        freshness_score = self._freshness_score(
+        freshness_score = self.freshness_score(
             reel.created_at
         )
 
-        exploration_score = self._exploration_score(
+        exploration_score = self.exploration_score(
             reel=reel,
             profile=profile,
         )
 
         final_score = (
-            PROFILE_WEIGHT * profile_score
-            + CONTENT_WEIGHT * content_score
-            + BEHAVIOUR_WEIGHT * behaviour_score
-            + POPULARITY_WEIGHT * popularity_score
-            + FRESHNESS_WEIGHT * freshness_score
-            + EXPLORATION_WEIGHT * exploration_score
+            profile_score
+            * PROFILE_WEIGHT
+
+            + content_score
+            * CONTENT_WEIGHT
+
+            + behavior_score
+            * BEHAVIOR_WEIGHT
+
+            + popularity_score
+            * POPULARITY_WEIGHT
+
+            + freshness_score
+            * FRESHNESS_WEIGHT
+
+            + exploration_score
+            * EXPLORATION_WEIGHT
         )
 
         return {
-            "final_score": _clamp(
-                final_score,
-                0.0,
-                1.0,
+            "final_score": clamp(
+                final_score
             ),
-            "profile_score": _clamp(profile_score),
-            "content_score": _clamp(content_score),
-            "behaviour_score": _clamp(behaviour_score),
-            "popularity_score": _clamp(popularity_score),
-            "freshness_score": _clamp(freshness_score),
-            "exploration_score": _clamp(exploration_score),
+
+            "profile_score": clamp(
+                profile_score
+            ),
+
+            "content_score": clamp(
+                content_score
+            ),
+
+            "behavior_score": clamp(
+                behavior_score
+            ),
+
+            "popularity_score": clamp(
+                popularity_score
+            ),
+
+            "freshness_score": clamp(
+                freshness_score
+            ),
+
+            "exploration_score": clamp(
+                exploration_score
+            ),
         }
 
-    # ========================================================
-    # PROFILE SCORE
-    # ========================================================
+    # =====================================================
+    # PROFILE MATCH
+    # =====================================================
 
-    def _profile_score(
+    def profile_match(
         self,
         reel: Reel,
-        ai_feature: Optional[ReelAIFeature],
+        ai: Optional[ReelAIFeature],
         profile: Dict[str, Any],
     ) -> float:
 
-        category_scores = profile["category_scores"]
+        category_scores = profile[
+            "categories"
+        ]
 
-        category = _normalize_text(
-            reel.category
-        )
-
-        if ai_feature:
-            ai_category = _normalize_text(
-                ai_feature.category
-            )
-
-            if ai_category:
-                category = ai_category
-
-        if not category:
-            return 0.25
-
-        score = category_scores.get(
-            category,
-            0.0,
-        )
+        subcategory_scores = profile[
+            "subcategories"
+        ]
 
         if not category_scores:
             return 0.35
 
+        category = normalize(
+            reel.category
+        )
+
+        if ai and ai.category:
+
+            category = normalize(
+                ai.category
+            )
+
+        category_score = category_scores.get(
+            category,
+            0.0,
+        )
+
         maximum = max(
-            category_scores.values()
+            category_scores.values(),
+            default=1.0,
         )
 
-        if maximum <= 0:
-            return 0.25
-
-        return _clamp(
-            score / maximum
+        category_match = (
+            category_score / maximum
+            if maximum > 0
+            else 0.0
         )
 
-    # ========================================================
-    # CONTENT MATCH
-    # ========================================================
+        sub_score = 0.0
 
-    def _content_score(
+        if ai and ai.subcategory:
+
+            subcategory = normalize(
+                ai.subcategory
+            )
+
+            sub_score = subcategory_scores.get(
+                subcategory,
+                0.0,
+            )
+
+        max_sub = max(
+            subcategory_scores.values(),
+            default=1.0,
+        )
+
+        if max_sub > 0:
+            sub_score /= max_sub
+
+        return clamp(
+            category_match * 0.70
+            + sub_score * 0.30
+        )
+
+    # =====================================================
+    # AI CONTENT MATCH
+    # =====================================================
+
+    def content_match(
         self,
         reel: Reel,
-        ai_feature: Optional[ReelAIFeature],
+        ai: Optional[ReelAIFeature],
         profile: Dict[str, Any],
     ) -> float:
 
         user_categories = set(
-            profile["category_scores"].keys()
+            profile[
+                "categories"
+            ].keys()
         )
 
         user_subcategories = set(
-            profile["subcategory_scores"].keys()
+            profile[
+                "subcategories"
+            ].keys()
         )
 
-        reel_categories: Set[str] = set()
+        reel_categories = set()
 
-        reel_subcategories: Set[str] = set()
+        reel_topics = set()
 
         if reel.category:
+
             reel_categories.add(
-                _normalize_text(reel.category)
+                normalize(
+                    reel.category
+                )
             )
 
-        if ai_feature:
+        if ai:
 
-            if ai_feature.category:
+            if ai.category:
                 reel_categories.add(
-                    _normalize_text(
-                        ai_feature.category
+                    normalize(
+                        ai.category
                     )
                 )
 
-            if ai_feature.subcategory:
-                reel_subcategories.add(
-                    _normalize_text(
-                        ai_feature.subcategory
+            if ai.subcategory:
+                reel_topics.add(
+                    normalize(
+                        ai.subcategory
                     )
                 )
 
-            for keyword in _parse_json_list(
-                ai_feature.keywords
+            for keyword in parse_json_list(
+                ai.keywords
             ):
-                reel_subcategories.add(
+
+                reel_topics.add(
                     keyword
                 )
 
-        category_match = (
-            len(
-                reel_categories
-                & user_categories
-            )
-            > 0
+        category_match = bool(
+            reel_categories
+            & user_categories
         )
 
-        subcategory_match = (
-            len(
-                reel_subcategories
-                & user_subcategories
-            )
-            > 0
+        topic_match = bool(
+            reel_topics
+            & user_subcategories
         )
 
-        if category_match and subcategory_match:
+        if category_match and topic_match:
             return 1.0
 
         if category_match:
             return 0.75
 
-        if subcategory_match:
+        if topic_match:
             return 0.85
+
+        # AI analyzed but no direct match
+        if ai:
+            return 0.30
 
         return 0.20
 
-    # ========================================================
-    # BEHAVIOUR SCORE
-    # ========================================================
+    # =====================================================
+    # BEHAVIOR SCORE
+    # =====================================================
 
-    def _behaviour_score(
+    def behavior_score(
         self,
         analytics: Optional[ReelAnalytics],
     ) -> float:
@@ -738,78 +779,103 @@ class ReelRecommendationEngine:
         if not analytics:
             return 0.20
 
-        completion = _clamp(
-            _safe_float(
+        completion = clamp(
+            safe_float(
                 analytics.average_completion
-            ) / 100.0
+            )
+            / 100.0
         )
 
-        average_watch = _safe_float(
+        watch_time = safe_float(
             analytics.average_watch_seconds
         )
 
-        replay = _safe_int(
+        replays = safe_int(
             analytics.replay_count
         )
 
-        save = _safe_int(
+        saves = safe_int(
             analytics.save_count
         )
 
-        share = _safe_int(
+        shares = safe_int(
             analytics.share_count
         )
 
-        three_star = _safe_int(
+        three = safe_int(
             analytics.three_star_count
         )
 
-        two_star = _safe_int(
+        two = safe_int(
             analytics.two_star_count
         )
 
-        one_star = _safe_int(
+        one = safe_int(
             analytics.one_star_count
         )
 
-        total_stars = (
-            one_star
-            + two_star
-            + three_star
+        total_rating = (
+            one
+            + two
+            + three
         )
 
         rating_score = 0.0
 
-        if total_stars > 0:
+        if total_rating:
 
             rating_score = (
-                one_star * 0.20
-                + two_star * 0.60
-                + three_star * 1.00
-            ) / total_stars
+                one * 0.20
+                + two * 0.60
+                + three * 1.00
+            ) / total_rating
 
-        engagement = (
-            min(math.log1p(average_watch) / 5.0, 1.0)
-            * 0.25
-            + min(math.log1p(replay) / 4.0, 1.0)
-            * 0.15
-            + min(math.log1p(save) / 5.0, 1.0)
-            * 0.20
-            + min(math.log1p(share) / 5.0, 1.0)
-            * 0.15
-            + completion * 0.15
+        watch_score = min(
+            math.log1p(
+                watch_time
+            ) / 5.0,
+            1.0,
+        )
+
+        replay_score = min(
+            math.log1p(
+                replays
+            ) / 4.0,
+            1.0,
+        )
+
+        save_score = min(
+            math.log1p(
+                saves
+            ) / 5.0,
+            1.0,
+        )
+
+        share_score = min(
+            math.log1p(
+                shares
+            ) / 5.0,
+            1.0,
+        )
+
+        result = (
+            completion * 0.30
+            + watch_score * 0.20
+            + replay_score * 0.15
+            + save_score * 0.15
+            + share_score * 0.10
             + rating_score * 0.10
         )
 
-        return _clamp(
-            engagement
+        return clamp(
+            result
         )
 
-    # ========================================================
+    # =====================================================
     # POPULARITY
-    # ========================================================
+    # =====================================================
 
-    def _popularity_score(
+    def popularity_score(
         self,
         analytics: Optional[ReelAnalytics],
     ) -> float:
@@ -818,49 +884,49 @@ class ReelRecommendationEngine:
             return 0.20
 
         views = max(
-            _safe_int(
+            safe_int(
                 analytics.view_count
             ),
             0,
         )
 
         saves = max(
-            _safe_int(
+            safe_int(
                 analytics.save_count
             ),
             0,
         )
 
         shares = max(
-            _safe_int(
+            safe_int(
                 analytics.share_count
             ),
             0,
         )
 
         comments = max(
-            _safe_int(
+            safe_int(
                 analytics.comment_count
             ),
             0,
         )
 
-        weighted = (
+        raw = (
             math.log1p(views) * 0.45
             + math.log1p(saves) * 0.20
             + math.log1p(shares) * 0.25
             + math.log1p(comments) * 0.10
         )
 
-        return _clamp(
-            weighted / 10.0
+        return clamp(
+            raw / 10.0
         )
 
-    # ========================================================
+    # =====================================================
     # FRESHNESS
-    # ========================================================
+    # =====================================================
 
-    def _freshness_score(
+    def freshness_score(
         self,
         created_at: Optional[datetime],
     ) -> float:
@@ -870,57 +936,64 @@ class ReelRecommendationEngine:
 
         age_hours = max(
             (
-                _now() - created_at
+                now_utc()
+                - created_at
             ).total_seconds()
             / 3600.0,
             0.0,
         )
 
-        return _clamp(
+        return clamp(
             math.exp(
                 -age_hours
                 / FRESHNESS_HALF_LIFE_HOURS
             )
         )
 
-    # ========================================================
+    # =====================================================
     # EXPLORATION
-    # ========================================================
+    # =====================================================
 
-    def _exploration_score(
+    def exploration_score(
         self,
         reel: Reel,
         profile: Dict[str, Any],
     ) -> float:
 
-        category = _normalize_text(
+        category = normalize(
             reel.category
         )
 
-        known_categories = set(
-            profile["category_scores"].keys()
+        known = set(
+            profile[
+                "categories"
+            ].keys()
         )
 
-        # New category gets exploration value.
-        if category and category not in known_categories:
+        # New category
+        if (
+            category
+            and category not in known
+        ):
             return 1.0
 
-        # Cold-start users need more exploration.
+        # New users need exploration
         if profile["cold_start"]:
-            return 0.85
+            return 0.90
 
+        # Small random exploration
         return random.uniform(
-            0.10,
-            0.45,
+            0.05,
+            0.40,
         )
 
-    # ========================================================
-    # DIVERSITY / RANKING
-    # ========================================================
+    # =====================================================
+    # DIVERSITY
+    # =====================================================
 
-    def _apply_diversity(
+    def apply_diversity(
         self,
-        scored: Sequence[
+        scored: List[
             Tuple[
                 Reel,
                 Optional[ReelAIFeature],
@@ -933,59 +1006,81 @@ class ReelRecommendationEngine:
 
         selected = []
 
-        creator_counts: Dict[int, int] = defaultdict(int)
+        creator_count = defaultdict(int)
 
-        category_counts: Dict[str, int] = defaultdict(int)
+        category_count = defaultdict(int)
 
-        remaining = list(scored)
+        remaining = list(
+            scored
+        )
 
-        while remaining and len(selected) < limit:
+        while (
+            remaining
+            and len(selected) < limit
+        ):
 
-            best_index = None
+            best_index = -1
 
-            best_adjusted_score = -1.0
+            best_score = -999999.0
 
-            for index, item in enumerate(remaining):
+            for index, item in enumerate(
+                remaining
+            ):
 
                 reel = item[0]
 
-                score_data = item[3]
-
-                base_score = score_data[
+                score = item[3][
                     "final_score"
                 ]
 
                 creator_penalty = 0.0
 
+                category_penalty = 0.0
+
+                # -----------------------------------------
+                # Creator diversity
+                # -----------------------------------------
+
                 if (
-                    creator_counts[reel.user_id]
-                    >= MAX_SAME_CREATOR_IN_BATCH
+                    creator_count[
+                        reel.user_id
+                    ]
+                    >= MAX_SAME_CREATOR
                 ):
+
                     creator_penalty = 0.35
 
-                category = _normalize_text(
+                # -----------------------------------------
+                # Category diversity
+                # -----------------------------------------
+
+                category = normalize(
                     reel.category
                 )
 
-                category_penalty = 0.0
-
                 if (
                     category
-                    and category_counts[category] >= 3
+                    and category_count[
+                        category
+                    ]
+                    >= MAX_SAME_CATEGORY
                 ):
+
                     category_penalty = 0.12
 
                 adjusted = (
-                    base_score
+                    score
                     - creator_penalty
                     - category_penalty
                 )
 
-                if adjusted > best_adjusted_score:
-                    best_adjusted_score = adjusted
+                if adjusted > best_score:
+
+                    best_score = adjusted
+
                     best_index = index
 
-            if best_index is None:
+            if best_index == -1:
                 break
 
             item = remaining.pop(
@@ -994,188 +1089,269 @@ class ReelRecommendationEngine:
 
             reel = item[0]
 
-            selected.append(item)
+            selected.append(
+                item
+            )
 
-            creator_counts[
+            creator_count[
                 reel.user_id
             ] += 1
 
-            category = _normalize_text(
+            category = normalize(
                 reel.category
             )
 
             if category:
-                category_counts[
+
+                category_count[
                     category
                 ] += 1
 
         return selected
 
-    # ========================================================
-    # RECOMMENDATION LOG
-    # ========================================================
+    # =====================================================
+    # LOG RECOMMENDATION
+    # =====================================================
 
-    def _create_recommendation_log(
+    def save_recommendation_log(
         self,
         user_id: int,
         reel_id: int,
         position: int,
-        score_data: Dict[str, float],
-        session_id: Optional[str],
+        score: Dict[str, float],
     ):
 
-        reason = self._build_reason(
-            score_data
+        reason = self.get_reason(
+            score
         )
 
         log = ReelRecommendationLog(
             user_id=user_id,
             reel_id=reel_id,
             position=position,
-            recommendation_score=score_data[
+
+            recommendation_score=score[
                 "final_score"
             ],
-            interest_score=score_data[
+
+            interest_score=score[
                 "profile_score"
             ],
-            content_score=score_data[
+
+            content_score=score[
                 "content_score"
             ],
-            popularity_score=score_data[
+
+            popularity_score=score[
                 "popularity_score"
             ],
-            freshness_score=score_data[
+
+            freshness_score=score[
                 "freshness_score"
             ],
-            exploration_score=score_data[
+
+            exploration_score=score[
                 "exploration_score"
             ],
+
             reason=reason,
-            created_at=_now(),
+
+            created_at=now_utc(),
         )
 
-        # session_id is intentionally not written here
-        # because the current model does not contain it.
+        self.db.add(
+            log
+        )
 
-        self.db.add(log)
+    # =====================================================
+    # RECOMMENDATION REASON
+    # =====================================================
 
-    # ========================================================
-    # REASON
-    # ========================================================
-
-    def _build_reason(
+    def get_reason(
         self,
-        score_data: Dict[str, float],
+        score: Dict[str, float],
     ) -> str:
 
-        profile = score_data["profile_score"]
+        if score[
+            "profile_score"
+        ] >= 0.80:
 
-        content = score_data["content_score"]
-
-        popularity = score_data[
-            "popularity_score"
-        ]
-
-        freshness = score_data[
-            "freshness_score"
-        ]
-
-        if profile >= 0.80:
             return "strong_interest_match"
 
-        if content >= 0.80:
+        if score[
+            "content_score"
+        ] >= 0.80:
+
             return "content_match"
 
-        if freshness >= 0.80:
+        if score[
+            "behavior_score"
+        ] >= 0.75:
+
+            return "high_engagement"
+
+        if score[
+            "freshness_score"
+        ] >= 0.80:
+
             return "fresh_content"
 
-        if popularity >= 0.75:
+        if score[
+            "popularity_score"
+        ] >= 0.75:
+
             return "popular_content"
 
-        if score_data[
+        if score[
             "exploration_score"
         ] >= 0.75:
+
             return "exploration"
 
         return "personalized_rank"
 
-    # ========================================================
-    # SERIALIZATION
-    # ========================================================
+    # =====================================================
+    # SERIALIZE
+    # =====================================================
 
-    def _serialize_recommendation(
+    def serialize_reel(
         self,
         reel: Reel,
-        ai_feature: Optional[ReelAIFeature],
+        ai: Optional[ReelAIFeature],
         analytics: Optional[ReelAnalytics],
-        score_data: Dict[str, float],
+        score: Dict[str, float],
     ) -> Dict[str, Any]:
 
         return {
+
             "id": reel.id,
+
             "user_id": reel.user_id,
+
             "video_url": reel.video_url,
+
             "thumbnail_url": reel.thumbnail_url,
-            "duration": _safe_float(
+
+            "duration": safe_float(
                 reel.duration
             ),
+
             "caption": reel.caption,
+
             "hashtags": reel.hashtags,
+
             "language": reel.language,
+
             "category": reel.category,
+
             "visibility": reel.visibility,
 
+            "created_at": (
+                reel.created_at.isoformat()
+                if reel.created_at
+                else None
+            ),
+
+            # ---------------------------------------------
+            # AI INFORMATION
+            # ---------------------------------------------
+
             "ai": {
+
                 "category": (
-                    ai_feature.category
-                    if ai_feature
+                    ai.category
+                    if ai
                     else None
                 ),
+
                 "subcategory": (
-                    ai_feature.subcategory
-                    if ai_feature
+                    ai.subcategory
+                    if ai
                     else None
                 ),
-                "confidence": (
-                    _safe_float(
-                        ai_feature.ai_confidence
+
+                "keywords": (
+                    parse_json_list(
+                        ai.keywords
                     )
-                    if ai_feature
+                    if ai
+                    else []
+                ),
+
+                "language": (
+                    ai.detected_language
+                    if ai
+                    else None
+                ),
+
+                "confidence": (
+                    safe_float(
+                        ai.ai_confidence
+                    )
+                    if ai
                     else None
                 ),
             },
 
+            # ---------------------------------------------
+            # PUBLIC ANALYTICS
+            # ---------------------------------------------
+
             "analytics": {
+
                 "views": (
-                    _safe_int(
+                    safe_int(
                         analytics.view_count
                     )
                     if analytics
                     else 0
                 ),
-                "average_completion": (
-                    _safe_float(
+
+                "completion": (
+                    safe_float(
                         analytics.average_completion
                     )
                     if analytics
                     else 0
                 ),
-                "three_star": (
-                    _safe_int(
-                        analytics.three_star_count
-                    )
-                    if analytics
-                    else 0
-                ),
-                "save_count": (
-                    _safe_int(
+
+                "stars": {
+
+                    "one": (
+                        safe_int(
+                            analytics.one_star_count
+                        )
+                        if analytics
+                        else 0
+                    ),
+
+                    "two": (
+                        safe_int(
+                            analytics.two_star_count
+                        )
+                        if analytics
+                        else 0
+                    ),
+
+                    "three": (
+                        safe_int(
+                            analytics.three_star_count
+                        )
+                        if analytics
+                        else 0
+                    ),
+                },
+
+                "saves": (
+                    safe_int(
                         analytics.save_count
                     )
                     if analytics
                     else 0
                 ),
-                "share_count": (
-                    _safe_int(
+
+                "shares": (
+                    safe_int(
                         analytics.share_count
                     )
                     if analytics
@@ -1183,20 +1359,29 @@ class ReelRecommendationEngine:
                 ),
             },
 
+            # ---------------------------------------------
+            # INTERNAL RECOMMENDATION INFORMATION
+            # ---------------------------------------------
+
             "recommendation": {
-                "score": score_data[
-                    "final_score"
-                ],
-                "reason": self._build_reason(
-                    score_data
+
+                "score": round(
+                    score[
+                        "final_score"
+                    ],
+                    6,
+                ),
+
+                "reason": self.get_reason(
+                    score
                 ),
             },
         }
 
 
-# ============================================================
-# SIMPLE SERVICE FUNCTION
-# ============================================================
+# =========================================================
+# SIMPLE FUNCTION FOR ROUTES
+# =========================================================
 
 def get_personalized_reels(
     db: Session,
@@ -1204,24 +1389,12 @@ def get_personalized_reels(
     limit: int = 10,
     session_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """
-    Convenient function for API routes.
-
-    Example:
-
-        reels = get_personalized_reels(
-            db=db,
-            user_id=current_user.id,
-            limit=10,
-            session_id=session_id,
-        )
-    """
 
     engine = ReelRecommendationEngine(
         db=db
     )
 
-    return engine.get_recommendations(
+    return engine.recommend(
         user_id=user_id,
         limit=limit,
         session_id=session_id,
