@@ -1,21 +1,7 @@
 # =========================================================
 # USANEX DATABASE MODELS
-# =========================================================
-# Existing system
-# + Authentication
-# + Connections
-# + Posts
-# + Chat
-# + Reels
-# + 3-Star Reel Rating
-# + Reel Analytics
-# + AI Content Analysis
-# + User Interest Profile
-# + Recommendation System
-# + Area-Level Aggregate Analytics
-#
-# IMPORTANT:
-# Every table/model is defined ONLY ONCE.
+# Auth + Connections + Posts + Chat
+# Reels + AI + Recommendation + Analytics
 # =========================================================
 
 from datetime import datetime
@@ -42,11 +28,7 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     username = Column(
         String(100),
@@ -112,11 +94,7 @@ class User(Base):
 class OTPVerification(Base):
     __tablename__ = "otp_verifications"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     identifier = Column(
         String(100),
@@ -153,11 +131,7 @@ class OTPVerification(Base):
 class UserSession(Base):
     __tablename__ = "user_sessions"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     session_token = Column(
         String(128),
@@ -191,11 +165,7 @@ class UserSession(Base):
 class ConnectionRequest(Base):
     __tablename__ = "connection_requests"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     sender_id = Column(
         Integer,
@@ -228,14 +198,6 @@ class ConnectionRequest(Base):
         default=datetime.utcnow,
     )
 
-    __table_args__ = (
-        Index(
-            "ix_connection_request_sender_receiver",
-            "sender_id",
-            "receiver_id",
-        ),
-    )
-
 
 # =========================================================
 # CONNECTION VERIFICATION
@@ -244,11 +206,7 @@ class ConnectionRequest(Base):
 class ConnectionVerification(Base):
     __tablename__ = "connection_verifications"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     connection_request_id = Column(
         Integer,
@@ -310,11 +268,7 @@ class ConnectionVerification(Base):
 class ConnectionNotification(Base):
     __tablename__ = "connection_notifications"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     receiver_id = Column(
         Integer,
@@ -371,11 +325,7 @@ class ConnectionNotification(Base):
 class UserConnection(Base):
     __tablename__ = "user_connections"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_one_id = Column(
         Integer,
@@ -410,7 +360,7 @@ class UserConnection(Base):
 
     __table_args__ = (
         Index(
-            "ix_user_connection_pair",
+            "ix_user_connections_pair",
             "user_one_id",
             "user_two_id",
         ),
@@ -424,11 +374,7 @@ class UserConnection(Base):
 class UserConnectionCategory(Base):
     __tablename__ = "user_connection_categories"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -465,7 +411,7 @@ class UserConnectionCategory(Base):
         UniqueConstraint(
             "user_id",
             "connected_user_id",
-            name="uq_connection_category_user_pair",
+            name="uq_connection_category",
         ),
     )
 
@@ -477,11 +423,7 @@ class UserConnectionCategory(Base):
 class UserFollow(Base):
     __tablename__ = "user_follows"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     follower_id = Column(
         Integer,
@@ -517,11 +459,7 @@ class UserFollow(Base):
 class Post(Base):
     __tablename__ = "posts"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -553,19 +491,13 @@ class Post(Base):
 
 
 # =========================================================
-# =========================================================
-#                         REELS
-# =========================================================
+# REELS
 # =========================================================
 
 class Reel(Base):
     __tablename__ = "reels"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     # -----------------------------------------------------
     # CREATOR
@@ -591,7 +523,7 @@ class Reel(Base):
         nullable=True,
     )
 
-    duration = Column(
+    duration_seconds = Column(
         Float,
         nullable=False,
         default=0,
@@ -628,6 +560,12 @@ class Reel(Base):
         nullable=True,
     )
 
+    subcategory = Column(
+        String(100),
+        index=True,
+        nullable=True,
+    )
+
     visibility = Column(
         String(30),
         index=True,
@@ -643,7 +581,7 @@ class Reel(Base):
     )
 
     # -----------------------------------------------------
-    # BASIC VIEW ANALYTICS
+    # BASIC COUNTS
     # -----------------------------------------------------
 
     views_count = Column(
@@ -669,10 +607,6 @@ class Reel(Base):
         default=0,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # ACTION COUNTS
-    # -----------------------------------------------------
 
     share_count = Column(
         Integer,
@@ -700,11 +634,6 @@ class Reel(Base):
 
     # -----------------------------------------------------
     # 3 STAR SYSTEM
-    #
-    # 1 tap  = 1 star
-    # 2 taps = 2 stars
-    # 3 taps = 3 stars
-    # 4th tap = reset/no rating
     # -----------------------------------------------------
 
     one_star_count = Column(
@@ -726,7 +655,7 @@ class Reel(Base):
     )
 
     # -----------------------------------------------------
-    # INTEREST SIGNALS
+    # INTEREST
     # -----------------------------------------------------
 
     interested_count = Column(
@@ -754,13 +683,12 @@ class Reel(Base):
     ai_processing_status = Column(
         String(30),
         index=True,
-        default="pending",
         nullable=False,
+        default="pending",
     )
 
     ai_category = Column(
         String(100),
-        index=True,
         nullable=True,
     )
 
@@ -774,6 +702,10 @@ class Reel(Base):
         default=True,
         nullable=False,
     )
+
+    # -----------------------------------------------------
+    # TIMESTAMPS
+    # -----------------------------------------------------
 
     created_at = Column(
         DateTime,
@@ -800,9 +732,9 @@ class Reel(Base):
             "created_at",
         ),
         Index(
-            "ix_reels_status_created",
+            "ix_reels_status_visibility",
             "status",
-            "created_at",
+            "visibility",
         ),
     )
 
@@ -814,11 +746,7 @@ class Reel(Base):
 class ReelAIFeature(Base):
     __tablename__ = "reel_ai_features"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     reel_id = Column(
         Integer,
@@ -828,7 +756,7 @@ class ReelAIFeature(Base):
     )
 
     # -----------------------------------------------------
-    # AI CONTENT UNDERSTANDING
+    # CONTENT UNDERSTANDING
     # -----------------------------------------------------
 
     category = Column(
@@ -864,7 +792,7 @@ class ReelAIFeature(Base):
     )
 
     # -----------------------------------------------------
-    # SPEECH / LANGUAGE
+    # SPEECH / AUDIO
     # -----------------------------------------------------
 
     transcript = Column(
@@ -874,13 +802,8 @@ class ReelAIFeature(Base):
 
     detected_language = Column(
         String(50),
-        index=True,
         nullable=True,
     )
-
-    # -----------------------------------------------------
-    # AUDIO
-    # -----------------------------------------------------
 
     audio_name = Column(
         String(300),
@@ -901,8 +824,8 @@ class ReelAIFeature(Base):
         nullable=True,
     )
 
-    embedding_key = Column(
-        String(255),
+    embedding_model = Column(
+        String(100),
         nullable=True,
     )
 
@@ -951,34 +874,11 @@ class ReelAIFeature(Base):
 # =========================================================
 # REEL INTERACTION EVENTS
 # =========================================================
-#
-# One row can represent a user interaction/event.
-#
-# Examples:
-# view
-# start
-# progress
-# complete
-# replay
-# star
-# save
-# download
-# share
-# comment
-# interested
-# not_interested
-# skip
-# mute
-# =========================================================
 
 class ReelInteraction(Base):
     __tablename__ = "reel_interactions"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -995,7 +895,7 @@ class ReelInteraction(Base):
     creator_id = Column(
         Integer,
         index=True,
-        nullable=True,
+        nullable=False,
     )
 
     # -----------------------------------------------------
@@ -1014,17 +914,27 @@ class ReelInteraction(Base):
         nullable=True,
     )
 
+    feed_position = Column(
+        Integer,
+        nullable=True,
+    )
+
+    source = Column(
+        String(50),
+        nullable=True,
+    )
+
     # -----------------------------------------------------
-    # WATCH BEHAVIOUR
+    # WATCH BEHAVIOR
     # -----------------------------------------------------
 
-    watch_time = Column(
+    watch_time_seconds = Column(
         Float,
         default=0,
         nullable=False,
     )
 
-    watch_percentage = Column(
+    completion_percent = Column(
         Float,
         default=0,
         nullable=False,
@@ -1036,20 +946,30 @@ class ReelInteraction(Base):
         nullable=False,
     )
 
-    replayed = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
     replay_count = Column(
         Integer,
         default=0,
         nullable=False,
     )
 
+    skipped = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    muted = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
     # -----------------------------------------------------
-    # 3 STAR
+    # RATING
+    # 0 = no rating
+    # 1 = one star
+    # 2 = two stars
+    # 3 = three stars
     # -----------------------------------------------------
 
     star_rating = Column(
@@ -1059,7 +979,7 @@ class ReelInteraction(Base):
     )
 
     # -----------------------------------------------------
-    # ACTION SIGNALS
+    # ACTIONS
     # -----------------------------------------------------
 
     interested = Column(
@@ -1098,32 +1018,6 @@ class ReelInteraction(Base):
         nullable=False,
     )
 
-    skipped = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
-    muted = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
-    # -----------------------------------------------------
-    # FEED INFORMATION
-    # -----------------------------------------------------
-
-    feed_position = Column(
-        Integer,
-        nullable=True,
-    )
-
-    source = Column(
-        String(50),
-        nullable=True,
-    )
-
     created_at = Column(
         DateTime,
         index=True,
@@ -1139,18 +1033,18 @@ class ReelInteraction(Base):
 
     __table_args__ = (
         Index(
-            "ix_reel_interaction_user_reel",
+            "ix_reel_interactions_user_reel",
             "user_id",
             "reel_id",
         ),
         Index(
-            "ix_reel_interaction_user_created",
+            "ix_reel_interactions_user_created",
             "user_id",
             "created_at",
         ),
         Index(
-            "ix_reel_interaction_event",
-            "event_type",
+            "ix_reel_interactions_reel_created",
+            "reel_id",
             "created_at",
         ),
     )
@@ -1159,18 +1053,11 @@ class ReelInteraction(Base):
 # =========================================================
 # CURRENT REEL RATING
 # =========================================================
-#
-# One current rating per user/reel.
-# =========================================================
 
 class ReelRating(Base):
     __tablename__ = "reel_ratings"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1187,7 +1074,6 @@ class ReelRating(Base):
     rating = Column(
         Integer,
         nullable=False,
-        default=0,
     )
 
     created_at = Column(
@@ -1212,17 +1098,13 @@ class ReelRating(Base):
 
 
 # =========================================================
-# REEL SAVE
+# REEL SAVES
 # =========================================================
 
 class ReelSave(Base):
     __tablename__ = "reel_saves"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1253,17 +1135,13 @@ class ReelSave(Base):
 
 
 # =========================================================
-# REEL DOWNLOAD
+# REEL DOWNLOADS
 # =========================================================
 
 class ReelDownload(Base):
     __tablename__ = "reel_downloads"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1284,27 +1162,15 @@ class ReelDownload(Base):
         default=datetime.utcnow,
     )
 
-    __table_args__ = (
-        Index(
-            "ix_reel_download_user_reel",
-            "user_id",
-            "reel_id",
-        ),
-    )
-
 
 # =========================================================
-# REEL SHARE
+# REEL SHARES
 # =========================================================
 
 class ReelShare(Base):
     __tablename__ = "reel_shares"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1332,17 +1198,13 @@ class ReelShare(Base):
 
 
 # =========================================================
-# REEL COMMENT
+# REEL COMMENTS
 # =========================================================
 
 class ReelComment(Base):
     __tablename__ = "reel_comments"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1376,17 +1238,13 @@ class ReelComment(Base):
 
 
 # =========================================================
-# REEL REPORT
+# REEL REPORTS
 # =========================================================
 
 class ReelReport(Base):
     __tablename__ = "reel_reports"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1421,26 +1279,11 @@ class ReelReport(Base):
 # =========================================================
 # USER REEL INTEREST PROFILE
 # =========================================================
-#
-# AI learns:
-# - which category user likes
-# - which subcategory user likes
-# - watch behaviour
-# - ratings
-# - saves
-# - shares
-# - downloads
-# - replays
-# =========================================================
 
 class UserReelInterest(Base):
     __tablename__ = "user_reel_interests"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1459,10 +1302,6 @@ class UserReelInterest(Base):
         index=True,
         nullable=True,
     )
-
-    # -----------------------------------------------------
-    # AI SCORES
-    # -----------------------------------------------------
 
     interest_score = Column(
         Float,
@@ -1483,7 +1322,7 @@ class UserReelInterest(Base):
     )
 
     # -----------------------------------------------------
-    # BEHAVIOUR
+    # BEHAVIOR STATISTICS
     # -----------------------------------------------------
 
     videos_seen = Column(
@@ -1534,10 +1373,6 @@ class UserReelInterest(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
-    # STAR DATA
-    # -----------------------------------------------------
-
     total_one_star = Column(
         Integer,
         default=0,
@@ -1568,7 +1403,7 @@ class UserReelInterest(Base):
             "user_id",
             "category",
             "subcategory",
-            name="uq_user_reel_interest_category",
+            name="uq_user_reel_interest",
         ),
     )
 
@@ -1576,18 +1411,11 @@ class UserReelInterest(Base):
 # =========================================================
 # USER REEL HISTORY
 # =========================================================
-#
-# Keeps long-term viewing history.
-# =========================================================
 
 class UserReelHistory(Base):
     __tablename__ = "user_reel_history"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1653,20 +1481,13 @@ class UserReelHistory(Base):
 
 
 # =========================================================
-# USER GLOBAL REEL PROFILE
-# =========================================================
-#
-# Fast summary used by recommendation engine.
+# USER REEL AI PROFILE
 # =========================================================
 
-class UserInterestProfile(Base):
-    __tablename__ = "user_interest_profiles"
+class UserReelAIProfile(Base):
+    __tablename__ = "user_reel_ai_profiles"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1675,13 +1496,18 @@ class UserInterestProfile(Base):
         nullable=False,
     )
 
-    # Serialized JSON
+    # Serialized/JSON data
     topic_scores = Column(
         Text,
         nullable=True,
     )
 
     category_scores = Column(
+        Text,
+        nullable=True,
+    )
+
+    subcategory_scores = Column(
         Text,
         nullable=True,
     )
@@ -1696,12 +1522,27 @@ class UserInterestProfile(Base):
         nullable=True,
     )
 
-    embedding_key = Column(
-        String(255),
+    keyword_scores = Column(
+        Text,
         nullable=True,
     )
 
-    total_reels_watched = Column(
+    embedding_reference = Column(
+        Text,
+        nullable=True,
+    )
+
+    # -----------------------------------------------------
+    # GLOBAL BEHAVIOR
+    # -----------------------------------------------------
+
+    total_reels_seen = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_reels_completed = Column(
         Integer,
         default=0,
         nullable=False,
@@ -1719,6 +1560,65 @@ class UserInterestProfile(Base):
         nullable=False,
     )
 
+    total_replays = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_saves = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_shares = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_downloads = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_one_star = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_two_star = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_three_star = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_interested = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_not_interested = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    ai_model_version = Column(
+        String(100),
+        nullable=True,
+    )
+
     last_updated = Column(
         DateTime,
         index=True,
@@ -1728,20 +1628,136 @@ class UserInterestProfile(Base):
 
 
 # =========================================================
-# REEL ANALYTICS
+# RECOMMENDATION LOG
 # =========================================================
-#
-# Fast aggregate statistics for every reel.
+
+class ReelRecommendationLog(Base):
+    __tablename__ = "reel_recommendation_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
+    position = Column(
+        Integer,
+        nullable=True,
+    )
+
+    recommendation_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    # -----------------------------------------------------
+    # SCORE COMPONENTS
+    # -----------------------------------------------------
+
+    interest_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    content_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    creator_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    language_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    popularity_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    freshness_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    exploration_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    quality_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    safety_score = Column(
+        Float,
+        nullable=True,
+    )
+
+    # -----------------------------------------------------
+    # RESULT
+    # -----------------------------------------------------
+
+    reason = Column(
+        String(150),
+        nullable=True,
+    )
+
+    was_shown = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    was_watched = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    watch_percentage = Column(
+        Float,
+        default=0,
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_recommendation_user_created",
+            "user_id",
+            "created_at",
+        ),
+    )
+
+
+# =========================================================
+# REEL AGGREGATE ANALYTICS
 # =========================================================
 
 class ReelAnalytics(Base):
     __tablename__ = "reel_analytics"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     reel_id = Column(
         Integer,
@@ -1772,6 +1788,10 @@ class ReelAnalytics(Base):
         nullable=False,
     )
 
+    # -----------------------------------------------------
+    # WATCH
+    # -----------------------------------------------------
+
     total_watch_seconds = Column(
         Float,
         default=0,
@@ -1797,7 +1817,7 @@ class ReelAnalytics(Base):
     )
 
     # -----------------------------------------------------
-    # STARS
+    # STAR
     # -----------------------------------------------------
 
     one_star_count = Column(
@@ -1840,12 +1860,6 @@ class ReelAnalytics(Base):
         nullable=False,
     )
 
-    comment_count = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
     interested_count = Column(
         Integer,
         default=0,
@@ -1853,6 +1867,12 @@ class ReelAnalytics(Base):
     )
 
     not_interested_count = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    comment_count = Column(
         Integer,
         default=0,
         nullable=False,
@@ -1867,29 +1887,19 @@ class ReelAnalytics(Base):
 
 
 # =========================================================
-# AREA LEVEL REEL ANALYTICS
-# =========================================================
-#
-# Privacy-safe coarse location analytics.
-#
-# Country / State / City only.
-# No exact GPS/address is stored here.
+# REEL AREA ANALYTICS
+# PRIVACY-SAFE AGGREGATED LOCATION DATA
 # =========================================================
 
 class ReelAreaAnalytics(Base):
     __tablename__ = "reel_area_analytics"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
-    reel_id = Column(
-        Integer,
-        index=True,
-        nullable=False,
-    )
+    # -----------------------------------------------------
+    # COARSE LOCATION ONLY
+    # No exact GPS / address
+    # -----------------------------------------------------
 
     country = Column(
         String(100),
@@ -1909,6 +1919,12 @@ class ReelAreaAnalytics(Base):
         nullable=True,
     )
 
+    reel_id = Column(
+        Integer,
+        index=True,
+        nullable=False,
+    )
+
     category = Column(
         String(100),
         index=True,
@@ -1916,10 +1932,16 @@ class ReelAreaAnalytics(Base):
     )
 
     # -----------------------------------------------------
-    # VIEWS
+    # PERFORMANCE
     # -----------------------------------------------------
 
     views = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    unique_viewers = Column(
         Integer,
         default=0,
         nullable=False,
@@ -1944,7 +1966,7 @@ class ReelAreaAnalytics(Base):
     )
 
     # -----------------------------------------------------
-    # STARS
+    # ACTIONS
     # -----------------------------------------------------
 
     one_star = Column(
@@ -1964,10 +1986,6 @@ class ReelAreaAnalytics(Base):
         default=0,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # ACTIONS
-    # -----------------------------------------------------
 
     saves = Column(
         Integer,
@@ -2018,136 +2036,13 @@ class ReelAreaAnalytics(Base):
 
 
 # =========================================================
-# RECOMMENDATION LOG
-# =========================================================
-#
-# Stores why a particular reel was recommended.
-#
-# This is important for improving the AI later.
-# =========================================================
-
-class ReelRecommendationLog(Base):
-    __tablename__ = "reel_recommendation_logs"
-
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
-
-    user_id = Column(
-        Integer,
-        index=True,
-        nullable=False,
-    )
-
-    reel_id = Column(
-        Integer,
-        index=True,
-        nullable=False,
-    )
-
-    position = Column(
-        Integer,
-        nullable=True,
-    )
-
-    recommendation_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    # -----------------------------------------------------
-    # SCORE COMPONENTS
-    # -----------------------------------------------------
-
-    interest_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    content_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    creator_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    popularity_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    freshness_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    exploration_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    diversity_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    quality_score = Column(
-        Float,
-        nullable=True,
-    )
-
-    # -----------------------------------------------------
-    # REASON
-    # -----------------------------------------------------
-
-    reason = Column(
-        String(150),
-        nullable=True,
-    )
-
-    was_shown = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
-    was_watched = Column(
-        Boolean,
-        default=False,
-        nullable=False,
-    )
-
-    watch_percentage = Column(
-        Float,
-        default=0,
-        nullable=False,
-    )
-
-    created_at = Column(
-        DateTime,
-        index=True,
-        nullable=False,
-        default=datetime.utcnow,
-    )
-
-
-# =========================================================
 # CHAT MESSAGE
 # =========================================================
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     sender_id = Column(
         Integer,
@@ -2193,4 +2088,13 @@ class ChatMessage(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_chat_sender_receiver_created",
+            "sender_id",
+            "receiver_id",
+            "created_at",
+        ),
     )
