@@ -13,7 +13,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/reel-upload.css?v=1"
+        href="/static/css/reel-upload.css?v=2"
     >
 </head>
 
@@ -21,8 +21,7 @@
 
 <div class="reel-page" id="reelPage">
 
-    <!-- ================= HEADER ================= -->
-
+    <!-- HEADER -->
     <header class="reel-header">
 
         <button
@@ -47,12 +46,10 @@
     </header>
 
 
-    <!-- ================= MAIN ================= -->
-
+    <!-- MAIN -->
     <main class="reel-main">
 
-        <!-- ================= VIDEO AREA ================= -->
-
+        <!-- VIDEO -->
         <section class="video-section">
 
             <div
@@ -60,8 +57,7 @@
                 id="videoPreview"
             >
 
-                <!-- Empty State -->
-
+                <!-- EMPTY -->
                 <div
                     class="video-empty"
                     id="videoEmpty"
@@ -108,8 +104,7 @@
                 </div>
 
 
-                <!-- Video -->
-
+                <!-- VIDEO -->
                 <video
                     id="reelVideo"
                     playsinline
@@ -118,8 +113,7 @@
                 ></video>
 
 
-                <!-- Video Controls -->
-
+                <!-- CONTROLS -->
                 <div
                     class="video-controls"
                     id="videoControls"
@@ -154,8 +148,7 @@
             </div>
 
 
-            <!-- Video Actions -->
-
+            <!-- VIDEO ACTIONS -->
             <div
                 class="video-actions"
                 id="videoActions"
@@ -181,12 +174,10 @@
         </section>
 
 
-        <!-- ================= DETAILS ================= -->
-
+        <!-- DETAILS -->
         <section class="reel-details">
 
-            <!-- Caption -->
-
+            <!-- CAPTION -->
             <div class="field-group">
 
                 <div class="field-label-row">
@@ -211,8 +202,7 @@
             </div>
 
 
-            <!-- Location -->
-
+            <!-- LOCATION -->
             <button
                 type="button"
                 class="detail-row"
@@ -238,15 +228,14 @@
                                 cy="10"
                                 r="2.5"
                             ></circle>
+
                         </svg>
 
                     </span>
 
                     <span>
 
-                        <strong>
-                            Location
-                        </strong>
+                        <strong>Location</strong>
 
                         <small id="locationText">
                             Add Location
@@ -263,8 +252,7 @@
             </button>
 
 
-            <!-- Audience -->
-
+            <!-- AUDIENCE -->
             <button
                 type="button"
                 class="detail-row"
@@ -297,9 +285,7 @@
 
                     <span>
 
-                        <strong>
-                            Audience
-                        </strong>
+                        <strong>Audience</strong>
 
                         <small id="audienceText">
                             Everyone
@@ -316,8 +302,7 @@
             </button>
 
 
-            <!-- Settings -->
-
+            <!-- SETTINGS -->
             <div class="settings-box">
 
                 <div class="setting-row">
@@ -368,8 +353,7 @@
     </main>
 
 
-    <!-- ================= BOTTOM ================= -->
-
+    <!-- FOOTER -->
     <footer class="reel-footer">
 
         <button
@@ -384,18 +368,16 @@
     </footer>
 
 
-    <!-- ================= FILE INPUT ================= -->
-
+    <!-- FILE INPUT -->
     <input
         type="file"
         id="videoInput"
-        accept="video/*"
+        accept="video/mp4,video/webm,video/quicktime,video/*"
         hidden
     >
 
 
-    <!-- ================= LOCATION SHEET ================= -->
-
+    <!-- LOCATION OVERLAY -->
     <div
         class="small-overlay"
         id="locationOverlay"
@@ -439,8 +421,7 @@
     </div>
 
 
-    <!-- ================= AUDIENCE SHEET ================= -->
-
+    <!-- AUDIENCE OVERLAY -->
     <div
         class="small-overlay"
         id="audienceOverlay"
@@ -497,7 +478,7 @@
 
 
 <script
-    src="/static/js/reel-upload.js?v=1"
+    src="/static/js/reel-upload.js?v=2"
 ></script>
 
 </body>
