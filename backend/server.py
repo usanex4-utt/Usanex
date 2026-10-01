@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse,FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
@@ -112,6 +112,33 @@ def startup():
 
     Base.metadata.create_all(
         bind=engine
+    )
+
+# =========================================================
+# REEL UPLOAD PAGE
+# =========================================================
+
+REEL_UPLOAD_PAGE = (
+    BASE_DIR
+    / "frontend"
+    / "reel-upload.html"
+)
+
+
+@app.get(
+    "/reel-upload",
+    include_in_schema=False
+)
+def reel_upload_page():
+
+    if not REEL_UPLOAD_PAGE.exists():
+
+        return {
+            "detail": "reel-upload.html not found"
+        }
+
+    return FileResponse(
+        REEL_UPLOAD_PAGE
     )
 
 
