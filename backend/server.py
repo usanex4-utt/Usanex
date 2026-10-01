@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
@@ -100,9 +100,6 @@ app.include_router(
 )
 app.include_router(
     reels.router
-)
-app.include_router(
-    pages_router
 )
 
 # =========================================================
