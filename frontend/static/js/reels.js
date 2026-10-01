@@ -1,19 +1,6 @@
 /* =========================================================
    USANEX REELS
    Production Frontend Controller
-
-   Responsibilities:
-   - Load reels
-   - Render videos
-   - Auto play / pause
-   - Watch tracking
-   - 3-star rating
-   - Save
-   - Share
-   - Download
-   - Interest
-   - Follow
-   - Navigation
 ========================================================= */
 
 "use strict";
@@ -50,7 +37,10 @@ const ReelApp = {
 
     loading: false,
 
-    loaded: false
+    loaded: false,
+
+    watchSent: new Set()
+
 };
 
 
@@ -68,8 +58,6 @@ document.addEventListener(
 
         initializeStaticInteractions();
 
-        initializeReelObserver();
-
         loadReels();
 
     }
@@ -85,21 +73,17 @@ async function apiRequest(
     options = {}
 ) {
 
-    const defaultOptions = {
-
+    const finalOptions = {
         credentials: "include",
+
+        ...options,
 
         headers: {
             "Content-Type":
-                "application/json"
+                "application/json",
+
+            ...(options.headers || {})
         }
-
-    };
-
-
-    const finalOptions = {
-        ...defaultOptions,
-        ...options
     };
 
 
@@ -150,7 +134,8 @@ async function apiRequest(
         error.status =
             response.status;
 
-        error.data = data;
+        error.data =
+            data;
 
         throw error;
     }
@@ -181,7 +166,9 @@ async function loadReels() {
 
 
     if (!container) {
+
         ReelApp.loading = false;
+
         return;
     }
 
@@ -189,12 +176,14 @@ async function loadReels() {
     try {
 
         /*
-         * Main production endpoint.
+         * IMPORTANT:
+         * Backend route:
+         * GET /api/reels/feed
          */
 
         const data =
             await apiRequest(
-                "/api/reels"
+                "/api/reels/feed"
             );
 
 
@@ -209,48 +198,61 @@ async function loadReels() {
             reels.length > 0
         ) {
 
-            ReelApp.reels = reels;
+            ReelApp.reels =
+                reels;
+
 
             renderReels(
                 reels
             );
 
-            ReelApp.loaded = true;
+
+            ReelApp.loaded =
+                true;
+
 
             initializeReelObserver();
+
 
             return;
         }
 
 
-        /*
-         * If API returns no reels,
-         * keep demo card instead of
-         * breaking the page.
-         */
-
-        setupDemoReel();
+        showEmptyReels(
+            "No reels available yet."
+        );
 
     } catch (error) {
 
         console.warn(
-            "Reels API unavailable:",
+            "Reels feed error:",
             error
         );
 
 
-        /*
-         * Do not break UI if backend
-         * endpoint is temporarily unavailable.
-         */
+        if (
+            error.status === 401
+        ) {
 
-        setupDemoReel();
+            showToast(
+                "Please login to view reels"
+            );
+
+            return;
+        }
+
+
+        showEmptyReels(
+            "Unable to load reels."
+        );
 
     } finally {
 
-        ReelApp.loading = false;
+        ReelApp.loading =
+            false;
 
     }
+
 }
 
 
@@ -262,8 +264,12 @@ function normalizeReelResponse(
     data
 ) {
 
-    if (Array.isArray(data)) {
+    if (
+        Array.isArray(data)
+    ) {
+
         return data;
+
     }
 
 
@@ -287,15 +293,29 @@ function normalizeReelResponse(
     }
 
 
+    if (
+        data &&
+        data.data &&
+        Array.isArray(data.data.reels)
+    ) {
+
+        return data.data.reels;
+
+    }
+
+
     return [];
+
 }
 
 
 /* =========================================================
-   DEMO REEL
+   EMPTY STATE
 ========================================================= */
 
-function setupDemoReel() {
+function showEmptyReels(
+    message
+) {
 
     const container =
         document.getElementById(
@@ -308,24 +328,26 @@ function setupDemoReel() {
     }
 
 
-    const card =
-        container.querySelector(
-            ".reel-card"
-        );
+    container.innerHTML = `
 
+        <div class="reels-empty">
 
-    if (!card) {
-        return;
-    }
+            <div class="reels-empty-icon">
+                ▶
+            </div>
 
+            <h3>
+                No Reels
+            </h3>
 
-    card.dataset.demo =
-        "true";
+            <p>
+                ${escapeHTML(message)}
+            </p>
 
+        </div>
 
-    attachCardEvents(
-        card
-    );
+    `;
+
 }
 
 
@@ -348,7 +370,8 @@ function renderReels(
     }
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     reels.forEach(
@@ -373,6 +396,7 @@ function renderReels(
 
 
     initializeReelObserver();
+
 }
 
 
@@ -404,7 +428,9 @@ function createReelCard(
 
 
     article.dataset.index =
-        String(index);
+        String(
+            index
+        );
 
 
     article.innerHTML = `
@@ -497,7 +523,11 @@ function createReelCard(
                 >
 
                     <path
-                        d="M20 11.5a7.5 7.5 0 0 1-8 7.5 8.7 8.7 0 0 1-3.5-.7L4 20l1.4-3.5A7.3 7.3 0 0 1 4 11.5 7.5 7.5 0 0 1 12 4a7.5 7.5 0 0 1 8 7.5z"
+                        d="M20 11.5a7.5 7.5 0 0 1-8 7.5
+                           8.7 8.7 0 0 1-3.5-.7L4 20
+                           l1.4-3.5A7.3 7.3 0 0 1 4 11.5
+                           7.5 7.5 0 0 1 12 4
+                           7.5 7.5 0 0 1 20 11.5z"
                     ></path>
 
                 </svg>
@@ -559,7 +589,9 @@ function createReelCard(
                 >
 
                     <path
-                        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5z"
+                        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7
+                           A2.5 2.5 0 0 1 18 4.5V21
+                           l-6-3.5L6 21V4.5z"
                     ></path>
 
                 </svg>
@@ -650,33 +682,42 @@ function createReelCard(
             <div class="reel-user-row">
 
                 <div class="reel-avatar">
+
                     ${escapeHTML(
                         getAvatarLetter(
                             reel
                         )
                     )}
+
                 </div>
+
 
                 <div class="reel-user-details">
 
                     <strong>
+
                         ${escapeHTML(
                             reel.creator_name ??
                             reel.user_name ??
                             reel.name ??
                             "Usanex User"
                         )}
+
                     </strong>
 
+
                     <span>
+
                         ${escapeHTML(
                             reel.username ??
                             reel.creator_username ??
                             "@usanex"
                         )}
+
                     </span>
 
                 </div>
+
 
                 <button
                     type="button"
@@ -707,6 +748,7 @@ function createReelCard(
                 >
                     Interested
                 </button>
+
 
                 <button
                     type="button"
@@ -747,10 +789,12 @@ function createReelCard(
                 </svg>
 
                 <span>
+
                     ${escapeHTML(
                         reel.audio_name ??
                         "Original audio"
                     )}
+
                 </span>
 
             </div>
@@ -782,7 +826,9 @@ function createReelCard(
             );
 
 
-        videoContainer.innerHTML = "";
+        videoContainer.innerHTML =
+            "";
+
 
         videoContainer.appendChild(
             video
@@ -797,11 +843,12 @@ function createReelCard(
 
 
     return article;
+
 }
 
 
 /* =========================================================
-   VIDEO ELEMENT
+   VIDEO
 ========================================================= */
 
 function createVideoElement(
@@ -847,7 +894,9 @@ function createVideoElement(
     );
 
 
-    if (reel.thumbnail_url) {
+    if (
+        reel.thumbnail_url
+    ) {
 
         video.poster =
             reel.thumbnail_url;
@@ -859,10 +908,14 @@ function createVideoElement(
         "click",
         () => {
 
-            if (video.paused) {
+            if (
+                video.paused
+            ) {
 
                 video.play()
-                    .catch(() => {});
+                    .catch(
+                        () => {}
+                    );
 
             } else {
 
@@ -875,6 +928,7 @@ function createVideoElement(
 
 
     return video;
+
 }
 
 
@@ -885,11 +939,6 @@ function createVideoElement(
 function attachCardEvents(
     card
 ) {
-
-    if (!card) {
-        return;
-    }
-
 
     attachRatingEvents(
         card
@@ -928,11 +977,11 @@ function attachRatingEvents(
 
 
     buttons.forEach(
-        (button) => {
+        button => {
 
             button.addEventListener(
                 "click",
-                async (event) => {
+                async event => {
 
                     event.stopPropagation();
 
@@ -944,18 +993,11 @@ function attachRatingEvents(
 
 
                     if (
-                        !rating ||
                         rating < 1 ||
                         rating > 3
                     ) {
                         return;
                     }
-
-
-                    setRatingUI(
-                        card,
-                        rating
-                    );
 
 
                     const reelId =
@@ -964,35 +1006,58 @@ function attachRatingEvents(
                         );
 
 
-                    if (!isRealReelId(reelId)) {
+                    if (
+                        !isRealReelId(
+                            reelId
+                        )
+                    ) {
+
+                        setRatingUI(
+                            card,
+                            rating
+                        );
+
                         return;
                     }
 
 
                     try {
 
+                        /*
+                         * POST
+                         * /api/reels/{reel_id}/rating
+                         */
+
                         await apiRequest(
-                            "/api/reels/rating",
+                            `/api/reels/${encodeURIComponent(reelId)}/rating`,
                             {
-                                method: "POST",
+                                method:
+                                    "POST",
 
                                 body: {
-                                    reel_id:
-                                        Number(
-                                            reelId
-                                        ),
-
                                     rating:
                                         rating
                                 }
                             }
                         );
 
+
+                        setRatingUI(
+                            card,
+                            rating
+                        );
+
+
                     } catch (error) {
 
                         console.warn(
                             "Rating API:",
                             error
+                        );
+
+                        showToast(
+                            error.message ||
+                            "Unable to rate reel"
                         );
 
                     }
@@ -1022,7 +1087,7 @@ function setRatingUI(
 
 
     stars.forEach(
-        (star) => {
+        star => {
 
             const value =
                 Number(
@@ -1056,11 +1121,11 @@ function attachActionEvents(
 
 
     buttons.forEach(
-        (button) => {
+        button => {
 
             button.addEventListener(
                 "click",
-                async (event) => {
+                async event => {
 
                     event.stopPropagation();
 
@@ -1075,70 +1140,57 @@ function attachActionEvents(
                         );
 
 
-                    if (
-                        action ===
-                        "comment"
+                    switch (
+                        action
                     ) {
 
-                        openComment(
-                            reelId
-                        );
+                        case "comment":
 
-                        return;
-                    }
+                            openComment(
+                                reelId
+                            );
 
-
-                    if (
-                        action ===
-                        "share"
-                    ) {
-
-                        await shareReel(
-                            reelId,
-                            card
-                        );
-
-                        return;
-                    }
+                            break;
 
 
-                    if (
-                        action ===
-                        "save"
-                    ) {
+                        case "share":
 
-                        await saveReel(
-                            reelId,
-                            button
-                        );
+                            await shareReel(
+                                reelId,
+                                card
+                            );
 
-                        return;
-                    }
+                            break;
 
 
-                    if (
-                        action ===
-                        "download"
-                    ) {
+                        case "save":
 
-                        await downloadReel(
-                            reelId,
-                            card,
-                            button
-                        );
+                            await saveReel(
+                                reelId,
+                                button
+                            );
 
-                        return;
-                    }
+                            break;
 
 
-                    if (
-                        action ===
-                        "more"
-                    ) {
+                        case "download":
 
-                        openMoreMenu(
-                            reelId
-                        );
+                            await downloadReel(
+                                reelId,
+                                card,
+                                button
+                            );
+
+                            break;
+
+
+                        case "more":
+
+                            openMoreMenu(
+                                reelId
+                            );
+
+                            break;
 
                     }
 
@@ -1165,40 +1217,61 @@ async function saveReel(
             reelId
         )
     ) {
-        button.classList.toggle(
-            "saved"
-        );
-
         return;
     }
 
 
     try {
 
-        await apiRequest(
-            "/api/reels/save",
-            {
-                method: "POST",
+        /*
+         * POST
+         * /api/reels/{reel_id}/save
+         */
 
-                body: {
-                    reel_id:
-                        Number(
-                            reelId
-                        )
+        const data =
+            await apiRequest(
+                `/api/reels/${encodeURIComponent(reelId)}/save`,
+                {
+                    method:
+                        "POST"
                 }
-            }
-        );
+            );
 
 
         button.classList.toggle(
             "saved"
         );
 
+
+        const saved =
+            data?.saved ??
+            data?.is_saved;
+
+
+        if (
+            typeof saved ===
+            "boolean"
+        ) {
+
+            button.classList.toggle(
+                "saved",
+                saved
+            );
+
+        }
+
+
     } catch (error) {
 
         console.warn(
             "Save API:",
             error
+        );
+
+
+        showToast(
+            error.message ||
+            "Unable to save reel"
         );
 
     }
@@ -1214,6 +1287,15 @@ async function shareReel(
     reelId,
     card
 ) {
+
+    if (
+        !isRealReelId(
+            reelId
+        )
+    ) {
+        return;
+    }
+
 
     const shareUrl =
         window.location.origin +
@@ -1250,6 +1332,7 @@ async function shareReel(
                 shareUrl
             );
 
+
             showToast(
                 "Reel link copied"
             );
@@ -1257,30 +1340,26 @@ async function shareReel(
         }
 
 
-        if (
-            isRealReelId(
-                reelId
-            )
-        ) {
+        /*
+         * POST
+         * /api/reels/{reel_id}/share
+         */
 
-            await apiRequest(
-                "/api/reels/share",
-                {
-                    method: "POST",
+        await apiRequest(
+            `/api/reels/${encodeURIComponent(reelId)}/share`,
+            {
+                method:
+                    "POST",
 
-                    body: {
-                        reel_id:
-                            Number(
-                                reelId
-                            ),
+                body: {
 
-                        share_type:
-                            "link"
-                    }
+                    share_type:
+                        "link"
+
                 }
-            );
+            }
+        );
 
-        }
 
     } catch (error) {
 
@@ -1310,7 +1389,9 @@ async function downloadReel(
         );
 
 
-    if (!video?.src) {
+    if (
+        !video?.src
+    ) {
 
         showToast(
             "Video not available"
@@ -1333,9 +1414,7 @@ async function downloadReel(
 
 
         link.download =
-            "usanex-reel-" +
-            reelId +
-            ".mp4";
+            `usanex-reel-${reelId}.mp4`;
 
 
         link.target =
@@ -1364,21 +1443,21 @@ async function downloadReel(
             )
         ) {
 
-            await apiRequest(
-                "/api/reels/download",
-                {
-                    method: "POST",
+            /*
+             * POST
+             * /api/reels/{reel_id}/download
+             */
 
-                    body: {
-                        reel_id:
-                            Number(
-                                reelId
-                            )
-                    }
+            await apiRequest(
+                `/api/reels/${encodeURIComponent(reelId)}/download`,
+                {
+                    method:
+                        "POST"
                 }
             );
 
         }
+
 
     } catch (error) {
 
@@ -1407,29 +1486,13 @@ function attachInterestEvents(
 
 
     buttons.forEach(
-        (button) => {
+        button => {
 
             button.addEventListener(
                 "click",
-                async (event) => {
+                async event => {
 
                     event.stopPropagation();
-
-
-                    buttons.forEach(
-                        (item) => {
-
-                            item.classList.remove(
-                                "selected"
-                            );
-
-                        }
-                    );
-
-
-                    button.classList.add(
-                        "selected"
-                    );
 
 
                     const interest =
@@ -1451,35 +1514,72 @@ function attachInterestEvents(
                     }
 
 
+                    buttons.forEach(
+                        item => {
+
+                            item.classList.remove(
+                                "selected"
+                            );
+
+                        }
+                    );
+
+
                     try {
 
+                        let endpoint;
+
+
+                        if (
+                            interest ===
+                            "interested"
+                        ) {
+
+                            endpoint =
+                                `/api/reels/${encodeURIComponent(reelId)}/interested`;
+
+                        } else {
+
+                            endpoint =
+                                `/api/reels/${encodeURIComponent(reelId)}/not-interested`;
+
+                        }
+
+
+                        /*
+                         * POST
+                         * /api/reels/{reel_id}/interested
+                         *
+                         * OR
+                         *
+                         * /api/reels/{reel_id}/not-interested
+                         */
+
                         await apiRequest(
-                            "/api/reels/interest",
+                            endpoint,
                             {
-                                method: "POST",
-
-                                body: {
-                                    reel_id:
-                                        Number(
-                                            reelId
-                                        ),
-
-                                    interested:
-                                        interest ===
-                                        "interested",
-
-                                    not_interested:
-                                        interest ===
-                                        "not_interested"
-                                }
+                                method:
+                                    "POST"
                             }
                         );
+
+
+                        button.classList.add(
+                            "selected"
+                        );
+
 
                     } catch (error) {
 
                         console.warn(
                             "Interest API:",
                             error
+                        );
+
+
+                        showToast(
+                            error.message ||
+                            "Unable to update interest"
                         );
 
                     }
@@ -1514,24 +1614,25 @@ function attachFollowEvent(
 
     button.addEventListener(
         "click",
-        async (event) => {
+        event => {
 
             event.stopPropagation();
 
 
-            const currentlyFollowing =
+            const following =
                 button.classList.contains(
                     "following"
                 );
 
 
             button.classList.toggle(
-                "following"
+                "following",
+                !following
             );
 
 
             button.textContent =
-                currentlyFollowing
+                following
                     ? "Follow"
                     : "Following";
 
@@ -1542,7 +1643,7 @@ function attachFollowEvent(
 
 
 /* =========================================================
-   WATCH OBSERVER
+   REEL OBSERVER
 ========================================================= */
 
 function initializeReelObserver() {
@@ -1580,12 +1681,10 @@ function initializeReelObserver() {
 
     ReelApp.observer =
         new IntersectionObserver(
-            (
-                entries
-            ) => {
+            entries => {
 
                 entries.forEach(
-                    (entry) => {
+                    entry => {
 
                         const card =
                             entry.target;
@@ -1599,7 +1698,8 @@ function initializeReelObserver() {
 
                         if (
                             entry.isIntersecting &&
-                            entry.intersectionRatio >= 0.70
+                            entry.intersectionRatio >=
+                                0.70
                         ) {
 
                             ReelApp.currentIndex =
@@ -1659,7 +1759,7 @@ function initializeReelObserver() {
 
 
     cards.forEach(
-        (card) => {
+        card => {
 
             ReelApp.observer.observe(
                 card
@@ -1739,12 +1839,35 @@ function startWatchTracking(
                     percentage >= 90
                 ) {
 
-                    sendWatchEvent(
-                        card,
-                        current,
-                        percentage,
-                        true
-                    );
+                    const reelId =
+                        getReelId(
+                            card
+                        );
+
+
+                    const key =
+                        `${reelId}-completed`;
+
+
+                    if (
+                        !ReelApp.watchSent.has(
+                            key
+                        )
+                    ) {
+
+                        ReelApp.watchSent.add(
+                            key
+                        );
+
+
+                        sendWatchEvent(
+                            card,
+                            current,
+                            percentage,
+                            true
+                        );
+
+                    }
 
                 }
 
@@ -1754,6 +1877,10 @@ function startWatchTracking(
 
 }
 
+
+/* =========================================================
+   STOP WATCH
+========================================================= */
 
 function stopWatchTracking(
     card
@@ -1766,6 +1893,7 @@ function stopWatchTracking(
         clearInterval(
             ReelApp.watchTimer
         );
+
 
         ReelApp.watchTimer =
             null;
@@ -1807,7 +1935,7 @@ function stopWatchTracking(
 
 
 /* =========================================================
-   SEND WATCH EVENT
+   WATCH API
 ========================================================= */
 
 async function sendWatchEvent(
@@ -1834,20 +1962,18 @@ async function sendWatchEvent(
 
     try {
 
+        /*
+         * POST
+         * /api/reels/{reel_id}/watch
+         */
+
         await apiRequest(
-            "/api/reels/interaction",
+            `/api/reels/${encodeURIComponent(reelId)}/watch`,
             {
-                method: "POST",
+                method:
+                    "POST",
 
                 body: {
-
-                    reel_id:
-                        Number(
-                            reelId
-                        ),
-
-                    event_type:
-                        "watch",
 
                     watch_time_seconds:
                         Number(
@@ -1871,14 +1997,113 @@ async function sendWatchEvent(
             }
         );
 
+
     } catch (error) {
 
         console.warn(
-            "Watch tracking:",
+            "Watch API:",
             error
         );
 
     }
+
+}
+
+
+/* =========================================================
+   COMMENT
+========================================================= */
+
+function openComment(
+    reelId
+) {
+
+    if (
+        !isRealReelId(
+            reelId
+        )
+    ) {
+        return;
+    }
+
+
+    window.location.href =
+        "/reels/" +
+        encodeURIComponent(
+            reelId
+        ) +
+        "/comments";
+
+}
+
+
+/* =========================================================
+   MORE / REPORT
+========================================================= */
+
+function openMoreMenu(
+    reelId
+) {
+
+    if (
+        !isRealReelId(
+            reelId
+        )
+    ) {
+        return;
+    }
+
+
+    const choice =
+        window.confirm(
+            "Report this reel?"
+        );
+
+
+    if (!choice) {
+        return;
+    }
+
+
+    apiRequest(
+        `/api/reels/${encodeURIComponent(reelId)}/report`,
+        {
+            method:
+                "POST",
+
+            body: {
+
+                reason:
+                    "user_report"
+
+            }
+        }
+    )
+    .then(
+        () => {
+
+            showToast(
+                "Report submitted"
+            );
+
+        }
+    )
+    .catch(
+        error => {
+
+            console.warn(
+                "Report API:",
+                error
+            );
+
+
+            showToast(
+                error.message ||
+                "Unable to report reel"
+            );
+
+        }
+    );
 
 }
 
@@ -1889,142 +2114,26 @@ async function sendWatchEvent(
 
 function initializeStaticInteractions() {
 
-    /*
-     * Create reel
-     */
-
     const createButton =
         document.getElementById(
             "createReelButton"
         );
 
 
-    if (createButton) {
-
-        createButton.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/reels/create";
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function initializeNavigation() {
-
-    const home =
-        document.getElementById(
-            "homeNav"
-        );
-
-
-    const reel =
-        document.getElementById(
-            "reelNav"
-        );
-
-
-    const search =
-        document.getElementById(
-            "searchNav"
-        );
-
-
-    const notification =
-        document.getElementById(
-            "notificationNav"
-        );
-
-
-    const profile =
-        document.getElementById(
-            "profileNav"
-        );
-
-
-    if (home) {
-
-        home.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/home";
-
-            }
-        );
-
+    if (!createButton) {
+        return;
     }
 
 
-    if (reel) {
+    createButton.addEventListener(
+        "click",
+        () => {
 
-        reel.addEventListener(
-            "click",
-            () => {
+            window.location.href =
+                "/reels/create";
 
-                window.location.href =
-                    "/reels";
-
-            }
-        );
-
-    }
-
-
-    if (search) {
-
-        search.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/search";
-
-            }
-        );
-
-    }
-
-
-    if (notification) {
-
-        notification.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/notifications";
-
-            }
-        );
-
-    }
-
-
-    if (profile) {
-
-        profile.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/my-profile";
-
-            }
-        );
-
-    }
+        }
+    );
 
 }
 
@@ -2060,93 +2169,60 @@ function initializeCreateReel() {
 
 
 /* =========================================================
-   COMMENT
+   NAVIGATION
 ========================================================= */
 
-function openComment(
-    reelId
-) {
+function initializeNavigation() {
 
-    /*
-     * Comment page/modal will be connected
-     * with the real comment route later.
-     */
+    const navigation = {
 
-    if (
-        isRealReelId(
-            reelId
-        )
-    ) {
+        home:
+            "/home",
 
-        window.location.href =
-            "/reels/" +
-            encodeURIComponent(
-                reelId
-            ) +
-            "/comments";
+        reel:
+            "/reels",
 
-    }
+        search:
+            "/search",
 
-}
+        notification:
+            "/notifications",
+
+        profile:
+            "/my-profile"
+
+    };
 
 
-/* =========================================================
-   MORE MENU
-========================================================= */
+    Object.entries(
+        navigation
+    ).forEach(
+        (
+            [
+                id,
+                url
+            ]
+        ) => {
 
-function openMoreMenu(
-    reelId
-) {
-
-    const choice =
-        window.confirm(
-            "Report this reel?"
-        );
-
-
-    if (
-        !choice ||
-        !isRealReelId(
-            reelId
-        )
-    ) {
-        return;
-    }
+            const element =
+                document.getElementById(
+                    id + "Nav"
+                );
 
 
-    apiRequest(
-        "/api/reels/report",
-        {
-            method: "POST",
-
-            body: {
-
-                reel_id:
-                    Number(
-                        reelId
-                    ),
-
-                reason:
-                    "user_report"
-
+            if (!element) {
+                return;
             }
-        }
-    )
-    .then(
-        () => {
 
-            showToast(
-                "Report submitted"
-            );
 
-        }
-    )
-    .catch(
-        (error) => {
+            element.addEventListener(
+                "click",
+                () => {
 
-            console.warn(
-                "Report API:",
-                error
+                    window.location.href =
+                        url;
+
+                }
             );
 
         }
@@ -2181,18 +2257,27 @@ function isRealReelId(
 
 
     if (
-        String(reelId)
-            .startsWith("demo")
+        String(
+            reelId
+        ).startsWith(
+            "demo"
+        )
     ) {
         return false;
     }
 
 
+    const number =
+        Number(
+            reelId
+        );
+
+
     return (
         Number.isInteger(
-            Number(reelId)
+            number
         ) &&
-        Number(reelId) > 0
+        number > 0
     );
 
 }
@@ -2209,13 +2294,13 @@ function getAvatarLetter(
         "U";
 
 
-    return String(
-        name
-    )
-        .trim()
-        .charAt(0)
-        .toUpperCase() ||
-        "U";
+    return (
+        String(name)
+            .trim()
+            .charAt(0)
+            .toUpperCase() ||
+        "U"
+    );
 
 }
 
@@ -2248,6 +2333,10 @@ function escapeHTML(
 
 }
 
+
+/* =========================================================
+   TOAST
+========================================================= */
 
 function showToast(
     message
@@ -2347,3 +2436,11 @@ function showToast(
         );
 
 }
+
+
+/* =========================================================
+   GLOBAL EXPORT
+========================================================= */
+
+window.ReelApp =
+    ReelApp;
