@@ -124,22 +124,15 @@ REEL_UPLOAD_PAGE = (
     / "reel-upload.html"
 )
 
-
-@app.get(
-    "/reel-upload",
-    include_in_schema=False
-)
+@app.get("/reel-upload", include_in_schema=False)
 def reel_upload_page():
 
-    if not REEL_UPLOAD_PAGE.exists():
+    return {
+        "base_dir": str(BASE_DIR),
+        "reel_path": str(REEL_UPLOAD_PAGE),
+        "exists": REEL_UPLOAD_PAGE.exists(),
+    }
 
-        return {
-            "detail": "reel-upload.html not found"
-        }
-
-    return FileResponse(
-        REEL_UPLOAD_PAGE
-    )
 # =========================================================
 # ROOT
 # =========================================================
