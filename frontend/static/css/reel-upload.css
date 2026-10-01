@@ -1,931 +1,1014 @@
 /* =========================================================
    USANEX REEL UPLOAD
-   FULL SCREEN MOBILE UI
+   Production Frontend Controller
 ========================================================= */
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+"use strict";
 
-html,
-body {
-    width: 100%;
-    min-height: 100%;
+document.addEventListener("DOMContentLoaded", () => {
 
-    background: #05070b;
-    color: #ffffff;
+    /* =====================================================
+       ELEMENTS
+    ===================================================== */
 
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        Arial,
-        sans-serif;
-}
+    const videoInput =
+        document.getElementById("videoInput");
 
-body {
-    overflow-x: hidden;
-}
+    const videoEmpty =
+        document.getElementById("videoEmpty");
 
-button,
-textarea,
-input {
-    font: inherit;
-}
+    const reelVideo =
+        document.getElementById("reelVideo");
 
-button {
-    border: 0;
-    outline: none;
-    cursor: pointer;
-}
+    const videoControls =
+        document.getElementById("videoControls");
 
+    const videoActions =
+        document.getElementById("videoActions");
 
-/* =========================================================
-   PAGE
-========================================================= */
+    const selectVideoButton =
+        document.getElementById("selectVideoButton");
 
-.reel-page {
-    width: 100%;
-    min-height: 100vh;
+    const replaceVideo =
+        document.getElementById("replaceVideo");
 
-    display: flex;
-    flex-direction: column;
+    const removeVideo =
+        document.getElementById("removeVideo");
 
-    background:
-        radial-gradient(
-            circle at top center,
-            rgba(36, 124, 255, 0.08),
-            transparent 38%
-        ),
-        #05070b;
-}
+    const playPauseButton =
+        document.getElementById("playPauseButton");
 
+    const muteButton =
+        document.getElementById("muteButton");
 
-/* =========================================================
-   HEADER
-========================================================= */
+    const videoDuration =
+        document.getElementById("videoDuration");
 
-.reel-header {
-    width: 100%;
-    height: 58px;
+    const reelCaption =
+        document.getElementById("reelCaption");
 
-    flex: 0 0 58px;
+    const captionCount =
+        document.getElementById("captionCount");
 
-    display: grid;
+    const locationButton =
+        document.getElementById("locationButton");
 
-    grid-template-columns: 58px 1fr 58px;
+    const locationOverlay =
+        document.getElementById("locationOverlay");
 
-    align-items: center;
+    const closeLocation =
+        document.getElementById("closeLocation");
 
-    border-bottom: 1px solid #121923;
+    const locationInput =
+        document.getElementById("locationInput");
 
-    background: rgba(5, 7, 11, 0.96);
+    const locationResults =
+        document.getElementById("locationResults");
 
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    const locationText =
+        document.getElementById("locationText");
 
-    position: sticky;
-    top: 0;
+    const audienceButton =
+        document.getElementById("audienceButton");
 
-    z-index: 100;
-}
+    const audienceOverlay =
+        document.getElementById("audienceOverlay");
 
-.reel-header h1 {
-    text-align: center;
+    const closeAudience =
+        document.getElementById("closeAudience");
 
-    color: #f3f6fa;
+    const audienceText =
+        document.getElementById("audienceText");
 
-    font-size: 17px;
-    font-weight: 700;
+    const audienceOptions =
+        document.querySelectorAll(".audience-option");
 
-    white-space: nowrap;
-}
+    const postReelButton =
+        document.getElementById("postReelButton");
 
-.reel-back,
-.reel-next {
-    width: 42px;
-    height: 42px;
+    const reelBack =
+        document.getElementById("reelBack");
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: transparent;
-
-    color: #ffffff;
-}
-
-.reel-back {
-    justify-self: center;
-
-    font-size: 34px;
-    font-weight: 300;
-
-    line-height: 1;
-}
-
-.reel-next {
-    justify-self: center;
-
-    color: #247cff;
-
-    font-size: 13px;
-    font-weight: 700;
-}
+    const reelNext =
+        document.getElementById("reelNext");
 
 
-/* =========================================================
-   MAIN
-========================================================= */
+    /* =====================================================
+       STATE
+    ===================================================== */
 
-.reel-main {
-    width: 100%;
-    max-width: 680px;
+    let selectedVideoFile = null;
 
-    margin: 0 auto;
+    let videoObjectUrl = null;
 
-    flex: 1;
+    let selectedLocation = "";
 
-    padding: 14px 14px 110px;
-}
+    let selectedAudience = "Everyone";
+
+    let isUploading = false;
 
 
-/* =========================================================
-   VIDEO SECTION
-========================================================= */
+    /* =====================================================
+       OPEN VIDEO PICKER
+    ===================================================== */
 
-.video-section {
-    width: 100%;
-}
+    function openVideoPicker() {
 
-.video-preview {
-    position: relative;
+        if (!videoInput || isUploading) {
+            return;
+        }
 
-    width: 100%;
+        videoInput.value = "";
 
-    aspect-ratio: 9 / 14;
+        videoInput.click();
+    }
 
-    max-height: 62vh;
 
-    overflow: hidden;
+    selectVideoButton?.addEventListener(
+        "click",
+        openVideoPicker
+    );
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    replaceVideo?.addEventListener(
+        "click",
+        openVideoPicker
+    );
 
-    background:
-        linear-gradient(
-            145deg,
-            #0b111a,
-            #070b11
+
+    /* =====================================================
+       VIDEO SELECT
+    ===================================================== */
+
+    videoInput?.addEventListener(
+        "change",
+        () => {
+
+            const file =
+                videoInput.files?.[0];
+
+            if (!file) {
+                return;
+            }
+
+
+            if (
+                !file.type ||
+                !file.type.startsWith("video/")
+            ) {
+
+                showMessage(
+                    "Please select a valid video."
+                );
+
+                videoInput.value = "";
+
+                return;
+            }
+
+
+            /*
+             * Backend limit = 100 MB
+             */
+
+            const MAX_SIZE =
+                100 * 1024 * 1024;
+
+            if (file.size > MAX_SIZE) {
+
+                showMessage(
+                    "Video must be smaller than 100 MB."
+                );
+
+                videoInput.value = "";
+
+                return;
+            }
+
+
+            selectedVideoFile = file;
+
+            loadVideo(file);
+        }
+    );
+
+
+    /* =====================================================
+       LOAD VIDEO PREVIEW
+    ===================================================== */
+
+    function loadVideo(file) {
+
+        if (videoObjectUrl) {
+
+            URL.revokeObjectURL(
+                videoObjectUrl
+            );
+
+            videoObjectUrl = null;
+        }
+
+
+        videoObjectUrl =
+            URL.createObjectURL(file);
+
+
+        reelVideo.src =
+            videoObjectUrl;
+
+
+        reelVideo.hidden = false;
+
+        videoEmpty.hidden = true;
+
+        videoControls.hidden = false;
+
+        videoActions.hidden = false;
+
+
+        reelVideo.muted = false;
+
+        muteButton.textContent = "🔊";
+
+        playPauseButton.textContent = "▶";
+
+        videoDuration.textContent =
+            "0:00";
+
+
+        updatePostButton();
+    }
+
+
+    /* =====================================================
+       VIDEO METADATA
+    ===================================================== */
+
+    reelVideo?.addEventListener(
+        "loadedmetadata",
+        () => {
+
+            videoDuration.textContent =
+                formatTime(
+                    reelVideo.duration
+                );
+        }
+    );
+
+
+    /* =====================================================
+       PLAY / PAUSE
+    ===================================================== */
+
+    playPauseButton?.addEventListener(
+        "click",
+        () => {
+
+            if (
+                !reelVideo ||
+                !reelVideo.src
+            ) {
+                return;
+            }
+
+
+            if (reelVideo.paused) {
+
+                reelVideo
+                    .play()
+                    .catch(() => {});
+
+            } else {
+
+                reelVideo.pause();
+            }
+        }
+    );
+
+
+    reelVideo?.addEventListener(
+        "play",
+        () => {
+
+            if (playPauseButton) {
+
+                playPauseButton.textContent =
+                    "❚❚";
+            }
+        }
+    );
+
+
+    reelVideo?.addEventListener(
+        "pause",
+        () => {
+
+            if (playPauseButton) {
+
+                playPauseButton.textContent =
+                    "▶";
+            }
+        }
+    );
+
+
+    /* =====================================================
+       MUTE
+    ===================================================== */
+
+    muteButton?.addEventListener(
+        "click",
+        () => {
+
+            if (!reelVideo) {
+                return;
+            }
+
+            reelVideo.muted =
+                !reelVideo.muted;
+
+
+            muteButton.textContent =
+                reelVideo.muted
+                    ? "🔇"
+                    : "🔊";
+        }
+    );
+
+
+    /* =====================================================
+       REMOVE VIDEO
+    ===================================================== */
+
+    removeVideo?.addEventListener(
+        "click",
+        () => {
+
+            if (isUploading) {
+                return;
+            }
+
+            removeSelectedVideo();
+        }
+    );
+
+
+    function removeSelectedVideo() {
+
+        if (videoObjectUrl) {
+
+            URL.revokeObjectURL(
+                videoObjectUrl
+            );
+
+            videoObjectUrl = null;
+        }
+
+
+        selectedVideoFile = null;
+
+
+        if (reelVideo) {
+
+            reelVideo.pause();
+
+            reelVideo.removeAttribute(
+                "src"
+            );
+
+            reelVideo.load();
+
+            reelVideo.hidden = true;
+        }
+
+
+        if (videoEmpty) {
+            videoEmpty.hidden = false;
+        }
+
+        if (videoControls) {
+            videoControls.hidden = true;
+        }
+
+        if (videoActions) {
+            videoActions.hidden = true;
+        }
+
+        if (videoDuration) {
+            videoDuration.textContent =
+                "0:00";
+        }
+
+
+        if (videoInput) {
+            videoInput.value = "";
+        }
+
+
+        updatePostButton();
+    }
+
+
+    /* =====================================================
+       CAPTION
+    ===================================================== */
+
+    reelCaption?.addEventListener(
+        "input",
+        () => {
+
+            const value =
+                reelCaption.value
+                    .slice(0, 40);
+
+
+            reelCaption.value =
+                value;
+
+
+            if (captionCount) {
+
+                captionCount.textContent =
+                    `${value.length}/40`;
+
+
+                if (value.length >= 40) {
+
+                    captionCount.classList.add(
+                        "limit-reached"
+                    );
+
+                } else {
+
+                    captionCount.classList.remove(
+                        "limit-reached"
+                    );
+                }
+            }
+        }
+    );
+
+
+    /* =====================================================
+       LOCATION
+    ===================================================== */
+
+    locationButton?.addEventListener(
+        "click",
+        () => {
+
+            if (isUploading) {
+                return;
+            }
+
+            locationOverlay.hidden =
+                false;
+
+
+            setTimeout(
+                () => {
+
+                    locationInput?.focus();
+
+                },
+                100
+            );
+        }
+    );
+
+
+    closeLocation?.addEventListener(
+        "click",
+        closeLocationSheet
+    );
+
+
+    locationOverlay?.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target ===
+                locationOverlay
+            ) {
+
+                closeLocationSheet();
+            }
+        }
+    );
+
+
+    function closeLocationSheet() {
+
+        if (locationOverlay) {
+
+            locationOverlay.hidden =
+                true;
+        }
+    }
+
+
+    /* =====================================================
+       LOCATION SEARCH
+    ===================================================== */
+
+    locationInput?.addEventListener(
+        "input",
+        () => {
+
+            const query =
+                locationInput.value.trim();
+
+
+            locationResults.innerHTML =
+                "";
+
+
+            if (!query) {
+                return;
+            }
+
+
+            const suggestions = [
+
+                query,
+
+                `${query}, India`,
+
+                `${query} City`
+
+            ];
+
+
+            suggestions.forEach(
+                (location) => {
+
+                    const button =
+                        document.createElement(
+                            "button"
+                        );
+
+
+                    button.type =
+                        "button";
+
+
+                    button.className =
+                        "location-result";
+
+
+                    button.textContent =
+                        location;
+
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            selectedLocation =
+                                location;
+
+
+                            if (locationText) {
+
+                                locationText.textContent =
+                                    location;
+                            }
+
+
+                            closeLocationSheet();
+                        }
+                    );
+
+
+                    locationResults.appendChild(
+                        button
+                    );
+                }
+            );
+        }
+    );
+
+
+    /* =====================================================
+       AUDIENCE
+    ===================================================== */
+
+    audienceButton?.addEventListener(
+        "click",
+        () => {
+
+            if (isUploading) {
+                return;
+            }
+
+            audienceOverlay.hidden =
+                false;
+        }
+    );
+
+
+    closeAudience?.addEventListener(
+        "click",
+        closeAudienceSheet
+    );
+
+
+    audienceOverlay?.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target ===
+                audienceOverlay
+            ) {
+
+                closeAudienceSheet();
+            }
+        }
+    );
+
+
+    function closeAudienceSheet() {
+
+        if (audienceOverlay) {
+
+            audienceOverlay.hidden =
+                true;
+        }
+    }
+
+
+    audienceOptions.forEach(
+        (option) => {
+
+            option.addEventListener(
+                "click",
+                () => {
+
+                    selectedAudience =
+                        option.dataset.audience ||
+                        "Everyone";
+
+
+                    if (audienceText) {
+
+                        audienceText.textContent =
+                            selectedAudience;
+                    }
+
+
+                    audienceOptions.forEach(
+                        (item) => {
+
+                            item.classList.remove(
+                                "selected"
+                            );
+                        }
+                    );
+
+
+                    option.classList.add(
+                        "selected"
+                    );
+
+
+                    closeAudienceSheet();
+                }
+            );
+        }
+    );
+
+
+    /* =====================================================
+       NEXT
+    ===================================================== */
+
+    reelNext?.addEventListener(
+        "click",
+        () => {
+
+            if (!selectedVideoFile) {
+
+                showMessage(
+                    "Please select a video first."
+                );
+
+                return;
+            }
+
+
+            reelCaption?.focus();
+        }
+    );
+
+
+    /* =====================================================
+       REAL REEL UPLOAD
+    ===================================================== */
+
+    postReelButton?.addEventListener(
+        "click",
+        async () => {
+
+            if (isUploading) {
+                return;
+            }
+
+
+            if (!selectedVideoFile) {
+
+                showMessage(
+                    "Please select a video first."
+                );
+
+                return;
+            }
+
+
+            const originalText =
+                postReelButton.textContent;
+
+
+            try {
+
+                isUploading = true;
+
+                postReelButton.disabled =
+                    true;
+
+                postReelButton.textContent =
+                    "Uploading...";
+
+
+                /*
+                 * FormData is required because
+                 * video is a multipart file.
+                 */
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "video",
+                    selectedVideoFile
+                );
+
+
+                const caption =
+                    reelCaption?.value.trim() ||
+                    "";
+
+
+                if (caption) {
+
+                    formData.append(
+                        "caption",
+                        caption
+                    );
+                }
+
+
+                /*
+                 * Backend accepts these fields.
+                 */
+
+                if (selectedLocation) {
+
+                    formData.append(
+                        "location",
+                        selectedLocation
+                    );
+                }
+
+
+                formData.append(
+                    "category",
+                    "general"
+                );
+
+
+                /*
+                 * Send authenticated request.
+                 */
+
+                const response =
+                    await fetch(
+                        "/api/reels/upload",
+                        {
+                            method: "POST",
+
+                            credentials: "include",
+
+                            body: formData
+                        }
+                    );
+
+
+                let data = null;
+
+
+                try {
+
+                    data =
+                        await response.json();
+
+                } catch {
+
+                    data = null;
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data?.detail ||
+                        data?.message ||
+                        `Upload failed (${response.status})`
+                    );
+                }
+
+
+                if (!data?.success) {
+
+                    throw new Error(
+                        data?.message ||
+                        "Reel upload failed."
+                    );
+                }
+
+
+                /*
+                 * Success
+                 */
+
+                postReelButton.textContent =
+                    "Uploaded ✓";
+
+
+                showMessage(
+                    "Reel uploaded successfully!"
+                );
+
+
+                /*
+                 * Give backend a moment,
+                 * then return to Reels.
+                 */
+
+                setTimeout(
+                    () => {
+
+                        window.location.href =
+                            "/static/reels.html";
+
+                    },
+                    900
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "USANEX REEL UPLOAD ERROR:",
+                    error
+                );
+
+
+                isUploading = false;
+
+
+                postReelButton.disabled =
+                    false;
+
+
+                postReelButton.textContent =
+                    originalText;
+
+
+                showMessage(
+                    error?.message ||
+                    "Unable to upload reel."
+                );
+            }
+        }
+    );
+
+
+    /* =====================================================
+       BACK
+    ===================================================== */
+
+    reelBack?.addEventListener(
+        "click",
+        () => {
+
+            if (isUploading) {
+                return;
+            }
+
+
+            if (
+                window.history.length > 1
+            ) {
+
+                window.history.back();
+
+            } else {
+
+                window.location.href =
+                    "/static/home.html";
+            }
+        }
+    );
+
+
+    /* =====================================================
+       POST BUTTON STATE
+    ===================================================== */
+
+    function updatePostButton() {
+
+        if (!postReelButton) {
+            return;
+        }
+
+
+        postReelButton.disabled =
+            !selectedVideoFile ||
+            isUploading;
+    }
+
+
+    /* =====================================================
+       FORMAT TIME
+    ===================================================== */
+
+    function formatTime(seconds) {
+
+        if (
+            !Number.isFinite(seconds) ||
+            seconds < 0
+        ) {
+
+            return "0:00";
+        }
+
+
+        const minutes =
+            Math.floor(
+                seconds / 60
+            );
+
+
+        const remaining =
+            Math.floor(
+                seconds % 60
+            );
+
+
+        return (
+            `${minutes}:${String(
+                remaining
+            ).padStart(2, "0")}`
         );
-
-    border: 1px solid #17212c;
-
-    border-radius: 20px;
-}
-
-.video-empty {
-    width: 100%;
-
-    display: flex;
-    flex-direction: column;
-
-    align-items: center;
-    justify-content: center;
-
-    padding: 25px;
-
-    text-align: center;
-}
-
-.upload-icon {
-    width: 62px;
-    height: 62px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    margin-bottom: 15px;
-
-    color: #ffffff;
-}
-
-.upload-icon svg {
-    width: 52px;
-    height: 52px;
-}
-
-.video-empty h2 {
-    color: #ffffff;
-
-    font-size: 18px;
-    font-weight: 700;
-
-    margin-bottom: 6px;
-}
-
-.video-empty p {
-    color: #778495;
-
-    font-size: 12px;
-
-    margin-bottom: 18px;
-}
-
-.select-video-button {
-    min-height: 40px;
-
-    padding: 0 19px;
-
-    border-radius: 11px;
-
-    background: #247cff;
-
-    color: #ffffff;
-
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.select-video-button:active {
-    transform: scale(0.97);
-}
-
-
-/* =========================================================
-   VIDEO
-========================================================= */
-
-#reelVideo {
-    width: 100%;
-    height: 100%;
-
-    display: block;
-
-    object-fit: contain;
-
-    background: #000;
-}
-
-
-/* =========================================================
-   VIDEO CONTROLS
-========================================================= */
-
-.video-controls {
-    position: absolute;
-
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-
-    display: flex;
-    align-items: center;
-
-    gap: 8px;
-
-    padding: 8px 10px;
-
-    border-radius: 13px;
-
-    background: rgba(0, 0, 0, 0.62);
-
-    backdrop-filter: blur(10px);
-}
-
-.video-controls button {
-    width: 34px;
-    height: 34px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: rgba(255, 255, 255, 0.10);
-
-    color: #ffffff;
-
-    font-size: 13px;
-}
-
-.video-duration {
-    margin-left: auto;
-
-    color: #dbe2eb;
-
-    font-size: 11px;
-}
-
-
-/* =========================================================
-   VIDEO ACTIONS
-========================================================= */
-
-.video-actions {
-    width: 100%;
-
-    display: flex;
-
-    gap: 8px;
-
-    margin-top: 9px;
-}
-
-.video-actions button {
-    flex: 1;
-
-    height: 38px;
-
-    border-radius: 10px;
-
-    background: #0d141e;
-
-    border: 1px solid #1b2735;
-
-    color: #aeb9c7;
-
-    font-size: 12px;
-    font-weight: 600;
-}
-
-
-/* =========================================================
-   DETAILS
-========================================================= */
-
-.reel-details {
-    width: 100%;
-
-    margin-top: 14px;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 8px;
-}
-
-
-/* =========================================================
-   CAPTION
-========================================================= */
-
-.field-group {
-    width: 100%;
-
-    padding: 12px;
-
-    background: #0a0f15;
-
-    border: 1px solid #17212c;
-
-    border-radius: 14px;
-}
-
-.field-label-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    margin-bottom: 7px;
-}
-
-.field-label-row label {
-    color: #dfe5ed;
-
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.field-label-row span {
-    color: #697687;
-
-    font-size: 10px;
-}
-
-#reelCaption {
-    width: 100%;
-
-    min-height: 48px;
-
-    resize: none;
-
-    border: none;
-    outline: none;
-
-    background: transparent;
-
-    color: #ffffff;
-
-    font-size: 13px;
-    line-height: 19px;
-}
-
-#reelCaption::placeholder {
-    color: #667384;
-}
-
-
-/* =========================================================
-   DETAIL ROW
-========================================================= */
-
-.detail-row {
-    width: 100%;
-
-    min-height: 58px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    padding: 8px 12px;
-
-    border: 1px solid #17212c;
-
-    border-radius: 14px;
-
-    background: #0a0f15;
-
-    color: #ffffff;
-
-    text-align: left;
-}
-
-.detail-left {
-    display: flex;
-    align-items: center;
-
-    gap: 11px;
-
-    min-width: 0;
-}
-
-.detail-icon {
-    width: 32px;
-    height: 32px;
-
-    flex: 0 0 32px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    color: #ffffff;
-}
-
-.detail-icon svg {
-    width: 20px;
-    height: 20px;
-}
-
-.detail-left > span:last-child {
-    min-width: 0;
-
-    display: flex;
-    flex-direction: column;
-
-    gap: 2px;
-}
-
-.detail-left strong {
-    color: #e9eef5;
-
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.detail-left small {
-    max-width: 230px;
-
-    overflow: hidden;
-
-    color: #707e8f;
-
-    font-size: 11px;
-
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.detail-arrow {
-    color: #687587;
-
-    font-size: 23px;
-}
-
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-.settings-box {
-    width: 100%;
-
-    padding: 4px 12px;
-
-    background: #0a0f15;
-
-    border: 1px solid #17212c;
-
-    border-radius: 14px;
-}
-
-.setting-row {
-    min-height: 48px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    color: #c7d0dc;
-
-    font-size: 12px;
-}
-
-.setting-row + .setting-row {
-    border-top: 1px solid #151e29;
-}
-
-
-/* =========================================================
-   SWITCH
-========================================================= */
-
-.switch {
-    position: relative;
-
-    width: 40px;
-    height: 23px;
-
-    display: inline-block;
-}
-
-.switch input {
-    opacity: 0;
-
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-
-    inset: 0;
-
-    border-radius: 20px;
-
-    background: #273241;
-
-    transition: 0.2s ease;
-}
-
-.slider::before {
-    content: "";
-
-    position: absolute;
-
-    width: 17px;
-    height: 17px;
-
-    left: 3px;
-    top: 3px;
-
-    border-radius: 50%;
-
-    background: #ffffff;
-
-    transition: 0.2s ease;
-}
-
-.switch input:checked + .slider {
-    background: #247cff;
-}
-
-.switch input:checked + .slider::before {
-    transform: translateX(17px);
-}
-
-
-/* =========================================================
-   FOOTER
-========================================================= */
-
-.reel-footer {
-    position: fixed;
-
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    z-index: 200;
-
-    padding:
-        10px
-        max(14px, env(safe-area-inset-right))
-        calc(10px + env(safe-area-inset-bottom))
-        max(14px, env(safe-area-inset-left));
-
-    background: rgba(5, 7, 11, 0.96);
-
-    border-top: 1px solid #121923;
-
-    backdrop-filter: blur(15px);
-}
-
-.post-reel-button {
-    width: 100%;
-
-    max-width: 680px;
-
-    height: 46px;
-
-    display: block;
-
-    margin: 0 auto;
-
-    border-radius: 13px;
-
-    background: #247cff;
-
-    color: #ffffff;
-
-    font-size: 13px;
-    font-weight: 700;
-
-    transition:
-        opacity 0.2s ease,
-        transform 0.15s ease;
-}
-
-.post-reel-button:disabled {
-    opacity: 0.35;
-
-    cursor: not-allowed;
-}
-
-.post-reel-button:not(:disabled):active {
-    transform: scale(0.98);
-}
-
-
-/* =========================================================
-   OVERLAY
-========================================================= */
-
-.small-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 5000;
-
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-
-    background: rgba(0, 0, 0, 0.68);
-}
-
-.small-overlay[hidden] {
-    display: none;
-}
-
-.small-sheet {
-    width: 100%;
-    max-width: 680px;
-
-    max-height: 75vh;
-
-    overflow-y: auto;
-
-    padding: 10px 16px 25px;
-
-    border-radius: 24px 24px 0 0;
-
-    background: #0a1018;
-
-    border: 1px solid #1b2735;
-
-    animation: sheetUp 0.2s ease-out;
-}
-
-@keyframes sheetUp {
-    from {
-        transform: translateY(100%);
     }
 
-    to {
-        transform: translateY(0);
-    }
-}
 
-.sheet-handle {
-    width: 42px;
-    height: 5px;
+    /* =====================================================
+       MESSAGE / TOAST
+    ===================================================== */
 
-    margin: 3px auto 17px;
+    function showMessage(message) {
 
-    border-radius: 10px;
+        const existing =
+            document.querySelector(
+                ".reel-message"
+            );
 
-    background: #526173;
-}
 
-.small-sheet-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+        existing?.remove();
 
-    margin-bottom: 15px;
-}
 
-.small-sheet-header h2 {
-    color: #ffffff;
+        const messageBox =
+            document.createElement(
+                "div"
+            );
 
-    font-size: 17px;
-    font-weight: 700;
-}
 
-.sheet-close {
-    width: 34px;
-    height: 34px;
+        messageBox.className =
+            "reel-message";
 
-    border-radius: 50%;
 
-    background: #151e29;
+        messageBox.textContent =
+            message;
 
-    color: #ffffff;
 
-    font-size: 23px;
-}
+        Object.assign(
+            messageBox.style,
+            {
 
+                position: "fixed",
 
-/* =========================================================
-   LOCATION
-========================================================= */
+                left: "50%",
 
-.location-input {
-    width: 100%;
-    height: 44px;
-
-    padding: 0 13px;
-
-    outline: none;
-
-    border: 1px solid #253346;
-    border-radius: 11px;
-
-    background: #080d14;
-
-    color: #ffffff;
-
-    font-size: 13px;
-}
-
-.location-input::placeholder {
-    color: #667486;
-}
-
-.location-results {
-    margin-top: 8px;
-}
-
-.location-result {
-    width: 100%;
-
-    min-height: 45px;
-
-    display: flex;
-    align-items: center;
-
-    padding: 0 10px;
-
-    border-bottom: 1px solid #151e29;
-
-    background: transparent;
-
-    color: #cdd5df;
-
-    font-size: 13px;
-
-    text-align: left;
-}
-
-.location-result:active {
-    background: #111a25;
-}
-
-
-/* =========================================================
-   AUDIENCE
-========================================================= */
-
-.audience-option {
-    width: 100%;
-
-    height: 48px;
-
-    display: flex;
-    align-items: center;
-
-    padding: 0 10px;
-
-    border-radius: 10px;
-
-    background: transparent;
-
-    color: #cbd4df;
-
-    font-size: 13px;
-
-    text-align: left;
-}
-
-.audience-option + .audience-option {
-    margin-top: 3px;
-}
-
-.audience-option.selected {
-    background: #111e2e;
-
-    color: #247cff;
-}
-
-
-/* =========================================================
-   TABLET / DESKTOP
-========================================================= */
-
-@media (min-width: 700px) {
-
-    .reel-main {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-
-    .video-preview {
-        max-width: 420px;
-
-        margin: 0 auto;
-
-        max-height: 65vh;
-    }
-}
-
-
-/* =========================================================
-   SMALL PHONES
-========================================================= */
-
-@media (max-width: 360px) {
-
-    .reel-header {
-        height: 54px;
-
-        flex-basis: 54px;
-    }
-
-    .reel-main {
-        padding-left: 10px;
-        padding-right: 10px;
-    }
-
-    .video-preview {
-        border-radius: 17px;
-    }
-
-    .video-empty h2 {
-        font-size: 17px;
-    }
-
-    .detail-row {
-        min-height: 54px;
-    }
-
-    .setting-row {
-        min-height: 45px;
-    }
-}
-
-
-/* =========================================================
-   REDUCE MOTION
-========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    .video-preview,
-    .small-sheet {
-        animation: none;
-    }
-
-    * {
-        scroll-behavior: auto !important;
-    }
-}
+     
