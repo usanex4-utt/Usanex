@@ -101,7 +101,9 @@ app.include_router(
 app.include_router(
     reels.router
 )
-
+app.include_router(
+    pages_router
+)
 
 # =========================================================
 # DATABASE STARTUP
@@ -114,24 +116,6 @@ def startup():
         bind=engine
     )
 
-# =========================================================
-# REEL UPLOAD PAGE
-# =========================================================
-
-REEL_UPLOAD_PAGE = (
-    BASE_DIR
-    / "frontend"
-    / "reel-upload.html"
-)
-
-@app.get("/reel-upload", include_in_schema=False)
-def reel_upload_page():
-
-    return {
-        "base_dir": str(BASE_DIR),
-        "reel_path": str(REEL_UPLOAD_PAGE),
-        "exists": REEL_UPLOAD_PAGE.exists(),
-    }
 
 # =========================================================
 # ROOT
