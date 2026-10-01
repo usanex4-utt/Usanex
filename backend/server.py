@@ -2,7 +2,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse,FileResponse
+from fastapi.responses import 
+RedirectResponse,FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
