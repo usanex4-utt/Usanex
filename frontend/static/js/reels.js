@@ -1,6 +1,16 @@
 /* =========================================================
    USANEX REELS
    Production Frontend Controller
+   ---------------------------------------------------------
+   Features:
+   • Reel autoplay
+   • Audio when browser allows
+   • Tap 1 = ⭐
+   • Tap 2 = ⭐⭐
+   • Tap 3 = ⭐⭐⭐
+   • Long press = mute / unmute
+   • Previous reel pauses
+   • Multiple video URL formats supported
 ========================================================= */
 
 "use strict";
@@ -41,7 +51,9 @@ const ReelApp = {
 
     watchSent: new Set(),
 
-    userInteracted: false
+    userInteracted: false,
+
+    activeVideo: null
 
 };
 
@@ -74,47 +86,35 @@ document.addEventListener(
 
 function initializeUserInteraction() {
 
-    const unlockAudio =
-        () => {
+    const unlockAudio = () => {
 
-            ReelApp.userInteracted =
-                true;
+        ReelApp.userInteracted = true;
 
+        const activeCard =
+            document.querySelector(
+                ".reel-card.active-reel"
+            );
 
-            const activeCard =
-                document.querySelector(
-                    ".reel-card.active-reel"
-                );
+        if (!activeCard) {
+            return;
+        }
 
+        const video =
+            activeCard.querySelector(
+                "video"
+            );
 
-            if (activeCard) {
+        if (!video) {
+            return;
+        }
 
-                const video =
-                    activeCard.querySelector(
-                        "video"
-                    );
+        video.muted = false;
 
+        video.volume = 1;
 
-                if (video) {
+        video.play().catch(() => {});
 
-                    video.muted =
-                        false;
-
-
-                    video.volume =
-                        1;
-
-
-                    video.play()
-                        .catch(
-                            () => {}
-                        );
-
-                }
-
-            }
-
-        };
+    };
 
 
     document.addEventListener(
@@ -187,8 +187,7 @@ async function apiRequest(
         );
 
 
-    let data =
-        null;
+    let data = null;
 
 
     try {
@@ -198,8 +197,7 @@ async function apiRequest(
 
     } catch {
 
-        data =
-            null;
+        data = null;
 
     }
 
@@ -213,14 +211,11 @@ async function apiRequest(
                 "Request failed"
             );
 
-
         error.status =
             response.status;
 
-
         error.data =
             data;
-
 
         throw error;
 
@@ -238,17 +233,12 @@ async function apiRequest(
 
 async function loadReels() {
 
-    if (
-        ReelApp.loading
-    ) {
-
+    if (ReelApp.loading) {
         return;
-
     }
 
 
-    ReelApp.loading =
-        true;
+    ReelApp.loading = true;
 
 
     const container =
@@ -259,8 +249,7 @@ async function loadReels() {
 
     if (!container) {
 
-        ReelApp.loading =
-            false;
+        ReelApp.loading = false;
 
         return;
 
@@ -289,18 +278,14 @@ async function loadReels() {
             ReelApp.reels =
                 reels;
 
-
             renderReels(
                 reels
             );
 
-
             ReelApp.loaded =
                 true;
 
-
             initializeReelObserver();
-
 
             return;
 
@@ -327,7 +312,6 @@ async function loadReels() {
                 "Please login to view reels"
             );
 
-
             return;
 
         }
@@ -339,8 +323,7 @@ async function loadReels() {
 
     } finally {
 
-        ReelApp.loading =
-            false;
+        ReelApp.loading = false;
 
     }
 
@@ -366,9 +349,7 @@ function normalizeReelResponse(
 
     if (
         data &&
-        Array.isArray(
-            data.reels
-        )
+        Array.isArray(data.reels)
     ) {
 
         return data.reels;
@@ -378,9 +359,7 @@ function normalizeReelResponse(
 
     if (
         data &&
-        Array.isArray(
-            data.data
-        )
+        Array.isArray(data.data)
     ) {
 
         return data.data;
@@ -391,9 +370,7 @@ function normalizeReelResponse(
     if (
         data &&
         data.data &&
-        Array.isArray(
-            data.data.reels
-        )
+        Array.isArray(data.data.reels)
     ) {
 
         return data.data.reels;
@@ -421,9 +398,7 @@ function showEmptyReels(
 
 
     if (!container) {
-
         return;
-
     }
 
 
@@ -440,9 +415,7 @@ function showEmptyReels(
             </h3>
 
             <p>
-                ${escapeHTML(
-                    message
-                )}
+                ${escapeHTML(message)}
             </p>
 
         </div>
@@ -467,14 +440,11 @@ function renderReels(
 
 
     if (!container) {
-
         return;
-
     }
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
     reels.forEach(
@@ -489,7 +459,6 @@ function renderReels(
                     index
                 );
 
-
             container.appendChild(
                 card
             );
@@ -499,6 +468,126 @@ function renderReels(
 
 
     initializeReelObserver();
+
+}
+
+
+/* =========================================================
+   GET VIDEO URL
+========================================================= */
+
+function getVideoURL(
+    reel
+) {
+
+    if (!reel) {
+        return "";
+    }
+
+
+    const possibleUrls = [
+
+        reel.video_url,
+
+        reel.videoUrl,
+
+        reel.video,
+
+        reel.media_url,
+
+        reel.mediaUrl,
+
+        reel.file_url,
+
+        reel.fileUrl,
+
+        reel.video_path,
+
+        reel.videoPath,
+
+        reel.media_path,
+
+        reel.mediaPath,
+
+        reel.url
+
+    ];
+
+
+    let url =
+        possibleUrls.find(
+            value =>
+                typeof value === "string" &&
+                value.trim() !== ""
+        );
+
+
+    if (!url) {
+        return "";
+    }
+
+
+    url =
+        url.trim();
+
+
+    /*
+     * Already absolute URL
+     */
+
+    if (
+        /^https?:\/\//i.test(url)
+    ) {
+
+        return url;
+
+    }
+
+
+    /*
+     * Blob URL
+     */
+
+    if (
+        url.startsWith("blob:")
+    ) {
+
+        return url;
+
+    }
+
+
+    /*
+     * Data URL
+     */
+
+    if (
+        url.startsWith("data:")
+    ) {
+
+        return url;
+
+    }
+
+
+    /*
+     * Root-relative URL
+     */
+
+    if (
+        url.startsWith("/")
+    ) {
+
+        return url;
+
+    }
+
+
+    /*
+     * Relative URL
+     */
+
+    return "/" + url;
 
 }
 
@@ -531,9 +620,7 @@ function createReelCard(
 
 
     article.dataset.index =
-        String(
-            index
-        );
+        String(index);
 
 
     article.dataset.tapRating =
@@ -547,28 +634,7 @@ function createReelCard(
             <div class="video-placeholder">
 
                 <div class="placeholder-icon">
-
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                    >
-
-                        <rect
-                            x="3"
-                            y="3"
-                            width="18"
-                            height="18"
-                            rx="3"
-                        ></rect>
-
-                        <path
-                            d="M9 8l7 4-7 4V8z"
-                        ></path>
-
-                    </svg>
-
+                    ▶
                 </div>
 
                 <span>
@@ -591,21 +657,18 @@ function createReelCard(
                     type="button"
                     class="rating-star"
                     data-rating="1"
-                    aria-label="1 star"
                 >★</button>
 
                 <button
                     type="button"
                     class="rating-star"
                     data-rating="2"
-                    aria-label="2 stars"
                 >★</button>
 
                 <button
                     type="button"
                     class="rating-star"
                     data-rating="3"
-                    aria-label="3 stars"
                 >★</button>
 
                 <span class="rating-label">
@@ -619,26 +682,8 @@ function createReelCard(
                 type="button"
                 class="reel-action"
                 data-action="comment"
-                aria-label="Comment"
             >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                >
-
-                    <path
-                        d="M20 11.5a7.5 7.5 0 0 1-8 7.5
-                           8.7 8.7 0 0 1-3.5-.7L4 20
-                           l1.4-3.5A7.3 7.3 0 0 1 4 11.5
-                           7.5 7.5 0 0 1 12 4
-                           7.5 7.5 0 0 1 20 11.5z"
-                    ></path>
-
-                </svg>
-
+                💬
                 <span class="comment-count">
                     ${escapeHTML(
                         reel.comment_count ??
@@ -646,7 +691,6 @@ function createReelCard(
                         0
                     )}
                 </span>
-
             </button>
 
 
@@ -654,30 +698,9 @@ function createReelCard(
                 type="button"
                 class="reel-action"
                 data-action="share"
-                aria-label="Share"
             >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                >
-
-                    <path
-                        d="M21 3L10 14"
-                    ></path>
-
-                    <path
-                        d="M21 3l-7 18-4-7-7-4 18-7z"
-                    ></path>
-
-                </svg>
-
-                <span>
-                    Share
-                </span>
-
+                ↗
+                <span>Share</span>
             </button>
 
 
@@ -685,28 +708,9 @@ function createReelCard(
                 type="button"
                 class="reel-action"
                 data-action="save"
-                aria-label="Save"
             >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                >
-
-                    <path
-                        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7
-                           A2.5 2.5 0 0 1 18 4.5V21
-                           l-6-3.5L6 21V4.5z"
-                    ></path>
-
-                </svg>
-
-                <span>
-                    Save
-                </span>
-
+                🔖
+                <span>Save</span>
             </button>
 
 
@@ -714,34 +718,9 @@ function createReelCard(
                 type="button"
                 class="reel-action"
                 data-action="download"
-                aria-label="Download"
             >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                >
-
-                    <path
-                        d="M12 3v12"
-                    ></path>
-
-                    <path
-                        d="M7 10l5 5 5-5"
-                    ></path>
-
-                    <path
-                        d="M5 21h14"
-                    ></path>
-
-                </svg>
-
-                <span>
-                    Download
-                </span>
-
+                ↓
+                <span>Download</span>
             </button>
 
 
@@ -749,36 +728,8 @@ function createReelCard(
                 type="button"
                 class="reel-action more-action"
                 data-action="more"
-                aria-label="More"
             >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                >
-
-                    <circle
-                        cx="5"
-                        cy="12"
-                        r="1"
-                    ></circle>
-
-                    <circle
-                        cx="12"
-                        cy="12"
-                        r="1"
-                    ></circle>
-
-                    <circle
-                        cx="19"
-                        cy="12"
-                        r="1"
-                    ></circle>
-
-                </svg>
-
+                ⋮
             </button>
 
         </div>
@@ -870,30 +821,7 @@ function createReelCard(
 
             <div class="reel-audio">
 
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.7"
-                >
-
-                    <path
-                        d="M9 18V6l10-2v12"
-                    ></path>
-
-                    <circle
-                        cx="6"
-                        cy="18"
-                        r="3"
-                    ></circle>
-
-                    <circle
-                        cx="16"
-                        cy="16"
-                        r="3"
-                    ></circle>
-
-                </svg>
+                🎵
 
                 <span>
 
@@ -912,10 +840,16 @@ function createReelCard(
 
 
     const videoUrl =
-        reel.video_url ??
-        reel.video ??
-        reel.media_url ??
-        null;
+        getVideoURL(
+            reel
+        );
+
+
+    console.log(
+        "Usanex Reel:",
+        article.dataset.reelId,
+        videoUrl
+    );
 
 
     if (videoUrl) {
@@ -941,6 +875,23 @@ function createReelCard(
             video
         );
 
+    } else {
+
+        const placeholder =
+            article.querySelector(
+                ".video-placeholder"
+            );
+
+
+        if (placeholder) {
+
+            placeholder.querySelector(
+                "span"
+            ).textContent =
+                "Video unavailable";
+
+        }
+
     }
 
 
@@ -955,9 +906,7 @@ function createReelCard(
 
 
 /* =========================================================
-   VIDEO
-   Auto Play + Audio
-   Long Press = Mute / Unmute
+   VIDEO ELEMENT
 ========================================================= */
 
 function createVideoElement(
@@ -971,6 +920,10 @@ function createVideoElement(
         );
 
 
+    video.className =
+        "reel-video-player";
+
+
     video.src =
         videoUrl;
 
@@ -981,18 +934,6 @@ function createVideoElement(
 
     video.loop =
         true;
-
-
-    video.autoplay =
-        true;
-
-
-    video.muted =
-        false;
-
-
-    video.volume =
-        1;
 
 
     video.playsInline =
@@ -1011,10 +952,17 @@ function createVideoElement(
     );
 
 
-    video.setAttribute(
-        "autoplay",
-        ""
-    );
+    /*
+     * Start muted because mobile browsers
+     * normally block autoplay with sound.
+     */
+
+    video.muted =
+        true;
+
+
+    video.volume =
+        1;
 
 
     if (
@@ -1027,25 +975,81 @@ function createVideoElement(
     }
 
 
-    /* =========================================
-       LONG PRESS
-    ========================================= */
+    /* -----------------------------------------
+       VIDEO LOAD SUCCESS
+    ----------------------------------------- */
+
+    video.addEventListener(
+        "loadeddata",
+        () => {
+
+            console.log(
+                "Video loaded:",
+                videoUrl
+            );
+
+        }
+    );
+
+
+    /* -----------------------------------------
+       VIDEO ERROR
+    ----------------------------------------- */
+
+    video.addEventListener(
+        "error",
+        () => {
+
+            console.error(
+                "Video failed:",
+                videoUrl,
+                video.error
+            );
+
+
+            const container =
+                video.closest(
+                    ".reel-video"
+                );
+
+
+            if (container) {
+
+                container.innerHTML = `
+
+                    <div class="video-placeholder">
+
+                        <div class="placeholder-icon">
+                            ⚠
+                        </div>
+
+                        <span>
+                            Video could not be loaded
+                        </span>
+
+                    </div>
+
+                `;
+
+            }
+
+        }
+    );
+
+
+    /* -----------------------------------------
+       TOUCH / LONG PRESS
+    ----------------------------------------- */
 
     let pressTimer =
         null;
 
-
     let longPress =
         false;
-
 
     const LONG_PRESS_TIME =
         600;
 
-
-    /* -----------------------------------------
-       TOUCH START
-    ----------------------------------------- */
 
     video.addEventListener(
         "touchstart",
@@ -1060,6 +1064,10 @@ function createVideoElement(
                     () => {
 
                         longPress =
+                            true;
+
+
+                        ReelApp.userInteracted =
                             true;
 
 
@@ -1078,9 +1086,20 @@ function createVideoElement(
     );
 
 
-    /* -----------------------------------------
-       TOUCH END
-    ----------------------------------------- */
+    video.addEventListener(
+        "touchmove",
+        () => {
+
+            clearTimeout(
+                pressTimer
+            );
+
+        },
+        {
+            passive: true
+        }
+    );
+
 
     video.addEventListener(
         "touchend",
@@ -1100,16 +1119,6 @@ function createVideoElement(
             }
 
 
-            /*
-             * Normal tap:
-             *
-             * 1. If video/audio isn't running,
-             *    start it.
-             *
-             * 2. Otherwise rate:
-             *    1 -> 2 -> 3 -> 1
-             */
-
             const card =
                 video.closest(
                     ".reel-card"
@@ -1117,38 +1126,36 @@ function createVideoElement(
 
 
             if (!card) {
+                return;
+            }
+
+
+            ReelApp.userInteracted =
+                true;
+
+
+            /*
+             * If paused → play.
+             */
+
+            if (video.paused) {
+
+                playVideoWithSound(
+                    video
+                );
 
                 return;
 
             }
 
 
-            if (
-                video.paused
-            ) {
-
-                ReelApp.userInteracted =
-                    true;
-
-
-                video.muted =
-                    false;
-
-
-                video.volume =
-                    1;
-
-
-                video.play()
-                    .catch(
-                        () => {}
-                    );
-
-
-                return;
-
-            }
-
+            /*
+             * Normal tap while playing:
+             *
+             * 1 → ⭐
+             * 2 → ⭐⭐
+             * 3 → ⭐⭐⭐
+             */
 
             rateByVideoTap(
                 card
@@ -1162,7 +1169,7 @@ function createVideoElement(
 
 
     /* -----------------------------------------
-       DESKTOP MOUSE LONG PRESS
+       DESKTOP LONG PRESS
     ----------------------------------------- */
 
     video.addEventListener(
@@ -1172,9 +1179,7 @@ function createVideoElement(
             if (
                 event.button !== 0
             ) {
-
                 return;
-
             }
 
 
@@ -1187,6 +1192,10 @@ function createVideoElement(
                     () => {
 
                         longPress =
+                            true;
+
+
+                        ReelApp.userInteracted =
                             true;
 
 
@@ -1226,49 +1235,26 @@ function createVideoElement(
     );
 
 
-    /* -----------------------------------------
-       TRY AUTOPLAY
-    ----------------------------------------- */
-
-    video.addEventListener(
-        "loadeddata",
-        () => {
-
-            tryPlayVideo(
-                video
-            );
-
-        }
-    );
-
-
-    /*
-     * Also try immediately
-     */
-
-    tryPlayVideo(
-        video
-    );
-
-
     return video;
 
 }
 
 
 /* =========================================================
-   TRY PLAY VIDEO
+   PLAY VIDEO
 ========================================================= */
 
-function tryPlayVideo(
+function playVideoWithSound(
     video
 ) {
 
     if (!video) {
-
         return;
-
     }
+
+
+    ReelApp.userInteracted =
+        true;
 
 
     video.muted =
@@ -1280,23 +1266,18 @@ function tryPlayVideo(
 
 
     video.play()
-        .then(
-            () => {
-
-                video.muted =
-                    false;
-
-            }
-        )
         .catch(
-            () => {
+            error => {
+
+                console.warn(
+                    "Sound play blocked:",
+                    error
+                );
+
 
                 /*
-                 * Browser blocked autoplay
-                 * with sound.
-                 *
-                 * Start muted so reel still
-                 * plays automatically.
+                 * Fallback:
+                 * video still plays muted.
                  */
 
                 video.muted =
@@ -1305,8 +1286,113 @@ function tryPlayVideo(
 
                 video.play()
                     .catch(
-                        () => {}
+                        err => {
+
+                            console.warn(
+                                "Video play failed:",
+                                err
+                            );
+
+                        }
                     );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   PLAY ACTIVE VIDEO
+========================================================= */
+
+function playActiveVideo(
+    video
+) {
+
+    if (!video) {
+        return;
+    }
+
+
+    /*
+     * Stop previous active video.
+     */
+
+    if (
+        ReelApp.activeVideo &&
+        ReelApp.activeVideo !== video
+    ) {
+
+        try {
+
+            ReelApp.activeVideo.pause();
+
+        } catch {}
+
+    }
+
+
+    ReelApp.activeVideo =
+        video;
+
+
+    /*
+     * User has interacted:
+     * play with sound.
+     */
+
+    if (
+        ReelApp.userInteracted
+    ) {
+
+        video.muted =
+            false;
+
+        video.volume =
+            1;
+
+        video.play()
+            .catch(
+                () => {
+
+                    video.muted =
+                        true;
+
+                    video.play()
+                        .catch(
+                            () => {}
+                        );
+
+                }
+            );
+
+        return;
+
+    }
+
+
+    /*
+     * First automatic play:
+     * browser-safe muted mode.
+     */
+
+    video.muted =
+        true;
+
+
+    video.volume =
+        1;
+
+
+    video.play()
+        .catch(
+            error => {
+
+                console.warn(
+                    "Autoplay failed:",
+                    error
+                );
 
             }
         );
@@ -1323,17 +1409,14 @@ function toggleVideoAudio(
 ) {
 
     if (!video) {
-
         return;
-
     }
 
 
-    video.muted =
-        !video.muted;
+    if (video.muted) {
 
-
-    if (!video.muted) {
+        video.muted =
+            false;
 
         video.volume =
             1;
@@ -1350,6 +1433,10 @@ function toggleVideoAudio(
         );
 
     } else {
+
+        video.muted =
+            true;
+
 
         showToast(
             "🔇 Audio muted"
@@ -1400,6 +1487,11 @@ function rateByVideoTap(
     );
 
 
+    showToast(
+        `⭐ ${rating} star${rating > 1 ? "s" : ""}`
+    );
+
+
     const reelId =
         getReelId(
             card
@@ -1424,10 +1516,7 @@ function rateByVideoTap(
                 "POST",
 
             body: {
-
-                rating:
-                    rating
-
+                rating: rating
             }
 
         }
@@ -1458,16 +1547,13 @@ function attachCardEvents(
         card
     );
 
-
     attachActionEvents(
         card
     );
 
-
     attachInterestEvents(
         card
     );
-
 
     attachFollowEvent(
         card
@@ -1506,16 +1592,6 @@ function attachRatingEvents(
                         );
 
 
-                    if (
-                        rating < 1 ||
-                        rating > 3
-                    ) {
-
-                        return;
-
-                    }
-
-
                     card.dataset.tapRating =
                         String(
                             rating
@@ -1539,9 +1615,7 @@ function attachRatingEvents(
                             reelId
                         )
                     ) {
-
                         return;
-
                     }
 
 
@@ -1554,10 +1628,8 @@ function attachRatingEvents(
                                     "POST",
 
                                 body: {
-
                                     rating:
                                         rating
-
                                 }
 
                             }
@@ -1568,12 +1640,6 @@ function attachRatingEvents(
                         console.warn(
                             "Rating API:",
                             error
-                        );
-
-
-                        showToast(
-                            error.message ||
-                            "Unable to rate reel"
                         );
 
                     }
@@ -1672,8 +1738,7 @@ function attachActionEvents(
                         case "share":
 
                             await shareReel(
-                                reelId,
-                                card
+                                reelId
                             );
 
                             break;
@@ -1733,9 +1798,7 @@ async function saveReel(
             reelId
         )
     ) {
-
         return;
-
     }
 
 
@@ -1751,11 +1814,6 @@ async function saveReel(
             );
 
 
-        button.classList.toggle(
-            "saved"
-        );
-
-
         const saved =
             data?.saved ??
             data?.is_saved;
@@ -1769,6 +1827,12 @@ async function saveReel(
             button.classList.toggle(
                 "saved",
                 saved
+            );
+
+        } else {
+
+            button.classList.toggle(
+                "saved"
             );
 
         }
@@ -1796,8 +1860,7 @@ async function saveReel(
 ========================================================= */
 
 async function shareReel(
-    reelId,
-    card
+    reelId
 ) {
 
     if (
@@ -1805,9 +1868,7 @@ async function shareReel(
             reelId
         )
     ) {
-
         return;
-
     }
 
 
@@ -1861,10 +1922,7 @@ async function shareReel(
                     "POST",
 
                 body: {
-
-                    share_type:
-                        "link"
-
+                    share_type: "link"
                 }
 
             }
@@ -1920,6 +1978,7 @@ async function downloadReel(
 
 
         link.href =
+            video.currentSrc ||
             video.src;
 
 
@@ -2014,9 +2073,7 @@ function attachInterestEvents(
                             reelId
                         )
                     ) {
-
                         return;
-
                     }
 
 
@@ -2033,23 +2090,13 @@ function attachInterestEvents(
 
                     try {
 
-                        let endpoint;
-
-
-                        if (
+                        const endpoint =
                             interest ===
                             "interested"
-                        ) {
 
-                            endpoint =
-                                `/api/reels/${encodeURIComponent(reelId)}/interested`;
+                                ? `/api/reels/${encodeURIComponent(reelId)}/interested`
 
-                        } else {
-
-                            endpoint =
-                                `/api/reels/${encodeURIComponent(reelId)}/not-interested`;
-
-                        }
+                                : `/api/reels/${encodeURIComponent(reelId)}/not-interested`;
 
 
                         await apiRequest(
@@ -2104,9 +2151,7 @@ function attachFollowEvent(
 
 
     if (!button) {
-
         return;
-
     }
 
 
@@ -2162,9 +2207,7 @@ function initializeReelObserver() {
 
 
     if (!container) {
-
         return;
-
     }
 
 
@@ -2175,9 +2218,7 @@ function initializeReelObserver() {
 
 
     if (!cards.length) {
-
         return;
-
     }
 
 
@@ -2206,21 +2247,39 @@ function initializeReelObserver() {
 
                             ReelApp.currentIndex =
                                 Number(
-                                    card.dataset.index ??
+                                    card.dataset.index ||
                                     0
                                 );
 
 
-                            /*
-                             * Mark active reel
-                             */
-
                             cards.forEach(
                                 item => {
 
-                                    item.classList.remove(
-                                        "active-reel"
-                                    );
+                                    if (
+                                        item !==
+                                        card
+                                    ) {
+
+                                        item.classList.remove(
+                                            "active-reel"
+                                        );
+
+
+                                        const oldVideo =
+                                            item.querySelector(
+                                                "video"
+                                            );
+
+
+                                        if (
+                                            oldVideo
+                                        ) {
+
+                                            oldVideo.pause();
+
+                                        }
+
+                                    }
 
                                 }
                             );
@@ -2230,10 +2289,6 @@ function initializeReelObserver() {
                                 "active-reel"
                             );
 
-
-                            /*
-                             * Play current reel
-                             */
 
                             if (video) {
 
@@ -2303,63 +2358,6 @@ function initializeReelObserver() {
 
 
 /* =========================================================
-   PLAY ACTIVE VIDEO
-========================================================= */
-
-function playActiveVideo(
-    video
-) {
-
-    if (!video) {
-
-        return;
-
-    }
-
-
-    /*
-     * If user has already interacted,
-     * audio can be enabled.
-     */
-
-    if (
-        ReelApp.userInteracted
-    ) {
-
-        video.muted =
-            false;
-
-        video.volume =
-            1;
-
-    }
-
-
-    video.play()
-        .catch(
-            () => {
-
-                /*
-                 * Browser autoplay policy:
-                 * play muted if sound is blocked.
-                 */
-
-                video.muted =
-                    true;
-
-
-                video.play()
-                    .catch(
-                        () => {}
-                    );
-
-            }
-        );
-
-}
-
-
-/* =========================================================
    WATCH TRACKING
 ========================================================= */
 
@@ -2387,9 +2385,7 @@ function startWatchTracking(
 
 
                 if (!video) {
-
                     return;
-
                 }
 
 
@@ -2411,9 +2407,7 @@ function startWatchTracking(
                         duration
                     )
                 ) {
-
                     return;
-
                 }
 
 
@@ -2471,7 +2465,7 @@ function startWatchTracking(
 
 
 /* =========================================================
-   STOP WATCH
+   STOP WATCH TRACKING
 ========================================================= */
 
 function stopWatchTracking(
@@ -2548,9 +2542,7 @@ async function sendWatchEvent(
             reelId
         )
     ) {
-
         return;
-
     }
 
 
@@ -2612,9 +2604,7 @@ function openComment(
             reelId
         )
     ) {
-
         return;
-
     }
 
 
@@ -2629,7 +2619,7 @@ function openComment(
 
 
 /* =========================================================
-   MORE / REPORT
+   REPORT
 ========================================================= */
 
 function openMoreMenu(
@@ -2641,9 +2631,7 @@ function openMoreMenu(
             reelId
         )
     ) {
-
         return;
-
     }
 
 
@@ -2654,9 +2642,7 @@ function openMoreMenu(
 
 
     if (!choice) {
-
         return;
-
     }
 
 
@@ -2667,10 +2653,7 @@ function openMoreMenu(
                 "POST",
 
             body: {
-
-                reason:
-                    "user_report"
-
+                reason: "user_report"
             }
 
         }
@@ -2717,10 +2700,20 @@ function initializeStaticInteractions() {
 
 
     if (!createButton) {
-
         return;
-
     }
+
+
+    if (
+        createButton.dataset.staticBound ===
+        "true"
+    ) {
+        return;
+    }
+
+
+    createButton.dataset.staticBound =
+        "true";
 
 
     createButton.addEventListener(
@@ -2749,23 +2742,15 @@ function initializeCreateReel() {
 
 
     if (!button) {
-
         return;
-
     }
 
-
-    /*
-     * Prevent duplicate listeners.
-     */
 
     if (
         button.dataset.reelCreateBound ===
         "true"
     ) {
-
         return;
-
     }
 
 
@@ -2829,9 +2814,7 @@ function initializeNavigation() {
 
 
             if (!element) {
-
                 return;
-
             }
 
 
@@ -2872,9 +2855,7 @@ function isRealReelId(
 ) {
 
     if (!reelId) {
-
         return false;
-
     }
 
 
@@ -3001,7 +2982,7 @@ function showToast(
 
 
         toast.style.zIndex =
-            "9999";
+            "99999";
 
 
         toast.style.padding =
