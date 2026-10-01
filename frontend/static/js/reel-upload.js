@@ -1,5 +1,6 @@
 /* =========================================================
    USANEX REEL UPLOAD
+   Production Frontend Controller
 ========================================================= */
 
 "use strict";
@@ -104,14 +105,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let selectedAudience = "Everyone";
 
+    let isUploading = false;
+
 
     /* =====================================================
-       OPEN FILE PICKER
+       OPEN VIDEO PICKER
     ===================================================== */
 
     function openVideoPicker() {
 
-        if (!videoInput) {
+        if (!videoInput || isUploading) {
             return;
         }
 
@@ -147,14 +150,40 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            if (!file.type.startsWith("video/")) {
+
+            if (
+                !file.type ||
+                !file.type.startsWith("video/")
+            ) {
 
                 showMessage(
-                    "Please select a video file."
+                    "Please select a valid video."
                 );
+
+                videoInput.value = "";
 
                 return;
             }
+
+
+            /*
+             * Backend limit = 100 MB
+             */
+
+            const MAX_SIZE =
+                100 * 1024 * 1024;
+
+            if (file.size > MAX_SIZE) {
+
+                showMessage(
+                    "Video must be smaller than 100 MB."
+                );
+
+                videoInput.value = "";
+
+                return;
+            }
+
 
             selectedVideoFile = file;
 
@@ -164,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       LOAD VIDEO
+       LOAD VIDEO PREVIEW
     ===================================================== */
 
     function loadVideo(file) {
@@ -178,11 +207,14 @@ document.addEventListener("DOMContentLoaded", () => {
             videoObjectUrl = null;
         }
 
+
         videoObjectUrl =
             URL.createObjectURL(file);
 
+
         reelVideo.src =
             videoObjectUrl;
+
 
         reelVideo.hidden = false;
 
@@ -192,11 +224,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         videoActions.hidden = false;
 
+
         reelVideo.muted = false;
 
         muteButton.textContent = "🔊";
 
         playPauseButton.textContent = "▶";
+
+        videoDuration.textContent =
+            "0:00";
+
 
         updatePostButton();
     }
@@ -210,11 +247,10 @@ document.addEventListener("DOMContentLoaded", () => {
         "loadedmetadata",
         () => {
 
-            const duration =
-                reelVideo.duration;
-
             videoDuration.textContent =
-                formatTime(duration);
+                formatTime(
+                    reelVideo.duration
+                );
         }
     );
 
@@ -227,9 +263,13 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         () => {
 
-            if (!reelVideo.src) {
+            if (
+                !reelVideo ||
+                !reelVideo.src
+            ) {
                 return;
             }
+
 
             if (reelVideo.paused) {
 
@@ -249,8 +289,11 @@ document.addEventListener("DOMContentLoaded", () => {
         "play",
         () => {
 
-            playPauseButton.textContent =
-                "❚❚";
+            if (playPauseButton) {
+
+                playPauseButton.textContent =
+                    "❚❚";
+            }
         }
     );
 
@@ -259,8 +302,11 @@ document.addEventListener("DOMContentLoaded", () => {
         "pause",
         () => {
 
-            playPauseButton.textContent =
-                "▶";
+            if (playPauseButton) {
+
+                playPauseButton.textContent =
+                    "▶";
+            }
         }
     );
 
@@ -273,8 +319,13 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         () => {
 
+            if (!reelVideo) {
+                return;
+            }
+
             reelVideo.muted =
                 !reelVideo.muted;
+
 
             muteButton.textContent =
                 reelVideo.muted
@@ -292,6 +343,10 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         () => {
 
+            if (isUploading) {
+                return;
+            }
+
             removeSelectedVideo();
         }
     );
@@ -308,24 +363,46 @@ document.addEventListener("DOMContentLoaded", () => {
             videoObjectUrl = null;
         }
 
+
         selectedVideoFile = null;
 
-        reelVideo.pause();
 
-        reelVideo.removeAttribute("src");
+        if (reelVideo) {
 
-        reelVideo.load();
+            reelVideo.pause();
 
-        reelVideo.hidden = true;
+            reelVideo.removeAttribute(
+                "src"
+            );
 
-        videoEmpty.hidden = false;
+            reelVideo.load();
 
-        videoControls.hidden = true;
+            reelVideo.hidden = true;
+        }
 
-        videoActions.hidden = true;
 
-        videoDuration.textContent =
-            "0:00";
+        if (videoEmpty) {
+            videoEmpty.hidden = false;
+        }
+
+        if (videoControls) {
+            videoControls.hidden = true;
+        }
+
+        if (videoActions) {
+            videoActions.hidden = true;
+        }
+
+        if (videoDuration) {
+            videoDuration.textContent =
+                "0:00";
+        }
+
+
+        if (videoInput) {
+            videoInput.value = "";
+        }
+
 
         updatePostButton();
     }
@@ -340,24 +417,32 @@ document.addEventListener("DOMContentLoaded", () => {
         () => {
 
             const value =
-                reelCaption.value.slice(0, 40);
+                reelCaption.value
+                    .slice(0, 40);
 
-            reelCaption.value = value;
 
-            captionCount.textContent =
-                `${value.length}/40`;
+            reelCaption.value =
+                value;
 
-            if (value.length >= 40) {
 
-                captionCount.classList.add(
-                    "limit-reached"
-                );
+            if (captionCount) {
 
-            } else {
+                captionCount.textContent =
+                    `${value.length}/40`;
 
-                captionCount.classList.remove(
-                    "limit-reached"
-                );
+
+                if (value.length >= 40) {
+
+                    captionCount.classList.add(
+                        "limit-reached"
+                    );
+
+                } else {
+
+                    captionCount.classList.remove(
+                        "limit-reached"
+                    );
+                }
             }
         }
     );
@@ -371,13 +456,22 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         () => {
 
-            locationOverlay.hidden = false;
+            if (isUploading) {
+                return;
+            }
 
-            setTimeout(() => {
+            locationOverlay.hidden =
+                false;
 
-                locationInput?.focus();
 
-            }, 100);
+            setTimeout(
+                () => {
+
+                    locationInput?.focus();
+
+                },
+                100
+            );
         }
     );
 
@@ -393,7 +487,8 @@ document.addEventListener("DOMContentLoaded", () => {
         (event) => {
 
             if (
-                event.target === locationOverlay
+                event.target ===
+                locationOverlay
             ) {
 
                 closeLocationSheet();
@@ -404,7 +499,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function closeLocationSheet() {
 
-        locationOverlay.hidden = true;
+        if (locationOverlay) {
+
+            locationOverlay.hidden =
+                true;
+        }
     }
 
 
@@ -419,36 +518,47 @@ document.addEventListener("DOMContentLoaded", () => {
             const query =
                 locationInput.value.trim();
 
-            locationResults.innerHTML = "";
+
+            locationResults.innerHTML =
+                "";
+
 
             if (!query) {
                 return;
             }
 
-            /*
-             * Frontend demo suggestions.
-             * Real location API can be connected later.
-             */
 
             const suggestions = [
+
                 query,
+
                 `${query}, India`,
+
                 `${query} City`
+
             ];
+
 
             suggestions.forEach(
                 (location) => {
 
                     const button =
-                        document.createElement("button");
+                        document.createElement(
+                            "button"
+                        );
 
-                    button.type = "button";
+
+                    button.type =
+                        "button";
+
 
                     button.className =
                         "location-result";
 
+
                     button.textContent =
                         location;
+
 
                     button.addEventListener(
                         "click",
@@ -457,12 +567,18 @@ document.addEventListener("DOMContentLoaded", () => {
                             selectedLocation =
                                 location;
 
-                            locationText.textContent =
-                                location;
+
+                            if (locationText) {
+
+                                locationText.textContent =
+                                    location;
+                            }
+
 
                             closeLocationSheet();
                         }
                     );
+
 
                     locationResults.appendChild(
                         button
@@ -481,7 +597,12 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         () => {
 
-            audienceOverlay.hidden = false;
+            if (isUploading) {
+                return;
+            }
+
+            audienceOverlay.hidden =
+                false;
         }
     );
 
@@ -497,7 +618,8 @@ document.addEventListener("DOMContentLoaded", () => {
         (event) => {
 
             if (
-                event.target === audienceOverlay
+                event.target ===
+                audienceOverlay
             ) {
 
                 closeAudienceSheet();
@@ -508,7 +630,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function closeAudienceSheet() {
 
-        audienceOverlay.hidden = true;
+        if (audienceOverlay) {
+
+            audienceOverlay.hidden =
+                true;
+        }
     }
 
 
@@ -523,8 +649,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         option.dataset.audience ||
                         "Everyone";
 
-                    audienceText.textContent =
-                        selectedAudience;
+
+                    if (audienceText) {
+
+                        audienceText.textContent =
+                            selectedAudience;
+                    }
+
 
                     audienceOptions.forEach(
                         (item) => {
@@ -535,9 +666,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     );
 
+
                     option.classList.add(
                         "selected"
                     );
+
 
                     closeAudienceSheet();
                 }
@@ -563,20 +696,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            document
-                .getElementById("reelCaption")
-                ?.focus();
+
+            reelCaption?.focus();
         }
     );
 
 
     /* =====================================================
-       POST REEL
+       REAL REEL UPLOAD
     ===================================================== */
 
     postReelButton?.addEventListener(
         "click",
-        () => {
+        async () => {
+
+            if (isUploading) {
+                return;
+            }
+
 
             if (!selectedVideoFile) {
 
@@ -587,13 +724,172 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            /*
-             * Backend upload API will be connected here.
-             */
 
-            showMessage(
-                "Reel is ready to upload."
-            );
+            const originalText =
+                postReelButton.textContent;
+
+
+            try {
+
+                isUploading = true;
+
+                postReelButton.disabled =
+                    true;
+
+                postReelButton.textContent =
+                    "Uploading...";
+
+
+                /*
+                 * FormData is required because
+                 * video is a multipart file.
+                 */
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "video",
+                    selectedVideoFile
+                );
+
+
+                const caption =
+                    reelCaption?.value.trim() ||
+                    "";
+
+
+                if (caption) {
+
+                    formData.append(
+                        "caption",
+                        caption
+                    );
+                }
+
+
+                /*
+                 * Backend accepts these fields.
+                 */
+
+                if (selectedLocation) {
+
+                    formData.append(
+                        "location",
+                        selectedLocation
+                    );
+                }
+
+
+                formData.append(
+                    "category",
+                    "general"
+                );
+
+
+                /*
+                 * Send authenticated request.
+                 */
+
+                const response =
+                    await fetch(
+                        "/api/reels/upload",
+                        {
+                            method: "POST",
+
+                            credentials: "include",
+
+                            body: formData
+                        }
+                    );
+
+
+                let data = null;
+
+
+                try {
+
+                    data =
+                        await response.json();
+
+                } catch {
+
+                    data = null;
+                }
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data?.detail ||
+                        data?.message ||
+                        `Upload failed (${response.status})`
+                    );
+                }
+
+
+                if (!data?.success) {
+
+                    throw new Error(
+                        data?.message ||
+                        "Reel upload failed."
+                    );
+                }
+
+
+                /*
+                 * Success
+                 */
+
+                postReelButton.textContent =
+                    "Uploaded ✓";
+
+
+                showMessage(
+                    "Reel uploaded successfully!"
+                );
+
+
+                /*
+                 * Give backend a moment,
+                 * then return to Reels.
+                 */
+
+                setTimeout(
+                    () => {
+
+                        window.location.href =
+                            "/static/reels.html";
+
+                    },
+                    900
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "USANEX REEL UPLOAD ERROR:",
+                    error
+                );
+
+
+                isUploading = false;
+
+
+                postReelButton.disabled =
+                    false;
+
+
+                postReelButton.textContent =
+                    originalText;
+
+
+                showMessage(
+                    error?.message ||
+                    "Unable to upload reel."
+                );
+            }
         }
     );
 
@@ -605,6 +901,11 @@ document.addEventListener("DOMContentLoaded", () => {
     reelBack?.addEventListener(
         "click",
         () => {
+
+            if (isUploading) {
+                return;
+            }
+
 
             if (
                 window.history.length > 1
@@ -631,8 +932,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+
         postReelButton.disabled =
-            !selectedVideoFile;
+            !selectedVideoFile ||
+            isUploading;
     }
 
 
@@ -650,11 +953,18 @@ document.addEventListener("DOMContentLoaded", () => {
             return "0:00";
         }
 
+
         const minutes =
-            Math.floor(seconds / 60);
+            Math.floor(
+                seconds / 60
+            );
+
 
         const remaining =
-            Math.floor(seconds % 60);
+            Math.floor(
+                seconds % 60
+            );
+
 
         return (
             `${minutes}:${String(
@@ -665,56 +975,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       SIMPLE MESSAGE
+       MESSAGE / TOAST
     ===================================================== */
 
     function showMessage(message) {
-
-        /*
-         * Temporary frontend message.
-         * Can later be replaced with Usanex toast system.
-         */
 
         const existing =
             document.querySelector(
                 ".reel-message"
             );
 
+
         existing?.remove();
 
+
         const messageBox =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
+
 
         messageBox.className =
             "reel-message";
 
+
         messageBox.textContent =
             message;
+
 
         Object.assign(
             messageBox.style,
             {
+
                 position: "fixed",
+
                 left: "50%",
+
                 bottom: "75px",
-                transform: "translateX(-50%)",
+
+                transform:
+                    "translateX(-50%)",
+
                 zIndex: "10000",
-                padding: "10px 15px",
-                borderRadius: "10px",
-                background: "#151d28",
-                border: "1px solid #263447",
-                color: "#ffffff",
-                fontSize: "12px",
-                fontWeight: "600",
-                whiteSpace: "nowrap",
+
+                padding:
+                    "11px 16px",
+
+                borderRadius:
+                    "12px",
+
+                background:
+                    "#151d28",
+
+                border:
+                    "1px solid #263447",
+
+                color:
+                    "#ffffff",
+
+                fontSize:
+                    "12px",
+
+                fontWeight:
+                    "600",
+
+                maxWidth:
+                    "calc(100vw - 30px)",
+
+                textAlign:
+                    "center",
+
                 boxShadow:
                     "0 10px 30px rgba(0,0,0,.35)"
             }
         );
 
+
         document.body.appendChild(
             messageBox
         );
+
 
         setTimeout(
             () => {
@@ -722,7 +1062,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 messageBox.remove();
 
             },
-            2200
+            2500
         );
     }
 
@@ -739,7 +1079,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+
             if (
+                locationOverlay &&
                 !locationOverlay.hidden
             ) {
 
@@ -748,13 +1090,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
+
             if (
+                audienceOverlay &&
                 !audienceOverlay.hidden
             ) {
 
                 closeAudienceSheet();
-
-                return;
             }
         }
     );
@@ -773,6 +1115,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 URL.revokeObjectURL(
                     videoObjectUrl
                 );
+
+                videoObjectUrl = null;
             }
         }
     );
