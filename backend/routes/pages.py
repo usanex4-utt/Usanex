@@ -379,3 +379,43 @@ def media_upload_page(
             "user": current_user,
         },
     )
+
+
+# =========================================================
+# REEL UPLOAD
+#
+# Create / Upload Reel Page
+#
+# URL:
+# /reel-upload
+#
+# Login required.
+# =========================================================
+
+@router.get(
+    "/reel-upload",
+    include_in_schema=False,
+)
+def reel_upload_page(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    current_user = get_current_user_from_request(
+        request=request,
+        db=db,
+    )
+
+    if current_user is None:
+        return RedirectResponse(
+            url="/login",
+            status_code=307,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="reel-upload.html",
+        context={
+            "user": current_user,
+        },
+    )
