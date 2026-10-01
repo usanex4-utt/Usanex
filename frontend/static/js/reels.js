@@ -39,7 +39,9 @@ const ReelApp = {
 
     loaded: false,
 
-    watchSent: new Set()
+    watchSent: new Set(),
+
+    activeCard: null
 
 };
 
@@ -55,8 +57,6 @@ document.addEventListener(
         initializeNavigation();
 
         initializeCreateReel();
-
-        initializeStaticInteractions();
 
         loadReels();
 
@@ -138,10 +138,12 @@ async function apiRequest(
             data;
 
         throw error;
+
     }
 
 
     return data;
+
 }
 
 
@@ -170,16 +172,11 @@ async function loadReels() {
         ReelApp.loading = false;
 
         return;
+
     }
 
 
     try {
-
-        /*
-         * IMPORTANT:
-         * Backend route:
-         * GET /api/reels/feed
-         */
 
         const data =
             await apiRequest(
@@ -201,26 +198,22 @@ async function loadReels() {
             ReelApp.reels =
                 reels;
 
-
             renderReels(
                 reels
             );
 
-
             ReelApp.loaded =
                 true;
 
-
-            initializeReelObserver();
-
-
             return;
+
         }
 
 
         showEmptyReels(
             "No reels available yet."
         );
+
 
     } catch (error) {
 
@@ -239,12 +232,14 @@ async function loadReels() {
             );
 
             return;
+
         }
 
 
         showEmptyReels(
             "Unable to load reels."
         );
+
 
     } finally {
 
@@ -275,7 +270,9 @@ function normalizeReelResponse(
 
     if (
         data &&
-        Array.isArray(data.reels)
+        Array.isArray(
+            data.reels
+        )
     ) {
 
         return data.reels;
@@ -285,7 +282,9 @@ function normalizeReelResponse(
 
     if (
         data &&
-        Array.isArray(data.data)
+        Array.isArray(
+            data.data
+        )
     ) {
 
         return data.data;
@@ -296,7 +295,9 @@ function normalizeReelResponse(
     if (
         data &&
         data.data &&
-        Array.isArray(data.data.reels)
+        Array.isArray(
+            data.data.reels
+        )
     ) {
 
         return data.data.reels;
@@ -370,8 +371,7 @@ function renderReels(
     }
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
     reels.forEach(
@@ -428,9 +428,7 @@ function createReelCard(
 
 
     article.dataset.index =
-        String(
-            index
-        );
+        String(index);
 
 
     article.innerHTML = `
@@ -562,7 +560,7 @@ function createReelCard(
                     ></path>
 
                     <path
-                        d="M21 3l-7 18-4-7-7-4 18-7z"
+                        d="M21 3l-7 18-4-7 18-7z"
                     ></path>
 
                 </svg>
@@ -695,25 +693,21 @@ function createReelCard(
                 <div class="reel-user-details">
 
                     <strong>
-
                         ${escapeHTML(
                             reel.creator_name ??
                             reel.user_name ??
                             reel.name ??
                             "Usanex User"
                         )}
-
                     </strong>
 
 
                     <span>
-
                         ${escapeHTML(
                             reel.username ??
                             reel.creator_username ??
                             "@usanex"
                         )}
-
                     </span>
 
                 </div>
@@ -789,12 +783,10 @@ function createReelCard(
                 </svg>
 
                 <span>
-
                     ${escapeHTML(
                         reel.audio_name ??
                         "Original audio"
                     )}
-
                 </span>
 
             </div>
@@ -826,8 +818,7 @@ function createReelCard(
             );
 
 
-        videoContainer.innerHTML =
-            "";
+        videoContainer.innerHTML = "";
 
 
         videoContainer.appendChild(
@@ -874,7 +865,17 @@ function createVideoElement(
         true;
 
 
+    /*
+     * IMPORTANT:
+     * Autoplay browsers normally require muted video.
+     * User can unmute using the sound button.
+     */
+
     video.muted =
+        true;
+
+
+    video.defaultMuted =
         true;
 
 
@@ -894,6 +895,18 @@ function createVideoElement(
     );
 
 
+    video.setAttribute(
+        "controls",
+        "false"
+    );
+
+
+    video.setAttribute(
+        "disablepictureinpicture",
+        ""
+    );
+
+
     if (
         reel.thumbnail_url
     ) {
@@ -906,7 +919,10 @@ function createVideoElement(
 
     video.addEventListener(
         "click",
-        () => {
+        event => {
+
+            event.stopPropagation();
+
 
             if (
                 video.paused
@@ -922,6 +938,19 @@ function createVideoElement(
                 video.pause();
 
             }
+
+        }
+    );
+
+
+    video.addEventListener(
+        "error",
+        () => {
+
+            console.warn(
+                "Video loading failed:",
+                videoUrl
+            );
 
         }
     );
@@ -1018,15 +1047,11 @@ function attachRatingEvents(
                         );
 
                         return;
+
                     }
 
 
                     try {
-
-                        /*
-                         * POST
-                         * /api/reels/{reel_id}/rating
-                         */
 
                         await apiRequest(
                             `/api/reels/${encodeURIComponent(reelId)}/rating`,
@@ -1054,6 +1079,7 @@ function attachRatingEvents(
                             "Rating API:",
                             error
                         );
+
 
                         showToast(
                             error.message ||
@@ -1223,11 +1249,6 @@ async function saveReel(
 
     try {
 
-        /*
-         * POST
-         * /api/reels/{reel_id}/save
-         */
-
         const data =
             await apiRequest(
                 `/api/reels/${encodeURIComponent(reelId)}/save`,
@@ -1236,11 +1257,6 @@ async function saveReel(
                         "POST"
                 }
             );
-
-
-        button.classList.toggle(
-            "saved"
-        );
 
 
         const saved =
@@ -1256,6 +1272,12 @@ async function saveReel(
             button.classList.toggle(
                 "saved",
                 saved
+            );
+
+        } else {
+
+            button.classList.toggle(
+                "saved"
             );
 
         }
@@ -1307,6 +1329,10 @@ async function shareReel(
 
     try {
 
+        let shared =
+            false;
+
+
         if (
             navigator.share
         ) {
@@ -1324,6 +1350,10 @@ async function shareReel(
 
             });
 
+
+            shared =
+                true;
+
         } else if (
             navigator.clipboard
         ) {
@@ -1337,28 +1367,29 @@ async function shareReel(
                 "Reel link copied"
             );
 
+
+            shared =
+                true;
+
         }
 
 
-        /*
-         * POST
-         * /api/reels/{reel_id}/share
-         */
+        if (shared) {
 
-        await apiRequest(
-            `/api/reels/${encodeURIComponent(reelId)}/share`,
-            {
-                method:
-                    "POST",
+            await apiRequest(
+                `/api/reels/${encodeURIComponent(reelId)}/share`,
+                {
+                    method:
+                        "POST",
 
-                body: {
-
-                    share_type:
-                        "link"
-
+                    body: {
+                        share_type:
+                            "link"
+                    }
                 }
-            }
-        );
+            );
+
+        }
 
 
     } catch (error) {
@@ -1398,6 +1429,7 @@ async function downloadReel(
         );
 
         return;
+
     }
 
 
@@ -1419,6 +1451,10 @@ async function downloadReel(
 
         link.target =
             "_blank";
+
+
+        link.rel =
+            "noopener";
 
 
         document.body.appendChild(
@@ -1443,11 +1479,6 @@ async function downloadReel(
             )
         ) {
 
-            /*
-             * POST
-             * /api/reels/{reel_id}/download
-             */
-
             await apiRequest(
                 `/api/reels/${encodeURIComponent(reelId)}/download`,
                 {
@@ -1464,6 +1495,11 @@ async function downloadReel(
         console.warn(
             "Download API:",
             error
+        );
+
+
+        showToast(
+            "Unable to download reel"
         );
 
     }
@@ -1514,17 +1550,6 @@ function attachInterestEvents(
                     }
 
 
-                    buttons.forEach(
-                        item => {
-
-                            item.classList.remove(
-                                "selected"
-                            );
-
-                        }
-                    );
-
-
                     try {
 
                         let endpoint;
@@ -1546,20 +1571,22 @@ function attachInterestEvents(
                         }
 
 
-                        /*
-                         * POST
-                         * /api/reels/{reel_id}/interested
-                         *
-                         * OR
-                         *
-                         * /api/reels/{reel_id}/not-interested
-                         */
-
                         await apiRequest(
                             endpoint,
                             {
                                 method:
                                     "POST"
+                            }
+                        );
+
+
+                        buttons.forEach(
+                            item => {
+
+                                item.classList.remove(
+                                    "selected"
+                                );
+
                             }
                         );
 
@@ -1614,7 +1641,7 @@ function attachFollowEvent(
 
     button.addEventListener(
         "click",
-        event => {
+        async event => {
 
             event.stopPropagation();
 
@@ -1624,6 +1651,12 @@ function attachFollowEvent(
                     "following"
                 );
 
+
+            /*
+             * Current UI state.
+             * Backend follow route can be connected later
+             * without changing the reel card.
+             */
 
             button.classList.toggle(
                 "following",
@@ -1709,6 +1742,40 @@ function initializeReelObserver() {
                                 );
 
 
+                            /*
+                             * Stop previous active video.
+                             */
+
+                            if (
+                                ReelApp.activeCard &&
+                                ReelApp.activeCard !==
+                                    card
+                            ) {
+
+                                const oldVideo =
+                                    ReelApp.activeCard.querySelector(
+                                        "video"
+                                    );
+
+
+                                if (oldVideo) {
+
+                                    oldVideo.pause();
+
+                                }
+
+
+                                stopWatchTracking(
+                                    ReelApp.activeCard
+                                );
+
+                            }
+
+
+                            ReelApp.activeCard =
+                                card;
+
+
                             if (video) {
 
                                 video.play()
@@ -1722,6 +1789,7 @@ function initializeReelObserver() {
                             startWatchTracking(
                                 card
                             );
+
 
                         } else {
 
@@ -1962,11 +2030,6 @@ async function sendWatchEvent(
 
     try {
 
-        /*
-         * POST
-         * /api/reels/{reel_id}/watch
-         */
-
         await apiRequest(
             `/api/reels/${encodeURIComponent(reelId)}/watch`,
             {
@@ -2101,36 +2164,6 @@ function openMoreMenu(
                 error.message ||
                 "Unable to report reel"
             );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   STATIC INTERACTIONS
-========================================================= */
-
-function initializeStaticInteractions() {
-
-    const createButton =
-        document.getElementById(
-            "createReelButton"
-        );
-
-
-    if (!createButton) {
-        return;
-    }
-
-
-    createButton.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "/reels/create";
 
         }
     );
@@ -2360,48 +2393,8 @@ function showToast(
             "usanexReelToast";
 
 
-        toast.style.position =
-            "fixed";
-
-
-        toast.style.left =
-            "50%";
-
-
-        toast.style.bottom =
-            "85px";
-
-
-        toast.style.transform =
-            "translateX(-50%)";
-
-
-        toast.style.zIndex =
-            "9999";
-
-
-        toast.style.padding =
-            "10px 16px";
-
-
-        toast.style.borderRadius =
-            "10px";
-
-
-        toast.style.background =
-            "rgba(20,20,20,.94)";
-
-
-        toast.style.color =
-            "#fff";
-
-
-        toast.style.fontSize =
-            "13px";
-
-
-        toast.style.boxShadow =
-            "0 5px 25px rgba(0,0,0,.4)";
+        toast.className =
+            "usanex-reel-toast";
 
 
         document.body.appendChild(
@@ -2413,6 +2406,11 @@ function showToast(
 
     toast.textContent =
         message;
+
+
+    toast.classList.add(
+        "show"
+    );
 
 
     toast.hidden =
@@ -2427,6 +2425,11 @@ function showToast(
     toast._timer =
         setTimeout(
             () => {
+
+                toast.classList.remove(
+                    "show"
+                );
+
 
                 toast.hidden =
                     true;
