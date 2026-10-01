@@ -121,7 +121,6 @@ def startup():
 REEL_UPLOAD_PAGE = (
     BASE_DIR
     / "frontend"
-    / "static"
     / "reel-upload.html"
 )
 
