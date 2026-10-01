@@ -1,23 +1,10 @@
-/* =========================================================
-   USANEX REELS
-   Production Frontend Controller
-   ---------------------------------------------------------
-   Features:
-   • Reel autoplay
-   • Audio when browser allows
-   • Tap 1 = ⭐
-   • Tap 2 = ⭐⭐
-   • Tap 3 = ⭐⭐⭐
-   • Long press = mute / unmute
-   • Previous reel pauses
-   • Multiple video URL formats supported
-========================================================= */
-
 "use strict";
 
-
 /* =========================================================
-   GLOBAL STATE
+   USANEX REELS
+   Video + Sound + Long Press Mute
+   3 Star Animation
+   Comments Bottom Sheet
 ========================================================= */
 
 const ReelApp = {
@@ -26,34 +13,25 @@ const ReelApp = {
 
     currentIndex: 0,
 
+    loading: false,
+
+    observer: null,
+
+    userInteracted: false,
+
+    commentReelId: null,
+
     sessionId:
         window.crypto &&
         crypto.randomUUID
             ? crypto.randomUUID()
-            : (
-                "session-" +
-                Date.now() +
-                "-" +
-                Math.random()
-                    .toString(36)
-                    .slice(2)
-            ),
+            : "usanex-" + Date.now(),
 
     watchStartedAt: null,
 
     watchTimer: null,
 
-    observer: null,
-
-    loading: false,
-
-    loaded: false,
-
-    watchSent: new Set(),
-
-    userInteracted: false,
-
-    activeVideo: null
+    watchSent: new Set()
 
 };
 
@@ -70,9 +48,9 @@ document.addEventListener(
 
         initializeCreateReel();
 
-        initializeStaticInteractions();
-
         initializeUserInteraction();
+
+        initializeCommentSystem();
 
         loadReels();
 
@@ -81,114 +59,40 @@ document.addEventListener(
 
 
 /* =========================================================
-   USER INTERACTION
+   API
 ========================================================= */
 
-function initializeUserInteraction() {
+async function apiRequest(url, options = {}) {
 
-    const unlockAudio = () => {
-
-        ReelApp.userInteracted = true;
-
-        const activeCard =
-            document.querySelector(
-                ".reel-card.active-reel"
-            );
-
-        if (!activeCard) {
-            return;
-        }
-
-        const video =
-            activeCard.querySelector(
-                "video"
-            );
-
-        if (!video) {
-            return;
-        }
-
-        video.muted = false;
-
-        video.volume = 1;
-
-        video.play().catch(() => {});
-
-    };
-
-
-    document.addEventListener(
-        "click",
-        unlockAudio,
-        {
-            once: true,
-            passive: true
-        }
-    );
-
-
-    document.addEventListener(
-        "touchstart",
-        unlockAudio,
-        {
-            once: true,
-            passive: true
-        }
-    );
-
-}
-
-
-/* =========================================================
-   API HELPER
-========================================================= */
-
-async function apiRequest(
-    url,
-    options = {}
-) {
-
-    const finalOptions = {
-
-        credentials:
-            "include",
-
+    const config = {
+        credentials: "include",
         ...options,
 
         headers: {
-
-            "Content-Type":
-                "application/json",
-
             ...(options.headers || {})
-
         }
-
     };
-
 
     if (
         options.body &&
         typeof options.body !== "string"
     ) {
 
-        finalOptions.body =
-            JSON.stringify(
-                options.body
-            );
+        config.headers["Content-Type"] =
+            "application/json";
+
+        config.body =
+            JSON.stringify(options.body);
 
     }
-
 
     const response =
         await fetch(
             url,
-            finalOptions
+            config
         );
 
-
     let data = null;
-
 
     try {
 
@@ -200,7 +104,6 @@ async function apiRequest(
         data = null;
 
     }
-
 
     if (!response.ok) {
 
@@ -221,8 +124,55 @@ async function apiRequest(
 
     }
 
-
     return data;
+
+}
+
+
+/* =========================================================
+   USER INTERACTION
+========================================================= */
+
+function initializeUserInteraction() {
+
+    const unlock = () => {
+
+        ReelApp.userInteracted =
+            true;
+
+        const active =
+            document.querySelector(
+                ".reel-card.active-reel video"
+            );
+
+        if (active) {
+
+            active.muted = false;
+            active.volume = 1;
+
+            active.play()
+                .catch(() => {});
+
+        }
+
+    };
+
+    document.addEventListener(
+        "click",
+        unlock,
+        {
+            once: true
+        }
+    );
+
+    document.addEventListener(
+        "touchstart",
+        unlock,
+        {
+            once: true,
+            passive: true
+        }
+    );
 
 }
 
@@ -237,24 +187,17 @@ async function loadReels() {
         return;
     }
 
-
     ReelApp.loading = true;
-
 
     const container =
         document.getElementById(
             "reelsContainer"
         );
 
-
     if (!container) {
-
         ReelApp.loading = false;
-
         return;
-
     }
-
 
     try {
 
@@ -263,16 +206,12 @@ async function loadReels() {
                 "/api/reels/feed"
             );
 
-
         const reels =
-            normalizeReelResponse(
-                data
-            );
-
+            normalizeReels(data);
 
         if (
             Array.isArray(reels) &&
-            reels.length > 0
+            reels.length
         ) {
 
             ReelApp.reels =
@@ -282,44 +221,36 @@ async function loadReels() {
                 reels
             );
 
-            ReelApp.loaded =
-                true;
-
-            initializeReelObserver();
-
             return;
 
         }
 
-
-        showEmptyReels(
+        showEmpty(
             "No reels available yet."
         );
 
     } catch (error) {
 
-        console.warn(
-            "Reels feed error:",
+        console.error(
+            "Reels loading error:",
             error
         );
-
 
         if (
             error.status === 401
         ) {
 
-            showToast(
-                "Please login to view reels"
+            showEmpty(
+                "Please login to view reels."
             );
 
-            return;
+        } else {
+
+            showEmpty(
+                "Unable to load reels."
+            );
 
         }
-
-
-        showEmptyReels(
-            "Unable to load reels."
-        );
 
     } finally {
 
@@ -331,52 +262,35 @@ async function loadReels() {
 
 
 /* =========================================================
-   NORMALIZE API RESPONSE
+   NORMALIZE
 ========================================================= */
 
-function normalizeReelResponse(
-    data
-) {
+function normalizeReels(data) {
 
-    if (
-        Array.isArray(data)
-    ) {
-
+    if (Array.isArray(data)) {
         return data;
-
     }
-
 
     if (
         data &&
         Array.isArray(data.reels)
     ) {
-
         return data.reels;
-
     }
-
 
     if (
         data &&
         Array.isArray(data.data)
     ) {
-
         return data.data;
-
     }
-
 
     if (
-        data &&
-        data.data &&
+        data?.data &&
         Array.isArray(data.data.reels)
     ) {
-
         return data.data.reels;
-
     }
-
 
     return [];
 
@@ -384,23 +298,19 @@ function normalizeReelResponse(
 
 
 /* =========================================================
-   EMPTY STATE
+   EMPTY
 ========================================================= */
 
-function showEmptyReels(
-    message
-) {
+function showEmpty(message) {
 
     const container =
         document.getElementById(
             "reelsContainer"
         );
 
-
     if (!container) {
         return;
     }
-
 
     container.innerHTML = `
 
@@ -426,46 +336,34 @@ function showEmptyReels(
 
 
 /* =========================================================
-   RENDER REELS
+   RENDER
 ========================================================= */
 
-function renderReels(
-    reels
-) {
+function renderReels(reels) {
 
     const container =
         document.getElementById(
             "reelsContainer"
         );
 
-
     if (!container) {
         return;
     }
 
-
     container.innerHTML = "";
 
-
     reels.forEach(
-        (
-            reel,
-            index
-        ) => {
+        (reel,index) => {
 
-            const card =
+            container.appendChild(
                 createReelCard(
                     reel,
                     index
-                );
-
-            container.appendChild(
-                card
+                )
             );
 
         }
     );
-
 
     initializeReelObserver();
 
@@ -473,127 +371,7 @@ function renderReels(
 
 
 /* =========================================================
-   GET VIDEO URL
-========================================================= */
-
-function getVideoURL(
-    reel
-) {
-
-    if (!reel) {
-        return "";
-    }
-
-
-    const possibleUrls = [
-
-        reel.video_url,
-
-        reel.videoUrl,
-
-        reel.video,
-
-        reel.media_url,
-
-        reel.mediaUrl,
-
-        reel.file_url,
-
-        reel.fileUrl,
-
-        reel.video_path,
-
-        reel.videoPath,
-
-        reel.media_path,
-
-        reel.mediaPath,
-
-        reel.url
-
-    ];
-
-
-    let url =
-        possibleUrls.find(
-            value =>
-                typeof value === "string" &&
-                value.trim() !== ""
-        );
-
-
-    if (!url) {
-        return "";
-    }
-
-
-    url =
-        url.trim();
-
-
-    /*
-     * Already absolute URL
-     */
-
-    if (
-        /^https?:\/\//i.test(url)
-    ) {
-
-        return url;
-
-    }
-
-
-    /*
-     * Blob URL
-     */
-
-    if (
-        url.startsWith("blob:")
-    ) {
-
-        return url;
-
-    }
-
-
-    /*
-     * Data URL
-     */
-
-    if (
-        url.startsWith("data:")
-    ) {
-
-        return url;
-
-    }
-
-
-    /*
-     * Root-relative URL
-     */
-
-    if (
-        url.startsWith("/")
-    ) {
-
-        return url;
-
-    }
-
-
-    /*
-     * Relative URL
-     */
-
-    return "/" + url;
-
-}
-
-
-/* =========================================================
-   CREATE REEL CARD
+   CREATE CARD
 ========================================================= */
 
 function createReelCard(
@@ -601,40 +379,59 @@ function createReelCard(
     index
 ) {
 
-    const article =
+    const card =
         document.createElement(
             "article"
         );
 
-
-    article.className =
+    card.className =
         "reel-card";
 
-
-    article.dataset.reelId =
+    card.dataset.reelId =
         String(
             reel.id ??
             reel.reel_id ??
+            reel.reelId ??
             ""
         );
 
-
-    article.dataset.index =
+    card.dataset.index =
         String(index);
 
-
-    article.dataset.tapRating =
+    card.dataset.tapRating =
         "0";
 
+    const videoUrl =
+        getVideoUrl(reel);
 
-    article.innerHTML = `
+    card.innerHTML = `
 
         <div class="reel-video">
 
             <div class="video-placeholder">
 
                 <div class="placeholder-icon">
-                    ▶
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                    >
+                        <rect
+                            x="3"
+                            y="3"
+                            width="18"
+                            height="18"
+                            rx="3"
+                        ></rect>
+
+                        <path
+                            d="M9 8l7 4-7 4V8z"
+                        ></path>
+
+                    </svg>
+
                 </div>
 
                 <span>
@@ -683,7 +480,22 @@ function createReelCard(
                 class="reel-action"
                 data-action="comment"
             >
-                💬
+
+                <!-- Instagram style comment -->
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                >
+
+                    <path
+                        d="M20 11.2c0 4.55-3.58 8.23-8 8.23-1.15 0-2.24-.25-3.22-.69L4 20l1.22-3.77A8.46 8.46 0 0 1 4 11.2C4 6.68 7.58 3 12 3s8 3.68 8 8.2Z"
+                    />
+
+                </svg>
+
                 <span class="comment-count">
                     ${escapeHTML(
                         reel.comment_count ??
@@ -691,6 +503,7 @@ function createReelCard(
                         0
                     )}
                 </span>
+
             </button>
 
 
@@ -699,8 +512,28 @@ function createReelCard(
                 class="reel-action"
                 data-action="share"
             >
-                ↗
-                <span>Share</span>
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                >
+
+                    <path
+                        d="M21 3L10 14"
+                    />
+
+                    <path
+                        d="M21 3l-7 18-4-7-7-4 18-7Z"
+                    />
+
+                </svg>
+
+                <span>
+                    Share
+                </span>
+
             </button>
 
 
@@ -709,8 +542,24 @@ function createReelCard(
                 class="reel-action"
                 data-action="save"
             >
-                🔖
-                <span>Save</span>
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                >
+
+                    <path
+                        d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5V21l-6-3.5L6 21V4.5Z"
+                    />
+
+                </svg>
+
+                <span>
+                    Save
+                </span>
+
             </button>
 
 
@@ -719,8 +568,32 @@ function createReelCard(
                 class="reel-action"
                 data-action="download"
             >
-                ↓
-                <span>Download</span>
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                >
+
+                    <path
+                        d="M12 3v12"
+                    />
+
+                    <path
+                        d="m7 10 5 5 5-5"
+                    />
+
+                    <path
+                        d="M5 21h14"
+                    />
+
+                </svg>
+
+                <span>
+                    Download
+                </span>
+
             </button>
 
 
@@ -729,7 +602,32 @@ function createReelCard(
                 class="reel-action more-action"
                 data-action="more"
             >
-                ⋮
+
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                >
+
+                    <circle
+                        cx="5"
+                        cy="12"
+                        r="1.5"
+                    />
+
+                    <circle
+                        cx="12"
+                        cy="12"
+                        r="1.5"
+                    />
+
+                    <circle
+                        cx="19"
+                        cy="12"
+                        r="1.5"
+                    />
+
+                </svg>
+
             </button>
 
         </div>
@@ -740,42 +638,31 @@ function createReelCard(
             <div class="reel-user-row">
 
                 <div class="reel-avatar">
-
                     ${escapeHTML(
-                        getAvatarLetter(
-                            reel
-                        )
+                        getAvatarLetter(reel)
                     )}
-
                 </div>
-
 
                 <div class="reel-user-details">
 
                     <strong>
-
                         ${escapeHTML(
                             reel.creator_name ??
                             reel.user_name ??
                             reel.name ??
                             "Usanex User"
                         )}
-
                     </strong>
 
-
                     <span>
-
                         ${escapeHTML(
                             reel.username ??
                             reel.creator_username ??
                             "@usanex"
                         )}
-
                     </span>
 
                 </div>
-
 
                 <button
                     type="button"
@@ -788,12 +675,9 @@ function createReelCard(
 
 
             <p class="reel-caption">
-
                 ${escapeHTML(
-                    reel.caption ??
-                    ""
+                    reel.caption ?? ""
                 )}
-
             </p>
 
 
@@ -807,7 +691,6 @@ function createReelCard(
                     Interested
                 </button>
 
-
                 <button
                     type="button"
                     class="interest-button"
@@ -818,99 +701,117 @@ function createReelCard(
 
             </div>
 
-
-            <div class="reel-audio">
-
-                🎵
-
-                <span>
-
-                    ${escapeHTML(
-                        reel.audio_name ??
-                        "Original audio"
-                    )}
-
-                </span>
-
-            </div>
-
         </div>
 
     `;
 
-
-    const videoUrl =
-        getVideoURL(
-            reel
-        );
-
-
-    console.log(
-        "Usanex Reel:",
-        article.dataset.reelId,
-        videoUrl
-    );
-
-
     if (videoUrl) {
 
         const video =
-            createVideoElement(
+            createVideo(
                 videoUrl,
                 reel
             );
 
-
-        const videoContainer =
-            article.querySelector(
+        const videoBox =
+            card.querySelector(
                 ".reel-video"
             );
 
+        videoBox.innerHTML = "";
 
-        videoContainer.innerHTML =
-            "";
-
-
-        videoContainer.appendChild(
+        videoBox.appendChild(
             video
         );
 
-    } else {
-
-        const placeholder =
-            article.querySelector(
-                ".video-placeholder"
-            );
-
-
-        if (placeholder) {
-
-            placeholder.querySelector(
-                "span"
-            ).textContent =
-                "Video unavailable";
-
-        }
-
     }
 
+    attachCardEvents(card);
 
-    attachCardEvents(
-        article
-    );
-
-
-    return article;
+    return card;
 
 }
 
 
 /* =========================================================
-   VIDEO ELEMENT
+   GET VIDEO URL
 ========================================================= */
 
-function createVideoElement(
-    videoUrl,
+function getVideoUrl(reel) {
+
+    const possible = [
+
+        reel.video_url,
+
+        reel.videoUrl,
+
+        reel.video,
+
+        reel.media_url,
+
+        reel.mediaUrl,
+
+        reel.file_url,
+
+        reel.fileUrl,
+
+        reel.video_path,
+
+        reel.videoPath,
+
+        reel.media_path,
+
+        reel.url
+
+    ];
+
+    let url =
+        possible.find(
+            item =>
+                typeof item === "string" &&
+                item.trim()
+        );
+
+    if (!url) {
+        return null;
+    }
+
+    url = url.trim();
+
+    /*
+     * If backend sends relative path,
+     * browser resolves it against current origin.
+     */
+
+    if (
+        url.startsWith("/")
+    ) {
+
+        return url;
+
+    }
+
+    if (
+        url.startsWith("http://") ||
+        url.startsWith("https://") ||
+        url.startsWith("blob:")
+    ) {
+
+        return url;
+
+    }
+
+    return "/" + url.replace(/^\/+/,"");
+
+}
+
+
+/* =========================================================
+   VIDEO
+========================================================= */
+
+function createVideo(
+    url,
     reel
 ) {
 
@@ -919,321 +820,67 @@ function createVideoElement(
             "video"
         );
 
+    video.src = url;
 
-    video.className =
-        "reel-video-player";
+    video.preload = "auto";
 
+    video.loop = true;
 
-    video.src =
-        videoUrl;
-
-
-    video.preload =
-        "auto";
-
-
-    video.loop =
-        true;
-
-
-    video.playsInline =
-        true;
-
+    video.playsInline = true;
 
     video.setAttribute(
         "playsinline",
         ""
     );
 
-
     video.setAttribute(
         "webkit-playsinline",
         ""
     );
 
+    video.setAttribute(
+        "controlslist",
+        "nodownload"
+    );
 
-    /*
-     * Start muted because mobile browsers
-     * normally block autoplay with sound.
-     */
+    video.muted = false;
 
-    video.muted =
-        true;
+    video.volume = 1;
 
-
-    video.volume =
-        1;
-
-
-    if (
-        reel.thumbnail_url
-    ) {
+    if (reel.thumbnail_url) {
 
         video.poster =
             reel.thumbnail_url;
 
     }
 
+    video.addEventListener(
+        "error",
+        () => {
 
-    /* -----------------------------------------
-       VIDEO LOAD SUCCESS
-    ----------------------------------------- */
+            console.warn(
+                "Video failed:",
+                url,
+                video.error
+            );
+
+        }
+    );
+
+    setupLongPress(video);
 
     video.addEventListener(
         "loadeddata",
         () => {
 
-            console.log(
-                "Video loaded:",
-                videoUrl
+            tryPlay(
+                video
             );
 
         }
     );
 
-
-    /* -----------------------------------------
-       VIDEO ERROR
-    ----------------------------------------- */
-
-    video.addEventListener(
-        "error",
-        () => {
-
-            console.error(
-                "Video failed:",
-                videoUrl,
-                video.error
-            );
-
-
-            const container =
-                video.closest(
-                    ".reel-video"
-                );
-
-
-            if (container) {
-
-                container.innerHTML = `
-
-                    <div class="video-placeholder">
-
-                        <div class="placeholder-icon">
-                            ⚠
-                        </div>
-
-                        <span>
-                            Video could not be loaded
-                        </span>
-
-                    </div>
-
-                `;
-
-            }
-
-        }
-    );
-
-
-    /* -----------------------------------------
-       TOUCH / LONG PRESS
-    ----------------------------------------- */
-
-    let pressTimer =
-        null;
-
-    let longPress =
-        false;
-
-    const LONG_PRESS_TIME =
-        600;
-
-
-    video.addEventListener(
-        "touchstart",
-        event => {
-
-            longPress =
-                false;
-
-
-            pressTimer =
-                setTimeout(
-                    () => {
-
-                        longPress =
-                            true;
-
-
-                        ReelApp.userInteracted =
-                            true;
-
-
-                        toggleVideoAudio(
-                            video
-                        );
-
-                    },
-                    LONG_PRESS_TIME
-                );
-
-        },
-        {
-            passive: true
-        }
-    );
-
-
-    video.addEventListener(
-        "touchmove",
-        () => {
-
-            clearTimeout(
-                pressTimer
-            );
-
-        },
-        {
-            passive: true
-        }
-    );
-
-
-    video.addEventListener(
-        "touchend",
-        event => {
-
-            clearTimeout(
-                pressTimer
-            );
-
-
-            if (longPress) {
-
-                event.preventDefault();
-
-                return;
-
-            }
-
-
-            const card =
-                video.closest(
-                    ".reel-card"
-                );
-
-
-            if (!card) {
-                return;
-            }
-
-
-            ReelApp.userInteracted =
-                true;
-
-
-            /*
-             * If paused → play.
-             */
-
-            if (video.paused) {
-
-                playVideoWithSound(
-                    video
-                );
-
-                return;
-
-            }
-
-
-            /*
-             * Normal tap while playing:
-             *
-             * 1 → ⭐
-             * 2 → ⭐⭐
-             * 3 → ⭐⭐⭐
-             */
-
-            rateByVideoTap(
-                card
-            );
-
-        },
-        {
-            passive: false
-        }
-    );
-
-
-    /* -----------------------------------------
-       DESKTOP LONG PRESS
-    ----------------------------------------- */
-
-    video.addEventListener(
-        "mousedown",
-        event => {
-
-            if (
-                event.button !== 0
-            ) {
-                return;
-            }
-
-
-            longPress =
-                false;
-
-
-            pressTimer =
-                setTimeout(
-                    () => {
-
-                        longPress =
-                            true;
-
-
-                        ReelApp.userInteracted =
-                            true;
-
-
-                        toggleVideoAudio(
-                            video
-                        );
-
-                    },
-                    LONG_PRESS_TIME
-                );
-
-        }
-    );
-
-
-    video.addEventListener(
-        "mouseup",
-        event => {
-
-            clearTimeout(
-                pressTimer
-            );
-
-        }
-    );
-
-
-    video.addEventListener(
-        "mouseleave",
-        () => {
-
-            clearTimeout(
-                pressTimer
-            );
-
-        }
-    );
-
+    tryPlay(video);
 
     return video;
 
@@ -1241,202 +888,172 @@ function createVideoElement(
 
 
 /* =========================================================
-   PLAY VIDEO
+   AUTOPLAY
 ========================================================= */
 
-function playVideoWithSound(
-    video
-) {
+function tryPlay(video) {
 
     if (!video) {
         return;
     }
 
-
-    ReelApp.userInteracted =
-        true;
-
-
-    video.muted =
-        false;
-
-
-    video.volume =
-        1;
-
-
     video.play()
-        .catch(
-            error => {
+        .then(() => {
 
-                console.warn(
-                    "Sound play blocked:",
-                    error
-                );
+            /*
+             * Sound will work when browser
+             * allows it / user interacted.
+             */
 
+            if (ReelApp.userInteracted) {
 
-                /*
-                 * Fallback:
-                 * video still plays muted.
-                 */
-
-                video.muted =
-                    true;
-
-
-                video.play()
-                    .catch(
-                        err => {
-
-                            console.warn(
-                                "Video play failed:",
-                                err
-                            );
-
-                        }
-                    );
+                video.muted = false;
+                video.volume = 1;
 
             }
-        );
+
+        })
+        .catch(() => {
+
+            /*
+             * Browser blocked autoplay
+             * because sound is enabled.
+             *
+             * Start muted so old/new videos
+             * still play automatically.
+             */
+
+            video.muted = true;
+
+            video.play()
+                .catch(() => {});
+
+        });
 
 }
 
 
 /* =========================================================
-   PLAY ACTIVE VIDEO
+   LONG PRESS = MUTE / UNMUTE
 ========================================================= */
 
-function playActiveVideo(
-    video
-) {
+function setupLongPress(video) {
 
-    if (!video) {
-        return;
-    }
+    let timer = null;
 
+    let longPressed = false;
 
-    /*
-     * Stop previous active video.
-     */
+    const LONG_PRESS = 600;
 
-    if (
-        ReelApp.activeVideo &&
-        ReelApp.activeVideo !== video
-    ) {
+    const start = () => {
 
-        try {
+        longPressed = false;
 
-            ReelApp.activeVideo.pause();
+        clearTimeout(timer);
 
-        } catch {}
-
-    }
-
-
-    ReelApp.activeVideo =
-        video;
-
-
-    /*
-     * User has interacted:
-     * play with sound.
-     */
-
-    if (
-        ReelApp.userInteracted
-    ) {
-
-        video.muted =
-            false;
-
-        video.volume =
-            1;
-
-        video.play()
-            .catch(
+        timer =
+            setTimeout(
                 () => {
 
-                    video.muted =
-                        true;
+                    longPressed = true;
 
-                    video.play()
-                        .catch(
-                            () => {}
-                        );
+                    toggleMute(video);
 
-                }
+                },
+                LONG_PRESS
             );
 
-        return;
+    };
 
-    }
+    const cancel = () => {
 
+        clearTimeout(timer);
 
-    /*
-     * First automatic play:
-     * browser-safe muted mode.
-     */
+    };
 
-    video.muted =
-        true;
+    video.addEventListener(
+        "touchstart",
+        start,
+        {
+            passive: true
+        }
+    );
 
+    video.addEventListener(
+        "touchend",
+        event => {
 
-    video.volume =
-        1;
+            cancel();
 
+            if (longPressed) {
 
-    video.play()
-        .catch(
-            error => {
-
-                console.warn(
-                    "Autoplay failed:",
-                    error
-                );
+                event.preventDefault();
 
             }
-        );
+
+        },
+        {
+            passive: false
+        }
+    );
+
+    video.addEventListener(
+        "touchcancel",
+        cancel
+    );
+
+    video.addEventListener(
+        "mousedown",
+        event => {
+
+            if (event.button === 0) {
+                start();
+            }
+
+        }
+    );
+
+    video.addEventListener(
+        "mouseup",
+        cancel
+    );
+
+    video.addEventListener(
+        "mouseleave",
+        cancel
+    );
 
 }
 
 
 /* =========================================================
-   TOGGLE AUDIO
+   MUTE
 ========================================================= */
 
-function toggleVideoAudio(
-    video
-) {
+function toggleMute(video) {
 
     if (!video) {
         return;
     }
 
+    video.muted =
+        !video.muted;
 
-    if (video.muted) {
+    if (!video.muted) {
 
-        video.muted =
-            false;
+        ReelApp.userInteracted =
+            true;
 
-        video.volume =
-            1;
-
+        video.volume = 1;
 
         video.play()
-            .catch(
-                () => {}
-            );
-
+            .catch(() => {});
 
         showToast(
             "🔊 Audio on"
         );
 
     } else {
-
-        video.muted =
-            true;
-
 
         showToast(
             "🔇 Audio muted"
@@ -1448,206 +1065,229 @@ function toggleVideoAudio(
 
 
 /* =========================================================
-   VIDEO TAP RATING
-========================================================= */
-
-function rateByVideoTap(
-    card
-) {
-
-    let rating =
-        Number(
-            card.dataset.tapRating ||
-            0
-        );
-
-
-    rating++;
-
-
-    if (
-        rating > 3
-    ) {
-
-        rating =
-            1;
-
-    }
-
-
-    card.dataset.tapRating =
-        String(
-            rating
-        );
-
-
-    setRatingUI(
-        card,
-        rating
-    );
-
-
-    showToast(
-        `⭐ ${rating} star${rating > 1 ? "s" : ""}`
-    );
-
-
-    const reelId =
-        getReelId(
-            card
-        );
-
-
-    if (
-        !isRealReelId(
-            reelId
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    apiRequest(
-        `/api/reels/${encodeURIComponent(reelId)}/rating`,
-        {
-            method:
-                "POST",
-
-            body: {
-                rating: rating
-            }
-
-        }
-    )
-    .catch(
-        error => {
-
-            console.warn(
-                "Rating API:",
-                error
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
    CARD EVENTS
 ========================================================= */
 
-function attachCardEvents(
-    card
-) {
+function attachCardEvents(card) {
 
-    attachRatingEvents(
-        card
-    );
+    attachRatingEvents(card);
 
-    attachActionEvents(
-        card
-    );
+    attachActionEvents(card);
 
-    attachInterestEvents(
-        card
-    );
+    attachInterestEvents(card);
 
-    attachFollowEvent(
-        card
-    );
+    attachFollowEvent(card);
 
 }
 
 
 /* =========================================================
-   RATING BUTTONS
+   RATING BUTTON
 ========================================================= */
 
-function attachRatingEvents(
-    card
-) {
+function attachRatingEvents(card) {
 
     const buttons =
         card.querySelectorAll(
             ".rating-star"
         );
 
-
     buttons.forEach(
         button => {
 
             button.addEventListener(
                 "click",
-                async event => {
+                event => {
 
                     event.stopPropagation();
-
 
                     const rating =
                         Number(
                             button.dataset.rating
                         );
 
+                    animateStar(
+                        event.clientX,
+                        event.clientY,
+                        rating
+                    );
 
                     card.dataset.tapRating =
-                        String(
-                            rating
-                        );
-
+                        String(rating);
 
                     setRatingUI(
                         card,
                         rating
                     );
 
-
-                    const reelId =
-                        getReelId(
-                            card
-                        );
-
-
-                    if (
-                        !isRealReelId(
-                            reelId
-                        )
-                    ) {
-                        return;
-                    }
-
-
-                    try {
-
-                        await apiRequest(
-                            `/api/reels/${encodeURIComponent(reelId)}/rating`,
-                            {
-                                method:
-                                    "POST",
-
-                                body: {
-                                    rating:
-                                        rating
-                                }
-
-                            }
-                        );
-
-                    } catch (error) {
-
-                        console.warn(
-                            "Rating API:",
-                            error
-                        );
-
-                    }
+                    sendRating(
+                        card,
+                        rating
+                    );
 
                 }
             );
 
         }
+    );
+
+}
+
+
+/* =========================================================
+   VIDEO TAP = 1 / 2 / 3 STAR
+========================================================= */
+
+function attachVideoRating(card) {
+
+    const video =
+        card.querySelector(
+            "video"
+        );
+
+    if (!video) {
+        return;
+    }
+
+    let lastTap = 0;
+
+    video.addEventListener(
+        "click",
+        event => {
+
+            const now =
+                Date.now();
+
+            /*
+             * Do not treat long press
+             * as rating.
+             */
+
+            if (
+                now - lastTap < 350
+            ) {
+
+                return;
+
+            }
+
+            lastTap = now;
+
+            let rating =
+                Number(
+                    card.dataset.tapRating || 0
+                );
+
+            rating++;
+
+            if (rating > 3) {
+                rating = 1;
+            }
+
+            animateStar(
+                event.clientX,
+                event.clientY,
+                rating
+            );
+
+            card.dataset.tapRating =
+                String(rating);
+
+            setRatingUI(
+                card,
+                rating
+            );
+
+            sendRating(
+                card,
+                rating
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   STAR ANIMATION
+========================================================= */
+
+function animateStar(
+    x,
+    y,
+    rating
+) {
+
+    const star =
+        document.createElement(
+            "div"
+        );
+
+    star.className =
+        "star-fly";
+
+    star.textContent =
+        "★";
+
+    star.style.left =
+        `${x}px`;
+
+    star.style.top =
+        `${y}px`;
+
+    /*
+     * 3rd star gets burst.
+     */
+
+    if (rating === 3) {
+
+        star.style.animation =
+            "starFlyUp .45s ease-out forwards";
+
+    }
+
+    document.body.appendChild(
+        star
+    );
+
+    if (rating === 3) {
+
+        setTimeout(
+            () => {
+
+                const burst =
+                    document.createElement(
+                        "div"
+                    );
+
+                burst.className =
+                    "star-burst";
+
+                burst.style.left =
+                    `${x}px`;
+
+                burst.style.top =
+                    `${y - 60}px`;
+
+                document.body.appendChild(
+                    burst
+                );
+
+                setTimeout(
+                    () => burst.remove(),
+                    500
+                );
+
+            },
+            300
+        );
+
+    }
+
+    setTimeout(
+        () => star.remove(),
+        850
     );
 
 }
@@ -1667,7 +1307,6 @@ function setRatingUI(
             ".rating-star"
         );
 
-
     stars.forEach(
         star => {
 
@@ -1675,7 +1314,6 @@ function setRatingUI(
                 Number(
                     star.dataset.rating
                 );
-
 
             star.classList.toggle(
                 "active",
@@ -1689,89 +1327,121 @@ function setRatingUI(
 
 
 /* =========================================================
-   ACTION EVENTS
+   RATING API
 ========================================================= */
 
-function attachActionEvents(
-    card
+async function sendRating(
+    card,
+    rating
 ) {
 
-    const buttons =
-        card.querySelectorAll(
-            ".reel-action"
+    const reelId =
+        getReelId(card);
+
+    if (
+        !isRealReelId(reelId)
+    ) {
+        return;
+    }
+
+    try {
+
+        await apiRequest(
+            `/api/reels/${encodeURIComponent(reelId)}/rating`,
+            {
+                method: "POST",
+
+                body: {
+                    rating: rating
+                }
+            }
         );
 
+    } catch (error) {
 
-    buttons.forEach(
+        console.warn(
+            "Rating API:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+function attachActionEvents(card) {
+
+    card.querySelectorAll(
+        ".reel-action"
+    ).forEach(
         button => {
 
             button.addEventListener(
                 "click",
-                async event => {
+                event => {
 
                     event.stopPropagation();
-
 
                     const action =
                         button.dataset.action;
 
-
                     const reelId =
-                        getReelId(
-                            card
-                        );
+                        getReelId(card);
 
-
-                    switch (
-                        action
+                    if (
+                        action === "comment"
                     ) {
 
-                        case "comment":
+                        openComments(
+                            reelId
+                        );
 
-                            openComment(
-                                reelId
-                            );
+                    }
 
-                            break;
+                    if (
+                        action === "share"
+                    ) {
 
+                        shareReel(
+                            reelId
+                        );
 
-                        case "share":
+                    }
 
-                            await shareReel(
-                                reelId
-                            );
+                    if (
+                        action === "save"
+                    ) {
 
-                            break;
+                        saveReel(
+                            reelId,
+                            button
+                        );
 
+                    }
 
-                        case "save":
+                    if (
+                        action === "download"
+                    ) {
 
-                            await saveReel(
-                                reelId,
-                                button
-                            );
+                        downloadReel(
+                            reelId,
+                            card,
+                            button
+                        );
 
-                            break;
+                    }
 
+                    if (
+                        action === "more"
+                    ) {
 
-                        case "download":
-
-                            await downloadReel(
-                                reelId,
-                                card,
-                                button
-                            );
-
-                            break;
-
-
-                        case "more":
-
-                            openMoreMenu(
-                                reelId
-                            );
-
-                            break;
+                        reportReel(
+                            reelId
+                        );
 
                     }
 
@@ -1785,6 +1455,65 @@ function attachActionEvents(
 
 
 /* =========================================================
+   SHARE
+========================================================= */
+
+async function shareReel(reelId) {
+
+    if (!isRealReelId(reelId)) {
+        return;
+    }
+
+    const url =
+        `${location.origin}/reels?reel=${encodeURIComponent(reelId)}`;
+
+    try {
+
+        if (navigator.share) {
+
+            await navigator.share({
+                title: "Usanex Reel",
+                text: "Check this reel on Usanex",
+                url: url
+            });
+
+        } else if (
+            navigator.clipboard
+        ) {
+
+            await navigator.clipboard.writeText(
+                url
+            );
+
+            showToast(
+                "Reel link copied"
+            );
+
+        }
+
+        apiRequest(
+            `/api/reels/${encodeURIComponent(reelId)}/share`,
+            {
+                method: "POST",
+                body: {
+                    share_type: "link"
+                }
+            }
+        ).catch(() => {});
+
+    } catch (error) {
+
+        console.warn(
+            "Share:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
    SAVE
 ========================================================= */
 
@@ -1793,14 +1522,9 @@ async function saveReel(
     button
 ) {
 
-    if (
-        !isRealReelId(
-            reelId
-        )
-    ) {
+    if (!isRealReelId(reelId)) {
         return;
     }
-
 
     try {
 
@@ -1808,20 +1532,16 @@ async function saveReel(
             await apiRequest(
                 `/api/reels/${encodeURIComponent(reelId)}/save`,
                 {
-                    method:
-                        "POST"
+                    method: "POST"
                 }
             );
-
 
         const saved =
             data?.saved ??
             data?.is_saved;
 
-
         if (
-            typeof saved ===
-            "boolean"
+            typeof saved === "boolean"
         ) {
 
             button.classList.toggle(
@@ -1839,100 +1559,9 @@ async function saveReel(
 
     } catch (error) {
 
-        console.warn(
-            "Save API:",
-            error
-        );
-
-
         showToast(
             error.message ||
-            "Unable to save reel"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   SHARE
-========================================================= */
-
-async function shareReel(
-    reelId
-) {
-
-    if (
-        !isRealReelId(
-            reelId
-        )
-    ) {
-        return;
-    }
-
-
-    const shareUrl =
-        window.location.origin +
-        "/reels?reel=" +
-        encodeURIComponent(
-            reelId
-        );
-
-
-    try {
-
-        if (
-            navigator.share
-        ) {
-
-            await navigator.share({
-
-                title:
-                    "Usanex Reel",
-
-                text:
-                    "Check this reel on Usanex",
-
-                url:
-                    shareUrl
-
-            });
-
-        } else if (
-            navigator.clipboard
-        ) {
-
-            await navigator.clipboard.writeText(
-                shareUrl
-            );
-
-
-            showToast(
-                "Reel link copied"
-            );
-
-        }
-
-
-        await apiRequest(
-            `/api/reels/${encodeURIComponent(reelId)}/share`,
-            {
-                method:
-                    "POST",
-
-                body: {
-                    share_type: "link"
-                }
-
-            }
-        );
-
-    } catch (error) {
-
-        console.warn(
-            "Share API:",
-            error
+            "Unable to save"
         );
 
     }
@@ -1955,9 +1584,9 @@ async function downloadReel(
             "video"
         );
 
-
     if (
-        !video?.src
+        !video ||
+        !video.src
     ) {
 
         showToast(
@@ -1968,7 +1597,6 @@ async function downloadReel(
 
     }
 
-
     try {
 
         const link =
@@ -1976,56 +1604,41 @@ async function downloadReel(
                 "a"
             );
 
-
         link.href =
-            video.currentSrc ||
             video.src;
 
-
         link.download =
-            `usanex-reel-${reelId}.mp4`;
-
-
-        link.target =
-            "_blank";
-
+            `usanex-reel-${reelId || Date.now()}.mp4`;
 
         document.body.appendChild(
             link
         );
 
-
         link.click();
 
-
         link.remove();
-
 
         button.classList.add(
             "downloaded"
         );
 
-
         if (
-            isRealReelId(
-                reelId
-            )
+            isRealReelId(reelId)
         ) {
 
-            await apiRequest(
+            apiRequest(
                 `/api/reels/${encodeURIComponent(reelId)}/download`,
                 {
-                    method:
-                        "POST"
+                    method: "POST"
                 }
-            );
+            ).catch(() => {});
 
         }
 
     } catch (error) {
 
         console.warn(
-            "Download API:",
+            "Download:",
             error
         );
 
@@ -2038,15 +1651,12 @@ async function downloadReel(
    INTEREST
 ========================================================= */
 
-function attachInterestEvents(
-    card
-) {
+function attachInterestEvents(card) {
 
     const buttons =
         card.querySelectorAll(
             ".interest-button"
         );
-
 
     buttons.forEach(
         button => {
@@ -2057,72 +1667,48 @@ function attachInterestEvents(
 
                     event.stopPropagation();
 
-
-                    const interest =
-                        button.dataset.interest;
-
-
                     const reelId =
-                        getReelId(
-                            card
-                        );
-
+                        getReelId(card);
 
                     if (
-                        !isRealReelId(
-                            reelId
-                        )
+                        !isRealReelId(reelId)
                     ) {
                         return;
                     }
 
+                    const type =
+                        button.dataset.interest;
 
                     buttons.forEach(
-                        item => {
-
-                            item.classList.remove(
+                        b =>
+                            b.classList.remove(
                                 "selected"
-                            );
-
-                        }
+                            )
                     );
 
+                    button.classList.add(
+                        "selected"
+                    );
+
+                    const endpoint =
+                        type === "interested"
+                            ? "interested"
+                            : "not-interested";
 
                     try {
 
-                        const endpoint =
-                            interest ===
-                            "interested"
-
-                                ? `/api/reels/${encodeURIComponent(reelId)}/interested`
-
-                                : `/api/reels/${encodeURIComponent(reelId)}/not-interested`;
-
-
                         await apiRequest(
-                            endpoint,
+                            `/api/reels/${encodeURIComponent(reelId)}/${endpoint}`,
                             {
-                                method:
-                                    "POST"
+                                method: "POST"
                             }
-                        );
-
-
-                        button.classList.add(
-                            "selected"
                         );
 
                     } catch (error) {
 
                         console.warn(
-                            "Interest API:",
+                            "Interest:",
                             error
-                        );
-
-
-                        showToast(
-                            error.message ||
-                            "Unable to update interest"
                         );
 
                     }
@@ -2140,20 +1726,16 @@ function attachInterestEvents(
    FOLLOW
 ========================================================= */
 
-function attachFollowEvent(
-    card
-) {
+function attachFollowEvent(card) {
 
     const button =
         card.querySelector(
             ".follow-button"
         );
 
-
     if (!button) {
         return;
     }
-
 
     button.addEventListener(
         "click",
@@ -2161,18 +1743,15 @@ function attachFollowEvent(
 
             event.stopPropagation();
 
-
             const following =
                 button.classList.contains(
                     "following"
                 );
 
-
             button.classList.toggle(
                 "following",
                 !following
             );
-
 
             button.textContent =
                 following
@@ -2186,41 +1765,30 @@ function attachFollowEvent(
 
 
 /* =========================================================
-   REEL OBSERVER
+   OBSERVER
 ========================================================= */
 
 function initializeReelObserver() {
 
-    if (
-        ReelApp.observer
-    ) {
+    if (ReelApp.observer) {
 
         ReelApp.observer.disconnect();
 
     }
-
 
     const container =
         document.getElementById(
             "reelsContainer"
         );
 
-
     if (!container) {
         return;
     }
-
 
     const cards =
         container.querySelectorAll(
             ".reel-card"
         );
-
-
-    if (!cards.length) {
-        return;
-    }
-
 
     ReelApp.observer =
         new IntersectionObserver(
@@ -2232,63 +1800,31 @@ function initializeReelObserver() {
                         const card =
                             entry.target;
 
-
                         const video =
                             card.querySelector(
                                 "video"
                             );
 
-
                         if (
                             entry.isIntersecting &&
-                            entry.intersectionRatio >=
-                                0.70
+                            entry.intersectionRatio >= .70
                         ) {
 
                             ReelApp.currentIndex =
                                 Number(
-                                    card.dataset.index ||
-                                    0
+                                    card.dataset.index || 0
                                 );
 
-
                             cards.forEach(
-                                item => {
-
-                                    if (
-                                        item !==
-                                        card
-                                    ) {
-
-                                        item.classList.remove(
-                                            "active-reel"
-                                        );
-
-
-                                        const oldVideo =
-                                            item.querySelector(
-                                                "video"
-                                            );
-
-
-                                        if (
-                                            oldVideo
-                                        ) {
-
-                                            oldVideo.pause();
-
-                                        }
-
-                                    }
-
-                                }
+                                c =>
+                                    c.classList.remove(
+                                        "active-reel"
+                                    )
                             );
-
 
                             card.classList.add(
                                 "active-reel"
                             );
-
 
                             if (video) {
 
@@ -2298,26 +1834,21 @@ function initializeReelObserver() {
 
                             }
 
-
-                            startWatchTracking(
+                            startWatch(
                                 card
                             );
 
                         } else {
 
                             if (video) {
-
                                 video.pause();
-
                             }
-
 
                             card.classList.remove(
                                 "active-reel"
                             );
 
-
-                            stopWatchTracking(
+                            stopWatch(
                                 card
                             );
 
@@ -2328,26 +1859,24 @@ function initializeReelObserver() {
 
             },
             {
-
-                root:
-                    container,
-
-                threshold:
-                    [
-                        0.25,
-                        0.50,
-                        0.70,
-                        0.90
-                    ]
-
+                root: container,
+                threshold: [
+                    .25,
+                    .50,
+                    .70,
+                    .90
+                ]
             }
         );
-
 
     cards.forEach(
         card => {
 
             ReelApp.observer.observe(
+                card
+            );
+
+            attachVideoRating(
                 card
             );
 
@@ -2358,24 +1887,50 @@ function initializeReelObserver() {
 
 
 /* =========================================================
-   WATCH TRACKING
+   ACTIVE VIDEO
 ========================================================= */
 
-function startWatchTracking(
-    card
-) {
+function playActiveVideo(video) {
 
-    stopWatchTracking(
-        card
-    );
+    if (!video) {
+        return;
+    }
 
+    if (
+        ReelApp.userInteracted
+    ) {
+
+        video.muted = false;
+        video.volume = 1;
+
+    }
+
+    video.play()
+        .catch(() => {
+
+            video.muted = true;
+
+            video.play()
+                .catch(() => {});
+
+        });
+
+}
+
+
+/* =========================================================
+   WATCH
+========================================================= */
+
+function startWatch(card) {
+
+    stopWatch(card);
 
     ReelApp.watchStartedAt =
         Date.now();
 
-
     ReelApp.watchTimer =
-        window.setInterval(
+        setInterval(
             () => {
 
                 const video =
@@ -2383,57 +1938,31 @@ function startWatchTracking(
                         "video"
                     );
 
-
                 if (!video) {
                     return;
                 }
 
-
-                const duration =
-                    Number(
-                        video.duration
-                    );
-
-
-                const current =
-                    Number(
-                        video.currentTime
-                    );
-
-
                 if (
-                    !duration ||
                     !Number.isFinite(
-                        duration
-                    )
+                        video.duration
+                    ) ||
+                    !video.duration
                 ) {
                     return;
                 }
 
+                const percent =
+                    video.currentTime /
+                    video.duration *
+                    100;
 
-                const percentage =
-                    Math.min(
-                        100,
-                        (
-                            current /
-                            duration
-                        ) * 100
-                    );
+                if (percent >= 90) {
 
-
-                if (
-                    percentage >= 90
-                ) {
-
-                    const reelId =
-                        getReelId(
-                            card
-                        );
-
+                    const id =
+                        getReelId(card);
 
                     const key =
-                        `${reelId}-completed`;
-
+                        `${id}-completed`;
 
                     if (
                         !ReelApp.watchSent.has(
@@ -2445,11 +1974,10 @@ function startWatchTracking(
                             key
                         );
 
-
-                        sendWatchEvent(
+                        sendWatch(
                             card,
-                            current,
-                            percentage,
+                            video.currentTime,
+                            percent,
                             true
                         );
 
@@ -2465,12 +1993,10 @@ function startWatchTracking(
 
 
 /* =========================================================
-   STOP WATCH TRACKING
+   STOP WATCH
 ========================================================= */
 
-function stopWatchTracking(
-    card
-) {
+function stopWatch(card) {
 
     if (
         ReelApp.watchTimer
@@ -2480,39 +2006,10 @@ function stopWatchTracking(
             ReelApp.watchTimer
         );
 
-
         ReelApp.watchTimer =
             null;
 
     }
-
-
-    if (
-        ReelApp.watchStartedAt
-    ) {
-
-        const watchedSeconds =
-            (
-                Date.now() -
-                ReelApp.watchStartedAt
-            ) / 1000;
-
-
-        if (
-            watchedSeconds >= 1
-        ) {
-
-            sendWatchEvent(
-                card,
-                watchedSeconds,
-                0,
-                false
-            );
-
-        }
-
-    }
-
 
     ReelApp.watchStartedAt =
         null;
@@ -2524,35 +2021,26 @@ function stopWatchTracking(
    WATCH API
 ========================================================= */
 
-async function sendWatchEvent(
+async function sendWatch(
     card,
     watchTime,
     completion,
     completed
 ) {
 
-    const reelId =
-        getReelId(
-            card
-        );
+    const id =
+        getReelId(card);
 
-
-    if (
-        !isRealReelId(
-            reelId
-        )
-    ) {
+    if (!isRealReelId(id)) {
         return;
     }
-
 
     try {
 
         await apiRequest(
-            `/api/reels/${encodeURIComponent(reelId)}/watch`,
+            `/api/reels/${encodeURIComponent(id)}/watch`,
             {
-                method:
-                    "POST",
+                method: "POST",
 
                 body: {
 
@@ -2579,251 +2067,312 @@ async function sendWatchEvent(
             }
         );
 
+    } catch {}
+
+}
+
+
+/* =========================================================
+   COMMENTS SYSTEM
+========================================================= */
+
+function initializeCommentSystem() {
+
+    if (
+        document.getElementById(
+            "usanexCommentOverlay"
+        )
+    ) {
+        return;
+    }
+
+    const overlay =
+        document.createElement(
+            "div"
+        );
+
+    overlay.id =
+        "usanexCommentOverlay";
+
+    overlay.className =
+        "comment-overlay";
+
+    overlay.innerHTML = `
+
+        <section
+            class="comment-panel"
+            role="dialog"
+            aria-modal="true"
+        >
+
+            <header class="comment-header">
+
+                <strong>
+                    Comments
+                </strong>
+
+                <button
+                    type="button"
+                    class="comment-close"
+                    id="commentClose"
+                >
+                    ×
+                </button>
+
+            </header>
+
+
+            <div
+                class="comment-list"
+                id="commentList"
+            >
+
+                <div class="comment-empty">
+                    Loading comments...
+                </div>
+
+            </div>
+
+
+            <form
+                class="comment-form"
+                id="commentForm"
+            >
+
+                <input
+                    type="text"
+                    class="comment-input"
+                    id="commentInput"
+                    maxlength="500"
+                    autocomplete="off"
+                    placeholder="Add a comment..."
+                >
+
+                <button
+                    type="submit"
+                    class="comment-send"
+                >
+                    ➤
+                </button>
+
+            </form>
+
+        </section>
+
+    `;
+
+    document.body.appendChild(
+        overlay
+    );
+
+    document.getElementById(
+        "commentClose"
+    ).addEventListener(
+        "click",
+        closeComments
+    );
+
+    overlay.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === overlay
+            ) {
+
+                closeComments();
+
+            }
+
+        }
+    );
+
+    document.getElementById(
+        "commentForm"
+    ).addEventListener(
+        "submit",
+        submitComment
+    );
+
+}
+
+
+/* =========================================================
+   OPEN COMMENTS
+========================================================= */
+
+async function openComments(reelId) {
+
+    if (!reelId) {
+        return;
+    }
+
+    const overlay =
+        document.getElementById(
+            "usanexCommentOverlay"
+        );
+
+    if (!overlay) {
+        return;
+    }
+
+    ReelApp.commentReelId =
+        reelId;
+
+    overlay.classList.add(
+        "open"
+    );
+
+    document.body.style.overflow =
+        "hidden";
+
+    const list =
+        document.getElementById(
+            "commentList"
+        );
+
+    list.innerHTML = `
+        <div class="comment-empty">
+            Loading comments...
+        </div>
+    `;
+
+    await loadComments(
+        reelId
+    );
+
+}
+
+
+/* =========================================================
+   CLOSE COMMENTS
+========================================================= */
+
+function closeComments() {
+
+    const overlay =
+        document.getElementById(
+            "usanexCommentOverlay"
+        );
+
+    if (overlay) {
+
+        overlay.classList.remove(
+            "open"
+        );
+
+    }
+
+    document.body.style.overflow =
+        "";
+
+    ReelApp.commentReelId =
+        null;
+
+}
+
+
+/* =========================================================
+   LOAD COMMENTS
+========================================================= */
+
+async function loadComments(reelId) {
+
+    const list =
+        document.getElementById(
+            "commentList"
+        );
+
+    if (!list) {
+        return;
+    }
+
+    try {
+
+        const data =
+            await apiRequest(
+                `/api/reels/${encodeURIComponent(reelId)}/comments`
+            );
+
+        const comments =
+            Array.isArray(data)
+                ? data
+                : data?.comments || data?.data || [];
+
+        renderComments(
+            comments
+        );
+
     } catch (error) {
 
         console.warn(
-            "Watch API:",
+            "Comments API:",
             error
         );
 
+        list.innerHTML = `
+            <div class="comment-empty">
+                No comments yet.
+            </div>
+        `;
+
     }
 
 }
 
 
 /* =========================================================
-   COMMENT
+   RENDER COMMENTS
 ========================================================= */
 
-function openComment(
-    reelId
+function renderComments(
+    comments
 ) {
 
-    if (
-        !isRealReelId(
-            reelId
-        )
-    ) {
-        return;
-    }
-
-
-    window.location.href =
-        "/reels/" +
-        encodeURIComponent(
-            reelId
-        ) +
-        "/comments";
-
-}
-
-
-/* =========================================================
-   REPORT
-========================================================= */
-
-function openMoreMenu(
-    reelId
-) {
-
-    if (
-        !isRealReelId(
-            reelId
-        )
-    ) {
-        return;
-    }
-
-
-    const choice =
-        window.confirm(
-            "Report this reel?"
-        );
-
-
-    if (!choice) {
-        return;
-    }
-
-
-    apiRequest(
-        `/api/reels/${encodeURIComponent(reelId)}/report`,
-        {
-            method:
-                "POST",
-
-            body: {
-                reason: "user_report"
-            }
-
-        }
-    )
-    .then(
-        () => {
-
-            showToast(
-                "Report submitted"
-            );
-
-        }
-    )
-    .catch(
-        error => {
-
-            console.warn(
-                "Report API:",
-                error
-            );
-
-
-            showToast(
-                error.message ||
-                "Unable to report reel"
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   STATIC INTERACTIONS
-========================================================= */
-
-function initializeStaticInteractions() {
-
-    const createButton =
+    const list =
         document.getElementById(
-            "createReelButton"
+            "commentList"
         );
 
-
-    if (!createButton) {
+    if (!list) {
         return;
     }
-
 
     if (
-        createButton.dataset.staticBound ===
-        "true"
+        !Array.isArray(comments) ||
+        !comments.length
     ) {
+
+        list.innerHTML = `
+            <div class="comment-empty">
+                No comments yet. Be the first to comment.
+            </div>
+        `;
+
         return;
+
     }
 
+    list.innerHTML =
+        comments.map(
+            comment =>
+                createCommentHTML(
+                    comment
+                )
+        ).join("");
 
-    createButton.dataset.staticBound =
-        "true";
-
-
-    createButton.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "/reels/create";
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   CREATE REEL
-========================================================= */
-
-function initializeCreateReel() {
-
-    const button =
-        document.getElementById(
-            "createReelButton"
-        );
-
-
-    if (!button) {
-        return;
-    }
-
-
-    if (
-        button.dataset.reelCreateBound ===
-        "true"
-    ) {
-        return;
-    }
-
-
-    button.dataset.reelCreateBound =
-        "true";
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            window.location.href =
-                "/reels/create";
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function initializeNavigation() {
-
-    const navigation = {
-
-        home:
-            "/home",
-
-        reel:
-            "/reels",
-
-        search:
-            "/search",
-
-        notification:
-            "/notifications",
-
-        profile:
-            "/my-profile"
-
-    };
-
-
-    Object.entries(
-        navigation
+    list.querySelectorAll(
+        ".comment-like"
     ).forEach(
-        (
-            [
-                id,
-                url
-            ]
-        ) => {
+        button => {
 
-            const element =
-                document.getElementById(
-                    id + "Nav"
-                );
-
-
-            if (!element) {
-                return;
-            }
-
-
-            element.addEventListener(
+            button.addEventListener(
                 "click",
                 () => {
 
-                    window.location.href =
-                        url;
+                    likeComment(
+                        button
+                    );
 
                 }
             );
@@ -2835,69 +2384,470 @@ function initializeNavigation() {
 
 
 /* =========================================================
+   COMMENT HTML
+========================================================= */
+
+function createCommentHTML(
+    comment
+) {
+
+    const id =
+        comment.id ??
+        comment.comment_id ??
+        "";
+
+    const username =
+        comment.username ??
+        comment.user_username ??
+        comment.creator_username ??
+        "@user";
+
+    const text =
+        comment.comment ??
+        comment.text ??
+        comment.content ??
+        "";
+
+    const likes =
+        comment.likes_count ??
+        comment.like_count ??
+        0;
+
+    const liked =
+        Boolean(
+            comment.liked ??
+            comment.is_liked
+        );
+
+    return `
+
+        <article
+            class="comment-item"
+            data-comment-id="${escapeHTML(id)}"
+        >
+
+            <div class="comment-avatar">
+                ${escapeHTML(
+                    username
+                        .replace("@","")
+                        .charAt(0)
+                        .toUpperCase() ||
+                    "U"
+                )}
+            </div>
+
+
+            <div class="comment-content">
+
+                <span class="comment-user">
+                    ${escapeHTML(username)}
+                </span>
+
+                <div class="comment-text">
+                    ${escapeHTML(text)}
+                </div>
+
+                <div class="comment-meta">
+
+                    <button
+                        type="button"
+                        class="comment-like ${
+                            liked ? "liked" : ""
+                        }"
+                    >
+                        ♥
+                        <span class="comment-like-count">
+                            ${escapeHTML(likes)}
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="comment-reply"
+                    >
+                        Reply
+                    </button>
+
+                </div>
+
+            </div>
+
+        </article>
+
+    `;
+
+}
+
+
+/* =========================================================
+   COMMENT LIKE
+========================================================= */
+
+async function likeComment(button) {
+
+    const item =
+        button.closest(
+            ".comment-item"
+        );
+
+    if (!item) {
+        return;
+    }
+
+    const commentId =
+        item.dataset.commentId;
+
+    if (!commentId) {
+        return;
+    }
+
+    const liked =
+        button.classList.contains(
+            "liked"
+        );
+
+    const count =
+        button.querySelector(
+            ".comment-like-count"
+        );
+
+    let number =
+        Number(
+            count?.textContent || 0
+        );
+
+    if (liked) {
+
+        number =
+            Math.max(
+                0,
+                number - 1
+            );
+
+    } else {
+
+        number++;
+
+    }
+
+    button.classList.toggle(
+        "liked",
+        !liked
+    );
+
+    if (count) {
+        count.textContent =
+            number;
+    }
+
+    try {
+
+        await apiRequest(
+            `/api/comments/${encodeURIComponent(commentId)}/like`,
+            {
+                method: "POST"
+            }
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "Comment like:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SUBMIT COMMENT
+========================================================= */
+
+async function submitComment(event) {
+
+    event.preventDefault();
+
+    const input =
+        document.getElementById(
+            "commentInput"
+        );
+
+    const text =
+        input?.value.trim();
+
+    const reelId =
+        ReelApp.commentReelId;
+
+    if (
+        !text ||
+        !reelId
+    ) {
+        return;
+    }
+
+    const sendButton =
+        event.target.querySelector(
+            ".comment-send"
+        );
+
+    if (sendButton) {
+        sendButton.disabled = true;
+    }
+
+    try {
+
+        const data =
+            await apiRequest(
+                `/api/reels/${encodeURIComponent(reelId)}/comments`,
+                {
+                    method: "POST",
+
+                    body: {
+                        comment: text,
+                        text: text,
+                        content: text
+                    }
+                }
+            );
+
+        input.value = "";
+
+        await loadComments(
+            reelId
+        );
+
+        updateCommentCount(
+            reelId
+        );
+
+    } catch (error) {
+
+        showToast(
+            error.message ||
+            "Unable to comment"
+        );
+
+    } finally {
+
+        if (sendButton) {
+            sendButton.disabled = false;
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   COMMENT COUNT
+========================================================= */
+
+async function updateCommentCount(
+    reelId
+) {
+
+    const card =
+        document.querySelector(
+            `.reel-card[data-reel-id="${CSS.escape(String(reelId))}"]`
+        );
+
+    if (!card) {
+        return;
+    }
+
+    const count =
+        card.querySelector(
+            ".comment-count"
+        );
+
+    if (!count) {
+        return;
+    }
+
+    const current =
+        Number(
+            count.textContent || 0
+        );
+
+    count.textContent =
+        String(
+            current + 1
+        );
+
+}
+
+
+/* =========================================================
+   REPORT
+========================================================= */
+
+async function reportReel(
+    reelId
+) {
+
+    if (
+        !isRealReelId(reelId)
+    ) {
+        return;
+    }
+
+    const confirmReport =
+        window.confirm(
+            "Report this reel?"
+        );
+
+    if (!confirmReport) {
+        return;
+    }
+
+    try {
+
+        await apiRequest(
+            `/api/reels/${encodeURIComponent(reelId)}/report`,
+            {
+                method: "POST",
+                body: {
+                    reason: "user_report"
+                }
+            }
+        );
+
+        showToast(
+            "Report submitted"
+        );
+
+    } catch (error) {
+
+        showToast(
+            error.message ||
+            "Unable to report reel"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CREATE
+========================================================= */
+
+function initializeCreateReel() {
+
+    const button =
+        document.getElementById(
+            "createReelButton"
+        );
+
+    if (!button) {
+        return;
+    }
+
+    button.onclick =
+        () => {
+
+            window.location.href =
+                "/reels/create";
+
+        };
+
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function initializeNavigation() {
+
+    const routes = {
+
+        homeNav:
+            "/home",
+
+        reelNav:
+            "/reels",
+
+        searchNav:
+            "/search",
+
+        notificationNav:
+            "/notifications",
+
+        profileNav:
+            "/my-profile"
+
+    };
+
+    Object.entries(routes)
+        .forEach(
+            ([id,url]) => {
+
+                const element =
+                    document.getElementById(
+                        id
+                    );
+
+                if (!element) {
+                    return;
+                }
+
+                element.addEventListener(
+                    "click",
+                    () => {
+
+                        window.location.href =
+                            url;
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
    HELPERS
 ========================================================= */
 
-function getReelId(
-    card
-) {
+function getReelId(card) {
 
     return (
-        card?.dataset?.reelId ??
+        card?.dataset?.reelId ||
         ""
     );
 
 }
 
 
-function isRealReelId(
-    reelId
-) {
+function isRealReelId(id) {
 
-    if (!reelId) {
+    if (!id) {
         return false;
     }
 
-
-    if (
-        String(
-            reelId
-        ).startsWith(
-            "demo"
-        )
-    ) {
-
-        return false;
-
-    }
-
-
-    const number =
-        Number(
-            reelId
-        );
-
+    const value =
+        Number(id);
 
     return (
-        Number.isInteger(
-            number
-        ) &&
-        number > 0
+        Number.isInteger(value) &&
+        value > 0
     );
 
 }
 
 
-function getAvatarLetter(
-    reel
-) {
+function getAvatarLetter(reel) {
 
     const name =
         reel.creator_name ??
         reel.user_name ??
         reel.name ??
         "U";
-
 
     return (
         String(name)
@@ -2910,29 +2860,22 @@ function getAvatarLetter(
 }
 
 
-function escapeHTML(
-    value
-) {
+function escapeHTML(value) {
 
     if (
         value === null ||
         value === undefined
     ) {
-
         return "";
-
     }
-
 
     const div =
         document.createElement(
             "div"
         );
 
-
     div.textContent =
         String(value);
-
 
     return div.innerHTML;
 
@@ -2943,15 +2886,12 @@ function escapeHTML(
    TOAST
 ========================================================= */
 
-function showToast(
-    message
-) {
+function showToast(message) {
 
     let toast =
         document.getElementById(
             "usanexReelToast"
         );
-
 
     if (!toast) {
 
@@ -2960,58 +2900,41 @@ function showToast(
                 "div"
             );
 
-
         toast.id =
             "usanexReelToast";
-
 
         toast.style.position =
             "fixed";
 
-
         toast.style.left =
             "50%";
-
 
         toast.style.bottom =
             "85px";
 
-
         toast.style.transform =
             "translateX(-50%)";
-
 
         toast.style.zIndex =
             "99999";
 
-
         toast.style.padding =
             "10px 16px";
 
-
         toast.style.borderRadius =
-            "10px";
-
+            "12px";
 
         toast.style.background =
-            "rgba(20,20,20,.94)";
-
+            "rgba(20,20,20,.95)";
 
         toast.style.color =
             "#fff";
 
-
         toast.style.fontSize =
             "13px";
 
-
-        toast.style.boxShadow =
-            "0 5px 25px rgba(0,0,0,.4)";
-
-
         toast.style.pointerEvents =
             "none";
-
 
         document.body.appendChild(
             toast
@@ -3019,19 +2942,15 @@ function showToast(
 
     }
 
-
     toast.textContent =
         message;
-
 
     toast.hidden =
         false;
 
-
     clearTimeout(
         toast._timer
     );
-
 
     toast._timer =
         setTimeout(
@@ -3048,7 +2967,7 @@ function showToast(
 
 
 /* =========================================================
-   GLOBAL EXPORT
+   EXPORT
 ========================================================= */
 
 window.ReelApp =
