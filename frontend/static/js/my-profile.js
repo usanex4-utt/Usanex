@@ -1,6 +1,5 @@
 /* =========================================================
    USANEX — MY PROFILE
-   REELS + IMAGES + SAVED + PRIVATE
    ========================================================= */
 
 "use strict";
@@ -40,9 +39,7 @@ const profileState = {
 document.addEventListener(
     "DOMContentLoaded",
     () => {
-
         initMyProfile();
-
     }
 );
 
@@ -52,9 +49,7 @@ document.addEventListener(
 ========================================================= */
 
 function $(id) {
-
     return document.getElementById(id);
-
 }
 
 
@@ -86,6 +81,18 @@ function safeText(value, fallback = "") {
     }
 
     return String(value);
+
+}
+
+
+function escapeHtml(value) {
+
+    return safeText(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 
 }
 
@@ -156,30 +163,33 @@ async function initMyProfile() {
 
 
 /* =========================================================
-   LOAD MY PROFILE
+   LOAD PROFILE
 ========================================================= */
 
 async function loadMyProfile() {
 
     try {
 
-        const response = await fetch(
-            "/api/profile/me",
-            {
-                method: "GET",
+        const response =
+            await fetch(
+                "/api/profile/me",
+                {
+                    method: "GET",
 
-                credentials: "include",
+                    credentials: "include",
 
-                headers: {
-                    "Accept": "application/json"
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
                 }
-            }
-        );
+            );
 
 
         if (response.status === 401) {
 
-            window.location.href = "/login";
+            window.location.href =
+                "/login";
 
             return;
 
@@ -189,9 +199,9 @@ async function loadMyProfile() {
         if (!response.ok) {
 
             const errorData =
-                await response.json().catch(
-                    () => null
-                );
+                await response
+                    .json()
+                    .catch(() => null);
 
             throw new Error(
                 errorData?.detail ||
@@ -276,6 +286,7 @@ async function loadMyProfile() {
 
 /* =========================================================
    PROCESS CONTENT
+   REELS + IMAGES
 ========================================================= */
 
 function processUnifiedContent(posts) {
@@ -283,6 +294,7 @@ function processUnifiedContent(posts) {
     profileState.content.reels = [];
 
     profileState.content.images = [];
+
 
     posts.forEach(
         (post) => {
@@ -293,7 +305,9 @@ function processUnifiedContent(posts) {
                 ).toLowerCase();
 
 
-            /* REELS */
+            /* =========================
+               REELS / VIDEO
+            ========================= */
 
             if (
                 mediaType === "video" ||
@@ -310,7 +324,9 @@ function processUnifiedContent(posts) {
             }
 
 
-            /* IMAGES */
+            /* =========================
+               IMAGES / PHOTOS
+            ========================= */
 
             if (
                 mediaType === "image" ||
@@ -328,10 +344,9 @@ function processUnifiedContent(posts) {
     );
 
 
-    /*
-     * Backend se future me saved/private
-     * data aaye to yahan use kiya ja sakta hai.
-     */
+    /* =========================
+       FUTURE CONTENT
+    ========================= */
 
     profileState.content.saved = [];
 
@@ -380,8 +395,6 @@ function renderProfile(user) {
         );
 
 
-    /* HEADER NAME */
-
     if ($("profileName")) {
 
         $("profileName").textContent =
@@ -390,8 +403,6 @@ function renderProfile(user) {
     }
 
 
-    /* DISPLAY NAME */
-
     if ($("profileDisplayName")) {
 
         $("profileDisplayName").textContent =
@@ -399,8 +410,6 @@ function renderProfile(user) {
 
     }
 
-
-    /* USERNAME */
 
     if ($("profileUsername")) {
 
@@ -412,8 +421,6 @@ function renderProfile(user) {
     }
 
 
-    /* USER ID */
-
     if ($("profileUserId")) {
 
         $("profileUserId").textContent =
@@ -422,13 +429,10 @@ function renderProfile(user) {
     }
 
 
-    /* PROFILE PHOTO */
-
     if ($("profilePhoto")) {
 
         $("profilePhoto").src =
             photo;
-
 
         $("profilePhoto").onerror =
             () => {
@@ -441,13 +445,10 @@ function renderProfile(user) {
     }
 
 
-    /* EDIT PHOTO */
-
     if ($("editProfilePhotoPreview")) {
 
         $("editProfilePhotoPreview").src =
             photo;
-
 
         $("editProfilePhotoPreview").onerror =
             () => {
@@ -460,8 +461,6 @@ function renderProfile(user) {
     }
 
 
-    /* BIO */
-
     if ($("profileBio")) {
 
         $("profileBio").textContent =
@@ -471,8 +470,6 @@ function renderProfile(user) {
 
     }
 
-
-    /* STATS */
 
     if ($("followersCount")) {
 
@@ -583,7 +580,9 @@ function renderProfileLinks(user) {
 
 
             anchor.href =
-                normalizeUrl(link.url);
+                normalizeUrl(
+                    link.url
+                );
 
 
             anchor.target =
@@ -598,7 +597,9 @@ function renderProfileLinks(user) {
                 link.label;
 
 
-            container.appendChild(anchor);
+            container.appendChild(
+                anchor
+            );
 
         }
     );
@@ -664,7 +665,7 @@ function setupHeader() {
 
 
 /* =========================================================
-   PROFILE MENU
+   MENU
 ========================================================= */
 
 function setupMenu() {
@@ -700,8 +701,12 @@ function setupMenu() {
         (event) => {
 
             if (
-                !menu.contains(event.target) &&
-                !menuButton.contains(event.target)
+                !menu.contains(
+                    event.target
+                ) &&
+                !menuButton.contains(
+                    event.target
+                )
             ) {
 
                 hide(menu);
@@ -711,8 +716,6 @@ function setupMenu() {
         }
     );
 
-
-    /* EDIT PROFILE */
 
     const editButton =
         $("editProfileButton");
@@ -733,8 +736,6 @@ function setupMenu() {
 
     }
 
-
-    /* PRIVACY */
 
     const privacyButton =
         $("privacyButton");
@@ -758,8 +759,6 @@ function setupMenu() {
     }
 
 
-    /* SECURITY */
-
     const securityButton =
         $("securityButton");
 
@@ -781,8 +780,6 @@ function setupMenu() {
 
     }
 
-
-    /* BLOCKED USERS */
 
     const blockedUsersButton =
         $("blockedUsersButton");
@@ -806,8 +803,6 @@ function setupMenu() {
     }
 
 
-    /* ACCOUNT */
-
     const accountButton =
         $("accountButton");
 
@@ -829,8 +824,6 @@ function setupMenu() {
 
     }
 
-
-    /* HELP */
 
     const helpButton =
         $("helpButton");
@@ -854,8 +847,6 @@ function setupMenu() {
     }
 
 
-    /* ABOUT */
-
     const aboutButton =
         $("aboutButton");
 
@@ -868,15 +859,15 @@ function setupMenu() {
 
                 hide(menu);
 
-                alert("Usanex");
+                alert(
+                    "Usanex"
+                );
 
             }
         );
 
     }
 
-
-    /* LOGOUT */
 
     const logoutButton =
         $("logoutButton");
@@ -987,7 +978,9 @@ function setupPhotoViewer() {
         "keydown",
         (event) => {
 
-            if (event.key === "Escape") {
+            if (
+                event.key === "Escape"
+            ) {
 
                 closePhotoViewer();
 
@@ -1020,7 +1013,7 @@ function closePhotoViewer() {
 
 
 /* =========================================================
-   EDIT PROFILE SETUP
+   EDIT PROFILE
 ========================================================= */
 
 function setupEditProfile() {
@@ -1111,7 +1104,9 @@ function setupEditProfile() {
         "keydown",
         (event) => {
 
-            if (event.key === "Escape") {
+            if (
+                event.key === "Escape"
+            ) {
 
                 closeEditProfile();
 
@@ -1319,14 +1314,13 @@ function handleProfilePhotoSelection(event) {
         objectUrl;
 
 
-    preview.onload =
-        () => {
+    preview.onload = () => {
 
-            URL.revokeObjectURL(
-                objectUrl
-            );
+        URL.revokeObjectURL(
+            objectUrl
+        );
 
-        };
+    };
 
 }
 
@@ -1374,8 +1368,6 @@ async function saveProfile() {
         photoInput?.files?.[0] || null;
 
 
-    /* VALIDATION */
-
     if (!name) {
 
         setEditMessage(
@@ -1411,7 +1403,8 @@ async function saveProfile() {
 
     if (saveButton) {
 
-        saveButton.disabled = true;
+        saveButton.disabled =
+            true;
 
         saveButton.textContent =
             "Saving...";
@@ -1480,9 +1473,7 @@ async function saveProfile() {
             const errorData =
                 await profileResponse
                     .json()
-                    .catch(
-                        () => null
-                    );
+                    .catch(() => null);
 
 
             throw new Error(
@@ -1552,14 +1543,12 @@ async function saveProfile() {
                 const errorData =
                     await photoResponse
                         .json()
-                        .catch(
-                            () => null
-                        );
+                        .catch(() => null);
 
 
                 throw new Error(
                     errorData?.detail ||
-                    "Unable to save profile image."
+                    "Unable to save profile photo."
                 );
 
             }
@@ -1748,7 +1737,7 @@ function setActiveTab(tabName) {
 
 
 /* =========================================================
-   RENDER ACTIVE TAB
+   RENDER ACTIVE CONTENT
 ========================================================= */
 
 function renderActiveTab() {
@@ -1768,13 +1757,16 @@ function renderActiveTab() {
         ] || [];
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     if (!items.length) {
 
         const empty =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         empty.className =
@@ -1845,7 +1837,9 @@ function getEmptyMessage(tab) {
 function createContentCard(item) {
 
     const card =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
 
 
     card.className =
@@ -1872,7 +1866,9 @@ function createContentCard(item) {
         );
 
 
-    /* VIDEO */
+    /* =====================================================
+       VIDEO
+    ===================================================== */
 
     if (
         mediaType === "video" ||
@@ -1880,7 +1876,9 @@ function createContentCard(item) {
     ) {
 
         const video =
-            document.createElement("video");
+            document.createElement(
+                "video"
+            );
 
 
         video.src =
@@ -1899,18 +1897,17 @@ function createContentCard(item) {
             "metadata";
 
 
-        video.controls =
-            false;
-
-
         card.appendChild(
             video
         );
 
+
     }
 
 
-    /* IMAGE */
+    /* =====================================================
+       IMAGE
+    ===================================================== */
 
     else if (
         mediaType === "image" ||
@@ -1918,7 +1915,9 @@ function createContentCard(item) {
     ) {
 
         const image =
-            document.createElement("img");
+            document.createElement(
+                "img"
+            );
 
 
         image.src =
@@ -1933,28 +1932,24 @@ function createContentCard(item) {
             "lazy";
 
 
-        image.onerror =
-            () => {
-
-                image.style.display =
-                    "none";
-
-            };
-
-
         card.appendChild(
             image
         );
 
+
     }
 
 
-    /* TEXT */
+    /* =====================================================
+       TEXT / UNKNOWN
+    ===================================================== */
 
     else {
 
         const placeholder =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         placeholder.className =
@@ -1975,10 +1970,14 @@ function createContentCard(item) {
     }
 
 
-    /* VIEW COUNT */
+    /* =====================================================
+       VIEW COUNT
+    ===================================================== */
 
     const overlay =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     overlay.className =
@@ -1986,7 +1985,9 @@ function createContentCard(item) {
 
 
     const viewCount =
-        document.createElement("span");
+        document.createElement(
+            "span"
+        );
 
 
     viewCount.className =
@@ -2180,11 +2181,14 @@ function renderProfileError(message) {
     }
 
 
-    container.innerHTML = "";
+    container.innerHTML =
+        "";
 
 
     const error =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     error.className =
