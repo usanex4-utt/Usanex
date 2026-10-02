@@ -192,6 +192,19 @@ class ConnectionRequest(Base):
         nullable=False,
     )
 
+    __table_args__ = (
+        Index(
+            "ix_connection_request_sender_status",
+            "sender_id",
+            "status",
+        ),
+        Index(
+            "ix_connection_request_receiver_status",
+            "receiver_id",
+            "status",
+        ),
+    )
+
 
 # =========================================================
 # CONNECTION VERIFICATION
@@ -306,6 +319,7 @@ class ConnectionNotification(Base):
 
     created_at = Column(
         DateTime,
+        index=True,
         nullable=False,
     )
 
@@ -353,6 +367,16 @@ class UserConnection(Base):
             "user_one_id",
             "user_two_id",
             name="uq_user_connection_pair",
+        ),
+        Index(
+            "ix_user_connection_one_status",
+            "user_one_id",
+            "status",
+        ),
+        Index(
+            "ix_user_connection_two_status",
+            "user_two_id",
+            "status",
         ),
     )
 
@@ -437,6 +461,16 @@ class UserFollow(Base):
             "following_id",
             name="uq_user_follow",
         ),
+        Index(
+            "ix_user_follow_follower",
+            "follower_id",
+            "created_at",
+        ),
+        Index(
+            "ix_user_follow_following",
+            "following_id",
+            "created_at",
+        ),
     )
 
 
@@ -476,6 +510,14 @@ class Post(Base):
         nullable=False,
     )
 
+    __table_args__ = (
+        Index(
+            "ix_posts_user_created",
+            "user_id",
+            "created_at",
+        ),
+    )
+
 
 # =========================================================
 # =========================================================
@@ -497,17 +539,33 @@ class Reel(Base):
         index=True,
     )
 
-    # Creator
+    # -----------------------------------------------------
+    # CREATOR
+    # -----------------------------------------------------
+
     user_id = Column(
         Integer,
         index=True,
         nullable=False,
     )
 
-    # Video
+    # -----------------------------------------------------
+    # CLOUDINARY VIDEO
+    # -----------------------------------------------------
+
     video_url = Column(
         String(1000),
         nullable=False,
+    )
+
+    # IMPORTANT:
+    # Cloudinary public_id is required for future delete,
+    # replace and asset management.
+    cloudinary_public_id = Column(
+        String(500),
+        unique=True,
+        index=True,
+        nullable=True,
     )
 
     thumbnail_url = Column(
@@ -521,12 +579,17 @@ class Reel(Base):
         default=0,
     )
 
+    # IMPORTANT:
+    # BigInteger supports files larger than 2 GB.
     file_size = Column(
-        Integer,
+        BigInteger,
         nullable=True,
     )
 
-    # User information
+    # -----------------------------------------------------
+    # CONTENT
+    # -----------------------------------------------------
+
     caption = Column(
         Text,
         nullable=True,
@@ -568,49 +631,49 @@ class Reel(Base):
     # -----------------------------------------------------
 
     views_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     unique_views_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     completed_views_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     replay_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     share_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     save_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     download_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     comment_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -620,19 +683,19 @@ class Reel(Base):
     # -----------------------------------------------------
 
     one_star_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     two_star_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     three_star_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -642,13 +705,13 @@ class Reel(Base):
     # -----------------------------------------------------
 
     interested_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     not_interested_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -672,6 +735,7 @@ class Reel(Base):
 
     ai_category = Column(
         String(100),
+        index=True,
         nullable=True,
     )
 
@@ -686,6 +750,10 @@ class Reel(Base):
         nullable=False,
     )
 
+    # -----------------------------------------------------
+    # TIMESTAMPS
+    # -----------------------------------------------------
+
     created_at = Column(
         DateTime,
         index=True,
@@ -697,6 +765,7 @@ class Reel(Base):
         DateTime,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -714,6 +783,11 @@ class Reel(Base):
             "ix_reels_status_created",
             "status",
             "created_at",
+        ),
+        Index(
+            "ix_reels_visibility_status",
+            "visibility",
+            "status",
         ),
     )
 
@@ -737,10 +811,6 @@ class ReelAIFeature(Base):
         index=True,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # CONTENT UNDERSTANDING
-    # -----------------------------------------------------
 
     category = Column(
         String(100),
@@ -851,6 +921,7 @@ class ReelAIFeature(Base):
         DateTime,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
 
@@ -915,7 +986,6 @@ class ReelInteraction(Base):
         nullable=False,
     )
 
-    # Examples:
     # impression
     # play
     # pause
@@ -967,7 +1037,7 @@ class ReelInteraction(Base):
     )
 
     # -----------------------------------------------------
-    # 3 STAR RATING
+    # RATING
     # -----------------------------------------------------
 
     star_rating = Column(
@@ -1033,6 +1103,7 @@ class ReelInteraction(Base):
         DateTime,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -1051,12 +1122,16 @@ class ReelInteraction(Base):
             "reel_id",
             "created_at",
         ),
+        Index(
+            "ix_reel_interactions_event_created",
+            "event_type",
+            "created_at",
+        ),
     )
 
 
 # =========================================================
 # CURRENT REEL RATING
-# One rating per user/reel
 # =========================================================
 
 class ReelRating(Base):
@@ -1095,6 +1170,7 @@ class ReelRating(Base):
         DateTime,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -1144,6 +1220,11 @@ class ReelSave(Base):
             "reel_id",
             name="uq_reel_save_user_reel",
         ),
+        Index(
+            "ix_reel_saves_user_created",
+            "user_id",
+            "created_at",
+        ),
     )
 
 
@@ -1177,6 +1258,14 @@ class ReelDownload(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_reel_downloads_reel_created",
+            "reel_id",
+            "created_at",
+        ),
     )
 
 
@@ -1215,6 +1304,14 @@ class ReelShare(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_reel_shares_reel_created",
+            "reel_id",
+            "created_at",
+        ),
     )
 
 
@@ -1259,6 +1356,14 @@ class ReelComment(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_reel_comments_reel_created",
+            "reel_id",
+            "created_at",
+        ),
     )
 
 
@@ -1433,6 +1538,7 @@ class UserReelInterest(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -1441,6 +1547,11 @@ class UserReelInterest(Base):
             "category",
             "subcategory",
             name="uq_user_reel_interest",
+        ),
+        Index(
+            "ix_user_reel_interest_score",
+            "user_id",
+            "interest_score",
         ),
     )
 
@@ -1518,11 +1629,16 @@ class UserReelHistory(Base):
             "reel_id",
             name="uq_user_reel_history",
         ),
+        Index(
+            "ix_user_reel_history_last_seen",
+            "user_id",
+            "last_seen_at",
+        ),
     )
 
 
 # =========================================================
-# USER REEL PROFILE
+# USER INTEREST PROFILE
 # =========================================================
 
 class UserInterestProfile(Base):
@@ -1541,7 +1657,6 @@ class UserInterestProfile(Base):
         nullable=False,
     )
 
-    # Serialized ML profiles
     topic_scores = Column(
         Text,
         nullable=True,
@@ -1572,7 +1687,6 @@ class UserInterestProfile(Base):
         nullable=True,
     )
 
-    # Overall behaviour
     total_reels_watched = Column(
         Integer,
         default=0,
@@ -1596,6 +1710,7 @@ class UserInterestProfile(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
 
@@ -1629,13 +1744,11 @@ class ReelRecommendationLog(Base):
         nullable=True,
     )
 
-    # Final score
     recommendation_score = Column(
         Float,
         nullable=True,
     )
 
-    # Individual ranking signals
     interest_score = Column(
         Float,
         nullable=True,
@@ -1671,7 +1784,6 @@ class ReelRecommendationLog(Base):
         nullable=True,
     )
 
-    # Why this reel was recommended
     reason = Column(
         String(100),
         nullable=True,
@@ -1696,6 +1808,19 @@ class ReelRecommendationLog(Base):
         default=datetime.utcnow,
     )
 
+    __table_args__ = (
+        Index(
+            "ix_recommendation_user_created",
+            "user_id",
+            "created_at",
+        ),
+        Index(
+            "ix_recommendation_reel_created",
+            "reel_id",
+            "created_at",
+        ),
+    )
+
 
 # =========================================================
 # REEL AGGREGATE ANALYTICS
@@ -1718,13 +1843,13 @@ class ReelAnalytics(Base):
     )
 
     view_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     unique_viewers = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -1748,61 +1873,61 @@ class ReelAnalytics(Base):
     )
 
     replay_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     one_star_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     two_star_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     three_star_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     save_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     download_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     share_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     interested_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     not_interested_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     comment_count = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -1812,16 +1937,15 @@ class ReelAnalytics(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
 
 # =========================================================
 # AREA ANALYTICS
 # =========================================================
-# IMPORTANT:
 # Only broad aggregate location is stored.
-# Exact GPS/address should NOT be stored for recommendation
-# analytics.
+# Exact GPS/address is NOT stored here.
 # =========================================================
 
 class ReelAreaAnalytics(Base):
@@ -1864,13 +1988,13 @@ class ReelAreaAnalytics(Base):
     )
 
     views = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     completed_views = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -1888,49 +2012,49 @@ class ReelAreaAnalytics(Base):
     )
 
     one_star = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     two_star = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     three_star = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     saves = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     shares = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     downloads = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     interested = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
 
     not_interested = Column(
-        Integer,
+        BigInteger,
         default=0,
         nullable=False,
     )
@@ -1940,6 +2064,7 @@ class ReelAreaAnalytics(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+        onupdate=datetime.utcnow,
     )
 
     __table_args__ = (
@@ -1949,6 +2074,12 @@ class ReelAreaAnalytics(Base):
             "state",
             "city",
             name="uq_reel_area_analytics",
+        ),
+        Index(
+            "ix_reel_area_location",
+            "country",
+            "state",
+            "city",
         ),
     )
 
@@ -2010,4 +2141,19 @@ class ChatMessage(Base):
         index=True,
         nullable=False,
         default=datetime.utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_chat_sender_receiver_created",
+            "sender_id",
+            "receiver_id",
+            "created_at",
+        ),
+        Index(
+            "ix_chat_receiver_sender_created",
+            "receiver_id",
+            "sender_id",
+            "created_at",
+        ),
     )
