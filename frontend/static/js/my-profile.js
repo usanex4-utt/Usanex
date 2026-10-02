@@ -1,5 +1,6 @@
 /* =========================================================
    USANEX — MY PROFILE
+   REELS + IMAGES + SAVED + PRIVATE
    ========================================================= */
 
 "use strict";
@@ -7,7 +8,7 @@
 
 /* =========================================================
    STATE
-   ========================================================= */
+========================================================= */
 
 const profileState = {
 
@@ -24,7 +25,7 @@ const profileState = {
 
     content: {
         reels: [],
-        photos: [],
+        images: [],
         saved: [],
         private: []
     }
@@ -34,7 +35,7 @@ const profileState = {
 
 /* =========================================================
    START
-   ========================================================= */
+========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -48,10 +49,12 @@ document.addEventListener(
 
 /* =========================================================
    HELPERS
-   ========================================================= */
+========================================================= */
 
 function $(id) {
+
     return document.getElementById(id);
+
 }
 
 
@@ -83,18 +86,6 @@ function safeText(value, fallback = "") {
     }
 
     return String(value);
-
-}
-
-
-function escapeHtml(value) {
-
-    return safeText(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
 
 }
 
@@ -143,7 +134,7 @@ function formatViews(value) {
 
 /* =========================================================
    INITIALIZATION
-   ========================================================= */
+========================================================= */
 
 async function initMyProfile() {
 
@@ -165,33 +156,30 @@ async function initMyProfile() {
 
 
 /* =========================================================
-   LOAD PROFILE
-   ========================================================= */
+   LOAD MY PROFILE
+========================================================= */
 
 async function loadMyProfile() {
 
     try {
 
-        const response =
-            await fetch(
-                "/api/profile/me",
-                {
-                    method: "GET",
+        const response = await fetch(
+            "/api/profile/me",
+            {
+                method: "GET",
 
-                    credentials: "include",
+                credentials: "include",
 
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
+                headers: {
+                    "Accept": "application/json"
                 }
-            );
+            }
+        );
 
 
         if (response.status === 401) {
 
-            window.location.href =
-                "/login";
+            window.location.href = "/login";
 
             return;
 
@@ -201,9 +189,9 @@ async function loadMyProfile() {
         if (!response.ok) {
 
             const errorData =
-                await response
-                    .json()
-                    .catch(() => null);
+                await response.json().catch(
+                    () => null
+                );
 
             throw new Error(
                 errorData?.detail ||
@@ -288,13 +276,13 @@ async function loadMyProfile() {
 
 /* =========================================================
    PROCESS CONTENT
-   ========================================================= */
+========================================================= */
 
 function processUnifiedContent(posts) {
 
     profileState.content.reels = [];
 
-    profileState.content.photos = [];
+    profileState.content.images = [];
 
     posts.forEach(
         (post) => {
@@ -304,6 +292,8 @@ function processUnifiedContent(posts) {
                     post.media_type
                 ).toLowerCase();
 
+
+            /* REELS */
 
             if (
                 mediaType === "video" ||
@@ -320,6 +310,8 @@ function processUnifiedContent(posts) {
             }
 
 
+            /* IMAGES */
+
             if (
                 mediaType === "image" ||
                 mediaType === "photo"
@@ -327,7 +319,7 @@ function processUnifiedContent(posts) {
 
                 profileState
                     .content
-                    .photos
+                    .images
                     .push(post);
 
             }
@@ -335,6 +327,11 @@ function processUnifiedContent(posts) {
         }
     );
 
+
+    /*
+     * Backend se future me saved/private
+     * data aaye to yahan use kiya ja sakta hai.
+     */
 
     profileState.content.saved = [];
 
@@ -345,7 +342,7 @@ function processUnifiedContent(posts) {
 
 /* =========================================================
    RENDER PROFILE
-   ========================================================= */
+========================================================= */
 
 function renderProfile(user) {
 
@@ -383,6 +380,8 @@ function renderProfile(user) {
         );
 
 
+    /* HEADER NAME */
+
     if ($("profileName")) {
 
         $("profileName").textContent =
@@ -390,6 +389,18 @@ function renderProfile(user) {
 
     }
 
+
+    /* DISPLAY NAME */
+
+    if ($("profileDisplayName")) {
+
+        $("profileDisplayName").textContent =
+            name;
+
+    }
+
+
+    /* USERNAME */
 
     if ($("profileUsername")) {
 
@@ -401,6 +412,8 @@ function renderProfile(user) {
     }
 
 
+    /* USER ID */
+
     if ($("profileUserId")) {
 
         $("profileUserId").textContent =
@@ -409,10 +422,13 @@ function renderProfile(user) {
     }
 
 
+    /* PROFILE PHOTO */
+
     if ($("profilePhoto")) {
 
         $("profilePhoto").src =
             photo;
+
 
         $("profilePhoto").onerror =
             () => {
@@ -425,10 +441,13 @@ function renderProfile(user) {
     }
 
 
+    /* EDIT PHOTO */
+
     if ($("editProfilePhotoPreview")) {
 
         $("editProfilePhotoPreview").src =
             photo;
+
 
         $("editProfilePhotoPreview").onerror =
             () => {
@@ -441,6 +460,8 @@ function renderProfile(user) {
     }
 
 
+    /* BIO */
+
     if ($("profileBio")) {
 
         $("profileBio").textContent =
@@ -450,6 +471,8 @@ function renderProfile(user) {
 
     }
 
+
+    /* STATS */
 
     if ($("followersCount")) {
 
@@ -490,7 +513,7 @@ function renderProfile(user) {
 
 /* =========================================================
    PROFILE LINKS
-   ========================================================= */
+========================================================= */
 
 function renderProfileLinks(user) {
 
@@ -560,9 +583,7 @@ function renderProfileLinks(user) {
 
 
             anchor.href =
-                normalizeUrl(
-                    link.url
-                );
+                normalizeUrl(link.url);
 
 
             anchor.target =
@@ -577,9 +598,7 @@ function renderProfileLinks(user) {
                 link.label;
 
 
-            container.appendChild(
-                anchor
-            );
+            container.appendChild(anchor);
 
         }
     );
@@ -617,7 +636,7 @@ function normalizeUrl(url) {
 
 /* =========================================================
    HEADER
-   ========================================================= */
+========================================================= */
 
 function setupHeader() {
 
@@ -645,8 +664,8 @@ function setupHeader() {
 
 
 /* =========================================================
-   THREE LINE MENU
-   ========================================================= */
+   PROFILE MENU
+========================================================= */
 
 function setupMenu() {
 
@@ -681,12 +700,8 @@ function setupMenu() {
         (event) => {
 
             if (
-                !menu.contains(
-                    event.target
-                ) &&
-                !menuButton.contains(
-                    event.target
-                )
+                !menu.contains(event.target) &&
+                !menuButton.contains(event.target)
             ) {
 
                 hide(menu);
@@ -696,6 +711,8 @@ function setupMenu() {
         }
     );
 
+
+    /* EDIT PROFILE */
 
     const editButton =
         $("editProfileButton");
@@ -716,6 +733,8 @@ function setupMenu() {
 
     }
 
+
+    /* PRIVACY */
 
     const privacyButton =
         $("privacyButton");
@@ -739,6 +758,8 @@ function setupMenu() {
     }
 
 
+    /* SECURITY */
+
     const securityButton =
         $("securityButton");
 
@@ -760,6 +781,8 @@ function setupMenu() {
 
     }
 
+
+    /* BLOCKED USERS */
 
     const blockedUsersButton =
         $("blockedUsersButton");
@@ -783,6 +806,8 @@ function setupMenu() {
     }
 
 
+    /* ACCOUNT */
+
     const accountButton =
         $("accountButton");
 
@@ -804,6 +829,8 @@ function setupMenu() {
 
     }
 
+
+    /* HELP */
 
     const helpButton =
         $("helpButton");
@@ -827,6 +854,8 @@ function setupMenu() {
     }
 
 
+    /* ABOUT */
+
     const aboutButton =
         $("aboutButton");
 
@@ -839,15 +868,15 @@ function setupMenu() {
 
                 hide(menu);
 
-                alert(
-                    "Usanex"
-                );
+                alert("Usanex");
 
             }
         );
 
     }
 
+
+    /* LOGOUT */
 
     const logoutButton =
         $("logoutButton");
@@ -873,7 +902,7 @@ function setupMenu() {
 
 /* =========================================================
    PROFILE PHOTO VIEWER
-   ========================================================= */
+========================================================= */
 
 function setupPhotoViewer() {
 
@@ -958,9 +987,7 @@ function setupPhotoViewer() {
         "keydown",
         (event) => {
 
-            if (
-                event.key === "Escape"
-            ) {
+            if (event.key === "Escape") {
 
                 closePhotoViewer();
 
@@ -993,8 +1020,8 @@ function closePhotoViewer() {
 
 
 /* =========================================================
-   EDIT PROFILE
-   ========================================================= */
+   EDIT PROFILE SETUP
+========================================================= */
 
 function setupEditProfile() {
 
@@ -1084,9 +1111,7 @@ function setupEditProfile() {
         "keydown",
         (event) => {
 
-            if (
-                event.key === "Escape"
-            ) {
+            if (event.key === "Escape") {
 
                 closeEditProfile();
 
@@ -1100,7 +1125,7 @@ function setupEditProfile() {
 
 /* =========================================================
    OPEN EDIT PROFILE
-   ========================================================= */
+========================================================= */
 
 function openEditProfile() {
 
@@ -1202,7 +1227,7 @@ function openEditProfile() {
 
 /* =========================================================
    CLOSE EDIT PROFILE
-   ========================================================= */
+========================================================= */
 
 function closeEditProfile() {
 
@@ -1226,7 +1251,7 @@ function closeEditProfile() {
 
 /* =========================================================
    PHOTO SELECTION
-   ========================================================= */
+========================================================= */
 
 function handleProfilePhotoSelection(event) {
 
@@ -1294,20 +1319,21 @@ function handleProfilePhotoSelection(event) {
         objectUrl;
 
 
-    preview.onload = () => {
+    preview.onload =
+        () => {
 
-        URL.revokeObjectURL(
-            objectUrl
-        );
+            URL.revokeObjectURL(
+                objectUrl
+            );
 
-    };
+        };
 
 }
 
 
 /* =========================================================
    SAVE PROFILE
-   ========================================================= */
+========================================================= */
 
 async function saveProfile() {
 
@@ -1348,9 +1374,7 @@ async function saveProfile() {
         photoInput?.files?.[0] || null;
 
 
-    /* =====================================================
-       VALIDATION
-       ===================================================== */
+    /* VALIDATION */
 
     if (!name) {
 
@@ -1387,8 +1411,7 @@ async function saveProfile() {
 
     if (saveButton) {
 
-        saveButton.disabled =
-            true;
+        saveButton.disabled = true;
 
         saveButton.textContent =
             "Saving...";
@@ -1402,8 +1425,8 @@ async function saveProfile() {
     try {
 
         /* =================================================
-           1. SAVE TEXT PROFILE
-           ================================================= */
+           SAVE TEXT PROFILE
+        ================================================= */
 
         const profileResponse =
             await fetch(
@@ -1457,7 +1480,9 @@ async function saveProfile() {
             const errorData =
                 await profileResponse
                     .json()
-                    .catch(() => null);
+                    .catch(
+                        () => null
+                    );
 
 
             throw new Error(
@@ -1482,8 +1507,8 @@ async function saveProfile() {
 
 
         /* =================================================
-           2. UPLOAD DP
-           ================================================= */
+           UPLOAD PROFILE IMAGE
+        ================================================= */
 
         if (selectedPhoto) {
 
@@ -1527,12 +1552,14 @@ async function saveProfile() {
                 const errorData =
                     await photoResponse
                         .json()
-                        .catch(() => null);
+                        .catch(
+                            () => null
+                        );
 
 
                 throw new Error(
                     errorData?.detail ||
-                    "Unable to save profile photo."
+                    "Unable to save profile image."
                 );
 
             }
@@ -1562,29 +1589,15 @@ async function saveProfile() {
             }
 
 
-            /*
-             * Important:
-             * Clear selected file only after
-             * successful upload.
-             */
-
             photoInput.value = "";
 
         }
 
 
-        /* =================================================
-           3. UPDATE PROFILE UI
-           ================================================= */
-
         renderProfile(
             profileState.user
         );
 
-
-        /* =================================================
-           4. SUCCESS
-           ================================================= */
 
         setEditMessage(
             "Profile saved successfully."
@@ -1650,7 +1663,7 @@ function setEditMessage(message) {
 
 /* =========================================================
    CONTENT TABS
-   ========================================================= */
+========================================================= */
 
 function setupTabs() {
 
@@ -1693,7 +1706,7 @@ function setActiveTab(tabName) {
 
     const validTabs = [
         "reels",
-        "photos",
+        "images",
         "saved",
         "private"
     ];
@@ -1735,8 +1748,8 @@ function setActiveTab(tabName) {
 
 
 /* =========================================================
-   RENDER ACTIVE CONTENT
-   ========================================================= */
+   RENDER ACTIVE TAB
+========================================================= */
 
 function renderActiveTab() {
 
@@ -1755,16 +1768,13 @@ function renderActiveTab() {
         ] || [];
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
     if (!items.length) {
 
         const empty =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
 
         empty.className =
@@ -1800,6 +1810,10 @@ function renderActiveTab() {
 }
 
 
+/* =========================================================
+   EMPTY MESSAGES
+========================================================= */
+
 function getEmptyMessage(tab) {
 
     switch (tab) {
@@ -1807,8 +1821,8 @@ function getEmptyMessage(tab) {
         case "reels":
             return "No reels yet.";
 
-        case "photos":
-            return "No photos yet.";
+        case "images":
+            return "No images yet.";
 
         case "saved":
             return "No saved content yet.";
@@ -1826,14 +1840,12 @@ function getEmptyMessage(tab) {
 
 /* =========================================================
    CONTENT CARD
-   ========================================================= */
+========================================================= */
 
 function createContentCard(item) {
 
     const card =
-        document.createElement(
-            "article"
-        );
+        document.createElement("article");
 
 
     card.className =
@@ -1860,15 +1872,15 @@ function createContentCard(item) {
         );
 
 
+    /* VIDEO */
+
     if (
         mediaType === "video" ||
         mediaType === "reel"
     ) {
 
         const video =
-            document.createElement(
-                "video"
-            );
+            document.createElement("video");
 
 
         video.src =
@@ -1887,20 +1899,26 @@ function createContentCard(item) {
             "metadata";
 
 
+        video.controls =
+            false;
+
+
         card.appendChild(
             video
         );
 
+    }
 
-    } else if (
+
+    /* IMAGE */
+
+    else if (
         mediaType === "image" ||
         mediaType === "photo"
     ) {
 
         const image =
-            document.createElement(
-                "img"
-            );
+            document.createElement("img");
 
 
         image.src =
@@ -1908,24 +1926,35 @@ function createContentCard(item) {
 
 
         image.alt =
-            "Usanex content";
+            "Usanex image";
 
 
         image.loading =
             "lazy";
 
 
+        image.onerror =
+            () => {
+
+                image.style.display =
+                    "none";
+
+            };
+
+
         card.appendChild(
             image
         );
 
+    }
 
-    } else {
+
+    /* TEXT */
+
+    else {
 
         const placeholder =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
 
         placeholder.className =
@@ -1946,10 +1975,10 @@ function createContentCard(item) {
     }
 
 
+    /* VIEW COUNT */
+
     const overlay =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     overlay.className =
@@ -1957,9 +1986,7 @@ function createContentCard(item) {
 
 
     const viewCount =
-        document.createElement(
-            "span"
-        );
+        document.createElement("span");
 
 
     viewCount.className =
@@ -1987,7 +2014,7 @@ function createContentCard(item) {
 
 /* =========================================================
    BOTTOM NAVIGATION
-   ========================================================= */
+========================================================= */
 
 function setupBottomNavigation() {
 
@@ -2090,7 +2117,7 @@ function setupBottomNavigation() {
 
 /* =========================================================
    LOGOUT
-   ========================================================= */
+========================================================= */
 
 async function logout() {
 
@@ -2140,7 +2167,7 @@ async function logout() {
 
 /* =========================================================
    PROFILE ERROR
-   ========================================================= */
+========================================================= */
 
 function renderProfileError(message) {
 
@@ -2153,14 +2180,11 @@ function renderProfileError(message) {
     }
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
     const error =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
 
     error.className =
