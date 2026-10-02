@@ -577,51 +577,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function handleCreateOption(type) {
 
-        closeCreateSheet();
+    closeCreateSheet();
 
-        /*
-         * All normal media creation starts
-         * from the existing upload page.
-         *
-         * Query parameter allows upload.js
-         * to know which type was selected later.
-         */
+    if (type === "reel") {
+        window.location.href = "/reel-upload";
+        return;
+    }
 
-        if (type === "reel") {
+    if (type === "image") {
+        go("/upload?type=image");
+        return;
+    }
 
-            go("/upload?type=reel");
+    if (type === "private") {
+        go("/upload?type=private");
+        return;
+    }
 
-            return;
-        }
-
-
-        if (type === "image") {
-
-            go("/upload?type=image");
-
-            return;
-        }
-
-
-        if (type === "private") {
-
-            go("/upload?type=private");
-
-            return;
-        }
-
-
-        if (type === "moment") {
-
-            /*
-             * Nex Moment currently has its own
-             * status/moment page.
-             */
-
-            go("/status");
-
-            return;
-        }
+    if (type === "moment") {
+        go("/status");
+        return;
+    }
     }
 
 
