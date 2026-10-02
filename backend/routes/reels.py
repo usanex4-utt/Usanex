@@ -2,13 +2,19 @@
 USANEX REELS API
 ================
 
-Complete HTTP/API layer for the Usanex Reels system.
+Cloudinary based Reels API.
+
+Video storage:
+    Cloudinary
+
+Database:
+    PostgreSQL / SQLAlchemy
 
 Features:
 - Personalized feed
 - Fallback feed
 - Reel details
-- Reel upload
+- Cloudinary video upload
 - Watch analytics
 - Replay tracking
 - 1/2/3 star rating
@@ -22,15 +28,8 @@ Features:
 - Saved reels
 - Delete own reel
 - User interaction signals
-- Recommendation integration
-
-Business logic:
-    services/reel_ai.py
-    services/reel_analytics.py
-    services/reel_recommendation.py
 """
-import cloudinary
-import cloudinary.uploader
+
 from __future__ import annotations
 
 import os
@@ -38,6 +37,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
+
+import cloudinary
+import cloudinary.uploader
 
 from fastapi import (
     APIRouter,
@@ -49,6 +51,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
+
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -61,9 +64,6 @@ from ..database.models import (
     ReelReport,
     ReelSave,
     ReelInteraction,
-    ReelRating,
-    UserReelHistory,
-    UserReelInterest,
 )
 
 from ..services.reel_analytics import (
@@ -77,10 +77,38 @@ from ..services.reel_analytics import (
 from ..services import reel_recommendation
 
 
+# =========================================================
+# ROUTER
+# =========================================================
+
 router = APIRouter(
     prefix="/api/reels",
     tags=["Reels"],
 )
+
+
+# =========================================================
+# CLOUDINARY CONFIGURATION
+# =========================================================
+#
+# Render Environment Variable:
+#
+# CLOUDINARY_URL
+#
+# Example:
+# cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+#
+# Do NOT put the secret directly in this file.
+#
+
+CLOUDINARY_URL = os.getenv(
+    "CLOUDINARY_URL"
+)
+
+if CLOUDINARY_URL:
+    cloudinary.config(
+        secure=True
+    )
 
 
 # =========================================================
@@ -93,7 +121,9 @@ DEFAULT_FEED_LIMIT = 10
 MAX_COMMENT_LENGTH = 2000
 MAX_REPORT_DESCRIPTION = 2000
 
-MAX_VIDEO_SIZE = 100 * 1024 * 1024
+# Cloudinary plan can support larger videos,
+# but keep application upload limit at 2 GB.
+MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024
 
 ALLOWED_VIDEO_TYPES = {
     "video/mp4",
@@ -111,42 +141,194 @@ ALLOWED_VIDEO_EXTENSIONS = {
 
 
 # =========================================================
-# PATHS
-# =========================================================
-
-BASE_DIR = Path(__file__).resolve().parents[2]
-
-STATIC_DIR = (
-    BASE_DIR
-    / "frontend"
-    / "static"
-)
-
-UPLOAD_DIR = (
-    STATIC_DIR
-    / "uploads"
-    / "reels"
-)
-
-UPLOAD_DIR.mkdir(
-    parents=True,
-    exist_ok=True,
-)
-
-
-# =========================================================
 # TIME
 # =========================================================
 
 def utc_now() -> datetime:
     """
-    Database uses naive UTC datetime values.
+    Database uses naive UTC datetime.
     """
+
     return datetime.now(
         timezone.utc
     ).replace(
         tzinfo=None
     )
+
+
+# =========================================================
+# CLOUDINARY HELPERS
+# =========================================================
+
+def ensure_cloudinary_configured() -> None:
+    """
+    Make sure Cloudinary is configured.
+    """
+
+    if not CLOUDINARY_URL:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Cloudinary is not configured. "
+                "Please set CLOUDINARY_URL in Render "
+                "Environment Variables."
+            ),
+        )
+
+
+def cloudinary_public_id(
+    user_id: int,
+) -> str:
+
+    return (
+        f"usanex/reels/"
+        f"user_{user_id}/"
+        f"{uuid.uuid4().hex}"
+    )
+
+
+def delete_cloudinary_video(
+    public_id: Optional[str],
+) -> bool:
+
+    if not public_id:
+        return False
+
+    try:
+
+        ensure_cloudinary_configured()
+
+        result = cloudinary.uploader.destroy(
+            public_id,
+            resource_type="video",
+            type="upload",
+        )
+
+        return result.get("result") in {
+            "ok",
+            "not found",
+        }
+
+    except Exception:
+        return False
+
+
+def upload_video_to_cloudinary(
+    video: UploadFile,
+    user_id: int,
+    filename: str,
+) -> dict[str, Any]:
+
+    ensure_cloudinary_configured()
+
+    extension = Path(
+        filename
+    ).suffix.lower()
+
+    if extension not in ALLOWED_VIDEO_EXTENSIONS:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported video extension",
+        )
+
+    try:
+
+        # Make sure the file starts from beginning.
+        try:
+            video.file.seek(0)
+        except Exception:
+            pass
+
+        public_id = cloudinary_public_id(
+            user_id
+        )
+
+        # Cloudinary upload() supports up to 100 MB.
+        # upload_large() is used for larger videos.
+        #
+        # We use upload_large for all reels because it
+        # is safer for video uploads.
+
+        result = cloudinary.uploader.upload_large(
+            video.file,
+            resource_type="video",
+            public_id=public_id,
+            chunk_size=20 * 1024 * 1024,
+            folder=None,
+            overwrite=False,
+            unique_filename=True,
+        )
+
+        if not result:
+
+            raise HTTPException(
+                status_code=500,
+                detail="Cloudinary returned empty response",
+            )
+
+        secure_url = result.get(
+            "secure_url"
+        )
+
+        if not secure_url:
+
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "Cloudinary upload succeeded "
+                    "but video URL was not returned"
+                ),
+            )
+
+        return {
+            "secure_url": secure_url,
+            "url": result.get("url"),
+            "public_id": result.get(
+                "public_id",
+                public_id,
+            ),
+            "resource_type": result.get(
+                "resource_type",
+                "video",
+            ),
+            "format": result.get(
+                "format"
+            ),
+            "bytes": int(
+                result.get(
+                    "bytes",
+                    0,
+                )
+                or 0
+            ),
+            "duration": float(
+                result.get(
+                    "duration",
+                    0,
+                )
+                or 0
+            ),
+            "width": result.get(
+                "width"
+            ),
+            "height": result.get(
+                "height"
+            ),
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Cloudinary video upload failed: "
+                + str(exc)
+            ),
+        )
 
 
 # =========================================================
@@ -163,11 +345,13 @@ def get_current_user(
     )
 
     if not session_token:
+
         session_token = request.cookies.get(
             "session_token"
         )
 
     if not session_token:
+
         raise HTTPException(
             status_code=401,
             detail="Not authenticated",
@@ -183,6 +367,7 @@ def get_current_user(
     )
 
     if session is None:
+
         raise HTTPException(
             status_code=401,
             detail="Invalid session",
@@ -191,6 +376,7 @@ def get_current_user(
     expires_at = session.expires_at
 
     if expires_at.tzinfo is not None:
+
         expires_at = expires_at.replace(
             tzinfo=None
         )
@@ -263,7 +449,9 @@ def serialize_reel(
             reel.duration or 0
         ),
 
-        "file_size": reel.file_size,
+        "file_size": int(
+            reel.file_size or 0
+        ),
 
         "caption": reel.caption,
         "hashtags": reel.hashtags,
@@ -353,7 +541,9 @@ def serialize_reel(
             else None,
 
         "creator":
-            serialize_user(creator),
+            serialize_user(
+                creator
+            ),
     }
 
 
@@ -457,6 +647,7 @@ def get_reel_or_404(
     )
 
     if reel is None:
+
         raise HTTPException(
             status_code=404,
             detail="Reel not found",
@@ -552,6 +743,9 @@ def reels_health():
         "success": True,
         "service": "reels",
         "status": "online",
+        "storage": "cloudinary",
+        "cloudinary_configured":
+            bool(CLOUDINARY_URL),
     }
 
 
@@ -608,20 +802,29 @@ def get_reels_feed(
                     limit=limit,
                 )
 
-            if isinstance(result, dict):
+            if isinstance(
+                result,
+                dict,
+            ):
 
                 return {
                     "success": True,
                     **result,
                 }
 
-            if isinstance(result, list):
+            if isinstance(
+                result,
+                list,
+            ):
 
                 response_reels = []
 
                 for item in result:
 
-                    if isinstance(item, Reel):
+                    if isinstance(
+                        item,
+                        Reel,
+                    ):
 
                         creator = get_creator(
                             db,
@@ -637,10 +840,10 @@ def get_reels_feed(
 
                 return {
                     "success": True,
-                    "reels": response_reels,
-                    "count": len(
-                        response_reels
-                    ),
+                    "reels":
+                        response_reels,
+                    "count":
+                        len(response_reels),
                     "source":
                         "recommendation",
                 }
@@ -702,18 +905,19 @@ def get_reels_feed(
 
     return {
         "success": True,
-        "reels": response_reels,
-        "count": len(
-            response_reels
-        ),
-        "next_cursor": next_cursor,
-        "source": "fallback",
+        "reels":
+            response_reels,
+        "count":
+            len(response_reels),
+        "next_cursor":
+            next_cursor,
+        "source":
+            "fallback",
     }
 
 
 # =========================================================
 # MY REELS
-# IMPORTANT: BEFORE /{reel_id}
 # =========================================================
 
 @router.get("/me/list")
@@ -772,7 +976,6 @@ def get_my_reels(
 
 # =========================================================
 # MY SAVED REELS
-# IMPORTANT: BEFORE /{reel_id}
 # =========================================================
 
 @router.get("/me/saved")
@@ -844,7 +1047,7 @@ def get_saved_reels(
 
 
 # =========================================================
-# UPLOAD REEL
+# UPLOAD REEL TO CLOUDINARY
 # =========================================================
 
 @router.post("/upload")
@@ -874,6 +1077,8 @@ async def upload_reel(
     ),
 ):
 
+    ensure_cloudinary_configured()
+
     content_type = (
         video.content_type
         or ""
@@ -884,11 +1089,9 @@ async def upload_reel(
     ).suffix.lower()
 
     if (
-        content_type not in
-        ALLOWED_VIDEO_TYPES
+        content_type not in ALLOWED_VIDEO_TYPES
         and
-        extension not in
-        ALLOWED_VIDEO_EXTENSIONS
+        extension not in ALLOWED_VIDEO_EXTENSIONS
     ):
 
         raise HTTPException(
@@ -896,146 +1099,158 @@ async def upload_reel(
             detail="Unsupported video format",
         )
 
-    unique_name = (
-        f"{uuid.uuid4().hex}"
-        f"{extension or '.mp4'}"
-    )
+    if extension not in ALLOWED_VIDEO_EXTENSIONS:
 
-    file_path = (
-        UPLOAD_DIR
-        / unique_name
-    )
-
-    total_size = 0
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported video extension",
+        )
 
     try:
 
-        with open(
-            file_path,
-            "wb",
-        ) as output:
+        # Upload directly to Cloudinary.
+        cloudinary_result = (
+            upload_video_to_cloudinary(
+                video=video,
+                user_id=current_user.id,
+                filename=video.filename
+                or "reel.mp4",
+            )
+        )
 
-            while True:
+        video_url = cloudinary_result[
+            "secure_url"
+        ]
 
-                chunk = await video.read(
-                    1024 * 1024
-                )
+        cloudinary_id = cloudinary_result[
+            "public_id"
+        ]
 
-                if not chunk:
-                    break
+        total_size = int(
+            cloudinary_result.get(
+                "bytes",
+                0,
+            )
+            or 0
+        )
 
-                total_size += len(chunk)
+        duration = float(
+            cloudinary_result.get(
+                "duration",
+                0,
+            )
+            or 0
+        )
 
-                if total_size > MAX_VIDEO_SIZE:
+        now = utc_now()
 
-                    output.close()
+        reel = Reel(
 
-                    if file_path.exists():
-                        file_path.unlink()
+            user_id=current_user.id,
 
-                    raise HTTPException(
-                        status_code=413,
-                        detail=(
-                            "Video size exceeds "
-                            "100 MB limit"
-                        ),
-                    )
+            # IMPORTANT:
+            # Cloudinary HTTPS URL is stored here.
+            video_url=video_url,
 
-                output.write(chunk)
+            thumbnail_url=None,
+
+            duration=duration,
+
+            file_size=total_size,
+
+            caption=(
+                caption.strip()
+                if caption
+                else None
+            ),
+
+            hashtags=(
+                hashtags.strip()
+                if hashtags
+                else None
+            ),
+
+            language=(
+                language.strip()
+                if language
+                else None
+            ),
+
+            category=(
+                category.strip()
+                if category
+                else None
+            ),
+
+            visibility="public",
+
+            status="published",
+
+            ai_processed=False,
+
+            ai_processing_status="pending",
+
+            is_safe=True,
+
+            created_at=now,
+
+            updated_at=now,
+        )
+
+        db.add(reel)
+        db.commit()
+        db.refresh(reel)
+
+        creator = get_creator(
+            db,
+            current_user.id,
+        )
+
+        return {
+            "success": True,
+
+            "message":
+                "Reel uploaded successfully",
+
+            "storage":
+                "cloudinary",
+
+            "cloudinary_public_id":
+                cloudinary_id,
+
+            "reel":
+                serialize_reel(
+                    reel,
+                    creator,
+                ),
+        }
 
     except HTTPException:
+        db.rollback()
         raise
 
-    except Exception:
+    except Exception as exc:
 
-        if file_path.exists():
-            file_path.unlink()
+        db.rollback()
 
         raise HTTPException(
             status_code=500,
-            detail="Unable to upload video",
+            detail=(
+                "Unable to upload reel: "
+                + str(exc)
+            ),
         )
 
-    video_url = (
-        "/static/uploads/reels/"
-        + unique_name
-    )
+    finally:
 
-    now = utc_now()
-
-    reel = Reel(
-
-        user_id=current_user.id,
-
-        video_url=video_url,
-
-        thumbnail_url=None,
-
-        duration=0,
-
-        file_size=total_size,
-
-        caption=(
-            caption.strip()
-            if caption
-            else None
-        ),
-
-        hashtags=(
-            hashtags.strip()
-            if hashtags
-            else None
-        ),
-
-        language=(
-            language.strip()
-            if language
-            else None
-        ),
-
-        category=(
-            category.strip()
-            if category
-            else None
-        ),
-
-        visibility="public",
-
-        status="published",
-
-        ai_processed=False,
-
-        ai_processing_status="pending",
-
-        is_safe=True,
-
-        created_at=now,
-
-        updated_at=now,
-    )
-
-    db.add(reel)
-    db.commit()
-    db.refresh(reel)
-
-    creator = get_creator(
-        db,
-        current_user.id,
-    )
-
-    return {
-        "success": True,
-        "message": "Reel uploaded successfully",
-        "reel": serialize_reel(
-            reel,
-            creator,
-        ),
-    }
+        try:
+            await video.close()
+        except Exception:
+            pass
 
 
 # =========================================================
 # SINGLE REEL
-# IMPORTANT: KEEP AFTER /me/*
 # =========================================================
 
 @router.get("/{reel_id}")
@@ -1061,10 +1276,11 @@ def get_reel(
 
     return {
         "success": True,
-        "reel": serialize_reel(
-            reel,
-            creator,
-        ),
+        "reel":
+            serialize_reel(
+                reel,
+                creator,
+            ),
     }
 
 
@@ -1155,6 +1371,7 @@ def watch_reel(
         }
 
     except HTTPException:
+
         db.rollback()
         raise
 
@@ -1232,6 +1449,7 @@ def rate_reel(
         }
 
     except HTTPException:
+
         db.rollback()
         raise
 
@@ -1304,6 +1522,7 @@ def save_reel_route(
         }
 
     except HTTPException:
+
         db.rollback()
         raise
 
@@ -1370,6 +1589,7 @@ def unsave_reel(
     db.delete(saved)
 
     if reel.save_count:
+
         reel.save_count -= 1
 
     create_interaction(
@@ -1442,6 +1662,7 @@ def download_reel(
         }
 
     except HTTPException:
+
         db.rollback()
         raise
 
@@ -1517,6 +1738,7 @@ def share_reel(
         }
 
     except HTTPException:
+
         db.rollback()
         raise
 
@@ -1826,7 +2048,8 @@ def get_comments(
 
         response.append(
             {
-                "id": comment.id,
+                "id":
+                    comment.id,
 
                 "user_id":
                     comment.user_id,
@@ -1943,7 +2166,8 @@ def get_saved_status(
 
     return {
         "success": True,
-        "saved": saved is not None,
+        "saved":
+            saved is not None,
     }
 
 
@@ -1977,6 +2201,60 @@ def delete_my_reel(
             ),
         )
 
+    # -----------------------------------------------------
+    # Delete Cloudinary asset
+    # -----------------------------------------------------
+    #
+    # Existing Reel model currently stores video_url,
+    # not cloudinary_public_id.
+    #
+    # We try to extract public ID from Cloudinary URL.
+    #
+
+    if reel.video_url:
+
+        try:
+
+            video_url = reel.video_url
+
+            marker = "/video/upload/"
+
+            if marker in video_url:
+
+                public_path = video_url.split(
+                    marker,
+                    1
+                )[1]
+
+                # Remove version part.
+                parts = public_path.split("/")
+
+                if (
+                    parts
+                    and parts[0].startswith("v")
+                    and parts[0][1:].isdigit()
+                ):
+
+                    parts = parts[1:]
+
+                public_path = "/".join(parts)
+
+                # Remove extension.
+                public_id = str(
+                    Path(public_path).with_suffix("")
+                )
+
+                delete_cloudinary_video(
+                    public_id
+                )
+
+        except Exception:
+            pass
+
+    # -----------------------------------------------------
+    # Soft delete database record
+    # -----------------------------------------------------
+
     reel.visibility = "deleted"
     reel.status = "deleted"
 
@@ -1986,5 +2264,6 @@ def delete_my_reel(
 
     return {
         "success": True,
-        "message": "Reel deleted",
+        "message":
+            "Reel deleted successfully",
     }
