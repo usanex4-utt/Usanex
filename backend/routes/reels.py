@@ -839,6 +839,98 @@ def get_reels_feed(
 
 @router.get("/me/list")
 def get_my_reels(
+# =========================================================
+# USER PROFILE REELS
+# =========================================================
+
+@router.get("/user/{user_id}/list")
+def get_user_reels(
+    user_id: str,
+
+    limit: int = Query(
+        50,
+        ge=1,
+        le=100,
+    ),
+
+    offset: int = Query(
+        0,
+        ge=0,
+    ),
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(
+        get_current_user
+    ),
+):
+
+    # -----------------------------------------------------
+    # FIND PROFILE USER
+    # -----------------------------------------------------
+
+    profile_user = (
+        db.query(User)
+        .filter(
+            User.user_id == user_id
+        )
+        .first()
+    )
+
+    if profile_user is None:
+
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    # -----------------------------------------------------
+    # GET USER'S PUBLISHED REELS
+    # -----------------------------------------------------
+
+    reels_db = (
+        db.query(Reel)
+        .filter(
+            Reel.user_id == profile_user.id,
+
+            Reel.status == "published",
+
+            Reel.visibility == "public",
+
+            Reel.is_safe.is_(True),
+        )
+        .order_by(
+            Reel.created_at.desc(),
+            Reel.id.desc(),
+        )
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    # -----------------------------------------------------
+    # SERIALIZE
+    # -----------------------------------------------------
+
+    reels = [
+        serialize_reel(
+            reel,
+            profile_user,
+        )
+        for reel in reels_db
+    ]
+
+    return {
+        "success": True,
+
+        "reels": reels,
+
+        "count": len(reels),
+
+        "owner": serialize_user(
+            profile_user
+        ),
+    }
 
     limit: int = Query(
         50,
