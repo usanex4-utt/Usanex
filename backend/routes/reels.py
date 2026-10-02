@@ -29,7 +29,8 @@ Business logic:
     services/reel_analytics.py
     services/reel_recommendation.py
 """
-
+import cloudinary
+import cloudinary.uploader
 from __future__ import annotations
 
 import os
