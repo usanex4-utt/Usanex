@@ -2,7 +2,7 @@
 
 /* =========================================================
    USANEX REELS
-   Production Reels Player
+   Production Mobile Reels Player
    API: /api/reels/feed
 ========================================================= */
 
@@ -33,14 +33,12 @@ const ReelApp = {
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-
     initializeNavigation();
     initializeCreateReel();
     initializeUserInteraction();
     initializeCommentSystem();
 
     loadReels();
-
 });
 
 
@@ -69,8 +67,7 @@ async function apiRequest(url, options = {}) {
             JSON.stringify(options.body);
     }
 
-    const response =
-        await fetch(url, config);
+    const response = await fetch(url, config);
 
     let data = null;
 
@@ -82,12 +79,11 @@ async function apiRequest(url, options = {}) {
 
     if (!response.ok) {
 
-        const error =
-            new Error(
-                data?.detail ||
-                data?.message ||
-                "Request failed"
-            );
+        const error = new Error(
+            data?.detail ||
+            data?.message ||
+            "Request failed"
+        );
 
         error.status = response.status;
         error.data = data;
@@ -115,14 +111,11 @@ function initializeUserInteraction() {
             );
 
         if (active) {
-
             active.muted = false;
             active.volume = 1;
 
             active.play().catch(() => {});
-
         }
-
     };
 
     document.addEventListener(
@@ -139,7 +132,6 @@ function initializeUserInteraction() {
             passive: true
         }
     );
-
 }
 
 
@@ -189,12 +181,12 @@ async function loadReels() {
 
             renderReels(reels);
 
-            return;
-        }
+        } else {
 
-        showEmpty(
-            "No reels available yet."
-        );
+            showEmpty(
+                "No reels available yet."
+            );
+        }
 
     } catch (error) {
 
@@ -214,15 +206,12 @@ async function loadReels() {
             showEmpty(
                 "Unable to load reels."
             );
-
         }
 
     } finally {
 
         ReelApp.loading = false;
-
     }
-
 }
 
 
@@ -231,15 +220,6 @@ async function loadReels() {
 ========================================================= */
 
 function normalizeReels(data) {
-
-    /*
-     * Your API:
-     *
-     * {
-     *   success: true,
-     *   reels: [...]
-     * }
-     */
 
     if (
         data &&
@@ -286,23 +266,15 @@ function showEmpty(message) {
     }
 
     container.innerHTML = `
-
         <div class="reels-empty">
+            <div class="reels-empty-icon">▶</div>
 
-            <div class="reels-empty-icon">
-                ▶
-            </div>
-
-            <h3>
-                No Reels
-            </h3>
+            <h3>No Reels</h3>
 
             <p>
                 ${escapeHTML(message)}
             </p>
-
         </div>
-
     `;
 }
 
@@ -333,11 +305,9 @@ function renderReels(reels) {
             );
 
         container.appendChild(card);
-
     });
 
     initializeReelObserver();
-
 }
 
 
@@ -365,9 +335,7 @@ function createReelCard(reel, index) {
     card.dataset.tapRating = "0";
 
 
-    /* =====================================================
-       CREATOR
-    ===================================================== */
+    /* CREATOR */
 
     const creator =
         reel.creator || {};
@@ -391,9 +359,7 @@ function createReelCard(reel, index) {
         null;
 
 
-    /* =====================================================
-       VIDEO
-    ===================================================== */
+    /* VIDEO */
 
     const videoUrl =
         getVideoUrl(reel);
@@ -430,23 +396,16 @@ function createReelCard(reel, index) {
 
                 </div>
 
-                <span>
-                    Loading...
-                </span>
+                <span>Loading...</span>
 
             </div>
 
         </div>
 
 
-        <!-- ============================================
-             RIGHT ACTIONS
-        ============================================= -->
+        <!-- ACTIONS -->
 
         <div class="reel-actions">
-
-
-            <!-- RATING -->
 
             <div
                 class="reel-rating"
@@ -478,8 +437,6 @@ function createReelCard(reel, index) {
             </div>
 
 
-            <!-- COMMENT -->
-
             <button
                 type="button"
                 class="reel-action"
@@ -508,8 +465,6 @@ function createReelCard(reel, index) {
             </button>
 
 
-            <!-- SHARE -->
-
             <button
                 type="button"
                 class="reel-action"
@@ -531,14 +486,10 @@ function createReelCard(reel, index) {
 
                 </svg>
 
-                <span>
-                    Share
-                </span>
+                <span>Share</span>
 
             </button>
 
-
-            <!-- SAVE -->
 
             <button
                 type="button"
@@ -559,14 +510,10 @@ function createReelCard(reel, index) {
 
                 </svg>
 
-                <span>
-                    Save
-                </span>
+                <span>Save</span>
 
             </button>
 
-
-            <!-- DOWNLOAD -->
 
             <button
                 type="button"
@@ -589,14 +536,10 @@ function createReelCard(reel, index) {
 
                 </svg>
 
-                <span>
-                    Download
-                </span>
+                <span>Download</span>
 
             </button>
 
-
-            <!-- MORE -->
 
             <button
                 type="button"
@@ -634,16 +577,11 @@ function createReelCard(reel, index) {
         </div>
 
 
-        <!-- ============================================
-             USER INFORMATION
-        ============================================= -->
+        <!-- USER INFO -->
 
         <div class="reel-info">
 
             <div class="reel-user-row">
-
-
-                <!-- PROFILE -->
 
                 ${
                     profilePhoto
@@ -675,8 +613,6 @@ function createReelCard(reel, index) {
                 }
 
 
-                <!-- NAME -->
-
                 <div class="reel-user-details">
 
                     <strong>
@@ -694,8 +630,6 @@ function createReelCard(reel, index) {
                 </div>
 
 
-                <!-- FOLLOW -->
-
                 <button
                     type="button"
                     class="follow-button"
@@ -705,8 +639,6 @@ function createReelCard(reel, index) {
 
             </div>
 
-
-            <!-- CAPTION -->
 
             ${
                 reel.caption
@@ -720,8 +652,6 @@ function createReelCard(reel, index) {
                     : ""
             }
 
-
-            <!-- INTEREST -->
 
             <div class="interest-controls">
 
@@ -744,8 +674,6 @@ function createReelCard(reel, index) {
             </div>
 
 
-            <!-- AUDIO -->
-
             <div class="reel-audio">
 
                 <svg
@@ -765,20 +693,15 @@ function createReelCard(reel, index) {
 
                 </svg>
 
-                <span>
-                    Original audio
-                </span>
+                <span>Original audio</span>
 
             </div>
 
         </div>
-
     `;
 
 
-    /* =====================================================
-       CREATE VIDEO
-    ===================================================== */
+    /* CREATE VIDEO */
 
     if (videoUrl) {
 
@@ -798,14 +721,12 @@ function createReelCard(reel, index) {
         videoBox.appendChild(
             video
         );
-
     }
 
 
     attachCardEvents(card);
 
     return card;
-
 }
 
 
@@ -845,12 +766,6 @@ function getVideoUrl(reel) {
     }
 
 
-    /*
-     * Your backend sends:
-     *
-     * /static/uploads/reels/file.mp4
-     */
-
     if (
         url.startsWith("/")
     ) {
@@ -872,7 +787,6 @@ function getVideoUrl(reel) {
             /^\/+/,
             ""
         );
-
 }
 
 
@@ -900,8 +814,10 @@ function normalizeMediaUrl(url) {
     }
 
     return "/" +
-        url.replace(/^\/+/, "");
-
+        url.replace(
+            /^\/+/,
+            ""
+        );
 }
 
 
@@ -913,7 +829,6 @@ function createVideo(url, reel) {
 
     const video =
         document.createElement("video");
-
 
     video.src = url;
 
@@ -938,12 +853,6 @@ function createVideo(url, reel) {
         "nodownload"
     );
 
-
-    /*
-     * Start muted for browser autoplay.
-     * It will unmute after user interaction.
-     */
-
     video.muted = true;
 
     video.volume = 1;
@@ -955,7 +864,6 @@ function createVideo(url, reel) {
             normalizeMediaUrl(
                 reel.thumbnail_url
             );
-
     }
 
 
@@ -991,9 +899,7 @@ function createVideo(url, reel) {
             ) {
 
                 playActiveVideo(video);
-
             }
-
         }
     );
 
@@ -1014,9 +920,7 @@ function createVideo(url, reel) {
 
     setupLongPress(video);
 
-
     return video;
-
 }
 
 
@@ -1050,14 +954,12 @@ function setupLongPress(video) {
                 },
                 LONG_PRESS
             );
-
     };
 
 
     const cancel = () => {
 
         clearTimeout(timer);
-
     };
 
 
@@ -1077,9 +979,7 @@ function setupLongPress(video) {
             cancel();
 
             if (longPressed) {
-
                 event.preventDefault();
-
             }
 
         },
@@ -1102,7 +1002,6 @@ function setupLongPress(video) {
             if (event.button === 0) {
                 start();
             }
-
         }
     );
 
@@ -1117,7 +1016,6 @@ function setupLongPress(video) {
         "mouseleave",
         cancel
     );
-
 }
 
 
@@ -1131,7 +1029,6 @@ function toggleMute(video) {
         return;
     }
 
-
     video.muted =
         !video.muted;
 
@@ -1143,21 +1040,14 @@ function toggleMute(video) {
 
         video.volume = 1;
 
-        video.play()
-            .catch(() => {});
+        video.play().catch(() => {});
 
-        showToast(
-            "🔊 Audio on"
-        );
+        showToast("🔊 Audio on");
 
     } else {
 
-        showToast(
-            "🔇 Audio muted"
-        );
-
+        showToast("🔇 Audio muted");
     }
-
 }
 
 
@@ -1174,7 +1064,6 @@ function attachCardEvents(card) {
     attachInterestEvents(card);
 
     attachFollowEvent(card);
-
 }
 
 
@@ -1225,17 +1114,14 @@ function attachRatingEvents(card) {
                     card,
                     rating
                 );
-
             }
         );
-
     });
-
 }
 
 
 /* =========================================================
-   VIDEO DOUBLE / TAP RATING
+   VIDEO TAP RATING
 ========================================================= */
 
 function attachVideoRating(card) {
@@ -1246,7 +1132,6 @@ function attachVideoRating(card) {
     if (!video) {
         return;
     }
-
 
     let lastTap = 0;
 
@@ -1305,10 +1190,8 @@ function attachVideoRating(card) {
                 card,
                 rating
             );
-
         }
     );
-
 }
 
 
@@ -1332,14 +1215,6 @@ function animateStar(x, y, rating) {
 
     star.style.top =
         `${y}px`;
-
-
-    if (rating === 3) {
-
-        star.style.animation =
-            "starFlyUp .45s ease-out forwards";
-
-    }
 
 
     document.body.appendChild(
@@ -1375,7 +1250,6 @@ function animateStar(x, y, rating) {
             );
 
         }, 300);
-
     }
 
 
@@ -1383,7 +1257,6 @@ function animateStar(x, y, rating) {
         () => star.remove(),
         850
     );
-
 }
 
 
@@ -1406,9 +1279,7 @@ function setRatingUI(card, rating) {
             "active",
             value <= rating
         );
-
     });
-
 }
 
 
@@ -1424,7 +1295,6 @@ async function sendRating(card, rating) {
     if (!isRealReelId(reelId)) {
         return;
     }
-
 
     try {
 
@@ -1447,9 +1317,7 @@ async function sendRating(card, rating) {
             "Rating API:",
             error
         );
-
     }
-
 }
 
 
@@ -1469,10 +1337,8 @@ function attachActionEvents(card) {
 
                 event.stopPropagation();
 
-
                 const action =
                     button.dataset.action;
-
 
                 const reelId =
                     getReelId(card);
@@ -1481,65 +1347,46 @@ function attachActionEvents(card) {
                 if (
                     action === "comment"
                 ) {
-
-                    openComments(
-                        reelId
-                    );
-
+                    openComments(reelId);
                 }
 
 
                 if (
                     action === "share"
                 ) {
-
-                    shareReel(
-                        reelId
-                    );
-
+                    shareReel(reelId);
                 }
 
 
                 if (
                     action === "save"
                 ) {
-
                     saveReel(
                         reelId,
                         button
                     );
-
                 }
 
 
                 if (
                     action === "download"
                 ) {
-
                     downloadReel(
                         reelId,
                         card,
                         button
                     );
-
                 }
 
 
                 if (
                     action === "more"
                 ) {
-
-                    reportReel(
-                        reelId
-                    );
-
+                    reportReel(reelId);
                 }
-
             }
         );
-
     });
-
 }
 
 
@@ -1553,7 +1400,6 @@ async function shareReel(reelId) {
         return;
     }
 
-
     const url =
         `${location.origin}/reels?reel=${encodeURIComponent(
             reelId
@@ -1565,16 +1411,9 @@ async function shareReel(reelId) {
         if (navigator.share) {
 
             await navigator.share({
-
-                title:
-                    "Usanex Reel",
-
-                text:
-                    "Check this reel on Usanex",
-
-                url:
-                    url
-
+                title: "Usanex Reel",
+                text: "Check this reel on Usanex",
+                url: url
             });
 
         } else if (
@@ -1588,7 +1427,6 @@ async function shareReel(reelId) {
             showToast(
                 "Reel link copied"
             );
-
         }
 
 
@@ -1612,9 +1450,7 @@ async function shareReel(reelId) {
             "Share:",
             error
         );
-
     }
-
 }
 
 
@@ -1622,12 +1458,14 @@ async function shareReel(reelId) {
    SAVE
 ========================================================= */
 
-async function saveReel(reelId, button) {
+async function saveReel(
+    reelId,
+    button
+) {
 
     if (!isRealReelId(reelId)) {
         return;
     }
-
 
     try {
 
@@ -1661,7 +1499,6 @@ async function saveReel(reelId, button) {
             button.classList.toggle(
                 "saved"
             );
-
         }
 
 
@@ -1671,9 +1508,7 @@ async function saveReel(reelId, button) {
             error.message ||
             "Unable to save"
         );
-
     }
-
 }
 
 
@@ -1701,7 +1536,6 @@ async function downloadReel(
         );
 
         return;
-
     }
 
 
@@ -1710,24 +1544,19 @@ async function downloadReel(
         const link =
             document.createElement("a");
 
-
         link.href =
             video.src;
-
 
         link.download =
             `usanex-reel-${
                 reelId || Date.now()
             }.mp4`;
 
-
         document.body.appendChild(
             link
         );
 
-
         link.click();
-
 
         link.remove();
 
@@ -1749,7 +1578,6 @@ async function downloadReel(
                     method: "POST"
                 }
             ).catch(() => {});
-
         }
 
 
@@ -1759,9 +1587,7 @@ async function downloadReel(
             "Download:",
             error
         );
-
     }
-
 }
 
 
@@ -1784,7 +1610,6 @@ function attachInterestEvents(card) {
             async event => {
 
                 event.stopPropagation();
-
 
                 const reelId =
                     getReelId(card);
@@ -1837,14 +1662,10 @@ function attachInterestEvents(card) {
                         "Interest API:",
                         error
                     );
-
                 }
-
             }
         );
-
     });
-
 }
 
 
@@ -1888,10 +1709,8 @@ function attachFollowEvent(card) {
                 following
                     ? "Follow"
                     : "Following";
-
         }
     );
-
 }
 
 
@@ -1902,9 +1721,7 @@ function attachFollowEvent(card) {
 function initializeReelObserver() {
 
     if (ReelApp.observer) {
-
         ReelApp.observer.disconnect();
-
     }
 
 
@@ -1934,7 +1751,6 @@ function initializeReelObserver() {
                     const card =
                         entry.target;
 
-
                     const video =
                         card.querySelector(
                             "video"
@@ -1943,7 +1759,7 @@ function initializeReelObserver() {
 
                     if (
                         entry.isIntersecting &&
-                        entry.intersectionRatio >= .70
+                        entry.intersectionRatio >= 0.70
                     ) {
 
                         ReelApp.currentIndex =
@@ -1955,10 +1771,21 @@ function initializeReelObserver() {
 
                         cards.forEach(c => {
 
-                            c.classList.remove(
-                                "active-reel"
-                            );
+                            if (c !== card) {
 
+                                c.classList.remove(
+                                    "active-reel"
+                                );
+
+                                const otherVideo =
+                                    c.querySelector(
+                                        "video"
+                                    );
+
+                                if (otherVideo) {
+                                    otherVideo.pause();
+                                }
+                            }
                         });
 
 
@@ -1972,21 +1799,16 @@ function initializeReelObserver() {
                             playActiveVideo(
                                 video
                             );
-
                         }
 
 
-                        startWatch(
-                            card
-                        );
+                        startWatch(card);
 
 
                     } else {
 
                         if (video) {
-
                             video.pause();
-
                         }
 
 
@@ -1995,12 +1817,8 @@ function initializeReelObserver() {
                         );
 
 
-                        stopWatch(
-                            card
-                        );
-
+                        stopWatch();
                     }
-
                 });
 
             },
@@ -2008,12 +1826,11 @@ function initializeReelObserver() {
                 root: container,
 
                 threshold: [
-                    .25,
-                    .50,
-                    .70,
-                    .90
+                    0.25,
+                    0.50,
+                    0.70,
+                    0.90
                 ]
-
             }
         );
 
@@ -2028,9 +1845,7 @@ function initializeReelObserver() {
         attachVideoRating(
             card
         );
-
     });
-
 }
 
 
@@ -2052,12 +1867,7 @@ function playActiveVideo(video) {
 
     } else {
 
-        /*
-         * Required for autoplay.
-         */
-
         video.muted = true;
-
     }
 
 
@@ -2068,9 +1878,7 @@ function playActiveVideo(video) {
 
             video.play()
                 .catch(() => {});
-
         });
-
 }
 
 
@@ -2080,7 +1888,7 @@ function playActiveVideo(video) {
 
 function startWatch(card) {
 
-    stopWatch(card);
+    stopWatch();
 
 
     ReelApp.watchStartedAt =
@@ -2145,13 +1953,10 @@ function startWatch(card) {
                         percent,
                         true
                     );
-
                 }
-
             }
 
         }, 5000);
-
 }
 
 
@@ -2169,13 +1974,11 @@ function stopWatch() {
 
         ReelApp.watchTimer =
             null;
-
     }
 
 
     ReelApp.watchStartedAt =
         null;
-
 }
 
 
@@ -2227,14 +2030,11 @@ async function sendWatch(
 
                     session_id:
                         ReelApp.sessionId
-
                 }
-
             }
         );
 
     } catch {}
-
 }
 
 
@@ -2329,7 +2129,6 @@ function initializeCommentSystem() {
             </form>
 
         </section>
-
     `;
 
 
@@ -2353,11 +2152,8 @@ function initializeCommentSystem() {
             if (
                 event.target === overlay
             ) {
-
                 closeComments();
-
             }
-
         }
     );
 
@@ -2368,7 +2164,6 @@ function initializeCommentSystem() {
         "submit",
         submitComment
     );
-
 }
 
 
@@ -2423,7 +2218,6 @@ async function openComments(reelId) {
     await loadComments(
         reelId
     );
-
 }
 
 
@@ -2444,7 +2238,6 @@ function closeComments() {
         overlay.classList.remove(
             "open"
         );
-
     }
 
 
@@ -2454,7 +2247,6 @@ function closeComments() {
 
     ReelApp.commentReelId =
         null;
-
 }
 
 
@@ -2497,7 +2289,6 @@ async function loadComments(reelId) {
             comments
         );
 
-
     } catch {
 
         list.innerHTML = `
@@ -2505,9 +2296,7 @@ async function loadComments(reelId) {
                 No comments yet.
             </div>
         `;
-
     }
-
 }
 
 
@@ -2540,7 +2329,6 @@ function renderComments(comments) {
         `;
 
         return;
-
     }
 
 
@@ -2561,12 +2349,9 @@ function renderComments(comments) {
                 likeComment(
                     button
                 );
-
             }
         );
-
     });
-
 }
 
 
@@ -2673,9 +2458,7 @@ function createCommentHTML(comment) {
             </div>
 
         </article>
-
     `;
-
 }
 
 
@@ -2734,7 +2517,6 @@ async function likeComment(button) {
     } else {
 
         number++;
-
     }
 
 
@@ -2748,7 +2530,6 @@ async function likeComment(button) {
 
         count.textContent =
             String(number);
-
     }
 
 
@@ -2764,7 +2545,6 @@ async function likeComment(button) {
         );
 
     } catch {}
-
 }
 
 
@@ -2806,10 +2586,7 @@ async function submitComment(event) {
 
 
     if (sendButton) {
-
-        sendButton.disabled =
-            true;
-
+        sendButton.disabled = true;
     }
 
 
@@ -2827,7 +2604,6 @@ async function submitComment(event) {
                     text: text,
                     content: text
                 }
-
             }
         );
 
@@ -2855,14 +2631,9 @@ async function submitComment(event) {
     } finally {
 
         if (sendButton) {
-
-            sendButton.disabled =
-                false;
-
+            sendButton.disabled = false;
         }
-
     }
-
 }
 
 
@@ -2910,9 +2681,7 @@ function updateCommentCount(reelId) {
             String(
                 current + 1
             );
-
     });
-
 }
 
 
@@ -2948,10 +2717,8 @@ async function reportReel(reelId) {
                 method: "POST",
 
                 body: {
-                    reason:
-                        "user_report"
+                    reason: "user_report"
                 }
-
             }
         );
 
@@ -2967,9 +2734,7 @@ async function reportReel(reelId) {
             error.message ||
             "Unable to report reel"
         );
-
     }
-
 }
 
 
@@ -2994,9 +2759,7 @@ function initializeCreateReel() {
 
         window.location.href =
             "/reels/create";
-
     };
-
 }
 
 
@@ -3022,7 +2785,6 @@ function initializeNavigation() {
 
         profileNav:
             "/my-profile"
-
     };
 
 
@@ -3046,12 +2808,9 @@ function initializeNavigation() {
 
                     window.location.href =
                         url;
-
                 }
             );
-
         });
-
 }
 
 
@@ -3065,7 +2824,6 @@ function getReelId(card) {
         card?.dataset?.reelId ||
         ""
     );
-
 }
 
 
@@ -3084,7 +2842,6 @@ function isRealReelId(id) {
         Number.isInteger(value) &&
         value > 0
     );
-
 }
 
 
@@ -3109,7 +2866,6 @@ function escapeHTML(value) {
 
 
     return div.innerHTML;
-
 }
 
 
@@ -3162,7 +2918,6 @@ function showToast(message) {
         document.body.appendChild(
             toast
         );
-
     }
 
 
@@ -3186,7 +2941,6 @@ function showToast(message) {
                 true;
 
         }, 2200);
-
 }
 
 
