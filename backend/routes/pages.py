@@ -1,3 +1,8 @@
+# =========================================================
+# USANEX — PAGE ROUTES
+# backend/routes/pages.py
+# =========================================================
+
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
@@ -19,8 +24,13 @@ router = APIRouter(
 
 
 # =========================================================
-# TEMPLATE DIRECTORY
+# PATHS
 # =========================================================
+
+# backend/routes/pages.py
+#        ↓ parents[0] = routes
+#        ↓ parents[1] = backend
+#        ↓ parents[2] = project root
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -30,9 +40,40 @@ TEMPLATES_DIR = (
     / "templates"
 )
 
+
+# =========================================================
+# TEMPLATES
+# =========================================================
+
 templates = Jinja2Templates(
     directory=str(TEMPLATES_DIR)
 )
+
+
+# =========================================================
+# AUTH HELPER
+# =========================================================
+
+def require_login(
+    request: Request,
+    db: Session,
+):
+    """
+    Return logged-in user.
+
+    If user is not authenticated,
+    redirect to login page.
+    """
+
+    user = get_current_user_from_request(
+        request=request,
+        db=db,
+    )
+
+    if user is None:
+        return None
+
+    return user
 
 
 # =========================================================
@@ -102,7 +143,7 @@ def home_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -110,7 +151,7 @@ def home_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -135,7 +176,7 @@ def reels_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -143,7 +184,7 @@ def reels_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -168,7 +209,7 @@ def search_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -176,7 +217,7 @@ def search_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -201,7 +242,7 @@ def notifications_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -209,7 +250,7 @@ def notifications_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -223,11 +264,6 @@ def notifications_page(
 
 # =========================================================
 # CHAT
-#
-# URL:
-# /chat
-#
-# Chat page is available only to logged-in users.
 # =========================================================
 
 @router.get(
@@ -239,7 +275,7 @@ def chat_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -247,7 +283,7 @@ def chat_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -261,14 +297,6 @@ def chat_page(
 
 # =========================================================
 # MY PROFILE
-#
-# Bottom navigation -> Profile
-#
-# URL:
-# /my-profile
-#
-# This page always shows the currently logged-in
-# user's own profile.
 # =========================================================
 
 @router.get(
@@ -280,7 +308,7 @@ def my_profile_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -288,7 +316,7 @@ def my_profile_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -302,15 +330,6 @@ def my_profile_page(
 
 # =========================================================
 # OTHER USER PROFILE
-#
-# URL:
-# /profile
-# /profile?user_id=u_xxxxx
-#
-# profile.js reads user_id and calls:
-#
-# GET /api/profile/{user_id}
-#
 # =========================================================
 
 @router.get(
@@ -322,7 +341,7 @@ def profile_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -330,7 +349,7 @@ def profile_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -341,15 +360,9 @@ def profile_page(
         },
     )
 
+
 # =========================================================
 # MEDIA UPLOAD
-#
-# Private Photo / Video Upload Page
-#
-# URL:
-# /media-upload
-#
-# Login required.
 # =========================================================
 
 @router.get(
@@ -361,7 +374,7 @@ def media_upload_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -369,7 +382,7 @@ def media_upload_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
@@ -383,13 +396,6 @@ def media_upload_page(
 
 # =========================================================
 # REEL UPLOAD
-#
-# Create / Upload Reel Page
-#
-# URL:
-# /reel-upload
-#
-# Login required.
 # =========================================================
 
 @router.get(
@@ -401,7 +407,7 @@ def reel_upload_page(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
+    current_user = require_login(
         request=request,
         db=db,
     )
@@ -409,7 +415,7 @@ def reel_upload_page(
     if current_user is None:
         return RedirectResponse(
             url="/login",
-            status_code=307,
+            status_code=303,
         )
 
     return templates.TemplateResponse(
