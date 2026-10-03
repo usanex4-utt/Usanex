@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================================
-   USANEX AUTH
+   USANEX LOGIN AUTH
 ========================================================= */
 
 const API_BASE_URL = "";
@@ -35,6 +35,9 @@ const registerLink =
 const forgotPasswordLink =
     document.getElementById("forgotPasswordLink");
 
+const rememberMe =
+    document.getElementById("rememberMe");
+
 
 /* =========================================================
    MESSAGE
@@ -42,7 +45,9 @@ const forgotPasswordLink =
 
 function showMessage(message, type = "error") {
 
-    if (!loginMessage) return;
+    if (!loginMessage) {
+        return;
+    }
 
     loginMessage.textContent = message;
 
@@ -55,7 +60,9 @@ function showMessage(message, type = "error") {
 
 function hideMessage() {
 
-    if (!loginMessage) return;
+    if (!loginMessage) {
+        return;
+    }
 
     loginMessage.textContent = "";
 
@@ -71,22 +78,66 @@ function hideMessage() {
 
 function setLoginLoading(loading) {
 
-    if (!loginButton) return;
+    if (!loginButton) {
+        return;
+    }
 
     loginButton.disabled = loading;
 
-    const buttonText =
+    const text =
         loginButton.querySelector(
             ".login-button-text"
         );
 
-    if (buttonText) {
+    if (text) {
 
-        buttonText.textContent =
+        text.textContent =
             loading
                 ? "Logging in..."
                 : "Login";
     }
+}
+
+
+/* =========================================================
+   PASSWORD SHOW / HIDE
+========================================================= */
+
+if (
+    passwordToggle &&
+    passwordInput
+) {
+
+    passwordToggle.addEventListener(
+        "click",
+        function () {
+
+            const isHidden =
+                passwordInput.type === "password";
+
+
+            if (isHidden) {
+
+                passwordInput.type = "text";
+
+                passwordToggle.setAttribute(
+                    "aria-label",
+                    "Hide password"
+                );
+
+            } else {
+
+                passwordInput.type =
+                    "password";
+
+                passwordToggle.setAttribute(
+                    "aria-label",
+                    "Show password"
+                );
+            }
+
+        }
+    );
 }
 
 
@@ -108,13 +159,19 @@ async function loginUser(
                 credentials: "include",
 
                 headers: {
+                    "Accept":
+                        "application/json",
+
                     "Content-Type":
                         "application/json"
                 },
 
                 body: JSON.stringify({
-                    identifier: identifier,
-                    password: password
+                    identifier:
+                        identifier,
+
+                    password:
+                        password
                 })
             }
         );
@@ -124,12 +181,12 @@ async function loginUser(
 
     try {
 
-        data = await response.json();
+        data =
+            await response.json();
 
     } catch {
 
         data = {};
-
     }
 
 
@@ -137,7 +194,7 @@ async function loginUser(
 
         throw new Error(
             data.detail ||
-            "Invalid username/mobile or password"
+            "Invalid username/mobile or password."
         );
     }
 
@@ -147,60 +204,17 @@ async function loginUser(
 
 
 /* =========================================================
-   VERIFY SERVER SESSION
-========================================================= */
-
-async function verifyServerSession() {
-
-    const response =
-        await fetch(
-            `${API_BASE_URL}/api/auth/me`,
-            {
-                method: "GET",
-
-                credentials: "include",
-
-                headers: {
-                    "Accept":
-                        "application/json"
-                }
-            }
-        );
-
-
-    if (!response.ok) {
-
-        return null;
-    }
-
-
-    const data =
-        await response.json();
-
-
-    if (
-        data.success === true &&
-        data.user
-    ) {
-
-        return data.user;
-    }
-
-
-    return null;
-}
-
-
-/* =========================================================
    SAVE USER
 ========================================================= */
 
-function saveUserSession(user) {
+function saveUser(user) {
 
-    if (!user) return;
+    if (!user) {
+        return;
+    }
 
 
-    const sessionData = {
+    const userData = {
 
         id:
             user.id || "",
@@ -222,9 +236,13 @@ function saveUserSession(user) {
     };
 
 
+    /*
+     * Main Usanex storage
+     */
+
     localStorage.setItem(
         "usanex_user",
-        JSON.stringify(sessionData)
+        JSON.stringify(userData)
     );
 
 
@@ -232,14 +250,31 @@ function saveUserSession(user) {
         "usanex_logged_in",
         "true"
     );
+
+
+    /*
+     * Compatibility storage
+     * for existing pages
+     */
+
+    localStorage.setItem(
+        "currentUser",
+        JSON.stringify(userData)
+    );
+
+
+    localStorage.setItem(
+        "user",
+        JSON.stringify(userData)
+    );
 }
 
 
 /* =========================================================
-   CLEAR LOCAL USER
+   CLEAR USER
 ========================================================= */
 
-function clearLocalSession() {
+function clearUser() {
 
     localStorage.removeItem(
         "usanex_user"
@@ -248,52 +283,19 @@ function clearLocalSession() {
     localStorage.removeItem(
         "usanex_logged_in"
     );
-}
 
+    localStorage.removeItem(
+        "currentUser"
+    );
 
-/* =========================================================
-   PASSWORD SHOW / HIDE
-========================================================= */
-
-if (
-    passwordToggle &&
-    passwordInput
-) {
-
-    passwordToggle.addEventListener(
-        "click",
-        function () {
-
-            const isPassword =
-                passwordInput.type === "password";
-
-
-            if (isPassword) {
-
-                passwordInput.type = "text";
-
-                passwordToggle.setAttribute(
-                    "aria-label",
-                    "Hide password"
-                );
-
-            } else {
-
-                passwordInput.type = "password";
-
-                passwordToggle.setAttribute(
-                    "aria-label",
-                    "Show password"
-                );
-            }
-
-        }
+    localStorage.removeItem(
+        "user"
     );
 }
 
 
 /* =========================================================
-   LOGIN
+   LOGIN FORM
 ========================================================= */
 
 if (loginForm) {
@@ -348,7 +350,7 @@ if (loginForm) {
 
 
             /* -----------------------------------------
-               LOADING
+               START LOADING
             ----------------------------------------- */
 
             setLoginLoading(true);
@@ -357,7 +359,7 @@ if (loginForm) {
             try {
 
                 /* -------------------------------------
-                   LOGIN
+                   LOGIN REQUEST
                 ------------------------------------- */
 
                 const data =
@@ -368,7 +370,7 @@ if (loginForm) {
 
 
                 /* -------------------------------------
-                   CHECK RESPONSE
+                   CHECK API RESPONSE
                 ------------------------------------- */
 
                 if (
@@ -387,51 +389,46 @@ if (loginForm) {
                    SAVE USER
                 ------------------------------------- */
 
-                saveUserSession(
+                saveUser(
                     data.user
                 );
 
 
                 /* -------------------------------------
-                   VERIFY REAL SERVER SESSION
+                   REMEMBER ME
                 ------------------------------------- */
 
-                const serverUser =
-                    await verifyServerSession();
+                if (
+                    rememberMe &&
+                    rememberMe.checked
+                ) {
 
+                    localStorage.setItem(
+                        "usanex_remember",
+                        "true"
+                    );
 
-                if (!serverUser) {
+                } else {
 
-                    clearLocalSession();
-
-                    throw new Error(
-                        "Login succeeded, but the server session could not be verified. Please try again."
+                    localStorage.removeItem(
+                        "usanex_remember"
                     );
                 }
 
 
                 /* -------------------------------------
-                   UPDATE USER WITH SERVER DATA
+                   SUCCESS MESSAGE
                 ------------------------------------- */
 
-                saveUserSession(
-                    serverUser
+                showMessage(
+                    `Welcome back, ${data.user.name || "to Usanex"}!`,
+                    "success"
                 );
 
 
                 console.log(
                     "Usanex login successful:",
-                    serverUser
-                );
-
-
-                /* -------------------------------------
-                   SUCCESS
-                ------------------------------------- */
-
-                showMessage(
-                    `Welcome back, ${serverUser.name}!`,
-                    "success"
+                    data.user
                 );
 
 
@@ -446,7 +443,7 @@ if (loginForm) {
                             "/home";
 
                     },
-                    400
+                    500
                 );
 
 
@@ -462,7 +459,6 @@ if (loginForm) {
                     error.message ||
                     "Unable to connect to Usanex."
                 );
-
 
             } finally {
 
@@ -513,7 +509,30 @@ if (forgotPasswordLink) {
 
 
 /* =========================================================
-   AUTH HELPERS
+   ENTER KEY SUPPORT
+========================================================= */
+
+if (identifierInput) {
+
+    identifierInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                passwordInput?.focus();
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   AUTH HELPER
 ========================================================= */
 
 window.UsanexAuth = {
@@ -530,51 +549,24 @@ window.UsanexAuth = {
 
     getUser: function () {
 
-        const user =
+        const saved =
             localStorage.getItem(
                 "usanex_user"
             );
 
 
-        if (!user) {
+        if (!saved) {
             return null;
         }
 
 
         try {
 
-            return JSON.parse(user);
+            return JSON.parse(
+                saved
+            );
 
         } catch {
-
-            return null;
-        }
-    },
-
-
-    verify: async function () {
-
-        try {
-
-            const user =
-                await verifyServerSession();
-
-
-            if (!user) {
-
-                clearLocalSession();
-
-                return null;
-            }
-
-
-            saveUserSession(user);
-
-            return user;
-
-        } catch {
-
-            clearLocalSession();
 
             return null;
         }
@@ -603,13 +595,54 @@ window.UsanexAuth = {
 
         } finally {
 
-            clearLocalSession();
+            clearUser();
 
             window.location.href =
                 "/login";
         }
     }
+
 };
+
+
+/* =========================================================
+   AUTO CLEAR INVALID OLD DATA
+========================================================= */
+
+(function () {
+
+    const saved =
+        localStorage.getItem(
+            "usanex_user"
+        );
+
+
+    if (!saved) {
+        return;
+    }
+
+
+    try {
+
+        const user =
+            JSON.parse(saved);
+
+
+        if (
+            !user ||
+            !user.username ||
+            !user.user_id
+        ) {
+
+            clearUser();
+        }
+
+    } catch {
+
+        clearUser();
+    }
+
+})();
 
 
 /* =========================================================
@@ -617,5 +650,5 @@ window.UsanexAuth = {
 ========================================================= */
 
 console.log(
-    "Usanex Auth v3 loaded successfully."
+    "Usanex Auth loaded successfully."
 );
