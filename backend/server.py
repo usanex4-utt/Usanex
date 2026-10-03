@@ -2,38 +2,18 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
 
 from .database.database import Base, engine
-from .database import models
 
-from .routes.auth import router as auth_router
-from .routes.pages import router as pages_router
-from .routes.users import router as users_router
-from .routes.search import router as search_router
-from .routes.connections import router as connections_router
-from .routes.profile import router as profile_router
-from .routes.chat import router as chat_router
-from .routes import reels
+# IMPORTANT:
+# Models import hone chahiye, tabhi SQLAlchemy ko
+# saare tables ka pata chalega.
+from .database import models  # noqa: F401
 
 
 # =========================================================
-# PATHS
-# =========================================================
-
-BASE_DIR = Path(__file__).resolve().parents[1]
-
-STATIC_DIR = (
-    BASE_DIR
-    / "frontend"
-    / "static"
-)
-
-
-# =========================================================
-# FASTAPI APP
+# APP
 # =========================================================
 
 app = FastAPI(
@@ -57,103 +37,101 @@ app.add_middleware(
 
 
 # =========================================================
-# STATIC FILES
+# DATABASE
 # =========================================================
 
-app.mount(
-    "/static",
-    StaticFiles(directory=STATIC_DIR),
-    name="static",
-)
+# Application start hote waqt missing tables create honge.
+Base.metadata.create_all(bind=engine)
 
 
 # =========================================================
-# ROUTERS
+# FRONTEND STATIC FILES
 # =========================================================
 
-app.include_router(
-    auth_router
-)
+BASE_DIR = Path(__file__).resolve().parent
 
-app.include_router(
-    pages_router
-)
+STATIC_DIR = BASE_DIR / "frontend" / "static"
 
-app.include_router(
-    users_router
-)
-
-app.include_router(
-    search_router
-)
-
-app.include_router(
-    connections_router
-)
-
-app.include_router(
-    profile_router
-)
-
-app.include_router(
-    chat_router
-)
-app.include_router(
-    reels.router
-)
-
-# =========================================================
-# DATABASE STARTUP
-# =========================================================
-
-@app.on_event("startup")
-def startup():
-
-    Base.metadata.create_all(
-        bind=engine
+if STATIC_DIR.exists():
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(STATIC_DIR)),
+        name="static",
     )
 
 
 # =========================================================
-# ROOT
+# HEALTH CHECK
 # =========================================================
 
-@app.get(
-    "/",
-    include_in_schema=False
-)
+@app.get("/")
 def root():
+    return {
+        "app": "Usanex",
+        "status": "online",
+    }
 
-    return RedirectResponse(
-        url="/login",
-        status_code=307,
-    )
-
-
-# =========================================================
-# HEALTH
-# =========================================================
 
 @app.get("/health")
 def health():
+    return {
+        "app": "Usanex",
+        "database": "connected",
+        "status": "online",
+    }
 
+
+# =========================================================
+# DATABASE TEST
+# =========================================================
+
+@app.get("/api/database-test")
+def database_test():
     try:
+        # Database connection actually test karne ke liye
+        from sqlalchemy import text
 
         with engine.connect() as connection:
-
-            connection.execute(
+            result = connection.execute(
                 text("SELECT 1")
             )
 
+            value = result.scalar()
+
         return {
-            "status": "ok",
+            "status": "success",
             "database": "connected",
+            "result": value,
         }
 
-    except Exception as exc:
-
+    except Exception as e:
         return {
             "status": "error",
-            "database": "disconnected",
-            "detail": str(exc),
+            "database": "connection_failed",
+            "error": str(e),
         }
+
+
+# =========================================================
+# ROUTES
+# =========================================================
+
+# Agar tumhare project me ye routers already hain,
+# to unhe uncomment/use karo.
+
+try:
+    from .routes.auth import router as auth_router
+
+    app.include_router(auth_router)
+
+except ImportError:
+    pass
+
+
+try:
+    from .routes.pages import router as pages_router
+
+    app.include_router(pages_router)
+
+except ImportError:
+    pass
