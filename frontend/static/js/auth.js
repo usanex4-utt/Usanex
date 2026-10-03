@@ -1,6 +1,5 @@
 "use strict";
 
-
 /* =========================================================
    USANEX AUTH
 ========================================================= */
@@ -41,40 +40,28 @@ const forgotPasswordLink =
    MESSAGE
 ========================================================= */
 
-function showMessage(
-    message,
-    type = "error"
-) {
+function showMessage(message, type = "error") {
 
-    if (!loginMessage) {
-        return;
-    }
+    if (!loginMessage) return;
 
-    loginMessage.textContent =
-        message;
+    loginMessage.textContent = message;
 
     loginMessage.className =
         `message ${type}`;
 
-    loginMessage.hidden =
-        false;
+    loginMessage.hidden = false;
 }
 
 
 function hideMessage() {
 
-    if (!loginMessage) {
-        return;
-    }
+    if (!loginMessage) return;
 
-    loginMessage.textContent =
-        "";
+    loginMessage.textContent = "";
 
-    loginMessage.className =
-        "message";
+    loginMessage.className = "message";
 
-    loginMessage.hidden =
-        true;
+    loginMessage.hidden = true;
 }
 
 
@@ -82,23 +69,16 @@ function hideMessage() {
    LOADING
 ========================================================= */
 
-function setLoginLoading(
-    loading
-) {
+function setLoginLoading(loading) {
 
-    if (!loginButton) {
-        return;
-    }
+    if (!loginButton) return;
 
-    loginButton.disabled =
-        loading;
-
+    loginButton.disabled = loading;
 
     const buttonText =
         loginButton.querySelector(
             ".login-button-text"
         );
-
 
     if (buttonText) {
 
@@ -125,14 +105,16 @@ async function loginUser(
             {
                 method: "POST",
 
+                credentials: "include",
+
                 headers: {
                     "Content-Type":
                         "application/json"
                 },
 
                 body: JSON.stringify({
-                    identifier,
-                    password
+                    identifier: identifier,
+                    password: password
                 })
             }
         );
@@ -140,11 +122,9 @@ async function loginUser(
 
     let data = {};
 
-
     try {
 
-        data =
-            await response.json();
+        data = await response.json();
 
     } catch {
 
@@ -167,19 +147,63 @@ async function loginUser(
 
 
 /* =========================================================
-   SAVE USER SESSION
+   VERIFY SERVER SESSION
 ========================================================= */
 
-function saveUserSession(
-    user
-) {
+async function verifyServerSession() {
 
-    if (!user) {
-        return;
+    const response =
+        await fetch(
+            `${API_BASE_URL}/api/auth/me`,
+            {
+                method: "GET",
+
+                credentials: "include",
+
+                headers: {
+                    "Accept":
+                        "application/json"
+                }
+            }
+        );
+
+
+    if (!response.ok) {
+
+        return null;
     }
 
 
+    const data =
+        await response.json();
+
+
+    if (
+        data.success === true &&
+        data.user
+    ) {
+
+        return data.user;
+    }
+
+
+    return null;
+}
+
+
+/* =========================================================
+   SAVE USER
+========================================================= */
+
+function saveUserSession(user) {
+
+    if (!user) return;
+
+
     const sessionData = {
+
+        id:
+            user.id || "",
 
         username:
             user.username || "",
@@ -212,6 +236,22 @@ function saveUserSession(
 
 
 /* =========================================================
+   CLEAR LOCAL USER
+========================================================= */
+
+function clearLocalSession() {
+
+    localStorage.removeItem(
+        "usanex_user"
+    );
+
+    localStorage.removeItem(
+        "usanex_logged_in"
+    );
+}
+
+
+/* =========================================================
    PASSWORD SHOW / HIDE
 ========================================================= */
 
@@ -225,14 +265,12 @@ if (
         function () {
 
             const isPassword =
-                passwordInput.type ===
-                "password";
+                passwordInput.type === "password";
 
 
             if (isPassword) {
 
-                passwordInput.type =
-                    "text";
+                passwordInput.type = "text";
 
                 passwordToggle.setAttribute(
                     "aria-label",
@@ -241,8 +279,7 @@ if (
 
             } else {
 
-                passwordInput.type =
-                    "password";
+                passwordInput.type = "password";
 
                 passwordToggle.setAttribute(
                     "aria-label",
@@ -320,7 +357,7 @@ if (loginForm) {
             try {
 
                 /* -------------------------------------
-                   API LOGIN
+                   LOGIN
                 ------------------------------------- */
 
                 const data =
@@ -331,7 +368,7 @@ if (loginForm) {
 
 
                 /* -------------------------------------
-                   VERIFY RESPONSE
+                   CHECK RESPONSE
                 ------------------------------------- */
 
                 if (
@@ -347,7 +384,7 @@ if (loginForm) {
 
 
                 /* -------------------------------------
-                   SAVE CURRENT USER
+                   SAVE USER
                 ------------------------------------- */
 
                 saveUserSession(
@@ -355,24 +392,51 @@ if (loginForm) {
                 );
 
 
+                /* -------------------------------------
+                   VERIFY REAL SERVER SESSION
+                ------------------------------------- */
+
+                const serverUser =
+                    await verifyServerSession();
+
+
+                if (!serverUser) {
+
+                    clearLocalSession();
+
+                    throw new Error(
+                        "Login succeeded, but the server session could not be verified. Please try again."
+                    );
+                }
+
+
+                /* -------------------------------------
+                   UPDATE USER WITH SERVER DATA
+                ------------------------------------- */
+
+                saveUserSession(
+                    serverUser
+                );
+
+
                 console.log(
                     "Usanex login successful:",
-                    data.user
+                    serverUser
                 );
 
 
                 /* -------------------------------------
-                   SUCCESS MESSAGE
+                   SUCCESS
                 ------------------------------------- */
 
                 showMessage(
-                    `Welcome back, ${data.user.name}!`,
+                    `Welcome back, ${serverUser.name}!`,
                     "success"
                 );
 
 
                 /* -------------------------------------
-                   GO TO HOME
+                   REDIRECT
                 ------------------------------------- */
 
                 setTimeout(
@@ -382,7 +446,7 @@ if (loginForm) {
                             "/home";
 
                     },
-                    300
+                    400
                 );
 
 
@@ -479,9 +543,7 @@ window.UsanexAuth = {
 
         try {
 
-            return JSON.parse(
-                user
-            );
+            return JSON.parse(user);
 
         } catch {
 
@@ -490,20 +552,62 @@ window.UsanexAuth = {
     },
 
 
-    logout: function () {
+    verify: async function () {
 
-        localStorage.removeItem(
-            "usanex_user"
-        );
+        try {
 
-
-        localStorage.removeItem(
-            "usanex_logged_in"
-        );
+            const user =
+                await verifyServerSession();
 
 
-        window.location.href =
-            "/login";
+            if (!user) {
+
+                clearLocalSession();
+
+                return null;
+            }
+
+
+            saveUserSession(user);
+
+            return user;
+
+        } catch {
+
+            clearLocalSession();
+
+            return null;
+        }
+    },
+
+
+    logout: async function () {
+
+        try {
+
+            await fetch(
+                `${API_BASE_URL}/api/auth/logout`,
+                {
+                    method: "POST",
+
+                    credentials: "include"
+                }
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Logout error:",
+                error
+            );
+
+        } finally {
+
+            clearLocalSession();
+
+            window.location.href =
+                "/login";
+        }
     }
 };
 
@@ -513,5 +617,5 @@ window.UsanexAuth = {
 ========================================================= */
 
 console.log(
-    "Usanex Auth v2 loaded successfully."
+    "Usanex Auth v3 loaded successfully."
 );
