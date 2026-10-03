@@ -1,5 +1,6 @@
 /* =========================================================
    USANEX — MY PROFILE
+   FAST + SMOOTH + MOBILE OPTIMIZED
    ========================================================= */
 
 "use strict";
@@ -27,21 +28,46 @@ const profileState = {
         images: [],
         saved: [],
         private: []
-    }
+    },
+
+    loading: false,
+    saving: false
 
 };
+
+
+const CACHE_KEY = "usanex_my_profile_cache";
 
 
 /* =========================================================
    START
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-        initMyProfile();
-    }
-);
+document.addEventListener("DOMContentLoaded", () => {
+    initMyProfile();
+});
+
+
+async function initMyProfile() {
+
+    setupHeader();
+    setupMenu();
+    setupPhotoViewer();
+    setupEditProfile();
+    setupTabs();
+    setupBottomNavigation();
+
+    /*
+     * पहले cached profile दिखाओ
+     * इससे page blank/loading जैसा feel नहीं देगा.
+     */
+    loadCachedProfile();
+
+    /*
+     * फिर fresh server data.
+     */
+    await loadMyProfile();
+}
 
 
 /* =========================================================
@@ -81,19 +107,6 @@ function safeText(value, fallback = "") {
     }
 
     return String(value);
-
-}
-
-
-function escapeHtml(value) {
-
-    return safeText(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
 }
 
 
@@ -104,7 +117,6 @@ function getPhotoUrl(photo) {
     }
 
     return String(photo);
-
 }
 
 
@@ -135,38 +147,102 @@ function formatViews(value) {
     }
 
     return String(views);
-
 }
 
 
 /* =========================================================
-   INITIALIZATION
+   CACHE
 ========================================================= */
 
-async function initMyProfile() {
+function saveProfileCache() {
 
-    setupHeader();
+    try {
 
-    setupMenu();
+        localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+                user: profileState.user,
+                stats: profileState.stats,
+                content: profileState.content
+            })
+        );
 
-    setupPhotoViewer();
+    } catch (error) {
 
-    setupEditProfile();
+        console.warn(
+            "Profile cache save:",
+            error
+        );
 
-    setupTabs();
+    }
 
-    setupBottomNavigation();
+}
 
-    await loadMyProfile();
+
+function loadCachedProfile() {
+
+    try {
+
+        const raw =
+            localStorage.getItem(
+                CACHE_KEY
+            );
+
+        if (!raw) {
+            return;
+        }
+
+        const cached =
+            JSON.parse(raw);
+
+        if (!cached) {
+            return;
+        }
+
+        if (cached.user) {
+
+            profileState.user =
+                cached.user;
+
+            profileState.stats =
+                cached.stats ||
+                profileState.stats;
+
+            profileState.content =
+                cached.content ||
+                profileState.content;
+
+            renderProfile(
+                profileState.user
+            );
+
+            renderActiveTab();
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Profile cache load:",
+            error
+        );
+
+    }
 
 }
 
 
 /* =========================================================
-   LOAD PROFILE
+   LOAD MY PROFILE
 ========================================================= */
 
 async function loadMyProfile() {
+
+    if (profileState.loading) {
+        return;
+    }
+
+    profileState.loading = true;
 
     try {
 
@@ -175,9 +251,8 @@ async function loadMyProfile() {
                 "/api/profile/me",
                 {
                     method: "GET",
-
                     credentials: "include",
-
+                    cache: "no-store",
                     headers: {
                         "Accept":
                             "application/json"
@@ -215,7 +290,10 @@ async function loadMyProfile() {
             await response.json();
 
 
-        if (!data || !data.success) {
+        if (
+            !data ||
+            data.success === false
+        ) {
 
             throw new Error(
                 "Invalid profile response."
@@ -226,7 +304,6 @@ async function loadMyProfile() {
 
         profileState.user =
             data.user || {};
-
 
         profileState.stats = {
 
@@ -254,7 +331,9 @@ async function loadMyProfile() {
 
 
         processUnifiedContent(
-            data.content || []
+            Array.isArray(data.content)
+                ? data.content
+                : []
         );
 
 
@@ -262,8 +341,9 @@ async function loadMyProfile() {
             profileState.user
         );
 
-
         renderActiveTab();
+
+        saveProfileCache();
 
 
     } catch (error) {
@@ -274,10 +354,23 @@ async function loadMyProfile() {
         );
 
 
-        renderProfileError(
-            error.message ||
-            "Unable to load your profile."
-        );
+        /*
+         * अगर cache पहले से है,
+         * तो cached profile रहने दो.
+         */
+        if (!profileState.user) {
+
+            renderProfileError(
+                error.message ||
+                "Unable to load your profile."
+            );
+
+        }
+
+    } finally {
+
+        profileState.loading =
+            false;
 
     }
 
@@ -286,70 +379,60 @@ async function loadMyProfile() {
 
 /* =========================================================
    PROCESS CONTENT
-   REELS + IMAGES
 ========================================================= */
 
 function processUnifiedContent(posts) {
 
-    profileState.content.reels = [];
+    const reels = [];
+    const images = [];
 
-    profileState.content.images = [];
+    for (const post of posts) {
 
+        if (!post) {
+            continue;
+        }
 
-    posts.forEach(
-        (post) => {
-
-            const mediaType =
-                safeText(
-                    post.media_type
-                ).toLowerCase();
-
-
-            /* =========================
-               REELS / VIDEO
-            ========================= */
-
-            if (
-                mediaType === "video" ||
-                mediaType === "reel"
-            ) {
-
-                profileState
-                    .content
-                    .reels
-                    .push(post);
-
-                return;
-
-            }
+        const mediaType =
+            safeText(
+                post.media_type
+            ).toLowerCase();
 
 
-            /* =========================
-               IMAGES / PHOTOS
-            ========================= */
+        if (
+            mediaType === "video" ||
+            mediaType === "reel"
+        ) {
 
-            if (
-                mediaType === "image" ||
-                mediaType === "photo"
-            ) {
+            reels.push(post);
 
-                profileState
-                    .content
-                    .images
-                    .push(post);
-
-            }
+            continue;
 
         }
-    );
 
 
-    /* =========================
-       FUTURE CONTENT
-    ========================= */
+        if (
+            mediaType === "image" ||
+            mediaType === "photo"
+        ) {
 
+            images.push(post);
+
+        }
+
+    }
+
+
+    profileState.content.reels =
+        reels;
+
+    profileState.content.images =
+        images;
+
+    /*
+     * अभी backend इनका data नहीं दे रहा
+     * तो खाली रखो.
+     */
     profileState.content.saved = [];
-
     profileState.content.private = [];
 
 }
@@ -360,6 +443,11 @@ function processUnifiedContent(posts) {
 ========================================================= */
 
 function renderProfile(user) {
+
+    if (!user) {
+        return;
+    }
+
 
     const name =
         safeText(
@@ -395,25 +483,30 @@ function renderProfile(user) {
         );
 
 
-    if ($("profileName")) {
+    const profileName =
+        $("profileName");
 
-        $("profileName").textContent =
+    if (profileName) {
+        profileName.textContent =
             name;
-
     }
 
 
-    if ($("profileDisplayName")) {
+    const displayName =
+        $("profileDisplayName");
 
-        $("profileDisplayName").textContent =
+    if (displayName) {
+        displayName.textContent =
             name;
-
     }
 
 
-    if ($("profileUsername")) {
+    const usernameElement =
+        $("profileUsername");
 
-        $("profileUsername").textContent =
+    if (usernameElement) {
+
+        usernameElement.textContent =
             username
                 ? `@${username.replace(/^@/, "")}`
                 : "@username";
@@ -421,23 +514,44 @@ function renderProfile(user) {
     }
 
 
-    if ($("profileUserId")) {
+    const userIdElement =
+        $("profileUserId");
 
-        $("profileUserId").textContent =
-            userId || "u_xxxxxxxx";
+    if (userIdElement) {
+
+        userIdElement.textContent =
+            userId ||
+            "u_xxxxxxxx";
 
     }
 
 
-    if ($("profilePhoto")) {
+    const profilePhoto =
+        $("profilePhoto");
 
-        $("profilePhoto").src =
-            photo;
+    if (profilePhoto) {
 
-        $("profilePhoto").onerror =
+        if (
+            profilePhoto.src !==
+            new URL(
+                photo,
+                window.location.origin
+            ).href
+        ) {
+
+            profilePhoto.src =
+                photo;
+
+        }
+
+
+        profilePhoto.onerror =
             () => {
 
-                $("profilePhoto").src =
+                profilePhoto.onerror =
+                    null;
+
+                profilePhoto.src =
                     "/static/images/default-profile.png";
 
             };
@@ -445,15 +559,21 @@ function renderProfile(user) {
     }
 
 
-    if ($("editProfilePhotoPreview")) {
+    const editPreview =
+        $("editProfilePhotoPreview");
 
-        $("editProfilePhotoPreview").src =
+    if (editPreview) {
+
+        editPreview.src =
             photo;
 
-        $("editProfilePhotoPreview").onerror =
+        editPreview.onerror =
             () => {
 
-                $("editProfilePhotoPreview").src =
+                editPreview.onerror =
+                    null;
+
+                editPreview.src =
                     "/static/images/default-profile.png";
 
             };
@@ -461,9 +581,12 @@ function renderProfile(user) {
     }
 
 
-    if ($("profileBio")) {
+    const bioElement =
+        $("profileBio");
 
-        $("profileBio").textContent =
+    if (bioElement) {
+
+        bioElement.textContent =
             bio.trim()
                 ? bio
                 : "No bio available.";
@@ -471,39 +594,48 @@ function renderProfile(user) {
     }
 
 
-    if ($("followersCount")) {
-
-        $("followersCount").textContent =
-            profileState.stats.followers;
-
-    }
-
-
-    if ($("connectedCount")) {
-
-        $("connectedCount").textContent =
-            profileState.stats.connected;
-
-    }
-
-
-    if ($("followingCount")) {
-
-        $("followingCount").textContent =
-            profileState.stats.following;
-
-    }
-
-
-    if ($("postsCount")) {
-
-        $("postsCount").textContent =
-            profileState.stats.posts;
-
-    }
-
+    updateStats();
 
     renderProfileLinks(user);
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+function updateStats() {
+
+    const values = {
+
+        followersCount:
+            profileState.stats.followers,
+
+        connectedCount:
+            profileState.stats.connected,
+
+        followingCount:
+            profileState.stats.following,
+
+        postsCount:
+            profileState.stats.posts
+
+    };
+
+
+    for (const [id, value] of
+        Object.entries(values)) {
+
+        const element = $(id);
+
+        if (element) {
+
+            element.textContent =
+                Number(value || 0);
+
+        }
+
+    }
 
 }
 
@@ -516,7 +648,6 @@ function renderProfileLinks(user) {
 
     const container =
         $("profileLinks");
-
 
     if (!container) {
         return;
@@ -561,51 +692,43 @@ function renderProfileLinks(user) {
 
     if (!links.length) {
 
-        hide(container);
+        container.hidden = true;
 
         return;
 
     }
 
 
-    links.forEach(
-        (link) => {
+    for (const link of links) {
 
-            const anchor =
-                document.createElement("a");
+        const anchor =
+            document.createElement("a");
 
+        anchor.className =
+            "profile-link";
 
-            anchor.className =
-                "profile-link";
-
-
-            anchor.href =
-                normalizeUrl(
-                    link.url
-                );
-
-
-            anchor.target =
-                "_blank";
-
-
-            anchor.rel =
-                "noopener noreferrer";
-
-
-            anchor.textContent =
-                link.label;
-
-
-            container.appendChild(
-                anchor
+        anchor.href =
+            normalizeUrl(
+                link.url
             );
 
-        }
-    );
+        anchor.target =
+            "_blank";
+
+        anchor.rel =
+            "noopener noreferrer";
+
+        anchor.textContent =
+            link.label;
+
+        container.appendChild(
+            anchor
+        );
+
+    }
 
 
-    show(container);
+    container.hidden = false;
 
 }
 
@@ -613,13 +736,12 @@ function renderProfileLinks(user) {
 function normalizeUrl(url) {
 
     const value =
-        safeText(url).trim();
-
+        safeText(url)
+            .trim();
 
     if (!value) {
         return "#";
     }
-
 
     if (
         /^https?:\/\//i.test(value)
@@ -629,9 +751,7 @@ function normalizeUrl(url) {
 
     }
 
-
     return `https://${value}`;
-
 }
 
 
@@ -644,7 +764,6 @@ function setupHeader() {
     const addButton =
         $("profileAddButton");
 
-
     if (!addButton) {
         return;
     }
@@ -654,8 +773,12 @@ function setupHeader() {
         "click",
         () => {
 
+            /*
+             * आगे Create menu यहां connect होगा.
+             */
+
             console.log(
-                "Usanex create button"
+                "Usanex Create"
             );
 
         }
@@ -696,6 +819,22 @@ function setupMenu() {
     );
 
 
+    menu.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target === menu
+            ) {
+
+                hide(menu);
+
+            }
+
+        }
+    );
+
+
     document.addEventListener(
         "click",
         (event) => {
@@ -720,7 +859,6 @@ function setupMenu() {
     const editButton =
         $("editProfileButton");
 
-
     if (editButton) {
 
         editButton.addEventListener(
@@ -737,131 +875,52 @@ function setupMenu() {
     }
 
 
-    const privacyButton =
-        $("privacyButton");
+    const simpleButtons = {
+
+        privacyButton:
+            "Privacy settings will be available here.",
+
+        securityButton:
+            "Security settings will be available here.",
+
+        blockedUsersButton:
+            "Blocked users will be available here.",
+
+        accountButton:
+            "Account settings will be available here.",
+
+        helpButton:
+            "Help will be available here.",
+
+        aboutButton:
+            "Usanex"
+
+    };
 
 
-    if (privacyButton) {
+    for (
+        const [id, message] of
+        Object.entries(simpleButtons)
+    ) {
 
-        privacyButton.addEventListener(
+        const button = $(id);
+
+        if (!button) {
+            continue;
+        }
+
+
+        button.addEventListener(
             "click",
             () => {
 
                 hide(menu);
 
-                alert(
-                    "Privacy settings will be available here."
-                );
-
-            }
-        );
-
-    }
-
-
-    const securityButton =
-        $("securityButton");
-
-
-    if (securityButton) {
-
-        securityButton.addEventListener(
-            "click",
-            () => {
-
-                hide(menu);
-
-                alert(
-                    "Security settings will be available here."
-                );
-
-            }
-        );
-
-    }
-
-
-    const blockedUsersButton =
-        $("blockedUsersButton");
-
-
-    if (blockedUsersButton) {
-
-        blockedUsersButton.addEventListener(
-            "click",
-            () => {
-
-                hide(menu);
-
-                alert(
-                    "Blocked users will be available here."
-                );
-
-            }
-        );
-
-    }
-
-
-    const accountButton =
-        $("accountButton");
-
-
-    if (accountButton) {
-
-        accountButton.addEventListener(
-            "click",
-            () => {
-
-                hide(menu);
-
-                alert(
-                    "Account settings will be available here."
-                );
-
-            }
-        );
-
-    }
-
-
-    const helpButton =
-        $("helpButton");
-
-
-    if (helpButton) {
-
-        helpButton.addEventListener(
-            "click",
-            () => {
-
-                hide(menu);
-
-                alert(
-                    "Help will be available here."
-                );
-
-            }
-        );
-
-    }
-
-
-    const aboutButton =
-        $("aboutButton");
-
-
-    if (aboutButton) {
-
-        aboutButton.addEventListener(
-            "click",
-            () => {
-
-                hide(menu);
-
-                alert(
-                    "Usanex"
-                );
+                /*
+                 * Temporary until respective pages
+                 * are connected.
+                 */
+                alert(message);
 
             }
         );
@@ -871,7 +930,6 @@ function setupMenu() {
 
     const logoutButton =
         $("logoutButton");
-
 
     if (logoutButton) {
 
@@ -892,7 +950,7 @@ function setupMenu() {
 
 
 /* =========================================================
-   PROFILE PHOTO VIEWER
+   PHOTO VIEWER
 ========================================================= */
 
 function setupPhotoViewer() {
@@ -925,21 +983,18 @@ function setupPhotoViewer() {
         "click",
         () => {
 
-            const photo =
-                $("profilePhoto")?.src;
+            const profilePhoto =
+                $("profilePhoto");
 
-
-            if (!photo) {
+            if (!profilePhoto?.src) {
                 return;
             }
 
 
             viewerPhoto.src =
-                photo;
-
+                profilePhoto.src;
 
             show(viewer);
-
 
             document.body.style.overflow =
                 "hidden";
@@ -997,14 +1052,12 @@ function closePhotoViewer() {
     const viewer =
         $("profilePhotoViewer");
 
-
     if (!viewer) {
         return;
     }
 
 
     hide(viewer);
-
 
     document.body.style.overflow =
         "";
@@ -1021,7 +1074,6 @@ function setupEditProfile() {
     const closeButton =
         $("closeEditProfile");
 
-
     if (closeButton) {
 
         closeButton.addEventListener(
@@ -1034,7 +1086,6 @@ function setupEditProfile() {
 
     const modal =
         $("editProfileModal");
-
 
     if (modal) {
 
@@ -1089,7 +1140,6 @@ function setupEditProfile() {
     const saveButton =
         $("saveProfileButton");
 
-
     if (saveButton) {
 
         saveButton.addEventListener(
@@ -1105,7 +1155,9 @@ function setupEditProfile() {
         (event) => {
 
             if (
-                event.key === "Escape"
+                event.key === "Escape" &&
+                modal &&
+                !modal.classList.contains("hidden")
             ) {
 
                 closeEditProfile();
@@ -1119,14 +1171,13 @@ function setupEditProfile() {
 
 
 /* =========================================================
-   OPEN EDIT PROFILE
+   OPEN EDIT
 ========================================================= */
 
 function openEditProfile() {
 
     const modal =
         $("editProfileModal");
-
 
     if (!modal) {
         return;
@@ -1137,65 +1188,52 @@ function openEditProfile() {
         profileState.user || {};
 
 
-    if ($("editName")) {
+    const fields = {
 
-        $("editName").value =
-            safeText(user.name);
+        editName:
+            safeText(user.name),
 
-    }
+        editUsername:
+            safeText(user.username),
 
+        editUserId:
+            safeText(user.user_id),
 
-    if ($("editUsername")) {
+        editBio:
+            safeText(user.bio),
 
-        $("editUsername").value =
-            safeText(user.username);
+        editWebsite:
+            safeText(user.website),
 
-    }
+        editInstagram:
+            safeText(user.instagram),
 
+        editSocialLink:
+            safeText(user.social_link)
 
-    if ($("editUserId")) {
-
-        $("editUserId").value =
-            safeText(user.user_id);
-
-    }
-
-
-    if ($("editBio")) {
-
-        $("editBio").value =
-            safeText(user.bio);
-
-    }
+    };
 
 
-    if ($("editWebsite")) {
+    for (
+        const [id, value] of
+        Object.entries(fields)
+    ) {
 
-        $("editWebsite").value =
-            safeText(user.website);
+        const element = $(id);
 
-    }
-
-
-    if ($("editInstagram")) {
-
-        $("editInstagram").value =
-            safeText(user.instagram);
+        if (element) {
+            element.value = value;
+        }
 
     }
 
 
-    if ($("editSocialLink")) {
+    const preview =
+        $("editProfilePhotoPreview");
 
-        $("editSocialLink").value =
-            safeText(user.social_link);
+    if (preview) {
 
-    }
-
-
-    if ($("editProfilePhotoPreview")) {
-
-        $("editProfilePhotoPreview").src =
+        preview.src =
             getPhotoUrl(
                 user.profile_photo
             );
@@ -1203,25 +1241,36 @@ function openEditProfile() {
     }
 
 
-    if ($("editProfileMessage")) {
+    const input =
+        $("profilePhotoInput");
 
-        $("editProfileMessage").textContent =
-            "";
-
+    if (input) {
+        input.value = "";
     }
 
 
-    show(modal);
+    setEditMessage("");
 
+    show(modal);
 
     document.body.style.overflow =
         "hidden";
+
+
+    /*
+     * Focus name automatically.
+     */
+    requestAnimationFrame(() => {
+
+        $("editName")?.focus();
+
+    });
 
 }
 
 
 /* =========================================================
-   CLOSE EDIT PROFILE
+   CLOSE EDIT
 ========================================================= */
 
 function closeEditProfile() {
@@ -1229,14 +1278,12 @@ function closeEditProfile() {
     const modal =
         $("editProfileModal");
 
-
     if (!modal) {
         return;
     }
 
 
     hide(modal);
-
 
     document.body.style.overflow =
         "";
@@ -1253,7 +1300,6 @@ function handleProfilePhotoSelection(event) {
     const file =
         event.target.files?.[0];
 
-
     if (!file) {
         return;
     }
@@ -1263,14 +1309,11 @@ function handleProfilePhotoSelection(event) {
         !file.type.startsWith("image/")
     ) {
 
-        alert(
+        setEditMessage(
             "Please select an image file."
         );
 
-
-        event.target.value =
-            "";
-
+        event.target.value = "";
 
         return;
 
@@ -1283,14 +1326,11 @@ function handleProfilePhotoSelection(event) {
 
     if (file.size > maxSize) {
 
-        alert(
+        setEditMessage(
             "Profile photo must be 10 MB or smaller."
         );
 
-
-        event.target.value =
-            "";
-
+        event.target.value = "";
 
         return;
 
@@ -1299,7 +1339,6 @@ function handleProfilePhotoSelection(event) {
 
     const preview =
         $("editProfilePhotoPreview");
-
 
     if (!preview) {
         return;
@@ -1314,13 +1353,14 @@ function handleProfilePhotoSelection(event) {
         objectUrl;
 
 
-    preview.onload = () => {
+    preview.onload =
+        () => {
 
-        URL.revokeObjectURL(
-            objectUrl
-        );
+            URL.revokeObjectURL(
+                objectUrl
+            );
 
-    };
+        };
 
 }
 
@@ -1330,6 +1370,11 @@ function handleProfilePhotoSelection(event) {
 ========================================================= */
 
 async function saveProfile() {
+
+    if (profileState.saving) {
+        return;
+    }
+
 
     const saveButton =
         $("saveProfileButton");
@@ -1365,8 +1410,13 @@ async function saveProfile() {
 
 
     const selectedPhoto =
-        photoInput?.files?.[0] || null;
+        photoInput?.files?.[0] ||
+        null;
 
+
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
 
     if (!name) {
 
@@ -1401,6 +1451,9 @@ async function saveProfile() {
     }
 
 
+    profileState.saving = true;
+
+
     if (saveButton) {
 
         saveButton.disabled =
@@ -1417,12 +1470,13 @@ async function saveProfile() {
 
     try {
 
-        /* =================================================
-           SAVE TEXT PROFILE
-        ================================================= */
+        /*
+         * Text profile + photo upload
+         * दोनों independent हैं, इसलिए parallel.
+         */
 
-        const profileResponse =
-            await fetch(
+        const textRequest =
+            fetch(
                 "/api/profile/me",
                 {
                     method: "PUT",
@@ -1439,13 +1493,13 @@ async function saveProfile() {
 
                     body: JSON.stringify({
 
-                        name: name,
+                        name,
 
-                        bio: bio,
+                        bio,
 
-                        website: website,
+                        website,
 
-                        instagram: instagram,
+                        instagram,
 
                         social_link:
                             socialLink
@@ -1456,8 +1510,52 @@ async function saveProfile() {
             );
 
 
+        let photoRequest =
+            null;
+
+
+        if (selectedPhoto) {
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                "photo",
+                selectedPhoto
+            );
+
+
+            photoRequest =
+                fetch(
+                    "/api/profile/me/photo",
+                    {
+                        method: "POST",
+
+                        credentials: "include",
+
+                        body: formData
+                    }
+                );
+
+        }
+
+
+        const [
+            profileResponse,
+            photoResponse
+        ] = await Promise.all([
+            textRequest,
+            photoRequest
+        ]);
+
+
+        /* =================================================
+           TEXT RESPONSE
+        ================================================= */
+
         if (
-            profileResponse.status === 401
+            profileResponse.status === 401 ||
+            photoResponse?.status === 401
         ) {
 
             window.location.href =
@@ -1475,7 +1573,6 @@ async function saveProfile() {
                     .json()
                     .catch(() => null);
 
-
             throw new Error(
                 errorData?.detail ||
                 "Unable to save profile."
@@ -1488,55 +1585,26 @@ async function saveProfile() {
             await profileResponse.json();
 
 
-        profileState.user = {
+        if (
+            profileData?.user
+        ) {
 
-            ...profileState.user,
+            profileState.user = {
 
-            ...(profileData.user || {})
+                ...profileState.user,
 
-        };
+                ...profileData.user
+
+            };
+
+        }
 
 
         /* =================================================
-           UPLOAD PROFILE IMAGE
+           PHOTO RESPONSE
         ================================================= */
 
-        if (selectedPhoto) {
-
-            const formData =
-                new FormData();
-
-
-            formData.append(
-                "photo",
-                selectedPhoto
-            );
-
-
-            const photoResponse =
-                await fetch(
-                    "/api/profile/me/photo",
-                    {
-                        method: "POST",
-
-                        credentials: "include",
-
-                        body: formData
-                    }
-                );
-
-
-            if (
-                photoResponse.status === 401
-            ) {
-
-                window.location.href =
-                    "/login";
-
-                return;
-
-            }
-
+        if (photoResponse) {
 
             if (!photoResponse.ok) {
 
@@ -1544,7 +1612,6 @@ async function saveProfile() {
                     await photoResponse
                         .json()
                         .catch(() => null);
-
 
                 throw new Error(
                     errorData?.detail ||
@@ -1559,8 +1626,7 @@ async function saveProfile() {
 
 
             if (
-                photoData &&
-                photoData.success
+                photoData?.success
             ) {
 
                 profileState.user = {
@@ -1571,21 +1637,31 @@ async function saveProfile() {
 
                     profile_photo:
                         photoData.profile_photo ||
+                        photoData.user?.profile_photo ||
                         profileState.user.profile_photo
 
                 };
 
             }
 
-
-            photoInput.value = "";
-
         }
 
+
+        /*
+         * तुरंत UI update.
+         */
 
         renderProfile(
             profileState.user
         );
+
+
+        saveProfileCache();
+
+
+        if (photoInput) {
+            photoInput.value = "";
+        }
 
 
         setEditMessage(
@@ -1593,13 +1669,13 @@ async function saveProfile() {
         );
 
 
+        /*
+         * थोड़ा delay ताकि success message दिखे.
+         */
+
         setTimeout(
-            () => {
-
-                closeEditProfile();
-
-            },
-            700
+            closeEditProfile,
+            650
         );
 
 
@@ -1618,6 +1694,10 @@ async function saveProfile() {
 
 
     } finally {
+
+        profileState.saving =
+            false;
+
 
         if (saveButton) {
 
@@ -1639,7 +1719,6 @@ function setEditMessage(message) {
     const element =
         $("editProfileMessage");
 
-
     if (element) {
 
         element.textContent =
@@ -1651,7 +1730,7 @@ function setEditMessage(message) {
 
 
 /* =========================================================
-   CONTENT TABS
+   TABS
 ========================================================= */
 
 function setupTabs() {
@@ -1672,11 +1751,9 @@ function setupTabs() {
                     const tabName =
                         tab.dataset.tab;
 
-
                     if (!tabName) {
                         return;
                     }
-
 
                     setActiveTab(
                         tabName
@@ -1702,7 +1779,19 @@ function setActiveTab(tabName) {
 
 
     if (
-        !validTabs.includes(tabName)
+        !validTabs.includes(
+            tabName
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        profileState.activeTab ===
+        tabName
     ) {
 
         return;
@@ -1737,14 +1826,13 @@ function setActiveTab(tabName) {
 
 
 /* =========================================================
-   RENDER ACTIVE CONTENT
+   CONTENT
 ========================================================= */
 
 function renderActiveTab() {
 
     const container =
         $("profileContentContainer");
-
 
     if (!container) {
         return;
@@ -1757,8 +1845,11 @@ function renderActiveTab() {
         ] || [];
 
 
-    container.innerHTML =
-        "";
+    /*
+     * DocumentFragment = fewer DOM paints.
+     */
+    const fragment =
+        document.createDocumentFragment();
 
 
     if (!items.length) {
@@ -1768,42 +1859,41 @@ function renderActiveTab() {
                 "div"
             );
 
-
         empty.className =
             "empty-content";
-
 
         empty.textContent =
             getEmptyMessage(
                 profileState.activeTab
             );
 
-
-        container.appendChild(
+        fragment.appendChild(
             empty
         );
 
 
-        return;
+    } else {
 
-    }
+        for (const item of items) {
 
-
-    items.forEach(
-        (item) => {
-
-            container.appendChild(
+            fragment.appendChild(
                 createContentCard(item)
             );
 
         }
+
+    }
+
+
+    container.replaceChildren(
+        fragment
     );
 
 }
 
 
 /* =========================================================
-   EMPTY MESSAGES
+   EMPTY
 ========================================================= */
 
 function getEmptyMessage(tab) {
@@ -1866,10 +1956,6 @@ function createContentCard(item) {
         );
 
 
-    /* =====================================================
-       VIDEO
-    ===================================================== */
-
     if (
         mediaType === "video" ||
         mediaType === "reel"
@@ -1884,17 +1970,19 @@ function createContentCard(item) {
         video.src =
             mediaUrl;
 
-
         video.muted =
             true;
-
 
         video.playsInline =
             true;
 
-
         video.preload =
             "metadata";
+
+        video.setAttribute(
+            "aria-label",
+            "Usanex reel"
+        );
 
 
         card.appendChild(
@@ -1902,14 +1990,7 @@ function createContentCard(item) {
         );
 
 
-    }
-
-
-    /* =====================================================
-       IMAGE
-    ===================================================== */
-
-    else if (
+    } else if (
         mediaType === "image" ||
         mediaType === "photo"
     ) {
@@ -1923,13 +2004,14 @@ function createContentCard(item) {
         image.src =
             mediaUrl;
 
-
         image.alt =
-            "Usanex image";
-
+            "Usanex post";
 
         image.loading =
             "lazy";
+
+        image.decoding =
+            "async";
 
 
         card.appendChild(
@@ -1937,14 +2019,7 @@ function createContentCard(item) {
         );
 
 
-    }
-
-
-    /* =====================================================
-       TEXT / UNKNOWN
-    ===================================================== */
-
-    else {
+    } else {
 
         const placeholder =
             document.createElement(
@@ -1954,7 +2029,6 @@ function createContentCard(item) {
 
         placeholder.className =
             "content-text-preview";
-
 
         placeholder.textContent =
             safeText(
@@ -1969,10 +2043,6 @@ function createContentCard(item) {
 
     }
 
-
-    /* =====================================================
-       VIEW COUNT
-    ===================================================== */
 
     const overlay =
         document.createElement(
@@ -2019,94 +2089,58 @@ function createContentCard(item) {
 
 function setupBottomNavigation() {
 
-    const home =
-        $("navHome");
+    const routes = {
+
+        navHome:
+            "/home",
+
+        navReels:
+            "/reels",
+
+        navSearch:
+            "/search",
+
+        navNotifications:
+            "/notifications",
+
+        navProfile:
+            "/my-profile"
+
+    };
 
 
-    const reels =
-        $("navReels");
+    for (
+        const [id, url] of
+        Object.entries(routes)
+    ) {
+
+        const element =
+            $(id);
+
+        if (!element) {
+            continue;
+        }
 
 
-    const search =
-        $("navSearch");
-
-
-    const notifications =
-        $("navNotifications");
-
-
-    const profile =
-        $("navProfile");
-
-
-    if (home) {
-
-        home.addEventListener(
+        element.addEventListener(
             "click",
             () => {
 
-                window.location.href =
-                    "/home";
+                /*
+                 * Current page पर दोबारा reload नहीं.
+                 */
+                if (
+                    window.location.pathname ===
+                    url
+                ) {
 
-            }
-        );
+                    return;
 
-    }
+                }
 
-
-    if (reels) {
-
-        reels.addEventListener(
-            "click",
-            () => {
 
                 window.location.href =
-                    "/reels";
-
-            }
-        );
-
-    }
-
-
-    if (search) {
-
-        search.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/search";
-
-            }
-        );
-
-    }
-
-
-    if (notifications) {
-
-        notifications.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/notifications";
-
-            }
-        );
-
-    }
-
-
-    if (profile) {
-
-        profile.addEventListener(
-            "click",
-            () => {
-
-                window.location.href =
-                    "/my-profile";
+                    url;
 
             }
         );
@@ -2158,6 +2192,15 @@ async function logout() {
 
     } finally {
 
+        try {
+
+            localStorage.removeItem(
+                CACHE_KEY
+            );
+
+        } catch (_) {}
+
+
         window.location.href =
             "/login";
 
@@ -2167,7 +2210,7 @@ async function logout() {
 
 
 /* =========================================================
-   PROFILE ERROR
+   ERROR
 ========================================================= */
 
 function renderProfileError(message) {
@@ -2175,14 +2218,12 @@ function renderProfileError(message) {
     const container =
         $("profileContentContainer");
 
-
     if (!container) {
         return;
     }
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
     const error =
