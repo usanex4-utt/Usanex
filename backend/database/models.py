@@ -13,9 +13,18 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    CheckConstraint,
 )
 
 from .database import Base
+
+
+# =========================================================
+# COMMON
+# =========================================================
+
+def utcnow():
+    return datetime.utcnow()
 
 
 # =========================================================
@@ -59,7 +68,7 @@ class User(Base):
     )
 
     profile_photo = Column(
-        String(500),
+        String(1000),
         nullable=True,
     )
 
@@ -81,6 +90,39 @@ class User(Base):
     social_link = Column(
         String(500),
         nullable=True,
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False,
+        default=utcnow,
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
+    )
+
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+
+    is_verified = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_users_name",
+            "name",
+        ),
     )
 
 
@@ -106,11 +148,13 @@ class OTPVerification(Base):
 
     purpose = Column(
         String(30),
+        index=True,
         nullable=False,
     )
 
     expires_at = Column(
         DateTime,
+        index=True,
         nullable=False,
     )
 
@@ -118,6 +162,27 @@ class OTPVerification(Base):
         Integer,
         default=0,
         nullable=False,
+    )
+
+    is_used = Column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime,
+        index=True,
+        nullable=False,
+        default=utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_otp_identifier_purpose",
+            "identifier",
+            "purpose",
+        ),
     )
 
 
@@ -145,12 +210,26 @@ class UserSession(Base):
 
     expires_at = Column(
         DateTime,
+        index=True,
         nullable=False,
     )
 
     created_at = Column(
         DateTime,
+        index=True,
         nullable=False,
+        default=utcnow,
+    )
+
+    last_used_at = Column(
+        DateTime,
+        nullable=True,
+    )
+
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True,
     )
 
 
@@ -184,15 +263,23 @@ class ConnectionRequest(Base):
 
     created_at = Column(
         DateTime,
+        index=True,
         nullable=False,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "sender_id <> receiver_id",
+            name="ck_connection_request_different_users",
+        ),
         Index(
             "ix_connection_request_sender_status",
             "sender_id",
@@ -240,6 +327,7 @@ class ConnectionVerification(Base):
 
     expires_at = Column(
         DateTime,
+        index=True,
         nullable=False,
     )
 
@@ -258,7 +346,9 @@ class ConnectionVerification(Base):
 
     created_at = Column(
         DateTime,
+        index=True,
         nullable=False,
+        default=utcnow,
     )
 
     verified_at = Column(
@@ -321,6 +411,7 @@ class ConnectionNotification(Base):
         DateTime,
         index=True,
         nullable=False,
+        default=utcnow,
     )
 
 
@@ -354,15 +445,23 @@ class UserConnection(Base):
 
     created_at = Column(
         DateTime,
+        index=True,
         nullable=False,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "user_one_id <> user_two_id",
+            name="ck_connection_different_users",
+        ),
         UniqueConstraint(
             "user_one_id",
             "user_two_id",
@@ -412,14 +511,21 @@ class UserConnectionCategory(Base):
     created_at = Column(
         DateTime,
         nullable=False,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "user_id <> connected_user_id",
+            name="ck_category_different_users",
+        ),
         UniqueConstraint(
             "user_id",
             "connected_user_id",
@@ -453,9 +559,14 @@ class UserFollow(Base):
         DateTime,
         index=True,
         nullable=False,
+        default=utcnow,
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "follower_id <> following_id",
+            name="ck_follow_different_users",
+        ),
         UniqueConstraint(
             "follower_id",
             "following_id",
@@ -495,19 +606,35 @@ class Post(Base):
     )
 
     media_url = Column(
-        String(500),
+        String(1000),
         nullable=True,
     )
 
     media_type = Column(
         String(30),
         nullable=False,
+        default="text",
+    )
+
+    visibility = Column(
+        String(30),
+        index=True,
+        nullable=False,
+        default="public",
     )
 
     created_at = Column(
         DateTime,
         index=True,
         nullable=False,
+        default=utcnow,
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -520,14 +647,7 @@ class Post(Base):
 
 
 # =========================================================
-# =========================================================
-# REELS SYSTEM
-# =========================================================
-# =========================================================
-
-
-# =========================================================
-# REEL
+# REELS
 # =========================================================
 
 class Reel(Base):
@@ -539,28 +659,17 @@ class Reel(Base):
         index=True,
     )
 
-    # -----------------------------------------------------
-    # CREATOR
-    # -----------------------------------------------------
-
     user_id = Column(
         Integer,
         index=True,
         nullable=False,
     )
 
-    # -----------------------------------------------------
-    # CLOUDINARY VIDEO
-    # -----------------------------------------------------
-
     video_url = Column(
         String(1000),
         nullable=False,
     )
 
-    # IMPORTANT:
-    # Cloudinary public_id is required for future delete,
-    # replace and asset management.
     cloudinary_public_id = Column(
         String(500),
         unique=True,
@@ -579,16 +688,10 @@ class Reel(Base):
         default=0,
     )
 
-    # IMPORTANT:
-    # BigInteger supports files larger than 2 GB.
     file_size = Column(
         BigInteger,
         nullable=True,
     )
-
-    # -----------------------------------------------------
-    # CONTENT
-    # -----------------------------------------------------
 
     caption = Column(
         Text,
@@ -626,9 +729,9 @@ class Reel(Base):
         default="published",
     )
 
-    # -----------------------------------------------------
-    # BASIC ANALYTICS
-    # -----------------------------------------------------
+    # -----------------------------
+    # ANALYTICS
+    # -----------------------------
 
     views_count = Column(
         BigInteger,
@@ -678,9 +781,9 @@ class Reel(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
-    # 3 STAR SYSTEM
-    # -----------------------------------------------------
+    # -----------------------------
+    # STAR SYSTEM
+    # -----------------------------
 
     one_star_count = Column(
         BigInteger,
@@ -700,9 +803,9 @@ class Reel(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
+    # -----------------------------
     # INTEREST
-    # -----------------------------------------------------
+    # -----------------------------
 
     interested_count = Column(
         BigInteger,
@@ -716,9 +819,9 @@ class Reel(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
-    # AI PROCESSING
-    # -----------------------------------------------------
+    # -----------------------------
+    # AI
+    # -----------------------------
 
     ai_processed = Column(
         Boolean,
@@ -750,22 +853,22 @@ class Reel(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
+    # -----------------------------
     # TIMESTAMPS
-    # -----------------------------------------------------
+    # -----------------------------
 
     created_at = Column(
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -844,10 +947,6 @@ class ReelAIFeature(Base):
         nullable=True,
     )
 
-    # -----------------------------------------------------
-    # SPEECH / AUDIO
-    # -----------------------------------------------------
-
     transcript = Column(
         Text,
         nullable=True,
@@ -868,10 +967,6 @@ class ReelAIFeature(Base):
         nullable=True,
     )
 
-    # -----------------------------------------------------
-    # ML / EMBEDDING
-    # -----------------------------------------------------
-
     embedding_reference = Column(
         Text,
         nullable=True,
@@ -886,10 +981,6 @@ class ReelAIFeature(Base):
         String(100),
         nullable=True,
     )
-
-    # -----------------------------------------------------
-    # QUALITY / SAFETY
-    # -----------------------------------------------------
 
     content_quality_score = Column(
         Float,
@@ -914,14 +1005,14 @@ class ReelAIFeature(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
 
@@ -956,10 +1047,6 @@ class ReelInteraction(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
-    # SESSION
-    # -----------------------------------------------------
-
     session_id = Column(
         String(100),
         index=True,
@@ -976,35 +1063,11 @@ class ReelInteraction(Base):
         nullable=True,
     )
 
-    # -----------------------------------------------------
-    # EVENT
-    # -----------------------------------------------------
-
     event_type = Column(
         String(50),
         index=True,
         nullable=False,
     )
-
-    # impression
-    # play
-    # pause
-    # complete
-    # replay
-    # star
-    # save
-    # download
-    # share
-    # comment
-    # interested
-    # not_interested
-    # mute
-    # unmute
-    # skip
-
-    # -----------------------------------------------------
-    # WATCH BEHAVIOUR
-    # -----------------------------------------------------
 
     watch_time = Column(
         Float,
@@ -1036,19 +1099,11 @@ class ReelInteraction(Base):
         nullable=False,
     )
 
-    # -----------------------------------------------------
-    # RATING
-    # -----------------------------------------------------
-
     star_rating = Column(
         Integer,
         default=0,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # ACTION SIGNALS
-    # -----------------------------------------------------
 
     interested = Column(
         Boolean,
@@ -1096,14 +1151,14 @@ class ReelInteraction(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -1163,14 +1218,14 @@ class ReelRating(Base):
     created_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     updated_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -1178,6 +1233,10 @@ class ReelRating(Base):
             "user_id",
             "reel_id",
             name="uq_reel_rating_user_reel",
+        ),
+        CheckConstraint(
+            "rating >= 1 AND rating <= 3",
+            name="ck_reel_rating_1_3",
         ),
     )
 
@@ -1189,11 +1248,7 @@ class ReelRating(Base):
 class ReelSave(Base):
     __tablename__ = "reel_saves"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1211,7 +1266,7 @@ class ReelSave(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     __table_args__ = (
@@ -1235,11 +1290,7 @@ class ReelSave(Base):
 class ReelDownload(Base):
     __tablename__ = "reel_downloads"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1257,13 +1308,18 @@ class ReelDownload(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     __table_args__ = (
         Index(
             "ix_reel_downloads_reel_created",
             "reel_id",
+            "created_at",
+        ),
+        Index(
+            "ix_reel_downloads_user_created",
+            "user_id",
             "created_at",
         ),
     )
@@ -1276,11 +1332,7 @@ class ReelDownload(Base):
 class ReelShare(Base):
     __tablename__ = "reel_shares"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1303,7 +1355,7 @@ class ReelShare(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     __table_args__ = (
@@ -1322,11 +1374,7 @@ class ReelShare(Base):
 class ReelComment(Base):
     __tablename__ = "reel_comments"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1355,7 +1403,14 @@ class ReelComment(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -1374,11 +1429,7 @@ class ReelComment(Base):
 class ReelReport(Base):
     __tablename__ = "reel_reports"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1406,7 +1457,15 @@ class ReelReport(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_reel_reports_reel_created",
+            "reel_id",
+            "created_at",
+        ),
     )
 
 
@@ -1417,11 +1476,7 @@ class ReelReport(Base):
 class UserReelInterest(Base):
     __tablename__ = "user_reel_interests"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1441,10 +1496,6 @@ class UserReelInterest(Base):
         nullable=True,
     )
 
-    # -----------------------------------------------------
-    # ML SCORES
-    # -----------------------------------------------------
-
     interest_score = Column(
         Float,
         default=0,
@@ -1462,10 +1513,6 @@ class UserReelInterest(Base):
         default=0,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # BEHAVIOUR
-    # -----------------------------------------------------
 
     videos_seen = Column(
         Integer,
@@ -1537,8 +1584,8 @@ class UserReelInterest(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -1563,11 +1610,7 @@ class UserReelInterest(Base):
 class UserReelHistory(Base):
     __tablename__ = "user_reel_history"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1584,13 +1627,14 @@ class UserReelHistory(Base):
     first_seen_at = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     last_seen_at = Column(
         DateTime,
+        index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     times_seen = Column(
@@ -1644,11 +1688,7 @@ class UserReelHistory(Base):
 class UserInterestProfile(Base):
     __tablename__ = "user_interest_profiles"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1709,8 +1749,8 @@ class UserInterestProfile(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
 
@@ -1721,11 +1761,7 @@ class UserInterestProfile(Base):
 class ReelRecommendationLog(Base):
     __tablename__ = "reel_recommendation_logs"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     user_id = Column(
         Integer,
@@ -1805,7 +1841,7 @@ class ReelRecommendationLog(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
     )
 
     __table_args__ = (
@@ -1829,11 +1865,7 @@ class ReelRecommendationLog(Base):
 class ReelAnalytics(Base):
     __tablename__ = "reel_analytics"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     reel_id = Column(
         Integer,
@@ -1936,26 +1968,19 @@ class ReelAnalytics(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
 
 # =========================================================
-# AREA ANALYTICS
-# =========================================================
-# Only broad aggregate location is stored.
-# Exact GPS/address is NOT stored here.
+# REEL AREA ANALYTICS
 # =========================================================
 
 class ReelAreaAnalytics(Base):
     __tablename__ = "reel_area_analytics"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
+    id = Column(Integer, primary_key=True, index=True)
 
     reel_id = Column(
         Integer,
@@ -2063,8 +2088,8 @@ class ReelAreaAnalytics(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
@@ -2115,7 +2140,7 @@ class ChatMessage(Base):
     )
 
     media_url = Column(
-        String(500),
+        String(1000),
         nullable=True,
     )
 
@@ -2140,10 +2165,21 @@ class ChatMessage(Base):
         DateTime,
         index=True,
         nullable=False,
-        default=datetime.utcnow,
+        default=utcnow,
+    )
+
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=utcnow,
+        onupdate=utcnow,
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "sender_id <> receiver_id",
+            name="ck_chat_different_users",
+        ),
         Index(
             "ix_chat_sender_receiver_created",
             "sender_id",
