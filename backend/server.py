@@ -1,11 +1,21 @@
+# =========================================================
+# USANEX — MAIN SERVER
+# backend/server.py
+# =========================================================
+
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 from .database.database import Base, engine
+
+# Models import — tables register karne ke liye
 from .database import models  # noqa: F401
+
+# Migration
 from .database.migrate import run_migrations
 
 
@@ -38,28 +48,33 @@ app.add_middleware(
 # =========================================================
 
 # server.py:
-# Usanex/backend/server.py
-#
-# parent      = Usanex/backend
-# parent.parent = Usanex
+# project/
+# ├── backend/
+# │   └── server.py
+# └── frontend/
+#     ├── templates/
+#     └── static/
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BACKEND_DIR.parent
+
+FRONTEND_DIR = PROJECT_DIR / "frontend"
+
+STATIC_DIR = FRONTEND_DIR / "static"
 
 
 # =========================================================
 # DATABASE
 # =========================================================
 
-print("[Usanex] Creating missing database tables...")
-
 try:
     Base.metadata.create_all(bind=engine)
 
-    print("[Usanex] Database tables ready.")
+    print("[Usanex] Database tables checked.")
 
 except Exception as e:
     print(
-        "[Usanex] Database table creation ERROR:",
+        "[Usanex Database] ERROR:",
         str(e),
     )
 
@@ -69,11 +84,9 @@ except Exception as e:
 # =========================================================
 
 try:
-    print("[Usanex Migration] Starting migrations...")
-
     run_migrations()
 
-    print("[Usanex Migration] Completed successfully.")
+    print("[Usanex Migration] Completed.")
 
 except Exception as e:
     print(
@@ -83,34 +96,8 @@ except Exception as e:
 
 
 # =========================================================
-# FRONTEND STATIC FILES
+# STATIC FILES
 # =========================================================
-
-# Actual structure:
-#
-# Usanex/
-# ├── backend/
-# │   └── server.py
-# │
-# └── frontend/
-#     └── static/
-#         ├── css/
-#         │   └── register.css
-#         │
-#         └── js/
-#             └── register.js
-
-STATIC_DIR = (
-    PROJECT_DIR
-    / "frontend"
-    / "static"
-)
-
-
-print(
-    f"[Usanex] Static directory: {STATIC_DIR}"
-)
-
 
 if STATIC_DIR.exists():
 
@@ -123,34 +110,45 @@ if STATIC_DIR.exists():
     )
 
     print(
-        "[Usanex] Static files mounted successfully."
+        "[Usanex] Static files mounted:",
+        str(STATIC_DIR),
     )
 
 else:
 
     print(
-        "[Usanex] WARNING: Static directory NOT FOUND!"
-    )
-
-    print(
-        f"[Usanex] Expected path: {STATIC_DIR}"
+        "[Usanex] WARNING: Static directory not found:",
+        str(STATIC_DIR),
     )
 
 
 # =========================================================
-# ROOT / HEALTH
+# ROOT
 # =========================================================
 
-@app.get("/")
+@app.get(
+    "/",
+    include_in_schema=False,
+)
 def root():
 
-    return {
-        "app": "Usanex",
-        "status": "online",
-    }
+    # Website open hote hi Register page
+    # par redirect karega.
+
+    return RedirectResponse(
+        url="/register",
+        status_code=302,
+    )
 
 
-@app.get("/health")
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
+@app.get(
+    "/health",
+    include_in_schema=False,
+)
 def health():
 
     return {
@@ -164,7 +162,10 @@ def health():
 # DATABASE TEST
 # =========================================================
 
-@app.get("/api/database-test")
+@app.get(
+    "/api/database-test",
+    include_in_schema=False,
+)
 def database_test():
 
     try:
@@ -207,13 +208,13 @@ try:
     )
 
     print(
-        "[Usanex] Auth router loaded successfully."
+        "[Usanex] Auth routes loaded."
     )
 
 except Exception as e:
 
     print(
-        "[Usanex] Auth router ERROR:",
+        "[Usanex] Auth router not loaded:",
         str(e),
     )
 
@@ -231,12 +232,12 @@ try:
     )
 
     print(
-        "[Usanex] Pages router loaded successfully."
+        "[Usanex] Page routes loaded."
     )
 
 except Exception as e:
 
     print(
-        "[Usanex] Pages router ERROR:",
+        "[Usanex] Pages router not loaded:",
         str(e),
     )
