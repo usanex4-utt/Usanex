@@ -10,9 +10,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from pathlib import Path
 from uuid import uuid4
-import shutil
+import os
+
+import cloudinary
+import cloudinary.uploader
 
 from ..database.database import get_db
 from ..database.models import (
@@ -35,23 +37,45 @@ router = APIRouter(
 
 
 # =========================================================
-# PROFILE UPLOAD DIRECTORY
+# CLOUDINARY CONFIGURATION
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+# Existing Usanex Cloudinary configuration is reused.
+#
+# Supported:
+#
+# CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+#
+# OR:
+#
+# CLOUDINARY_CLOUD_NAME
+# CLOUDINARY_API_KEY
+# CLOUDINARY_API_SECRET
+# =========================================================
 
-UPLOAD_DIR = (
-    BASE_DIR
-    / "frontend"
-    / "static"
-    / "uploads"
-    / "profile"
-)
+cloudinary_url = os.getenv("CLOUDINARY_URL")
 
-UPLOAD_DIR.mkdir(
-    parents=True,
-    exist_ok=True,
-)
+if cloudinary_url:
+
+    cloudinary.config(
+        cloudinary_url=cloudinary_url,
+        secure=True,
+    )
+
+else:
+
+    cloudinary.config(
+        cloud_name=os.getenv(
+            "CLOUDINARY_CLOUD_NAME"
+        ),
+        api_key=os.getenv(
+            "CLOUDINARY_API_KEY"
+        ),
+        api_secret=os.getenv(
+            "CLOUDINARY_API_SECRET"
+        ),
+        secure=True,
+    )
 
 
 # =========================================================
@@ -59,14 +83,20 @@ UPLOAD_DIR.mkdir(
 # =========================================================
 
 ALLOWED_IMAGE_TYPES = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
-    "image/gif": ".gif",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
 }
 
 
-MAX_PROFILE_PHOTO_SIZE = 10 * 1024 * 1024
+# =========================================================
+# MAX PROFILE PHOTO SIZE
+# =========================================================
+
+MAX_PROFILE_PHOTO_SIZE = (
+    10 * 1024 * 1024
+)
 
 
 # =========================================================
@@ -192,12 +222,16 @@ def get_connected_user_ids(
         if row.user_one_id == user_id:
 
             if row.user_two_id != user_id:
-                connected_ids.add(row.user_two_id)
+                connected_ids.add(
+                    row.user_two_id
+                )
 
         elif row.user_two_id == user_id:
 
             if row.user_one_id != user_id:
-                connected_ids.add(row.user_one_id)
+                connected_ids.add(
+                    row.user_one_id
+                )
 
     return connected_ids
 
@@ -325,14 +359,19 @@ def build_profile_response(
         content.append(
             {
                 "id": post.id,
+
                 "content": post.content,
+
                 "media_url": post.media_url,
+
                 "media_type": post.media_type,
+
                 "views": getattr(
                     post,
                     "views",
                     0,
                 ) or 0,
+
                 "created_at": (
                     post.created_at.isoformat()
                     if post.created_at
@@ -346,26 +385,44 @@ def build_profile_response(
 
         "user": {
             "id": target_user.id,
+
             "user_id": target_user.user_id,
+
             "username": target_user.username,
+
             "name": target_user.name,
-            "profile_photo": target_user.profile_photo,
+
+            "profile_photo":
+                target_user.profile_photo,
+
             "bio": target_user.bio,
+
             "website": target_user.website,
+
             "instagram": target_user.instagram,
-            "social_link": target_user.social_link,
+
+            "social_link":
+                target_user.social_link,
         },
 
         "relationship": {
             "is_self": is_self,
+
             "is_connected": connected,
         },
 
         "stats": {
-            "followers": followers_count,
-            "connected": connected_count,
-            "following": following_count,
-            "posts": len(posts),
+            "followers":
+                followers_count,
+
+            "connected":
+                connected_count,
+
+            "following":
+                following_count,
+
+            "posts":
+                len(posts),
         },
 
         "content": content,
@@ -382,9 +439,11 @@ def get_my_profile(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
-        request=request,
-        db=db,
+    current_user = (
+        get_current_user_from_request(
+            request=request,
+            db=db,
+        )
     )
 
     if current_user is None:
@@ -413,9 +472,11 @@ def update_my_profile(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
-        request=request,
-        db=db,
+    current_user = (
+        get_current_user_from_request(
+            request=request,
+            db=db,
+        )
     )
 
     if current_user is None:
@@ -460,24 +521,43 @@ def update_my_profile(
 
     return {
         "success": True,
-        "message": "Profile updated successfully",
+
+        "message":
+            "Profile updated successfully",
 
         "user": {
             "id": current_user.id,
-            "user_id": current_user.user_id,
-            "username": current_user.username,
-            "name": current_user.name,
-            "profile_photo": current_user.profile_photo,
-            "bio": current_user.bio,
-            "website": current_user.website,
-            "instagram": current_user.instagram,
-            "social_link": current_user.social_link,
+
+            "user_id":
+                current_user.user_id,
+
+            "username":
+                current_user.username,
+
+            "name":
+                current_user.name,
+
+            "profile_photo":
+                current_user.profile_photo,
+
+            "bio":
+                current_user.bio,
+
+            "website":
+                current_user.website,
+
+            "instagram":
+                current_user.instagram,
+
+            "social_link":
+                current_user.social_link,
         },
     }
 
 
 # =========================================================
 # UPLOAD / CHANGE PROFILE PHOTO
+# CLOUDINARY VERSION
 # =========================================================
 
 @router.post("/me/photo")
@@ -491,9 +571,11 @@ async def upload_profile_photo(
     # CURRENT USER
     # =====================================================
 
-    current_user = get_current_user_from_request(
-        request=request,
-        db=db,
+    current_user = (
+        get_current_user_from_request(
+            request=request,
+            db=db,
+        )
     )
 
     if current_user is None:
@@ -547,64 +629,122 @@ async def upload_profile_photo(
 
         raise HTTPException(
             status_code=400,
-            detail="Profile photo must be 10 MB or smaller.",
+            detail=(
+                "Profile photo must be "
+                "10 MB or smaller."
+            ),
         )
 
 
     # =====================================================
-    # EXTENSION
+    # CHECK CLOUDINARY CONFIG
     # =====================================================
 
-    extension = ALLOWED_IMAGE_TYPES[
-        content_type
-    ]
+    cloud_name = os.getenv(
+        "CLOUDINARY_CLOUD_NAME"
+    )
+
+    api_key = os.getenv(
+        "CLOUDINARY_API_KEY"
+    )
+
+    api_secret = os.getenv(
+        "CLOUDINARY_API_SECRET"
+    )
+
+    cloudinary_url = os.getenv(
+        "CLOUDINARY_URL"
+    )
+
+
+    if not cloudinary_url and not (
+        cloud_name
+        and api_key
+        and api_secret
+    ):
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Cloudinary is not configured."
+            ),
+        )
 
 
     # =====================================================
-    # UNIQUE FILE NAME
+    # UNIQUE CLOUDINARY PUBLIC ID
     # =====================================================
 
-    filename = (
+    public_id = (
         f"user_{current_user.id}_"
         f"{uuid4().hex}"
-        f"{extension}"
-    )
-
-
-    file_path = (
-        UPLOAD_DIR /
-        filename
     )
 
 
     # =====================================================
-    # SAVE FILE
+    # UPLOAD TO CLOUDINARY
     # =====================================================
 
     try:
 
-        with open(
-            file_path,
-            "wb",
-        ) as file:
+        result = (
+            cloudinary.uploader.upload(
+                file_data,
 
-            file.write(file_data)
+                resource_type="image",
+
+                folder="usanex/profile",
+
+                public_id=public_id,
+
+                overwrite=False,
+
+                unique_filename=False,
+
+                use_filename=False,
+
+                invalidate=True,
+            )
+        )
 
     except Exception as error:
 
         print(
-            "Profile photo save error:",
+            "Cloudinary profile upload error:",
             error,
         )
 
         raise HTTPException(
             status_code=500,
-            detail="Unable to save profile photo.",
+            detail=(
+                "Unable to upload profile photo "
+                "to Cloudinary."
+            ),
         )
 
 
     # =====================================================
-    # DELETE OLD LOCAL PHOTO
+    # CLOUDINARY URL
+    # =====================================================
+
+    photo_url = (
+        result.get("secure_url")
+    )
+
+
+    if not photo_url:
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Cloudinary did not return "
+                "a photo URL."
+            ),
+        )
+
+
+    # =====================================================
+    # OLD CLOUDINARY PHOTO
     # =====================================================
 
     old_photo = (
@@ -613,48 +753,13 @@ async def upload_profile_photo(
     )
 
 
-    if old_photo.startswith(
-        "/static/uploads/profile/"
-    ):
-
-        old_filename = Path(
-            old_photo
-        ).name
-
-        old_file_path = (
-            UPLOAD_DIR /
-            old_filename
-        )
-
-        try:
-
-            if (
-                old_file_path.exists()
-                and
-                old_file_path != file_path
-            ):
-
-                old_file_path.unlink()
-
-        except Exception as error:
-
-            print(
-                "Old profile photo delete error:",
-                error,
-            )
-
-
     # =====================================================
-    # DATABASE URL
+    # SAVE NEW URL IN DATABASE
     # =====================================================
 
-    photo_url = (
-        "/static/uploads/profile/"
-        + filename
+    current_user.profile_photo = (
+        photo_url
     )
-
-
-    current_user.profile_photo = photo_url
 
     db.add(current_user)
 
@@ -670,16 +775,27 @@ async def upload_profile_photo(
     return {
         "success": True,
 
-        "message": "Profile photo updated successfully",
+        "message":
+            "Profile photo updated successfully",
 
-        "profile_photo": photo_url,
+        "profile_photo":
+            photo_url,
 
         "user": {
-            "id": current_user.id,
-            "user_id": current_user.user_id,
-            "username": current_user.username,
-            "name": current_user.name,
-            "profile_photo": current_user.profile_photo,
+            "id":
+                current_user.id,
+
+            "user_id":
+                current_user.user_id,
+
+            "username":
+                current_user.username,
+
+            "name":
+                current_user.name,
+
+            "profile_photo":
+                current_user.profile_photo,
         },
     }
 
@@ -695,9 +811,11 @@ def get_profile(
     db: Session = Depends(get_db),
 ):
 
-    current_user = get_current_user_from_request(
-        request=request,
-        db=db,
+    current_user = (
+        get_current_user_from_request(
+            request=request,
+            db=db,
+        )
     )
 
     if current_user is None:
