@@ -5,12 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .database.database import Base, engine
-
-# IMPORTANT:
-# Models import hone chahiye.
 from .database import models  # noqa: F401
-
-# Migration
 from .database.migrate import run_migrations
 
 
@@ -39,25 +34,46 @@ app.add_middleware(
 
 
 # =========================================================
+# PROJECT PATHS
+# =========================================================
+
+# server.py:
+# Usanex/backend/server.py
+#
+# parent      = Usanex/backend
+# parent.parent = Usanex
+
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+
+
+# =========================================================
 # DATABASE
 # =========================================================
 
-# ---------------------------------------------------------
-# STEP 1
-# Create completely new tables if they don't exist.
-# ---------------------------------------------------------
-
-Base.metadata.create_all(bind=engine)
-
-
-# ---------------------------------------------------------
-# STEP 2
-# Existing tables me jo columns missing hain,
-# unko safely add karo.
-# ---------------------------------------------------------
+print("[Usanex] Creating missing database tables...")
 
 try:
+    Base.metadata.create_all(bind=engine)
+
+    print("[Usanex] Database tables ready.")
+
+except Exception as e:
+    print(
+        "[Usanex] Database table creation ERROR:",
+        str(e),
+    )
+
+
+# =========================================================
+# DATABASE MIGRATIONS
+# =========================================================
+
+try:
+    print("[Usanex Migration] Starting migrations...")
+
     run_migrations()
+
+    print("[Usanex Migration] Completed successfully.")
 
 except Exception as e:
     print(
@@ -70,15 +86,34 @@ except Exception as e:
 # FRONTEND STATIC FILES
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parent
+# Actual structure:
+#
+# Usanex/
+# ├── backend/
+# │   └── server.py
+# │
+# └── frontend/
+#     └── static/
+#         ├── css/
+#         │   └── register.css
+#         │
+#         └── js/
+#             └── register.js
 
 STATIC_DIR = (
-    BASE_DIR
+    PROJECT_DIR
     / "frontend"
     / "static"
 )
 
+
+print(
+    f"[Usanex] Static directory: {STATIC_DIR}"
+)
+
+
 if STATIC_DIR.exists():
+
     app.mount(
         "/static",
         StaticFiles(
@@ -87,13 +122,28 @@ if STATIC_DIR.exists():
         name="static",
     )
 
+    print(
+        "[Usanex] Static files mounted successfully."
+    )
+
+else:
+
+    print(
+        "[Usanex] WARNING: Static directory NOT FOUND!"
+    )
+
+    print(
+        f"[Usanex] Expected path: {STATIC_DIR}"
+    )
+
 
 # =========================================================
-# HEALTH CHECK
+# ROOT / HEALTH
 # =========================================================
 
 @app.get("/")
 def root():
+
     return {
         "app": "Usanex",
         "status": "online",
@@ -102,6 +152,7 @@ def root():
 
 @app.get("/health")
 def health():
+
     return {
         "app": "Usanex",
         "database": "connected",
@@ -155,10 +206,14 @@ try:
         auth_router
     )
 
-except ImportError as e:
+    print(
+        "[Usanex] Auth router loaded successfully."
+    )
+
+except Exception as e:
 
     print(
-        "[Usanex] Auth router not loaded:",
+        "[Usanex] Auth router ERROR:",
         str(e),
     )
 
@@ -175,9 +230,13 @@ try:
         pages_router
     )
 
-except ImportError as e:
+    print(
+        "[Usanex] Pages router loaded successfully."
+    )
+
+except Exception as e:
 
     print(
-        "[Usanex] Pages router not loaded:",
+        "[Usanex] Pages router ERROR:",
         str(e),
     )
