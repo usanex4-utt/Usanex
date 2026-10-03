@@ -24,21 +24,66 @@ router = APIRouter(
 
 
 # =========================================================
-# PATHS
+# PROJECT PATHS
 # =========================================================
 
-# backend/routes/pages.py
-#        ↓ parents[0] = routes
-#        ↓ parents[1] = backend
-#        ↓ parents[2] = project root
+# Current file:
+#
+# Usanex/
+# └── backend/
+#     └── routes/
+#         └── pages.py
+#
+# parents[0] = routes
+# parents[1] = backend
+# parents[2] = Usanex project root
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = Path(__file__).resolve().parents[2]
 
-TEMPLATES_DIR = (
-    BASE_DIR
-    / "frontend"
-    / "templates"
+FRONTEND_DIR = PROJECT_DIR / "frontend"
+
+TEMPLATES_DIR = FRONTEND_DIR / "templates"
+
+STATIC_DIR = FRONTEND_DIR / "static"
+
+
+# =========================================================
+# DEBUG PATH INFORMATION
+# =========================================================
+
+print(
+    f"[Usanex Pages] Project directory: {PROJECT_DIR}"
 )
+
+print(
+    f"[Usanex Pages] Templates directory: {TEMPLATES_DIR}"
+)
+
+print(
+    f"[Usanex Pages] Static directory: {STATIC_DIR}"
+)
+
+
+if not TEMPLATES_DIR.exists():
+
+    print(
+        "[Usanex Pages] WARNING: Templates directory not found!"
+    )
+
+    print(
+        f"[Usanex Pages] Expected: {TEMPLATES_DIR}"
+    )
+
+
+if not STATIC_DIR.exists():
+
+    print(
+        "[Usanex Pages] WARNING: Static directory not found!"
+    )
+
+    print(
+        f"[Usanex Pages] Expected: {STATIC_DIR}"
+    )
 
 
 # =========================================================
@@ -58,20 +103,11 @@ def require_login(
     request: Request,
     db: Session,
 ):
-    """
-    Return logged-in user.
-
-    If user is not authenticated,
-    redirect to login page.
-    """
 
     user = get_current_user_from_request(
         request=request,
         db=db,
     )
-
-    if user is None:
-        return None
 
     return user
 
@@ -87,6 +123,7 @@ def require_login(
 def login_page(
     request: Request,
 ):
+
     return templates.TemplateResponse(
         request=request,
         name="login.html",
@@ -105,6 +142,7 @@ def login_page(
 def register_page(
     request: Request,
 ):
+
     return templates.TemplateResponse(
         request=request,
         name="register.html",
@@ -123,6 +161,7 @@ def register_page(
 def forgot_password_page(
     request: Request,
 ):
+
     return templates.TemplateResponse(
         request=request,
         name="forgot-password.html",
@@ -149,6 +188,7 @@ def home_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -182,6 +222,7 @@ def reels_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -215,6 +256,7 @@ def search_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -248,6 +290,7 @@ def notifications_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -281,6 +324,7 @@ def chat_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -314,6 +358,7 @@ def my_profile_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -347,6 +392,7 @@ def profile_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -380,6 +426,7 @@ def media_upload_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
@@ -413,6 +460,7 @@ def reel_upload_page(
     )
 
     if current_user is None:
+
         return RedirectResponse(
             url="/login",
             status_code=303,
