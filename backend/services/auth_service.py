@@ -2,56 +2,83 @@ import secrets
 import string
 
 from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
+from argon2.exceptions import (
+    InvalidHashError,
+    VerificationError,
+    VerifyMismatchError,
+)
 from sqlalchemy.orm import Session
 
 from ..database.models import User
 
 
+# =========================================================
+# PASSWORD HASHER
+# =========================================================
+
 password_hasher = PasswordHasher()
 
 
-# ==========================================
-# PASSWORD
-# ==========================================
+# =========================================================
+# PASSWORD — HASH
+# =========================================================
 
 def hash_password(password: str) -> str:
     """
-    Securely hash a password using Argon2.
+    Hash password securely using Argon2.
     """
+
+    if not password:
+        raise ValueError("Password cannot be empty")
+
     return password_hasher.hash(password)
 
+
+# =========================================================
+# PASSWORD — VERIFY
+# =========================================================
 
 def verify_password(
     password: str,
     password_hash: str,
 ) -> bool:
     """
-    Verify a password against its Argon2 hash.
+    Verify password against Argon2 hash.
     """
+
+    if not password or not password_hash:
+        return False
+
     try:
         return password_hasher.verify(
             password_hash,
             password,
         )
 
-    except VerifyMismatchError:
+    except (
+        VerifyMismatchError,
+        VerificationError,
+        InvalidHashError,
+    ):
         return False
 
 
-# ==========================================
+# =========================================================
 # USER ID
-# ==========================================
+# =========================================================
 
 def generate_user_id(
     length: int = 8,
 ) -> str:
     """
-    Generate a unique-looking internal Usanex user ID.
+    Generate internal unique-looking Usanex user ID.
 
     Example:
         u_a8k29x7p
     """
+
+    if length < 6:
+        length = 6
 
     characters = (
         string.ascii_lowercase
@@ -66,50 +93,64 @@ def generate_user_id(
     return f"u_{random_part}"
 
 
-# ==========================================
+# =========================================================
 # OTP
-# ==========================================
+# =========================================================
 
 def generate_otp(
     length: int = 6,
 ) -> str:
     """
-    Generate a numeric OTP.
+    Generate secure numeric OTP.
     """
 
+    if length < 4:
+        length = 4
+
+    digits = string.digits
+
     return "".join(
-        secrets.choice(string.digits)
+        secrets.choice(digits)
         for _ in range(length)
     )
 
 
-# ==========================================
+# =========================================================
 # USERNAME
-# ==========================================
+# =========================================================
 
 def generate_username(
     name: str,
     db: Session,
 ) -> str:
     """
-    Generate a unique Usanex username.
+    Generate unique Usanex username.
 
     Format:
 
-        FirstName + 5 digits + @usa
+        FirstName + 5 digit number + @usa
 
     Example:
 
         Uttam48217@usa
     """
 
-    name_parts = name.strip().split()
+    name = (name or "").strip()
 
-    if not name_parts:
+    # -----------------------------------------------------
+    # FIRST NAME
+    # -----------------------------------------------------
+
+    name_parts = name.split()
+
+    if name_parts:
+        first_name = name_parts[0]
+    else:
         first_name = "user"
 
-    else:
-        first_name = name_parts[0]
+    # -----------------------------------------------------
+    # REMOVE SPECIAL CHARACTERS
+    # -----------------------------------------------------
 
     clean_name = "".join(
         character
@@ -120,7 +161,12 @@ def generate_username(
     if not clean_name:
         clean_name = "user"
 
+    # Keep username reasonably sized
     clean_name = clean_name[:30]
+
+    # -----------------------------------------------------
+    # GENERATE UNIQUE USERNAME
+    # -----------------------------------------------------
 
     while True:
 
