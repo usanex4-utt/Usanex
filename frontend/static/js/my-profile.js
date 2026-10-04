@@ -1,50 +1,107 @@
 /* =========================================================
    USANEX — MY PROFILE JS
-   REELS CONNECTED VERSION
+   VERSION 41
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
 
     const $ = (id) => document.getElementById(id);
 
+
     /* =====================================================
        ELEMENTS
-    ===================================================== */
+       ===================================================== */
 
-    const profileName = $("profileName");
-    const profileDisplayName = $("profileDisplayName");
-    const profileUsername = $("profileUsername");
-    const profileUserId = $("profileUserId");
-    const profileBio = $("profileBio");
-    const profilePhoto = $("profilePhoto");
+    const profileName =
+        $("profileName");
 
-    const followersCount = $("followersCount");
-    const connectedCount = $("connectedCount");
-    const followingCount = $("followingCount");
-    const postsCount = $("postsCount");
+    const profileDisplayName =
+        $("profileDisplayName");
 
-    const profileLinks = $("profileLinks");
-    const profileContent = $("profileContentContainer");
+    const profileUsername =
+        $("profileUsername");
 
-    const profilePhotoButton = $("profilePhotoButton");
-    const profilePhotoViewer = $("profilePhotoViewer");
-    const viewerPhoto = $("viewerPhoto");
-    const closePhotoViewer = $("closePhotoViewer");
+    const profileUserId =
+        $("profileUserId");
 
-    const profileMenuButton = $("profileMenuButton");
-    const profileMenu = $("profileMenu");
+    const profileBio =
+        $("profileBio");
 
-    const editProfileButton = $("editProfileButton");
-    const editProfileModal = $("editProfileModal");
-    const closeEditProfile = $("closeEditProfile");
+    const profilePhoto =
+        $("profilePhoto");
 
-    const editName = $("editName");
-    const editUsername = $("editUsername");
-    const editUserId = $("editUserId");
-    const editBio = $("editBio");
-    const editWebsite = $("editWebsite");
-    const editInstagram = $("editInstagram");
-    const editSocialLink = $("editSocialLink");
+
+    const followersCount =
+        $("followersCount");
+
+    const connectedCount =
+        $("connectedCount");
+
+    const followingCount =
+        $("followingCount");
+
+    const postsCount =
+        $("postsCount");
+
+
+    const profileLinks =
+        $("profileLinks");
+
+    const profileContent =
+        $("profileContentContainer");
+
+
+    const profilePhotoButton =
+        $("profilePhotoButton");
+
+    const profilePhotoViewer =
+        $("profilePhotoViewer");
+
+    const viewerPhoto =
+        $("viewerPhoto");
+
+    const closePhotoViewer =
+        $("closePhotoViewer");
+
+
+    const profileMenuButton =
+        $("profileMenuButton");
+
+    const profileMenu =
+        $("profileMenu");
+
+
+    const editProfileButton =
+        $("editProfileButton");
+
+    const editProfileModal =
+        $("editProfileModal");
+
+    const closeEditProfile =
+        $("closeEditProfile");
+
+
+    const editName =
+        $("editName");
+
+    const editUsername =
+        $("editUsername");
+
+    const editUserId =
+        $("editUserId");
+
+    const editBio =
+        $("editBio");
+
+    const editWebsite =
+        $("editWebsite");
+
+    const editInstagram =
+        $("editInstagram");
+
+    const editSocialLink =
+        $("editSocialLink");
+
 
     const editProfilePhotoPreview =
         $("editProfilePhotoPreview");
@@ -64,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        DEFAULT PHOTO
-    ===================================================== */
+       ===================================================== */
 
     const DEFAULT_PHOTO =
         "/static/images/default-profile.png";
@@ -72,9 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        SAFE VALUE
-    ===================================================== */
+       ===================================================== */
 
-    function safe(value, fallback = "") {
+    function safe(
+        value,
+        fallback = ""
+    ) {
 
         if (
             value === null ||
@@ -90,59 +150,87 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        USERNAME
-    ===================================================== */
+       ===================================================== */
 
-    function formatUsername(username) {
+    function formatUsername(
+        username
+    ) {
 
-        username = safe(username);
+        username =
+            safe(username);
 
         if (!username) {
             return "@username";
         }
 
-        if (username.startsWith("@")) {
+        if (
+            username.startsWith("@")
+        ) {
             return username;
         }
 
         return "@" + username;
+
     }
 
 
     /* =====================================================
        PHOTO
-    ===================================================== */
+       ===================================================== */
 
     function setPhoto(url) {
 
         const photoUrl =
             url || DEFAULT_PHOTO;
 
-        if (profilePhoto) {
-            profilePhoto.src = photoUrl;
 
-            profilePhoto.onerror = () => {
-                profilePhoto.onerror = null;
-                profilePhoto.src = DEFAULT_PHOTO;
-            };
+        if (profilePhoto) {
+
+            profilePhoto.src =
+                photoUrl;
+
+
+            profilePhoto.onerror =
+                () => {
+
+                    profilePhoto.onerror =
+                        null;
+
+                    profilePhoto.src =
+                        DEFAULT_PHOTO;
+
+                };
+
         }
 
-        if (editProfilePhotoPreview) {
+
+        if (
+            editProfilePhotoPreview
+        ) {
 
             editProfilePhotoPreview.src =
                 photoUrl;
 
-            editProfilePhotoPreview.onerror = () => {
-                editProfilePhotoPreview.onerror = null;
-                editProfilePhotoPreview.src =
-                    DEFAULT_PHOTO;
-            };
+
+            editProfilePhotoPreview.onerror =
+                () => {
+
+                    editProfilePhotoPreview.onerror =
+                        null;
+
+                    editProfilePhotoPreview.src =
+                        DEFAULT_PHOTO;
+
+                };
+
         }
+
     }
 
 
     /* =====================================================
        LOAD PROFILE
-    ===================================================== */
+       ===================================================== */
 
     async function loadProfile() {
 
@@ -150,10 +238,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const response =
                 await fetch(
-                    "/api/profile/me",
+                    "/api/profile/me?_=" +
+                    Date.now(),
                     {
                         method: "GET",
-                        credentials: "include",
+
+                        credentials:
+                            "include",
+
+                        cache:
+                            "no-store",
+
                         headers: {
                             "Accept":
                                 "application/json"
@@ -161,16 +256,30 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 );
 
+
             if (!response.ok) {
+
+                if (
+                    response.status === 401
+                ) {
+
+                    console.error(
+                        "Usanex: authentication required."
+                    );
+
+                }
 
                 throw new Error(
                     "Profile request failed: " +
                     response.status
                 );
+
             }
+
 
             const data =
                 await response.json();
+
 
             if (
                 !data.success ||
@@ -180,31 +289,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(
                     "Invalid profile response."
                 );
+
             }
+
+
+            /* =============================================
+               RENDER PROFILE
+            ============================================= */
 
             renderProfile(data);
 
-            /*
-             * IMPORTANT:
-             * Reels are stored separately from Posts.
-             * Therefore load reels using the
-             * dedicated Reel API.
-             */
 
-            const userId =
-                data.user.user_id;
+            /* =============================================
+               LOAD REAL REELS
+            ============================================= */
 
-            if (userId) {
+            await loadProfileReels(
+                data.user.user_id
+            );
 
-                await loadUserReels(
-                    userId
-                );
-
-            } else {
-
-                renderReels([]);
-
-            }
 
         } catch (error) {
 
@@ -212,6 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Usanex profile error:",
                 error
             );
+
 
             if (profileContent) {
 
@@ -229,113 +333,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       LOAD USER REELS
-       ===================================================== */
-
-    async function loadUserReels(
-        userId
-    ) {
-
-        try {
-
-            const url =
-                "/api/reels/user/" +
-                encodeURIComponent(
-                    userId
-                ) +
-                "/list?limit=50&offset=0";
-
-            console.log(
-                "Usanex: loading profile reels:",
-                url
-            );
-
-            const response =
-                await fetch(
-                    url,
-                    {
-                        method: "GET",
-                        credentials: "include",
-                        headers: {
-                            "Accept":
-                                "application/json"
-                        }
-                    }
-                );
-
-            if (!response.ok) {
-
-                const errorText =
-                    await response.text();
-
-                console.error(
-                    "Reels API failed:",
-                    response.status,
-                    errorText
-                );
-
-                renderReels([]);
-
-                return;
-            }
-
-            const data =
-                await response.json();
-
-            console.log(
-                "Usanex profile reels response:",
-                data
-            );
-
-            if (
-                !data.success ||
-                !Array.isArray(data.reels)
-            ) {
-
-                renderReels([]);
-
-                return;
-            }
-
-            renderReels(
-                data.reels
-            );
-
-            /*
-             * If reels exist, show their count
-             * in Posts counter.
-             *
-             * This keeps the current UI working
-             * until a separate Reels counter is added.
-             */
-
-            if (
-                postsCount &&
-                Number(data.count || 0) > 0
-            ) {
-
-                postsCount.textContent =
-                    Number(data.count);
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Usanex profile reels error:",
-                error
-            );
-
-            renderReels([]);
-
-        }
-
-    }
-
-
-    /* =====================================================
        RENDER PROFILE
-    ===================================================== */
+       ===================================================== */
 
     function renderProfile(data) {
 
@@ -345,6 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const stats =
             data.stats || {};
 
+
         const name =
             safe(
                 user.name,
@@ -352,23 +352,33 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-        /* HEADER NAME */
+        /* =============================================
+           HEADER NAME
+        ============================================= */
 
         if (profileName) {
+
             profileName.textContent =
                 name;
+
         }
 
 
-        /* DISPLAY NAME */
+        /* =============================================
+           DISPLAY NAME
+        ============================================= */
 
         if (profileDisplayName) {
+
             profileDisplayName.textContent =
                 name;
+
         }
 
 
-        /* USERNAME */
+        /* =============================================
+           USERNAME
+        ============================================= */
 
         if (profileUsername) {
 
@@ -380,7 +390,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        /* USER ID */
+        /* =============================================
+           USER ID
+        ============================================= */
 
         if (profileUserId) {
 
@@ -393,28 +405,36 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        /* BIO */
+        /* =============================================
+           BIO
+        ============================================= */
 
         if (profileBio) {
 
             const bio =
                 safe(user.bio);
 
+
             profileBio.textContent =
-                bio ||
-                "No bio available.";
+                bio
+                    ? bio
+                    : "No bio available.";
 
         }
 
 
-        /* PHOTO */
+        /* =============================================
+           PHOTO
+        ============================================= */
 
         setPhoto(
             user.profile_photo
         );
 
 
-        /* STATS */
+        /* =============================================
+           STATS
+        ============================================= */
 
         if (followersCount) {
 
@@ -425,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
 
+
         if (connectedCount) {
 
             connectedCount.textContent =
@@ -433,6 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
         }
+
 
         if (followingCount) {
 
@@ -443,57 +465,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
 
+
+        /*
+         * Do NOT use profile API's
+         * posts count for reels.
+         *
+         * Actual Reel count will be
+         * updated by loadProfileReels().
+         */
+
         if (postsCount) {
 
             postsCount.textContent =
-                Number(
-                    stats.posts || 0
-                );
+                "0";
 
         }
 
 
-        /* =================================================
-           EDIT PROFILE
-        ================================================= */
+        /* =============================================
+           EDIT FORM
+        ============================================= */
 
         if (editName) {
+
             editName.value =
                 safe(user.name);
+
         }
+
 
         if (editUsername) {
+
             editUsername.value =
                 safe(user.username);
+
         }
+
 
         if (editUserId) {
+
             editUserId.value =
                 safe(user.user_id);
+
         }
+
 
         if (editBio) {
+
             editBio.value =
                 safe(user.bio);
+
         }
+
 
         if (editWebsite) {
+
             editWebsite.value =
                 safe(user.website);
+
         }
+
 
         if (editInstagram) {
+
             editInstagram.value =
                 safe(user.instagram);
+
         }
+
 
         if (editSocialLink) {
+
             editSocialLink.value =
                 safe(user.social_link);
+
         }
 
 
-        /* LINKS */
+        /* =============================================
+           LINKS
+        ============================================= */
 
         renderLinks(user);
 
@@ -501,35 +552,400 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       LINKS
-    ===================================================== */
+       LOAD REAL REELS
+       ===================================================== */
 
-    function renderLinks(user) {
+    async function loadProfileReels(
+        userId
+    ) {
+
+        if (!userId) {
+
+            renderProfileReels([]);
+
+            return;
+
+        }
+
+
+        try {
+
+            console.log(
+                "Usanex: Loading reels for:",
+                userId
+            );
+
+
+            const response =
+                await fetch(
+                    "/api/reels/user/" +
+                    encodeURIComponent(
+                        userId
+                    ) +
+                    "/list?_=" +
+                    Date.now(),
+                    {
+                        method: "GET",
+
+                        credentials:
+                            "include",
+
+                        cache:
+                            "no-store",
+
+                        headers: {
+                            "Accept":
+                                "application/json"
+                        }
+                    }
+                );
+
+
+            console.log(
+                "Usanex reels status:",
+                response.status
+            );
+
+
+            if (!response.ok) {
+
+                const errorText =
+                    await response.text();
+
+                console.error(
+                    "Usanex reels API error:",
+                    errorText
+                );
+
+                throw new Error(
+                    "Reels request failed: " +
+                    response.status
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            console.log(
+                "Usanex reels response:",
+                data
+            );
+
+
+            const reels =
+                Array.isArray(data.reels)
+                    ? data.reels
+                    : [];
+
+
+            /* =============================================
+               UPDATE REEL COUNT
+            ============================================= */
+
+            if (postsCount) {
+
+                postsCount.textContent =
+                    Number(
+                        data.count ??
+                        reels.length ??
+                        0
+                    );
+
+            }
+
+
+            /* =============================================
+               RENDER
+            ============================================= */
+
+            renderProfileReels(
+                reels
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Usanex profile reels error:",
+                error
+            );
+
+
+            renderProfileReels([]);
+
+        }
+
+    }
+
+
+    /* =====================================================
+       RENDER PROFILE REELS
+       ===================================================== */
+
+    function renderProfileReels(
+        reels
+    ) {
+
+        if (
+            !Array.isArray(reels) ||
+            reels.length === 0
+        ) {
+
+            profileContent.innerHTML = `
+                <div class="empty-content">
+                    No reels yet.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        const grid =
+            document.createElement(
+                "div"
+            );
+
+
+        grid.className =
+            "profile-post-grid";
+
+
+        reels.forEach(
+            (reel) => {
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                item.className =
+                    "profile-post";
+
+
+                /* =========================================
+                   VIDEO
+                ========================================= */
+
+                if (reel.video_url) {
+
+                    const video =
+                        document.createElement(
+                            "video"
+                        );
+
+
+                    video.src =
+                        reel.video_url;
+
+
+                    video.muted =
+                        true;
+
+
+                    video.playsInline =
+                        true;
+
+
+                    video.preload =
+                        "metadata";
+
+
+                    video.setAttribute(
+                        "playsinline",
+                        ""
+                    );
+
+
+                    video.setAttribute(
+                        "webkit-playsinline",
+                        ""
+                    );
+
+
+                    /* =====================================
+                       THUMBNAIL
+                    ===================================== */
+
+                    if (
+                        reel.thumbnail_url
+                    ) {
+
+                        video.poster =
+                            reel.thumbnail_url;
+
+                    }
+
+
+                    /* =====================================
+                       CLICK REEL
+                    ===================================== */
+
+                    item.addEventListener(
+                        "click",
+                        () => {
+
+                            window.location.href =
+                                "/reels";
+
+                        }
+                    );
+
+
+                    item.appendChild(
+                        video
+                    );
+
+                }
+
+
+                /* =========================================
+                   THUMBNAIL ONLY
+                ========================================= */
+
+                else if (
+                    reel.thumbnail_url
+                ) {
+
+                    const img =
+                        document.createElement(
+                            "img"
+                        );
+
+
+                    img.src =
+                        reel.thumbnail_url;
+
+
+                    img.loading =
+                        "lazy";
+
+
+                    img.alt =
+                        "Usanex Reel";
+
+
+                    item.appendChild(
+                        img
+                    );
+
+                }
+
+
+                /* =========================================
+                   FALLBACK
+                ========================================= */
+
+                else {
+
+                    item.innerHTML = `
+                        <div
+                            style="
+                                width:100%;
+                                height:100%;
+                                display:flex;
+                                align-items:center;
+                                justify-content:center;
+                                color:#8995a8;
+                                text-align:center;
+                                padding:15px;
+                            "
+                        >
+                            Reel
+                        </div>
+                    `;
+
+                }
+
+
+                /* =========================================
+                   PLAY ICON
+                ========================================= */
+
+                const playIcon =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                playIcon.className =
+                    "profile-reel-play-icon";
+
+
+                playIcon.innerHTML =
+                    "▶";
+
+
+                item.appendChild(
+                    playIcon
+                );
+
+
+                grid.appendChild(
+                    item
+                );
+
+            }
+        );
+
+
+        profileContent.innerHTML =
+            "";
+
+
+        profileContent.appendChild(
+            grid
+        );
+
+    }
+
+
+    /* =====================================================
+       LINKS
+       ===================================================== */
+
+    function renderLinks(
+        user
+    ) {
 
         if (!profileLinks) {
             return;
         }
 
-        profileLinks.innerHTML = "";
+
+        profileLinks.innerHTML =
+            "";
+
 
         const links = [];
 
 
-        /* WEBSITE */
+        /* =============================================
+           WEBSITE
+        ============================================= */
 
         if (user.website) {
 
             links.push({
                 label: "Website",
-                url: normalizeUrl(
-                    user.website
-                )
+
+                url:
+                    normalizeUrl(
+                        user.website
+                    )
             });
 
         }
 
 
-        /* INSTAGRAM */
+        /* =============================================
+           INSTAGRAM
+        ============================================= */
 
         if (user.instagram) {
 
@@ -537,6 +953,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 String(
                     user.instagram
                 ).trim();
+
 
             if (
                 !instagram.startsWith(
@@ -556,6 +973,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             }
 
+
             links.push({
                 label: "Instagram",
                 url: instagram
@@ -564,15 +982,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        /* SOCIAL LINK */
+        /* =============================================
+           SOCIAL LINK
+        ============================================= */
 
         if (user.social_link) {
 
             links.push({
                 label: "Social Link",
-                url: normalizeUrl(
-                    user.social_link
-                )
+
+                url:
+                    normalizeUrl(
+                        user.social_link
+                    )
             });
 
         }
@@ -580,13 +1002,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!links.length) {
 
-            profileLinks.hidden = true;
+            profileLinks.hidden =
+                true;
 
             return;
+
         }
 
 
-        profileLinks.hidden = false;
+        profileLinks.hidden =
+            false;
 
 
         links.forEach(
@@ -597,17 +1022,22 @@ document.addEventListener("DOMContentLoaded", () => {
                         "a"
                     );
 
+
                 a.href =
                     item.url;
+
 
                 a.textContent =
                     item.label;
 
+
                 a.target =
                     "_blank";
 
+
                 a.rel =
                     "noopener noreferrer";
+
 
                 profileLinks.appendChild(
                     a
@@ -620,13 +1050,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       URL
-    ===================================================== */
+       NORMALIZE URL
+       ===================================================== */
 
-    function normalizeUrl(url) {
+    function normalizeUrl(
+        url
+    ) {
 
         url =
             String(url).trim();
+
 
         if (
             url.startsWith(
@@ -641,223 +1074,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
 
+
         return "https://" + url;
 
     }
 
 
     /* =====================================================
-       RENDER REELS
-    ===================================================== */
+       ESCAPE HTML
+       ===================================================== */
 
-    function renderReels(reels) {
+    function escapeHtml(
+        value
+    ) {
 
-        if (!profileContent) {
-            return;
-        }
-
-
-        if (
-            !Array.isArray(reels) ||
-            reels.length === 0
-        ) {
-
-            profileContent.innerHTML = `
-                <div class="empty-content">
-                    No reels yet.
-                </div>
-            `;
-
-            return;
-        }
-
-
-        const grid =
-            document.createElement(
-                "div"
+        return String(value)
+            .replaceAll(
+                "&",
+                "&amp;"
+            )
+            .replaceAll(
+                "<",
+                "&lt;"
+            )
+            .replaceAll(
+                ">",
+                "&gt;"
+            )
+            .replaceAll(
+                '"',
+                "&quot;"
+            )
+            .replaceAll(
+                "'",
+                "&#039;"
             );
-
-        grid.className =
-            "profile-post-grid";
-
-
-        reels.forEach(
-            (reel) => {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-                item.className =
-                    "profile-post";
-
-
-                /* =================================================
-                   VIDEO
-                ================================================= */
-
-                const video =
-                    document.createElement(
-                        "video"
-                    );
-
-
-                video.src =
-                    safe(
-                        reel.video_url
-                    );
-
-
-                video.playsInline =
-                    true;
-
-                video.muted =
-                    true;
-
-                video.loop =
-                    true;
-
-                video.preload =
-                    "metadata";
-
-                video.setAttribute(
-                    "webkit-playsinline",
-                    ""
-                );
-
-
-                /* =================================================
-                   THUMBNAIL
-                ================================================= */
-
-                if (
-                    reel.thumbnail_url
-                ) {
-
-                    video.poster =
-                        reel.thumbnail_url;
-
-                }
-
-
-                /* =================================================
-                   PLAY ON TAP
-                ================================================= */
-
-                item.addEventListener(
-                    "click",
-                    () => {
-
-                        if (
-                            video.paused
-                        ) {
-
-                            video.play()
-                                .catch(
-                                    () => {}
-                                );
-
-                        } else {
-
-                            video.pause();
-
-                        }
-
-                    }
-                );
-
-
-                /* =================================================
-                   VIDEO PLAY ICON
-                ================================================= */
-
-                const playIcon =
-                    document.createElement(
-                        "div"
-                    );
-
-                playIcon.className =
-                    "profile-reel-play";
-
-                playIcon.innerHTML =
-                    "▶";
-
-
-                item.appendChild(
-                    video
-                );
-
-                item.appendChild(
-                    playIcon
-                );
-
-
-                /* =================================================
-                   CAPTION
-                ================================================= */
-
-                if (
-                    reel.caption
-                ) {
-
-                    const caption =
-                        document.createElement(
-                            "div"
-                        );
-
-                    caption.className =
-                        "profile-reel-caption";
-
-                    caption.textContent =
-                        reel.caption;
-
-                    item.appendChild(
-                        caption
-                    );
-
-                }
-
-
-                grid.appendChild(
-                    item
-                );
-
-            }
-        );
-
-
-        profileContent.innerHTML =
-            "";
-
-        profileContent.appendChild(
-            grid
-        );
 
     }
 
 
     /* =====================================================
        PROFILE PHOTO VIEWER
-    ===================================================== */
+       ===================================================== */
 
     profilePhotoButton?.addEventListener(
         "click",
         () => {
 
-            if (!profilePhoto) {
-                return;
-            }
-
             const src =
-                profilePhoto.src;
+                profilePhoto?.src;
+
 
             if (!src) {
                 return;
             }
 
+
             viewerPhoto.src =
                 src;
+
 
             profilePhotoViewer.classList.remove(
                 "hidden"
@@ -874,6 +1149,7 @@ document.addEventListener("DOMContentLoaded", () => {
             profilePhotoViewer.classList.add(
                 "hidden"
             );
+
 
             viewerPhoto.src =
                 "";
@@ -902,14 +1178,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       MENU
-    ===================================================== */
+       PROFILE MENU
+       ===================================================== */
 
     profileMenuButton?.addEventListener(
         "click",
         (event) => {
 
             event.stopPropagation();
+
 
             profileMenu.classList.toggle(
                 "hidden"
@@ -919,9 +1196,28 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
 
+    profileMenu?.addEventListener(
+        "click",
+        (event) => {
+
+            if (
+                event.target ===
+                profileMenu
+            ) {
+
+                profileMenu.classList.add(
+                    "hidden"
+                );
+
+            }
+
+        }
+    );
+
+
     /* =====================================================
        EDIT PROFILE
-    ===================================================== */
+       ===================================================== */
 
     editProfileButton?.addEventListener(
         "click",
@@ -931,8 +1227,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hidden"
             );
 
+
             editProfileMessage.textContent =
                 "";
+
 
             editProfileModal.classList.remove(
                 "hidden"
@@ -975,7 +1273,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        CHANGE PHOTO
-    ===================================================== */
+       ===================================================== */
 
     changeProfilePhotoButton?.addEventListener(
         "click",
@@ -994,6 +1292,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const file =
                 profilePhotoInput.files?.[0];
 
+
             if (!file) {
                 return;
             }
@@ -1009,6 +1308,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     "Please select an image.";
 
                 return;
+
             }
 
 
@@ -1017,8 +1317,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     file
                 );
 
+
             editProfilePhotoPreview.src =
                 previewUrl;
+
 
             editProfileMessage.textContent =
                 "Photo selected. Tap Save Changes.";
@@ -1029,7 +1331,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        SAVE PROFILE
-    ===================================================== */
+       ===================================================== */
 
     saveProfileButton?.addEventListener(
         "click",
@@ -1038,6 +1340,7 @@ document.addEventListener("DOMContentLoaded", () => {
             editProfileMessage.textContent =
                 "Saving...";
 
+
             saveProfileButton.disabled =
                 true;
 
@@ -1045,7 +1348,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
 
                 /* =========================================
-                   UPDATE TEXT PROFILE
+                   UPDATE PROFILE
                 ========================================= */
 
                 const profileResponse =
@@ -1053,7 +1356,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         "/api/profile/me",
                         {
                             method: "PUT",
-                            credentials: "include",
+
+                            credentials:
+                                "include",
+
                             headers: {
                                 "Content-Type":
                                     "application/json",
@@ -1064,6 +1370,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                             body:
                                 JSON.stringify({
+
                                     name:
                                         editName.value.trim(),
 
@@ -1082,6 +1389,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     social_link:
                                         editSocialLink.value.trim() ||
                                         null
+
                                 })
                         }
                     );
@@ -1091,7 +1399,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     await profileResponse.json();
 
 
-                if (!profileResponse.ok) {
+                if (
+                    !profileResponse.ok
+                ) {
 
                     throw new Error(
                         profileData.detail ||
@@ -1102,17 +1412,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                 /* =========================================
-                   UPLOAD PHOTO
+                   PHOTO UPLOAD
                 ========================================= */
 
                 const file =
-                    profilePhotoInput.files?.[0];
+                    profilePhotoInput
+                        .files?.[0];
 
 
                 if (file) {
 
                     const formData =
                         new FormData();
+
 
                     formData.append(
                         "photo",
@@ -1125,7 +1437,10 @@ document.addEventListener("DOMContentLoaded", () => {
                             "/api/profile/me/photo",
                             {
                                 method: "POST",
-                                credentials: "include",
+
+                                credentials:
+                                    "include",
+
                                 body:
                                     formData
                             }
@@ -1176,8 +1491,10 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (error) {
 
                 console.error(
+                    "Usanex save profile error:",
                     error
                 );
+
 
                 editProfileMessage.textContent =
                     error.message ||
@@ -1197,7 +1514,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        CONTENT TABS
-    ===================================================== */
+       ===================================================== */
 
     document
         .querySelectorAll(
@@ -1234,26 +1551,81 @@ document.addEventListener("DOMContentLoaded", () => {
                             tab.dataset.tab;
 
 
-                        /* REELS */
+                        /* =================================
+                           REELS
+                        ================================= */
 
                         if (
-                            type === "reels"
+                            type ===
+                            "reels"
                         ) {
 
-                            await loadProfile();
+                            await loadProfileReels(
+                                profileUserId.textContent.trim()
+                            );
+
 
                             return;
+
                         }
 
 
-                        /* OTHER TABS */
+                        /* =================================
+                           IMAGES
+                        ================================= */
 
-                        profileContent.innerHTML = `
-                            <div class="empty-content">
-                                No ${escapeHtml(type)}
-                                available yet.
-                            </div>
-                        `;
+                        if (
+                            type ===
+                            "images"
+                        ) {
+
+                            profileContent.innerHTML = `
+                                <div class="empty-content">
+                                    No images available yet.
+                                </div>
+                            `;
+
+                            return;
+
+                        }
+
+
+                        /* =================================
+                           SAVED
+                        ================================= */
+
+                        if (
+                            type ===
+                            "saved"
+                        ) {
+
+                            profileContent.innerHTML = `
+                                <div class="empty-content">
+                                    No saved content yet.
+                                </div>
+                            `;
+
+                            return;
+
+                        }
+
+
+                        /* =================================
+                           PRIVATE
+                        ================================= */
+
+                        if (
+                            type ===
+                            "private"
+                        ) {
+
+                            profileContent.innerHTML = `
+                                <div class="empty-content">
+                                    No private content yet.
+                                </div>
+                            `;
+
+                        }
 
                     }
                 );
@@ -1264,7 +1636,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        BOTTOM NAVIGATION
-    ===================================================== */
+       ===================================================== */
 
     $("navHome")?.addEventListener(
         "click",
@@ -1312,14 +1684,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        PLUS BUTTON
-    ===================================================== */
+       ===================================================== */
 
     $("profileAddButton")?.addEventListener(
         "click",
         () => {
 
-            window.location.href =
-                "/create-reel";
+            console.log(
+                "Usanex create button clicked"
+            );
 
         }
     );
@@ -1327,7 +1700,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        OTHER MENU ITEMS
-    ===================================================== */
+       ===================================================== */
 
     [
         "privacyButton",
@@ -1347,8 +1720,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         "hidden"
                     );
 
+
                     console.log(
-                        id + " clicked"
+                        id +
+                        " clicked"
                     );
 
                 }
@@ -1360,7 +1735,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        LOGOUT
-    ===================================================== */
+       ===================================================== */
 
     $("logoutButton")?.addEventListener(
         "click",
@@ -1388,6 +1763,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             localStorage.clear();
 
+
             window.location.href =
                 "/login";
 
@@ -1397,14 +1773,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* =====================================================
        ESC KEY
-    ===================================================== */
+       ===================================================== */
 
     document.addEventListener(
         "keydown",
         (event) => {
 
             if (
-                event.key !== "Escape"
+                event.key !==
+                "Escape"
             ) {
                 return;
             }
@@ -1414,9 +1791,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hidden"
             );
 
+
             editProfileModal?.classList.add(
                 "hidden"
             );
+
 
             profilePhotoViewer?.classList.add(
                 "hidden"
