@@ -1,6 +1,6 @@
 /* =========================================================
    USANEX — MY PROFILE
-   Compact Mobile App UI
+   FINAL MOBILE APP UI
 ========================================================= */
 
 :root {
@@ -8,12 +8,19 @@
     --bg-soft: #0b1424;
     --card: #101b2d;
     --border: #1d2b40;
+
     --text: #f5f7fb;
     --muted: #8792a6;
+
     --blue: #238cff;
     --blue-soft: rgba(35, 140, 255, 0.14);
+
     --danger: #ff4d67;
 }
+
+/* =========================================================
+   RESET
+========================================================= */
 
 * {
     box-sizing: border-box;
@@ -26,8 +33,10 @@ html,
 body {
     width: 100%;
     min-height: 100%;
+
     background: var(--bg);
     color: var(--text);
+
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -41,6 +50,7 @@ body {
     overflow-x: hidden;
 }
 
+
 /* =========================================================
    MAIN PAGE
 ========================================================= */
@@ -48,28 +58,29 @@ body {
 .profile-page {
     width: 100%;
     min-height: 100vh;
+
     background: var(--bg);
+
     padding-bottom: 68px;
 }
 
-.profile-main {
-    width: 100%;
-    max-width: 720px;
-    margin: 0 auto;
-}
 
 /* =========================================================
    HEADER
 ========================================================= */
 
 .profile-header {
-    height: 54px;
     width: 100%;
+    height: 54px;
+
     display: grid;
     grid-template-columns: 50px 1fr 50px;
     align-items: center;
-    border-bottom: 1px solid var(--border);
+
     background: #091321;
+
+    border-bottom: 1px solid var(--border);
+
     position: sticky;
     top: 0;
     z-index: 50;
@@ -78,15 +89,16 @@ body {
 .profile-header-name {
     text-align: center;
 
-    /* Stylized typewriter style */
     font-family:
         "Courier New",
         Courier,
         monospace;
 
     font-size: 20px;
-    font-weight: 900;
-    letter-spacing: 1px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+
     line-height: 1;
 
     white-space: nowrap;
@@ -94,6 +106,7 @@ body {
     text-overflow: ellipsis;
 
     padding: 0 8px;
+
     color: #ffffff;
 }
 
@@ -101,9 +114,12 @@ body {
 .profile-menu-button {
     width: 42px;
     height: 42px;
+
     border: 0;
+
     background: transparent;
-    color: white;
+
+    color: #ffffff;
 
     display: flex;
     align-items: center;
@@ -126,18 +142,35 @@ body {
 .profile-menu-button span {
     width: 5px;
     height: 5px;
+
     border-radius: 50%;
-    background: white;
+
+    background: #ffffff;
 }
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.profile-main {
+    width: 100%;
+    max-width: 720px;
+
+    margin: 0 auto;
+}
+
 
 /* =========================================================
    PROFILE USER ROW
 ========================================================= */
 
 .profile-user-row {
-    min-height: 145px;
+    width: 100%;
 
-    padding: 14px 18px 10px;
+    min-height: 142px;
+
+    padding: 14px 18px;
 
     display: flex;
     align-items: center;
@@ -145,7 +178,10 @@ body {
     gap: 18px;
 
     border-bottom: 0;
+
+    background: var(--bg);
 }
+
 
 /* =========================================================
    PROFILE PHOTO
@@ -160,6 +196,7 @@ body {
     padding: 5px;
 
     border: 3px solid var(--blue);
+
     border-radius: 50%;
 
     background: #091321;
@@ -178,10 +215,12 @@ body {
     display: block;
 
     object-fit: cover;
+
     border-radius: 50%;
 
     border: 2px solid #dbe7f7;
 }
+
 
 /* =========================================================
    USER INFORMATION
@@ -189,12 +228,15 @@ body {
 
 .profile-user-info {
     min-width: 0;
+
     flex: 1;
 }
 
 .profile-user-info h2 {
     font-size: 21px;
+
     line-height: 1.25;
+
     font-weight: 750;
 
     margin-bottom: 5px;
@@ -202,49 +244,63 @@ body {
     color: #ffffff;
 
     white-space: nowrap;
+
     overflow: hidden;
+
     text-overflow: ellipsis;
 }
 
 .profile-username {
     font-size: 15px;
+
     color: #aeb9ca;
 
     line-height: 1.4;
 
     white-space: nowrap;
+
     overflow: hidden;
+
     text-overflow: ellipsis;
 }
 
 .profile-user-id {
     display: inline-flex;
+
     align-items: center;
 
     margin-top: 8px;
+
     padding: 5px 10px;
 
     border-radius: 15px;
 
     background: #162338;
+
     color: #8995a9;
 
     font-size: 12px;
+
     line-height: 1;
 }
+
 
 /* =========================================================
    BIO
 ========================================================= */
 
 .profile-bio-section {
-    min-height: 82px;
+    width: 100%;
 
-    padding: 7px 18px 10px;
+    min-height: 76px;
+
+    padding: 8px 18px 10px;
 
     text-align: center;
 
     border-bottom: 0;
+
+    background: var(--bg);
 }
 
 .profile-bio {
@@ -255,20 +311,29 @@ body {
     color: #c3cad6;
 
     font-size: 15px;
+
     line-height: 1.45;
 
     word-break: break-word;
 }
 
+
+/* =========================================================
+   PROFILE LINKS
+========================================================= */
+
 .profile-links {
     display: flex;
 
     justify-content: center;
+
+    align-items: center;
+
     flex-wrap: wrap;
 
     gap: 8px;
 
-    margin-top: 10px;
+    margin-top: 9px;
 }
 
 .profile-links:not([hidden]) {
@@ -279,15 +344,17 @@ body {
     display: inline-flex;
 
     align-items: center;
+
     justify-content: center;
 
-    min-height: 32px;
+    min-height: 34px;
 
-    padding: 6px 14px;
+    padding: 6px 15px;
 
     border-radius: 18px;
 
     background: #101d31;
+
     border: 1px solid #162a43;
 
     color: var(--blue);
@@ -297,68 +364,105 @@ body {
     text-decoration: none;
 }
 
+.profile-links a:active {
+    background: #162640;
+}
+
+
 /* =========================================================
-   PROFILE ACTION BUTTONS
+   PROFILE ACTIONS
    EDIT + SHARE
-   FULL WIDTH
+   THIS IS THE ONLY ACTION ROW
 ========================================================= */
 
-.profile-action-buttons {
+.profile-actions {
     width: 100%;
 
-    display: flex;
+    display: grid;
 
-    align-items: center;
+    grid-template-columns: 1fr 1fr;
 
     gap: 10px;
 
-    padding: 0 18px 10px;
+    padding: 8px 18px 12px;
 
-    margin: 0;
+    background: var(--bg);
+
+    border-bottom: 1px solid var(--border);
 }
 
-.profile-action-buttons button {
-    flex: 1 1 0;
 
-    width: 50%;
-    min-width: 0;
+/* =========================================================
+   ACTION BUTTON
+========================================================= */
 
-    height: 48px;
+.profile-action-button {
+    appearance: none;
+    -webkit-appearance: none;
 
-    border: 1px solid #263a55;
+    width: 100%;
+    height: 44px;
 
-    border-radius: 14px;
+    padding: 0 10px;
 
-    background: #101d30;
+    border: 1px solid #263954;
 
-    color: #ffffff;
+    border-radius: 12px;
 
-    font-size: 15px;
-    font-weight: 700;
+    outline: none;
+
+    background: #101c2e;
+
+    color: #f5f7fb;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    line-height: 1;
 
     white-space: nowrap;
 
     cursor: pointer;
 
+    box-shadow: none;
+
     transition:
-        transform 0.15s ease,
-        background 0.15s ease;
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.1s ease;
 }
 
-.profile-action-buttons button:active {
+.profile-action-button:hover {
+    background: #14243a;
+
+    border-color: #315071;
+}
+
+.profile-action-button:active {
     transform: scale(0.98);
-    background: #162942;
+
+    background: #172a43;
 }
 
-#editProfileButton,
-#shareProfileButton {
-    color: #ffffff;
+.profile-action-button:focus {
+    outline: none;
 }
+
 
 /* =========================================================
    STATS
@@ -375,15 +479,17 @@ body {
 
     gap: 8px;
 
-    padding: 0 18px 10px;
+    padding: 10px 18px;
 
     border-bottom: 1px solid var(--border);
+
+    background: var(--bg);
 }
 
 .profile-stat {
     min-width: 0;
 
-    min-height: 70px;
+    min-height: 66px;
 
     padding: 8px 4px;
 
@@ -392,21 +498,18 @@ body {
     flex-direction: column;
 
     justify-content: center;
+
     align-items: center;
 
-    border: 1px solid #20344e;
+    border: 1px solid #1d3049;
 
-    border-radius: 22px;
+    border-radius: 20px;
 
-    background: #0d192a;
-}
-
-.profile-stat:last-child {
-    border-right: 1px solid #20344e;
+    background: #0d192b;
 }
 
 .profile-stat strong {
-    font-size: 20px;
+    font-size: 19px;
 
     line-height: 1.2;
 
@@ -416,7 +519,7 @@ body {
 }
 
 .profile-stat span {
-    margin-top: 4px;
+    margin-top: 5px;
 
     font-size: 12px;
 
@@ -426,6 +529,7 @@ body {
 
     white-space: nowrap;
 }
+
 
 /* =========================================================
    CONTENT TABS
@@ -482,6 +586,7 @@ body {
     background: var(--blue);
 }
 
+
 /* =========================================================
    CONTENT AREA
 ========================================================= */
@@ -502,6 +607,7 @@ body {
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
     padding: 30px;
@@ -512,6 +618,7 @@ body {
 
     text-align: center;
 }
+
 
 /* =========================================================
    PROFILE REELS
@@ -551,12 +658,6 @@ body {
     display: block;
 }
 
-.profile-post video {
-    background: #000;
-}
-
-/* Reel play icon */
-
 .profile-reel-play {
     position: absolute;
 
@@ -575,14 +676,12 @@ body {
 
     background: rgba(0, 0, 0, 0.55);
 
-    color: white;
+    color: #ffffff;
 
     font-size: 13px;
 
     pointer-events: none;
 }
-
-/* Reel caption */
 
 .profile-reel-caption {
     position: absolute;
@@ -593,7 +692,7 @@ body {
 
     padding: 24px 7px 7px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 10px;
 
@@ -613,8 +712,9 @@ body {
     pointer-events: none;
 }
 
+
 /* =========================================================
-   PROFILE PHOTO VIEWER
+   PHOTO VIEWER
 ========================================================= */
 
 .profile-photo-viewer {
@@ -627,6 +727,7 @@ body {
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
     padding: 25px;
@@ -663,12 +764,13 @@ body {
 
     background: rgba(255, 255, 255, 0.12);
 
-    color: white;
+    color: #ffffff;
 
     font-size: 28px;
 
     cursor: pointer;
 }
+
 
 /* =========================================================
    EDIT PROFILE MODAL
@@ -720,6 +822,7 @@ body {
     display: flex;
 
     align-items: center;
+
     justify-content: space-between;
 
     margin-bottom: 15px;
@@ -739,7 +842,7 @@ body {
 
     background: #18253a;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 24px;
 }
@@ -805,7 +908,7 @@ body {
 
     background: #091321;
 
-    color: white;
+    color: #ffffff;
 
     font: inherit;
 }
@@ -846,12 +949,13 @@ body {
 
     background: var(--blue);
 
-    color: white;
+    color: #ffffff;
 
     font-size: 15px;
 
     font-weight: 700;
 }
+
 
 /* =========================================================
    PROFILE MENU
@@ -894,7 +998,7 @@ body {
 .profile-menu-title {
     padding: 10px 12px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 14px;
 
@@ -919,6 +1023,8 @@ body {
     text-align: left;
 
     font-size: 14px;
+
+    font-family: inherit;
 }
 
 .profile-menu-panel button:active {
@@ -936,6 +1042,7 @@ body {
 .profile-menu-panel .logout-menu-button {
     color: var(--danger);
 }
+
 
 /* =========================================================
    BOTTOM NAVIGATION
@@ -979,11 +1086,14 @@ body {
     flex-direction: column;
 
     align-items: center;
+
     justify-content: center;
 
     gap: 3px;
 
     cursor: pointer;
+
+    font-family: inherit;
 }
 
 .nav-item svg {
@@ -1003,6 +1113,7 @@ body {
     color: var(--blue);
 }
 
+
 /* =========================================================
    SMALL PHONES
 ========================================================= */
@@ -1010,7 +1121,9 @@ body {
 @media (max-width: 380px) {
 
     .profile-user-row {
-        padding: 12px 14px 8px;
+        min-height: 128px;
+
+        padding: 12px 14px;
 
         gap: 14px;
     }
@@ -1041,25 +1154,32 @@ body {
         font-size: 14px;
     }
 
-    .profile-action-buttons {
+    .profile-actions {
         padding-left: 14px;
         padding-right: 14px;
+
         gap: 8px;
     }
 
-    .profile-action-buttons button {
-        height: 46px;
-        font-size: 14px;
+    .profile-action-button {
+        height: 42px;
+
+        font-size: 13px;
+
+        border-radius: 11px;
     }
 
     .profile-stats {
         padding-left: 14px;
         padding-right: 14px;
+
         gap: 6px;
     }
 
     .profile-stat {
-        border-radius: 19px;
+        min-height: 62px;
+
+        border-radius: 18px;
     }
 
     .profile-stat strong {
@@ -1079,6 +1199,7 @@ body {
         height: 23px;
     }
 }
+
 
 /* =========================================================
    TABLET / DESKTOP
@@ -1101,7 +1222,10 @@ body {
         right: auto;
         bottom: 15px;
 
-        width: min(600px, calc(100% - 30px));
+        width: min(
+            600px,
+            calc(100% - 30px)
+        );
 
         transform: translateX(-50%);
 
@@ -1127,7 +1251,7 @@ body {
         padding-right: 28px;
     }
 
-    .profile-action-buttons {
+    .profile-actions {
         padding-left: 28px;
         padding-right: 28px;
     }
