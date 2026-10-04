@@ -55,11 +55,17 @@ STATIC_DIR = FRONTEND_DIR / "static"
 # =========================================================
 
 try:
+
     Base.metadata.create_all(bind=engine)
+
     print("[Usanex] Database tables checked.")
 
 except Exception as e:
-    print("[Usanex Database] ERROR:", str(e))
+
+    print(
+        "[Usanex Database] ERROR:",
+        str(e),
+    )
 
 
 # =========================================================
@@ -67,11 +73,17 @@ except Exception as e:
 # =========================================================
 
 try:
+
     run_migrations()
+
     print("[Usanex Migration] Completed.")
 
 except Exception as e:
-    print("[Usanex Migration] ERROR:", str(e))
+
+    print(
+        "[Usanex Migration] ERROR:",
+        str(e),
+    )
 
 
 # =========================================================
@@ -179,7 +191,9 @@ try:
 
     from .routes.auth import router as auth_router
 
-    app.include_router(auth_router)
+    app.include_router(
+        auth_router
+    )
 
     print(
         "[Usanex] Auth routes loaded."
@@ -188,73 +202,7 @@ try:
 except Exception as e:
 
     print(
-        "[Usanex] Auth router ERROR:",
-        str(e),
-    )
-
-
-# =========================================================
-# CONNECTION ROUTES
-# =========================================================
-
-try:
-
-    from .routes.connections import router as connections_router
-
-    app.include_router(connections_router)
-
-    print(
-        "[Usanex] Connection routes loaded."
-    )
-
-except Exception as e:
-
-    print(
-        "[Usanex] Connection router ERROR:",
-        str(e),
-    )
-
-
-# =========================================================
-# SEARCH ROUTES
-# =========================================================
-
-try:
-
-    from .routes.search import router as search_router
-
-    app.include_router(search_router)
-
-    print(
-        "[Usanex] Search routes loaded."
-    )
-
-except Exception as e:
-
-    print(
-        "[Usanex] Search router ERROR:",
-        str(e),
-    )
-
-
-# =========================================================
-# REELS ROUTES
-# =========================================================
-
-try:
-
-    from .routes.reels import router as reels_router
-
-    app.include_router(reels_router)
-
-    print(
-        "[Usanex] Reels routes loaded."
-    )
-
-except Exception as e:
-
-    print(
-        "[Usanex] Reels router ERROR:",
+        "[Usanex] Auth router not loaded:",
         str(e),
     )
 
@@ -267,7 +215,9 @@ try:
 
     from .routes.profile import router as profile_router
 
-    app.include_router(profile_router)
+    app.include_router(
+        profile_router
+    )
 
     print(
         "[Usanex] Profile routes loaded."
@@ -276,7 +226,55 @@ try:
 except Exception as e:
 
     print(
-        "[Usanex] Profile router ERROR:",
+        "[Usanex] Profile router not loaded:",
+        str(e),
+    )
+
+
+# =========================================================
+# CONNECTION ROUTES
+# =========================================================
+
+try:
+
+    from .routes.connections import router as connections_router
+
+    app.include_router(
+        connections_router
+    )
+
+    print(
+        "[Usanex] Connection routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Connection router not loaded:",
+        str(e),
+    )
+
+
+# =========================================================
+# REELS ROUTES
+# =========================================================
+
+try:
+
+    from .routes.reels import router as reels_router
+
+    app.include_router(
+        reels_router
+    )
+
+    print(
+        "[Usanex] Reels routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Reels router not loaded:",
         str(e),
     )
 
@@ -289,7 +287,9 @@ try:
 
     from .routes.pages import router as pages_router
 
-    app.include_router(pages_router)
+    app.include_router(
+        pages_router
+    )
 
     print(
         "[Usanex] Page routes loaded."
@@ -298,13 +298,21 @@ try:
 except Exception as e:
 
     print(
-        "[Usanex] Pages router ERROR:",
+        "[Usanex] Pages router not loaded:",
         str(e),
     )
 
 
 # =========================================================
-# ROUTE SUMMARY
+# STARTUP INFORMATION
 # =========================================================
 
-print("[Usanex] Server initialization completed.")
+print("=================================================")
+print("             USANEX SERVER READY")
+print("=================================================")
+print("Auth routes       : LOADED")
+print("Profile routes    : LOADED")
+print("Connection routes : LOADED")
+print("Reels routes      : LOADED")
+print("Page routes       : LOADED")
+print("=================================================")
