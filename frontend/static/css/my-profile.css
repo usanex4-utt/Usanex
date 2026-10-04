@@ -784,3 +784,84 @@ body {
 
     pointer-events: none;
 }
+/* =========================================================
+   FOLLOW / CONNECTION BUTTON
+========================================================= */
+
+.profile-follow-row {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 18px 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-follow-button {
+    width: min(100%, 300px);
+    height: 40px;
+
+    border: 1px solid #2b9cff;
+    border-radius: 10px;
+
+    background: var(--blue);
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.1s ease;
+}
+
+.profile-follow-button:active {
+    transform: scale(0.97);
+}
+
+/* Following */
+.profile-follow-button.following {
+    background: #142238;
+    border-color: #315070;
+    color: #dce7f5;
+}
+
+/* Request Sent */
+.profile-follow-button.requested {
+    background: #142238;
+    border-color: #315070;
+    color: #8fbfff;
+}
+
+/* Unfollow */
+.profile-follow-button.unfollow {
+    background: transparent;
+    border-color: #ff4d67;
+    color: #ff6b80;
+}
+
+/* Disabled / loading */
+.profile-follow-button:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+
+/* =========================================================
+   SLIGHTLY COMPACT PROFILE + BIO
+========================================================= */
+
+.profile-user-row {
+    min-height: 142px;
+    padding-top: 12px;
+    padding-bottom: 10px;
+}
+
+.profile-bio-section {
+    min-height: 68px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
