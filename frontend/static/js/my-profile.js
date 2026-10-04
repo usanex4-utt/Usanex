@@ -1,6 +1,6 @@
 /* =========================================================
    USANEX — MY PROFILE JS
-   VERSION 41
+   FINAL VERSION 42
 ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,6 +26,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileLinks = $("profileLinks");
     const profileContent = $("profileContentContainer");
 
+    const profileUserRow = document.querySelector(
+        ".profile-user-row"
+    );
+
     const profilePhotoButton = $("profilePhotoButton");
     const profilePhotoViewer = $("profilePhotoViewer");
     const viewerPhoto = $("viewerPhoto");
@@ -33,10 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const profileMenuButton = $("profileMenuButton");
     const profileMenu = $("profileMenu");
-
-    /* NEW */
-    const editProfileButton = $("editProfileButton");
-    const shareProfileButton = $("shareProfileButton");
 
     const editProfileModal = $("editProfileModal");
     const closeEditProfile = $("closeEditProfile");
@@ -105,6 +105,348 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
+       CREATE PROFILE ACTION BUTTONS
+       EDIT + SHARE
+    ===================================================== */
+
+    function createProfileActionButtons() {
+
+        if (!profileUserRow) {
+            console.error(
+                "Usanex: profile user row not found."
+            );
+            return;
+        }
+
+        let actionBox =
+            document.getElementById(
+                "profileActionButtons"
+            );
+
+        if (actionBox) {
+            return;
+        }
+
+        actionBox =
+            document.createElement("div");
+
+        actionBox.id =
+            "profileActionButtons";
+
+        actionBox.innerHTML = `
+            <button
+                type="button"
+                id="profileEditButton"
+                class="profile-action-button profile-edit-button"
+            >
+                Edit Profile
+            </button>
+
+            <button
+                type="button"
+                id="profileShareButton"
+                class="profile-action-button profile-share-button"
+            >
+                Share Profile
+            </button>
+        `;
+
+        profileUserRow.appendChild(
+            actionBox
+        );
+
+
+        /* =================================================
+           EDIT BUTTON
+        ================================================= */
+
+        const editButton =
+            $("profileEditButton");
+
+        editButton.addEventListener(
+            "click",
+            (event) => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                openEditProfile();
+
+            }
+        );
+
+
+        /* =================================================
+           SHARE BUTTON
+        ================================================= */
+
+        const shareButton =
+            $("profileShareButton");
+
+        shareButton.addEventListener(
+            "click",
+            (event) => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                shareProfile();
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       OPEN EDIT PROFILE
+    ===================================================== */
+
+    function openEditProfile() {
+
+        if (!editProfileModal) {
+
+            console.error(
+                "Usanex: Edit Profile modal not found."
+            );
+
+            return;
+        }
+
+        profileMenu?.classList.add(
+            "hidden"
+        );
+
+        if (editProfileMessage) {
+
+            editProfileMessage.textContent =
+                "";
+        }
+
+        editProfileModal.classList.remove(
+            "hidden"
+        );
+
+        document.body.style.overflow =
+            "hidden";
+    }
+
+
+    /* =====================================================
+       CLOSE EDIT PROFILE
+    ===================================================== */
+
+    function closeEditProfileModal() {
+
+        if (!editProfileModal) {
+            return;
+        }
+
+        editProfileModal.classList.add(
+            "hidden"
+        );
+
+        document.body.style.overflow =
+            "";
+    }
+
+
+    /* =====================================================
+       SHARE PROFILE
+    ===================================================== */
+
+    async function shareProfile() {
+
+        const username =
+            safe(
+                profileUsername?.textContent,
+                ""
+            )
+            .replace(/^@/, "")
+            .trim();
+
+        const userId =
+            safe(
+                profileUserId?.textContent,
+                ""
+            ).trim();
+
+
+        /*
+         * Username is preferred.
+         * User ID is fallback.
+         */
+
+        const identifier =
+            username ||
+            userId ||
+            "user";
+
+
+        const profileUrl =
+            window.location.origin +
+            "/profile/" +
+            encodeURIComponent(
+                identifier
+            );
+
+
+        const shareData = {
+
+            title:
+                profileDisplayName?.textContent ||
+                "Usanex Profile",
+
+            text:
+                "Check out this profile on Usanex.",
+
+            url:
+                profileUrl
+        };
+
+
+        try {
+
+            if (
+                navigator.share
+            ) {
+
+                await navigator.share(
+                    shareData
+                );
+
+                return;
+            }
+
+
+            if (
+                navigator.clipboard &&
+                window.isSecureContext
+            ) {
+
+                await navigator.clipboard.writeText(
+                    profileUrl
+                );
+
+                showMessage(
+                    "Profile link copied!"
+                );
+
+                return;
+            }
+
+
+            const temp =
+                document.createElement(
+                    "textarea"
+                );
+
+            temp.value =
+                profileUrl;
+
+            temp.style.position =
+                "fixed";
+
+            temp.style.opacity =
+                "0";
+
+            document.body.appendChild(
+                temp
+            );
+
+            temp.select();
+
+            document.execCommand(
+                "copy"
+            );
+
+            temp.remove();
+
+            showMessage(
+                "Profile link copied!"
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Usanex share error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       MESSAGE
+    ===================================================== */
+
+    function showMessage(message) {
+
+        const old =
+            document.querySelector(
+                ".usanex-profile-message"
+            );
+
+        if (old) {
+            old.remove();
+        }
+
+
+        const box =
+            document.createElement(
+                "div"
+            );
+
+        box.className =
+            "usanex-profile-message";
+
+        box.textContent =
+            message;
+
+
+        Object.assign(
+            box.style,
+            {
+                position: "fixed",
+                left: "50%",
+                bottom: "82px",
+                transform: "translateX(-50%)",
+                zIndex: "99999",
+                padding: "10px 18px",
+                borderRadius: "20px",
+                background: "#162338",
+                border: "1px solid #29415f",
+                color: "#ffffff",
+                fontSize: "13px",
+                fontWeight: "600",
+                boxShadow:
+                    "0 8px 25px rgba(0,0,0,.4)",
+                whiteSpace: "nowrap"
+            }
+        );
+
+
+        document.body.appendChild(
+            box
+        );
+
+
+        setTimeout(
+            () => {
+
+                box.remove();
+
+            },
+            1800
+        );
+
+    }
+
+
+    /* =====================================================
        PHOTO
     ===================================================== */
 
@@ -113,31 +455,39 @@ document.addEventListener("DOMContentLoaded", () => {
         const photoUrl =
             url || DEFAULT_PHOTO;
 
-        profilePhoto.src = photoUrl;
-
-        if (editProfilePhotoPreview) {
-            editProfilePhotoPreview.src = photoUrl;
-        }
-
-        profilePhoto.onerror = () => {
-
-            profilePhoto.onerror = null;
+        if (profilePhoto) {
 
             profilePhoto.src =
-                DEFAULT_PHOTO;
-        };
+                photoUrl;
+
+            profilePhoto.onerror =
+                () => {
+
+                    profilePhoto.onerror =
+                        null;
+
+                    profilePhoto.src =
+                        DEFAULT_PHOTO;
+                };
+        }
+
 
         if (editProfilePhotoPreview) {
 
-            editProfilePhotoPreview.onerror = () => {
+            editProfilePhotoPreview.src =
+                photoUrl;
 
-                editProfilePhotoPreview.onerror = null;
+            editProfilePhotoPreview.onerror =
+                () => {
 
-                editProfilePhotoPreview.src =
-                    DEFAULT_PHOTO;
-            };
+                    editProfilePhotoPreview.onerror =
+                        null;
 
+                    editProfilePhotoPreview.src =
+                        DEFAULT_PHOTO;
+                };
         }
+
     }
 
 
@@ -162,14 +512,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 );
 
+
             if (!response.ok) {
-
-                if (response.status === 401) {
-
-                    console.error(
-                        "Usanex: authentication required."
-                    );
-                }
 
                 throw new Error(
                     "Profile request failed: " +
@@ -177,11 +521,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
+
             const data =
                 await response.json();
 
+
+            console.log(
+                "USANEX PROFILE DATA:",
+                data
+            );
+
+
             if (
-                !data.success ||
+                !data ||
                 !data.user
             ) {
 
@@ -190,16 +542,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
-            renderProfile(data);
+
+            renderProfile(
+                data
+            );
+
 
         } catch (error) {
 
             console.error(
-                "Usanex profile error:",
+                "USANEX PROFILE ERROR:",
                 error
             );
 
         }
+
     }
 
 
@@ -215,8 +572,44 @@ document.addEventListener("DOMContentLoaded", () => {
         const stats =
             data.stats || {};
 
-        const content =
-            data.content || [];
+
+        /*
+         * IMPORTANT:
+         * Support content / reels / posts.
+         */
+
+        let content = [];
+
+        if (
+            Array.isArray(
+                data.content
+            )
+        ) {
+
+            content =
+                data.content;
+
+        } else if (
+            Array.isArray(
+                data.reels
+            )
+        ) {
+
+            content =
+                data.reels;
+
+        } else if (
+            Array.isArray(
+                data.posts
+            )
+        ) {
+
+            content =
+                data.posts;
+        }
+
+
+        /* NAME */
 
         const name =
             safe(
@@ -224,16 +617,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Usanex User"
             );
 
+
         profileName.textContent =
             name;
 
         profileDisplayName.textContent =
             name;
 
+
+        /* USERNAME */
+
         profileUsername.textContent =
             formatUsername(
                 user.username
             );
+
+
+        /* USER ID */
 
         profileUserId.textContent =
             safe(
@@ -245,12 +645,13 @@ document.addEventListener("DOMContentLoaded", () => {
         /* BIO */
 
         const bio =
-            safe(user.bio);
+            safe(
+                user.bio
+            );
 
         profileBio.textContent =
-            bio
-                ? bio
-                : "No bio available.";
+            bio ||
+            "No bio available.";
 
 
         /* PHOTO */
@@ -277,10 +678,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 stats.following || 0
             );
 
+
         postsCount.textContent =
             Number(
-                stats.posts ||
-                content.length ||
+                stats.posts ??
+                content.length ??
                 0
             );
 
@@ -325,12 +727,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         /* LINKS */
 
-        renderLinks(user);
+        renderLinks(
+            user
+        );
 
 
-        /* CONTENT */
+        /* REELS */
 
-        renderContent(content);
+        renderContent(
+            content
+        );
+
     }
 
 
@@ -344,7 +751,9 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        profileLinks.innerHTML = "";
+        profileLinks.innerHTML =
+            "";
+
 
         const links = [];
 
@@ -357,6 +766,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     user.website
                 )
             });
+
         }
 
 
@@ -366,6 +776,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 String(
                     user.instagram
                 ).trim();
+
 
             if (
                 !instagram.startsWith(
@@ -384,10 +795,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
             }
 
+
             links.push({
                 label: "Instagram",
                 url: instagram
             });
+
         }
 
 
@@ -399,40 +812,49 @@ document.addEventListener("DOMContentLoaded", () => {
                     user.social_link
                 )
             });
+
         }
 
 
         if (!links.length) {
 
-            profileLinks.hidden = true;
+            profileLinks.hidden =
+                true;
 
             return;
         }
 
 
-        profileLinks.hidden = false;
+        profileLinks.hidden =
+            false;
 
 
-        links.forEach((item) => {
+        links.forEach(
+            (item) => {
 
-            const a =
-                document.createElement("a");
+                const a =
+                    document.createElement(
+                        "a"
+                    );
 
-            a.href =
-                item.url;
+                a.href =
+                    item.url;
 
-            a.textContent =
-                item.label;
+                a.textContent =
+                    item.label;
 
-            a.target =
-                "_blank";
+                a.target =
+                    "_blank";
 
-            a.rel =
-                "noopener noreferrer";
+                a.rel =
+                    "noopener noreferrer";
 
-            profileLinks.appendChild(a);
+                profileLinks.appendChild(
+                    a
+                );
 
-        });
+            }
+        );
 
     }
 
@@ -463,13 +885,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       CONTENT / REELS
+       RENDER REELS
     ===================================================== */
 
     function renderContent(posts) {
 
         if (
-            !posts ||
+            !Array.isArray(posts) ||
             posts.length === 0
         ) {
 
@@ -492,173 +914,188 @@ document.addEventListener("DOMContentLoaded", () => {
             "profile-post-grid";
 
 
-        posts.forEach((post) => {
+        posts.forEach(
+            (post) => {
 
-            const item =
-                document.createElement(
-                    "div"
-                );
+                /*
+                 * Support multiple backend names.
+                 */
 
-            item.className =
-                "profile-post";
-
-
-            if (post.media_url) {
-
-                const isVideo =
-                    post.media_type === "video" ||
-                    post.media_type === "reel";
+                const mediaUrl =
+                    post.media_url ||
+                    post.video_url ||
+                    post.file_url ||
+                    post.url ||
+                    post.media ||
+                    null;
 
 
-                if (isVideo) {
-
-                    const video =
-                        document.createElement(
-                            "video"
-                        );
-
-                    video.src =
-                        post.media_url;
-
-                    video.muted =
-                        true;
-
-                    video.playsInline =
-                        true;
-
-                    video.preload =
-                        "metadata";
-
-                    video.loop =
-                        true;
-
-                    item.appendChild(
-                        video
-                    );
+                const mediaType =
+                    String(
+                        post.media_type ||
+                        post.type ||
+                        ""
+                    ).toLowerCase();
 
 
-                    /* PLAY ICON */
-
-                    const play =
-                        document.createElement(
-                            "div"
-                        );
-
-                    play.className =
-                        "profile-reel-play";
-
-                    play.textContent =
-                        "▶";
-
-                    item.appendChild(
-                        play
-                    );
-
-
-                    /* VIDEO CLICK */
-
-                    item.addEventListener(
-                        "click",
-                        () => {
-
-                            if (
-                                video.paused
-                            ) {
-
-                                video.play()
-                                    .catch(
-                                        () => {}
-                                    );
-
-                                play.style.display =
-                                    "none";
-
-                            } else {
-
-                                video.pause();
-
-                                play.style.display =
-                                    "flex";
-                            }
-
-                        }
-                    );
-
-                } else {
-
-                    const img =
-                        document.createElement(
-                            "img"
-                        );
-
-                    img.src =
-                        post.media_url;
-
-                    img.loading =
-                        "lazy";
-
-                    img.style.width =
-                        "100%";
-
-                    img.style.height =
-                        "100%";
-
-                    img.style.objectFit =
-                        "cover";
-
-                    item.appendChild(
-                        img
-                    );
-                }
-
-            } else {
-
-                const text =
+                const item =
                     document.createElement(
                         "div"
                     );
 
-                text.style.width =
-                    "100%";
+                item.className =
+                    "profile-post";
 
-                text.style.height =
-                    "100%";
 
-                text.style.display =
-                    "flex";
+                if (mediaUrl) {
 
-                text.style.alignItems =
-                    "center";
+                    const isVideo =
+                        mediaType === "video" ||
+                        mediaType === "reel" ||
+                        mediaType === "mp4" ||
+                        /\.(mp4|webm|mov|m4v)(\?|$)/i.test(
+                            String(mediaUrl)
+                        );
 
-                text.style.justifyContent =
-                    "center";
 
-                text.style.padding =
-                    "15px";
+                    if (isVideo) {
 
-                text.style.color =
-                    "#8995a8";
+                        const video =
+                            document.createElement(
+                                "video"
+                            );
 
-                text.style.textAlign =
-                    "center";
+                        video.src =
+                            mediaUrl;
 
-                text.textContent =
-                    safe(
-                        post.content,
-                        ""
-                    );
+                        video.muted =
+                            true;
 
-                item.appendChild(
-                    text
+                        video.playsInline =
+                            true;
+
+                        video.preload =
+                            "metadata";
+
+                        video.loop =
+                            true;
+
+                        video.setAttribute(
+                            "playsinline",
+                            ""
+                        );
+
+
+                        item.appendChild(
+                            video
+                        );
+
+
+                        const play =
+                            document.createElement(
+                                "div"
+                            );
+
+                        play.className =
+                            "profile-reel-play";
+
+                        play.textContent =
+                            "▶";
+
+
+                        item.appendChild(
+                            play
+                        );
+
+
+                        item.addEventListener(
+                            "click",
+                            () => {
+
+                                if (
+                                    video.paused
+                                ) {
+
+                                    video.play()
+                                        .then(
+                                            () => {
+                                                play.style.display =
+                                                    "none";
+                                            }
+                                        )
+                                        .catch(
+                                            () => {}
+                                        );
+
+                                } else {
+
+                                    video.pause();
+
+                                    play.style.display =
+                                        "flex";
+                                }
+
+                            }
+                        );
+
+
+                    } else {
+
+                        const img =
+                            document.createElement(
+                                "img"
+                            );
+
+                        img.src =
+                            mediaUrl;
+
+                        img.loading =
+                            "lazy";
+
+                        img.style.width =
+                            "100%";
+
+                        img.style.height =
+                            "100%";
+
+                        img.style.objectFit =
+                            "cover";
+
+                        item.appendChild(
+                            img
+                        );
+                    }
+
+
+                } else {
+
+                    item.innerHTML = `
+                        <div style="
+                            width:100%;
+                            height:100%;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            padding:15px;
+                            color:#8995a8;
+                            text-align:center;
+                        ">
+                            ${escapeHtml(
+                                post.content ||
+                                post.caption ||
+                                ""
+                            )}
+                        </div>
+                    `;
+                }
+
+
+                grid.appendChild(
+                    item
                 );
+
             }
-
-
-            grid.appendChild(
-                item
-            );
-
-        });
+        );
 
 
         profileContent.innerHTML =
@@ -679,19 +1116,22 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         () => {
 
-            const src =
-                profilePhoto.src;
-
-            if (!src) {
+            if (
+                !profilePhotoViewer ||
+                !viewerPhoto
+            ) {
                 return;
             }
 
+
             viewerPhoto.src =
-                src;
+                profilePhoto.src;
+
 
             profilePhotoViewer.classList.remove(
                 "hidden"
             );
+
         }
     );
 
@@ -706,6 +1146,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             viewerPhoto.src =
                 "";
+
         }
     );
 
@@ -725,7 +1166,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 viewerPhoto.src =
                     "";
+
             }
+
         }
     );
 
@@ -740,9 +1183,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             event.stopPropagation();
 
-            profileMenu.classList.toggle(
+            profileMenu?.classList.toggle(
                 "hidden"
             );
+
         }
     );
 
@@ -759,61 +1203,45 @@ document.addEventListener("DOMContentLoaded", () => {
                 profileMenu.classList.add(
                     "hidden"
                 );
+
             }
+
         }
     );
 
 
     /* =====================================================
-       EDIT PROFILE BUTTON
-       PROFILE ROW BUTTON
+       OLD EDIT BUTTON IF IT EXISTS
+       HIDDEN/REMOVED FROM MENU
     ===================================================== */
 
-    function openEditProfile() {
+    const oldEditButton =
+        $("editProfileButton");
 
-        if (!editProfileModal) {
-            return;
-        }
+    if (oldEditButton) {
 
-        profileMenu?.classList.add(
-            "hidden"
+        oldEditButton.addEventListener(
+            "click",
+            (event) => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                openEditProfile();
+
+            }
         );
 
-        if (editProfileMessage) {
-
-            editProfileMessage.textContent =
-                "";
-        }
-
-        editProfileModal.classList.remove(
-            "hidden"
-        );
     }
 
 
-    editProfileButton?.addEventListener(
-        "click",
-        () => {
-
-            openEditProfile();
-
-        }
-    );
-
-
     /* =====================================================
-       CLOSE EDIT PROFILE
+       CLOSE EDIT MODAL
     ===================================================== */
 
     closeEditProfile?.addEventListener(
         "click",
-        () => {
-
-            editProfileModal.classList.add(
-                "hidden"
-            );
-
-        }
+        closeEditProfileModal
     );
 
 
@@ -826,16 +1254,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 editProfileModal
             ) {
 
-                editProfileModal.classList.add(
-                    "hidden"
-                );
+                closeEditProfileModal();
+
             }
+
         }
     );
 
 
     /* =====================================================
-       CHANGE PROFILE PHOTO
+       CHANGE PHOTO
     ===================================================== */
 
     changeProfilePhotoButton?.addEventListener(
@@ -878,8 +1306,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     file
                 );
 
+
             editProfilePhotoPreview.src =
                 previewUrl;
+
 
             editProfileMessage.textContent =
                 "Photo selected. Tap Save Changes.";
@@ -896,14 +1326,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         async () => {
 
-            if (
-                !editName ||
-                !editBio
-            ) {
-                return;
-            }
-
-
             editProfileMessage.textContent =
                 "Saving...";
 
@@ -912,10 +1334,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             try {
-
-                /* =========================================
-                   UPDATE PROFILE
-                ========================================= */
 
                 const profileResponse =
                     await fetch(
@@ -973,9 +1391,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
 
-                /* =========================================
-                   PHOTO UPLOAD
-                ========================================= */
+                /* PHOTO */
 
                 const file =
                     profilePhotoInput.files?.[0];
@@ -1016,6 +1432,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             "Profile photo upload failed."
                         );
                     }
+
                 }
 
 
@@ -1033,9 +1450,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 setTimeout(
                     () => {
 
-                        editProfileModal.classList.add(
-                            "hidden"
-                        );
+                        closeEditProfileModal();
 
                     },
                     600
@@ -1045,9 +1460,10 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (error) {
 
                 console.error(
-                    "Usanex save profile:",
+                    "Save profile error:",
                     error
                 );
+
 
                 editProfileMessage.textContent =
                     error.message ||
@@ -1058,167 +1474,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 saveProfileButton.disabled =
                     false;
-            }
-
-        }
-    );
-
-
-    /* =====================================================
-       SHARE PROFILE
-    ===================================================== */
-
-    shareProfileButton?.addEventListener(
-        "click",
-        async () => {
-
-            const username =
-                safe(
-                    profileUsername?.textContent
-                ).replace(
-                    /^@/,
-                    ""
-                );
-
-
-            const profileUrl =
-                window.location.origin +
-                "/profile/" +
-                encodeURIComponent(
-                    username
-                );
-
-
-            try {
-
-                if (
-                    navigator.share
-                ) {
-
-                    await navigator.share({
-
-                        title:
-                            profileDisplayName?.textContent ||
-                            "Usanex Profile",
-
-                        text:
-                            "Check out this profile on Usanex.",
-
-                        url:
-                            profileUrl
-                    });
-
-                    return;
-                }
-
-
-                if (
-                    navigator.clipboard
-                ) {
-
-                    await navigator.clipboard.writeText(
-                        profileUrl
-                    );
-
-                    showShareMessage(
-                        "Profile link copied!"
-                    );
-
-                    return;
-                }
-
-
-                window.prompt(
-                    "Copy profile link:",
-                    profileUrl
-                );
-
-
-            } catch (error) {
-
-                if (
-                    error.name ===
-                    "AbortError"
-                ) {
-                    return;
-                }
-
-                console.error(
-                    "Share profile error:",
-                    error
-                );
 
             }
 
         }
     );
-
-
-    /* =====================================================
-       SHARE MESSAGE
-    ===================================================== */
-
-    function showShareMessage(message) {
-
-        const old =
-            document.querySelector(
-                ".usanex-share-message"
-            );
-
-        if (old) {
-            old.remove();
-        }
-
-
-        const box =
-            document.createElement(
-                "div"
-            );
-
-        box.className =
-            "usanex-share-message";
-
-        box.textContent =
-            message;
-
-
-        Object.assign(
-            box.style,
-            {
-                position: "fixed",
-                left: "50%",
-                bottom: "82px",
-                transform: "translateX(-50%)",
-                zIndex: "9999",
-                padding: "10px 18px",
-                borderRadius: "20px",
-                background: "#162338",
-                border: "1px solid #263b58",
-                color: "#ffffff",
-                fontSize: "13px",
-                fontWeight: "600",
-                boxShadow:
-                    "0 8px 25px rgba(0,0,0,.35)",
-                whiteSpace: "nowrap"
-            }
-        );
-
-
-        document.body.appendChild(
-            box
-        );
-
-
-        setTimeout(
-            () => {
-
-                box.remove();
-
-            },
-            1800
-        );
-
-    }
 
 
     /* =====================================================
@@ -1246,6 +1506,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     item.classList.remove(
                                         "active"
                                     );
+
                                 }
                             );
 
@@ -1274,6 +1535,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     available yet.
                                 </div>
                             `;
+
                         }
 
                     }
@@ -1284,7 +1546,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       BOTTOM NAVIGATION
+       BOTTOM NAV
     ===================================================== */
 
     $("navHome")?.addEventListener(
@@ -1343,7 +1605,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       PLUS BUTTON
+       PLUS
     ===================================================== */
 
     $("profileAddButton")?.addEventListener(
@@ -1359,8 +1621,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       OTHER MENU ITEMS
-       NO EDIT PROFILE HERE
+       MENU ITEMS
+       EDIT PROFILE NOT NEEDED HERE
     ===================================================== */
 
     [
@@ -1423,7 +1685,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             localStorage.clear();
 
-
             window.location.href =
                 "/login";
 
@@ -1432,7 +1693,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     /* =====================================================
-       ESC KEY
+       ESC
     ===================================================== */
 
     document.addEventListener(
@@ -1451,9 +1712,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "hidden"
             );
 
-            editProfileModal?.classList.add(
-                "hidden"
-            );
+            closeEditProfileModal();
 
             profilePhotoViewer?.classList.add(
                 "hidden"
@@ -1490,12 +1749,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 "'",
                 "&#039;"
             );
+
     }
 
 
     /* =====================================================
        START
     ===================================================== */
+
+    createProfileActionButtons();
 
     loadProfile();
 
