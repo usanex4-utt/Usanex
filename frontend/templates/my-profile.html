@@ -38,12 +38,14 @@
             +
         </button>
 
+
         <h1
             class="profile-header-name"
             id="profileName"
         >
             Usanex User
         </h1>
+
 
         <button
             type="button"
@@ -65,8 +67,10 @@
 
     <main class="profile-main">
 
+
         <!-- =================================================
-             PROFILE + USER INFORMATION
+             PROFILE USER ROW
+             NO EDIT / SHARE BUTTONS HERE
         ================================================== -->
 
         <section class="profile-user-row">
@@ -114,33 +118,7 @@
 
 
         <!-- =================================================
-             EDIT + SHARE PROFILE
-        ================================================== -->
-
-        <section class="profile-action-row">
-
-            <button
-                type="button"
-                class="profile-action-button edit-profile-action"
-                id="profileEditAction"
-            >
-                Edit Profile
-            </button>
-
-
-            <button
-                type="button"
-                class="profile-action-button share-profile-action"
-                id="profileShareAction"
-            >
-                Share Profile
-            </button>
-
-        </section>
-
-
-        <!-- =================================================
-             BIO
+             BIO + LINKS + ACTION BUTTONS
         ================================================== -->
 
         <section class="profile-bio-section">
@@ -152,11 +130,41 @@
                 No bio available.
             </p>
 
+
+            <!-- PROFILE LINKS -->
+
             <div
                 class="profile-links"
                 id="profileLinks"
                 hidden
             ></div>
+
+
+            <!-- =================================================
+                 EDIT + SHARE
+                 ONLY HERE
+            ================================================== -->
+
+            <div class="profile-actions">
+
+                <button
+                    type="button"
+                    class="profile-action-button edit-action"
+                    id="editProfileButton"
+                >
+                    Edit Profile
+                </button>
+
+
+                <button
+                    type="button"
+                    class="profile-action-button share-action"
+                    id="shareProfileButton"
+                >
+                    Share Profile
+                </button>
+
+            </div>
 
         </section>
 
@@ -169,68 +177,52 @@
 
             <div class="profile-stat">
 
-                <div class="profile-stat-pill">
+                <strong id="followersCount">
+                    0
+                </strong>
 
-                    <strong id="followersCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Followers
-                    </span>
-
-                </div>
+                <span>
+                    Followers
+                </span>
 
             </div>
 
 
             <div class="profile-stat">
 
-                <div class="profile-stat-pill">
+                <strong id="connectedCount">
+                    0
+                </strong>
 
-                    <strong id="connectedCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Connected
-                    </span>
-
-                </div>
+                <span>
+                    Connected
+                </span>
 
             </div>
 
 
             <div class="profile-stat">
 
-                <div class="profile-stat-pill">
+                <strong id="followingCount">
+                    0
+                </strong>
 
-                    <strong id="followingCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Following
-                    </span>
-
-                </div>
+                <span>
+                    Following
+                </span>
 
             </div>
 
 
             <div class="profile-stat">
 
-                <div class="profile-stat-pill">
+                <strong id="postsCount">
+                    0
+                </strong>
 
-                    <strong id="postsCount">
-                        0
-                    </strong>
-
-                    <span>
-                        Posts
-                    </span>
-
-                </div>
+                <span>
+                    Posts
+                </span>
 
             </div>
 
@@ -254,6 +246,7 @@
                 Reels
             </button>
 
+
             <button
                 type="button"
                 class="profile-content-tab"
@@ -262,6 +255,7 @@
                 Images
             </button>
 
+
             <button
                 type="button"
                 class="profile-content-tab"
@@ -269,6 +263,7 @@
             >
                 Saved
             </button>
+
 
             <button
                 type="button"
@@ -282,7 +277,7 @@
 
 
         <!-- =================================================
-             CONTENT
+             REELS / CONTENT
         ================================================== -->
 
         <section
@@ -317,6 +312,7 @@
             ×
         </button>
 
+
         <img
             id="viewerPhoto"
             src=""
@@ -343,15 +339,19 @@
                     Edit Profile
                 </h2>
 
+
                 <button
                     type="button"
                     id="closeEditProfile"
+                    aria-label="Close"
                 >
                     ×
                 </button>
 
             </div>
 
+
+            <!-- PROFILE PHOTO -->
 
             <div class="edit-profile-photo-area">
 
@@ -361,12 +361,14 @@
                     alt="Profile photo"
                 >
 
+
                 <button
                     type="button"
                     id="changeProfilePhotoButton"
                 >
                     Change Photo
                 </button>
+
 
                 <input
                     type="file"
@@ -378,6 +380,8 @@
             </div>
 
 
+            <!-- NAME -->
+
             <label>
                 Name
 
@@ -385,9 +389,13 @@
                     type="text"
                     id="editName"
                     maxlength="100"
+                    autocomplete="name"
                 >
+
             </label>
 
+
+            <!-- USERNAME -->
 
             <label>
                 Username
@@ -397,8 +405,11 @@
                     id="editUsername"
                     disabled
                 >
+
             </label>
 
+
+            <!-- USER ID -->
 
             <label>
                 User ID
@@ -408,8 +419,11 @@
                     id="editUserId"
                     disabled
                 >
+
             </label>
 
+
+            <!-- BIO -->
 
             <label>
                 Bio
@@ -419,8 +433,11 @@
                     maxlength="500"
                     rows="4"
                 ></textarea>
+
             </label>
 
+
+            <!-- WEBSITE -->
 
             <label>
                 Website
@@ -428,9 +445,13 @@
                 <input
                     type="url"
                     id="editWebsite"
+                    autocomplete="url"
                 >
+
             </label>
 
+
+            <!-- INSTAGRAM -->
 
             <label>
                 Instagram
@@ -438,9 +459,13 @@
                 <input
                     type="text"
                     id="editInstagram"
+                    autocomplete="off"
                 >
+
             </label>
 
+
+            <!-- SOCIAL LINK -->
 
             <label>
                 Social Link
@@ -448,15 +473,21 @@
                 <input
                     type="url"
                     id="editSocialLink"
+                    autocomplete="url"
                 >
+
             </label>
 
+
+            <!-- MESSAGE -->
 
             <div
                 class="edit-profile-message"
                 id="editProfileMessage"
             ></div>
 
+
+            <!-- SAVE -->
 
             <button
                 type="button"
@@ -472,7 +503,8 @@
 
 
     <!-- =====================================================
-         PROFILE MENU — NO EDIT PROFILE HERE
+         THREE DOT MENU
+         EDIT PROFILE REMOVED FROM HERE
     ====================================================== -->
 
     <div
@@ -560,6 +592,7 @@
         aria-label="Main navigation"
     >
 
+
         <!-- HOME -->
 
         <button
@@ -574,9 +607,13 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <path d="M3 10.5L12 3l9 7.5"></path>
+
                 <path d="M5.5 9.5V21h13V9.5"></path>
+
             </svg>
+
 
             <span>
                 Home
@@ -608,6 +645,7 @@
                     rx="3"
                 ></rect>
 
+
                 <path d="M8 4l3 5"></path>
 
                 <path d="M14 4l3 5"></path>
@@ -615,6 +653,7 @@
                 <path d="M10 12l5 3-5 3v-6z"></path>
 
             </svg>
+
 
             <span>
                 Reel
@@ -644,9 +683,11 @@
                     r="7"
                 ></circle>
 
+
                 <path d="M20 20l-4-4"></path>
 
             </svg>
+
 
             <span>
                 Search
@@ -676,9 +717,11 @@
                         d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
                     ></path>
 
+
                     <path d="M10 21h4"></path>
 
                 </svg>
+
 
                 <span
                     class="notification-dot"
@@ -686,6 +729,7 @@
                 ></span>
 
             </span>
+
 
             <span>
                 Notification
@@ -715,11 +759,13 @@
                     r="4"
                 ></circle>
 
+
                 <path
                     d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
                 ></path>
 
             </svg>
+
 
             <span>
                 Profile
@@ -732,8 +778,12 @@
 </div>
 
 
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
 <script
-    src="/static/js/my-profile.js?v=42"
+    src="/static/js/my-profile.js?v=41"
     defer
 ></script>
 
