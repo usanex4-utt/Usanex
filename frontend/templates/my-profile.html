@@ -15,7 +15,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/css/my-profile.css?v=40"
+        href="/static/css/my-profile.css?v=41"
     >
 </head>
 
@@ -29,8 +29,6 @@
 
     <header class="profile-header">
 
-        <!-- PLUS -->
-
         <button
             type="button"
             class="profile-add-button"
@@ -40,18 +38,12 @@
             +
         </button>
 
-
-        <!-- NAME -->
-
         <h1
             class="profile-header-name"
             id="profileName"
         >
             Usanex User
         </h1>
-
-
-        <!-- MENU -->
 
         <button
             type="button"
@@ -73,13 +65,12 @@
 
     <main class="profile-main">
 
+
         <!-- =================================================
-             2ND ROW — PROFILE + USER INFORMATION
+             PROFILE + USER INFORMATION
         ================================================== -->
 
         <section class="profile-user-row">
-
-            <!-- PROFILE PHOTO -->
 
             <button
                 type="button"
@@ -97,8 +88,6 @@
 
             </button>
 
-
-            <!-- USER INFORMATION -->
 
             <div class="profile-user-info">
 
@@ -126,7 +115,7 @@
 
 
         <!-- =================================================
-             3RD ROW — BIO
+             BIO
         ================================================== -->
 
         <section class="profile-bio-section">
@@ -148,7 +137,24 @@
 
 
         <!-- =================================================
-             4TH ROW — STATS
+             FOLLOW / CONNECTION BUTTON
+        ================================================== -->
+
+        <section class="profile-follow-row">
+
+            <button
+                type="button"
+                id="profileFollowButton"
+                class="profile-follow-button"
+            >
+                Follow
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
+             STATS
         ================================================== -->
 
         <section class="profile-stats">
@@ -208,7 +214,7 @@
 
 
         <!-- =================================================
-             5TH ROW — CONTENT TABS
+             CONTENT TABS
         ================================================== -->
 
         <nav
@@ -687,6 +693,7 @@
                 <path
                     d="M4 21c0-4 3.5-7 8-7s8 3 8 7"
                 ></path>
+
             </svg>
 
             <span>
