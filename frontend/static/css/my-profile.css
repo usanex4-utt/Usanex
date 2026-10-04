@@ -59,11 +59,15 @@ body {
 .profile-header {
     height: 54px;
     width: 100%;
+
     display: grid;
     grid-template-columns: 50px 1fr 50px;
     align-items: center;
+
     border-bottom: 1px solid var(--border);
+
     background: #091321;
+
     position: sticky;
     top: 0;
     z-index: 50;
@@ -71,12 +75,15 @@ body {
 
 .profile-header-name {
     text-align: center;
+
     font-size: 18px;
     font-weight: 700;
     line-height: 1;
+
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
     padding: 0 8px;
 }
 
@@ -84,12 +91,15 @@ body {
 .profile-menu-button {
     width: 42px;
     height: 42px;
+
     border: 0;
     background: transparent;
     color: white;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
     cursor: pointer;
 }
 
@@ -107,6 +117,7 @@ body {
 .profile-menu-button span {
     width: 5px;
     height: 5px;
+
     border-radius: 50%;
     background: white;
 }
@@ -123,15 +134,20 @@ body {
 
 /* =========================================================
    PROFILE USER ROW
+   Slightly shifted upward / compact
 ========================================================= */
 
 .profile-user-row {
-    min-height: 154px;
-    padding: 20px 18px;
+    min-height: 130px;
+
+    padding: 8px 18px 7px;
+
     display: flex;
     align-items: center;
+
     gap: 18px;
-    border-bottom: 1px solid var(--border);
+
+    border-bottom: 0;
 }
 
 /* =========================================================
@@ -140,23 +156,32 @@ body {
 
 .profile-photo-button {
     flex: 0 0 auto;
+
     width: 104px;
     height: 104px;
+
     padding: 5px;
+
     border: 3px solid var(--blue);
     border-radius: 50%;
+
     background: #091321;
+
     box-shadow:
         0 0 0 3px #071426,
         0 0 12px rgba(35, 140, 255, 0.28);
+
     cursor: pointer;
 }
 
 .profile-photo {
     width: 100%;
     height: 100%;
+
     display: block;
+
     object-fit: cover;
+
     border-radius: 50%;
     border: 2px solid #dbe7f7;
 }
@@ -174,8 +199,11 @@ body {
     font-size: 21px;
     line-height: 1.25;
     font-weight: 750;
+
     margin-bottom: 5px;
+
     color: #ffffff;
+
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -183,8 +211,11 @@ body {
 
 .profile-username {
     font-size: 15px;
+
     color: #aeb9ca;
+
     line-height: 1.4;
+
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -193,41 +224,58 @@ body {
 .profile-user-id {
     display: inline-flex;
     align-items: center;
+
     margin-top: 8px;
+
     padding: 5px 10px;
+
     border-radius: 15px;
+
     background: #162338;
+
     color: #8995a9;
+
     font-size: 12px;
     line-height: 1;
 }
 
 /* =========================================================
    BIO
+   Compact / shifted upward
 ========================================================= */
 
 .profile-bio-section {
-    min-height: 82px;
-    padding: 15px 18px 13px;
+    min-height: 62px;
+
+    padding: 7px 18px 8px;
+
     text-align: center;
-    border-bottom: 1px solid var(--border);
+
+    border-bottom: 0;
 }
 
 .profile-bio {
     max-width: 650px;
+
     margin: 0 auto;
+
     color: #c3cad6;
+
     font-size: 15px;
     line-height: 1.45;
+
     word-break: break-word;
 }
 
 .profile-links {
     display: flex;
+
     justify-content: center;
     flex-wrap: wrap;
+
     gap: 8px;
-    margin-top: 10px;
+
+    margin-top: 7px;
 }
 
 .profile-links:not([hidden]) {
@@ -236,57 +284,201 @@ body {
 
 .profile-links a {
     display: inline-flex;
+
     align-items: center;
     justify-content: center;
-    min-height: 32px;
-    padding: 6px 14px;
+
+    min-height: 30px;
+
+    padding: 5px 13px;
+
     border-radius: 18px;
+
     background: #101d31;
+
     border: 1px solid #162a43;
+
     color: var(--blue);
+
     font-size: 13px;
+
     text-decoration: none;
 }
 
 /* =========================================================
+   FOLLOW + REQUEST
+   Between BIO and STATS
+========================================================= */
+
+.profile-action-row {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    padding: 5px 18px 8px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-action-button {
+    flex: 1;
+
+    max-width: 180px;
+
+    height: 38px;
+
+    border-radius: 10px;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.1s ease;
+}
+
+.profile-action-button:active {
+    transform: scale(0.97);
+}
+
+/* FOLLOW */
+
+.follow-button {
+    border: 1px solid var(--blue);
+
+    background: var(--blue);
+
+    color: #ffffff;
+}
+
+.follow-button:hover {
+    background: #167ce8;
+}
+
+/* REQUEST */
+
+.request-button {
+    border: 1px solid #304663;
+
+    background: #142238;
+
+    color: #dce8f7;
+}
+
+.request-button:hover {
+    background: #1a2d47;
+}
+
+/* FOLLOWING STATE */
+
+.follow-button.following {
+    background: #142238;
+
+    border-color: #315070;
+
+    color: #dce7f5;
+}
+
+/* REQUESTED STATE */
+
+.request-button.requested {
+    background: #142238;
+
+    border-color: #315070;
+
+    color: #8fbfff;
+}
+
+/* UNFOLLOW STATE */
+
+.follow-button.unfollow {
+    background: transparent;
+
+    border-color: var(--danger);
+
+    color: #ff6b80;
+}
+
+/* =========================================================
    STATS
+   Rounded / oval-corner boxes
 ========================================================= */
 
 .profile-stats {
     width: 100%;
+
     min-height: 76px;
+
     display: grid;
+
     grid-template-columns: repeat(4, 1fr);
+
+    align-items: center;
+
+    padding: 6px 10px;
+
     border-bottom: 1px solid var(--border);
+
+    background: var(--bg);
 }
 
 .profile-stat {
     min-width: 0;
-    padding: 10px 4px;
+
+    height: 58px;
+
+    margin: 0 3px;
+
+    padding: 6px 3px;
+
     display: flex;
+
     flex-direction: column;
+
     justify-content: center;
     align-items: center;
-    border-right: 1px solid var(--border);
-}
 
-.profile-stat:last-child {
-    border-right: 0;
+    border: 1px solid #1d3048;
+
+    border-radius: 18px;
+
+    background: #0d192a;
+
+    overflow: hidden;
 }
 
 .profile-stat strong {
-    font-size: 19px;
-    line-height: 1.2;
+    font-size: 18px;
+
+    line-height: 1.15;
+
     font-weight: 750;
+
     color: #ffffff;
 }
 
 .profile-stat span {
     margin-top: 4px;
-    font-size: 12px;
-    line-height: 1.2;
+
+    font-size: 11px;
+
+    line-height: 1.1;
+
     color: #9ba6b8;
+
     white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 /* =========================================================
@@ -295,20 +487,31 @@ body {
 
 .profile-content-tabs {
     width: 100%;
+
     height: 58px;
+
     display: grid;
+
     grid-template-columns: repeat(4, 1fr);
+
     border-bottom: 1px solid var(--border);
+
     background: #091321;
 }
 
 .profile-content-tab {
     position: relative;
+
     border: 0;
+
     background: transparent;
+
     color: #737f93;
+
     font-size: 14px;
+
     font-weight: 600;
+
     cursor: pointer;
 }
 
@@ -318,12 +521,18 @@ body {
 
 .profile-content-tab.active::after {
     content: "";
+
     position: absolute;
+
     left: 20%;
     right: 20%;
+
     bottom: 0;
+
     height: 3px;
+
     border-radius: 3px 3px 0 0;
+
     background: var(--blue);
 }
 
@@ -333,20 +542,129 @@ body {
 
 .profile-content {
     width: 100%;
+
     min-height: 360px;
+
     padding: 0;
+
     background: var(--bg);
 }
 
 .empty-content {
     min-height: 360px;
+
     display: flex;
+
     align-items: center;
     justify-content: center;
+
     padding: 30px;
+
     color: #68758a;
+
     font-size: 17px;
+
     text-align: center;
+}
+
+/* =========================================================
+   PROFILE REELS
+========================================================= */
+
+.profile-post-grid {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 2px;
+
+    width: 100%;
+}
+
+.profile-post {
+    position: relative;
+
+    width: 100%;
+
+    aspect-ratio: 9 / 14;
+
+    overflow: hidden;
+
+    background: #101827;
+
+    cursor: pointer;
+}
+
+.profile-post video {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+}
+
+.profile-post img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+}
+
+.profile-reel-play {
+    position: absolute;
+
+    top: 8px;
+    right: 8px;
+
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    color: white;
+
+    font-size: 13px;
+
+    pointer-events: none;
+}
+
+.profile-reel-caption {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    padding: 24px 7px 7px;
+
+    color: white;
+
+    font-size: 10px;
+
+    line-height: 1.3;
+
+    background: linear-gradient(
+        transparent,
+        rgba(0, 0, 0, 0.85)
+    );
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    pointer-events: none;
 }
 
 /* =========================================================
@@ -355,12 +673,18 @@ body {
 
 .profile-photo-viewer {
     position: fixed;
+
     inset: 0;
+
     z-index: 200;
+
     display: flex;
+
     align-items: center;
     justify-content: center;
+
     padding: 25px;
+
     background: rgba(0, 0, 0, 0.92);
 }
 
@@ -370,22 +694,33 @@ body {
 
 .profile-photo-viewer img {
     max-width: min(92vw, 520px);
+
     max-height: 78vh;
+
     object-fit: contain;
+
     border-radius: 14px;
 }
 
 .close-photo-viewer {
     position: absolute;
+
     top: 18px;
     right: 18px;
+
     width: 42px;
     height: 42px;
+
     border: 0;
+
     border-radius: 50%;
+
     background: rgba(255, 255, 255, 0.12);
+
     color: white;
+
     font-size: 28px;
+
     cursor: pointer;
 }
 
@@ -395,12 +730,19 @@ body {
 
 .edit-profile-modal {
     position: fixed;
+
     inset: 0;
+
     z-index: 150;
+
     display: flex;
+
     align-items: flex-end;
+
     justify-content: center;
+
     background: rgba(0, 0, 0, 0.65);
+
     padding: 0;
 }
 
@@ -410,20 +752,31 @@ body {
 
 .edit-profile-box {
     width: 100%;
+
     max-width: 620px;
+
     max-height: 92vh;
+
     overflow-y: auto;
+
     padding: 18px;
+
     border-radius: 20px 20px 0 0;
+
     background: #0c1728;
+
     border: 1px solid var(--border);
 }
 
 .edit-profile-header {
     height: 42px;
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
+
     margin-bottom: 15px;
 }
 
@@ -434,54 +787,81 @@ body {
 .edit-profile-header button {
     width: 36px;
     height: 36px;
+
     border: 0;
+
     border-radius: 50%;
+
     background: #18253a;
+
     color: white;
+
     font-size: 24px;
 }
 
 .edit-profile-photo-area {
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     gap: 10px;
+
     margin-bottom: 18px;
 }
 
 .edit-profile-photo-area img {
     width: 86px;
     height: 86px;
+
     object-fit: cover;
+
     border-radius: 50%;
+
     border: 2px solid var(--blue);
 }
 
 .edit-profile-photo-area button {
     border: 0;
+
     background: transparent;
+
     color: var(--blue);
+
     font-size: 14px;
+
     font-weight: 600;
 }
 
 .edit-profile-box label {
     display: block;
+
     margin-top: 13px;
+
     color: #aeb8c8;
+
     font-size: 13px;
 }
 
 .edit-profile-box input,
 .edit-profile-box textarea {
     width: 100%;
+
     margin-top: 6px;
+
     padding: 11px 12px;
+
     border: 1px solid #203149;
+
     border-radius: 10px;
+
     outline: none;
+
     background: #091321;
+
     color: white;
+
     font: inherit;
 }
 
@@ -500,20 +880,31 @@ body {
 
 .edit-profile-message {
     min-height: 20px;
+
     margin-top: 10px;
+
     font-size: 13px;
+
     text-align: center;
 }
 
 .save-profile-button {
     width: 100%;
+
     height: 44px;
+
     margin-top: 14px;
+
     border: 0;
+
     border-radius: 10px;
+
     background: var(--blue);
+
     color: white;
+
     font-size: 15px;
+
     font-weight: 700;
 }
 
@@ -523,8 +914,11 @@ body {
 
 .profile-menu {
     position: fixed;
+
     inset: 0;
+
     z-index: 140;
+
     background: rgba(0, 0, 0, 0.55);
 }
 
@@ -534,32 +928,51 @@ body {
 
 .profile-menu-panel {
     position: absolute;
+
     top: 60px;
     right: 10px;
+
     width: 220px;
+
     padding: 8px;
+
     border: 1px solid var(--border);
+
     border-radius: 14px;
+
     background: #0d1829;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.4);
 }
 
 .profile-menu-title {
     padding: 10px 12px;
+
     color: white;
+
     font-size: 14px;
+
     font-weight: 700;
 }
 
 .profile-menu-panel button {
     width: 100%;
+
     min-height: 40px;
+
     padding: 9px 12px;
+
     border: 0;
+
     border-radius: 8px;
+
     background: transparent;
+
     color: #d8deea;
+
     text-align: left;
+
     font-size: 14px;
 }
 
@@ -569,7 +982,9 @@ body {
 
 .menu-divider {
     height: 1px;
+
     margin: 6px 0;
+
     background: var(--border);
 }
 
@@ -583,29 +998,47 @@ body {
 
 .bottom-nav {
     position: fixed;
+
     left: 0;
     right: 0;
     bottom: 0;
+
     z-index: 100;
+
     height: 64px;
+
     display: grid;
+
     grid-template-columns: repeat(5, 1fr);
+
     border-top: 1px solid var(--border);
+
     background: #091321;
+
     padding-bottom: env(safe-area-inset-bottom);
 }
 
 .nav-item {
     min-width: 0;
+
     height: 64px;
+
     border: 0;
+
     background: transparent;
+
     color: #707c90;
+
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
+
     justify-content: center;
+
     gap: 3px;
+
     cursor: pointer;
 }
 
@@ -616,12 +1049,44 @@ body {
 
 .nav-item span {
     font-size: 11px;
+
     line-height: 1.1;
+
     white-space: nowrap;
 }
 
 .nav-item.active {
     color: var(--blue);
+}
+
+/* =========================================================
+   NOTIFICATION DOT
+========================================================= */
+
+.notification-icon-wrapper {
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.notification-dot {
+    position: absolute;
+
+    top: -1px;
+    right: -2px;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #ff385c;
+
+    border: 1px solid #091321;
 }
 
 /* =========================================================
@@ -631,7 +1096,10 @@ body {
 @media (max-width: 380px) {
 
     .profile-user-row {
-        padding: 17px 14px;
+        min-height: 118px;
+
+        padding: 6px 14px 5px;
+
         gap: 14px;
     }
 
@@ -652,16 +1120,48 @@ body {
         font-size: 11px;
     }
 
+    .profile-bio-section {
+        min-height: 58px;
+
+        padding: 6px 14px 7px;
+    }
+
     .profile-bio {
         font-size: 14px;
     }
 
+    .profile-action-row {
+        gap: 8px;
+
+        padding: 5px 14px 7px;
+    }
+
+    .profile-action-button {
+        height: 36px;
+
+        font-size: 13px;
+    }
+
+    .profile-stats {
+        min-height: 70px;
+
+        padding: 5px 7px;
+    }
+
+    .profile-stat {
+        height: 54px;
+
+        margin: 0 2px;
+
+        border-radius: 17px;
+    }
+
     .profile-stat strong {
-        font-size: 17px;
+        font-size: 16px;
     }
 
     .profile-stat span {
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .profile-content-tab {
@@ -690,16 +1190,25 @@ body {
 
     .bottom-nav {
         position: fixed;
+
         left: 50%;
         right: auto;
         bottom: 15px;
+
         width: min(600px, calc(100% - 30px));
+
         transform: translateX(-50%);
+
         height: 64px;
+
         border: 1px solid var(--border);
+
         border-radius: 18px;
+
         overflow: hidden;
-        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+
+        box-shadow:
+            0 10px 35px rgba(0, 0, 0, 0.35);
     }
 
     .profile-user-row {
@@ -711,157 +1220,9 @@ body {
         padding-left: 28px;
         padding-right: 28px;
     }
-}
-/* =========================================================
-   PROFILE REELS
-========================================================= */
 
-.profile-post-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
-    width: 100%;
-}
-
-.profile-post {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 9 / 14;
-    overflow: hidden;
-    background: #101827;
-    cursor: pointer;
-}
-
-.profile-post video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.profile-reel-play {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-
-    width: 30px;
-    height: 30px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-
-    background: rgba(0, 0, 0, 0.55);
-    color: white;
-
-    font-size: 13px;
-
-    pointer-events: none;
-}
-
-.profile-reel-caption {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    padding: 24px 7px 7px;
-
-    color: white;
-    font-size: 10px;
-    line-height: 1.3;
-
-    background: linear-gradient(
-        transparent,
-        rgba(0, 0, 0, 0.85)
-    );
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    pointer-events: none;
-}
-/* =========================================================
-   FOLLOW / CONNECTION BUTTON
-========================================================= */
-
-.profile-follow-row {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px 18px 10px;
-    border-bottom: 1px solid var(--border);
-}
-
-.profile-follow-button {
-    width: min(100%, 300px);
-    height: 40px;
-
-    border: 1px solid #2b9cff;
-    border-radius: 10px;
-
-    background: var(--blue);
-    color: #ffffff;
-
-    font-size: 14px;
-    font-weight: 700;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.1s ease;
-}
-
-.profile-follow-button:active {
-    transform: scale(0.97);
-}
-
-/* Following */
-.profile-follow-button.following {
-    background: #142238;
-    border-color: #315070;
-    color: #dce7f5;
-}
-
-/* Request Sent */
-.profile-follow-button.requested {
-    background: #142238;
-    border-color: #315070;
-    color: #8fbfff;
-}
-
-/* Unfollow */
-.profile-follow-button.unfollow {
-    background: transparent;
-    border-color: #ff4d67;
-    color: #ff6b80;
-}
-
-/* Disabled / loading */
-.profile-follow-button:disabled {
-    opacity: 0.65;
-    cursor: default;
-}
-
-
-/* =========================================================
-   SLIGHTLY COMPACT PROFILE + BIO
-========================================================= */
-
-.profile-user-row {
-    min-height: 142px;
-    padding-top: 12px;
-    padding-bottom: 10px;
-}
-
-.profile-bio-section {
-    min-height: 68px;
-    padding-top: 9px;
-    padding-bottom: 9px;
+    .profile-action-row {
+        padding-left: 28px;
+        padding-right: 28px;
+    }
 }
