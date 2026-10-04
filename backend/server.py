@@ -11,11 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 
 from .database.database import Base, engine
-
-# Models import — tables register karne ke liye
 from .database import models  # noqa: F401
-
-# Migration
 from .database.migrate import run_migrations
 
 
@@ -59,19 +55,11 @@ STATIC_DIR = FRONTEND_DIR / "static"
 # =========================================================
 
 try:
-
     Base.metadata.create_all(bind=engine)
-
-    print(
-        "[Usanex] Database tables checked."
-    )
+    print("[Usanex] Database tables checked.")
 
 except Exception as e:
-
-    print(
-        "[Usanex Database] ERROR:",
-        str(e),
-    )
+    print("[Usanex Database] ERROR:", str(e))
 
 
 # =========================================================
@@ -79,19 +67,11 @@ except Exception as e:
 # =========================================================
 
 try:
-
     run_migrations()
-
-    print(
-        "[Usanex Migration] Completed."
-    )
+    print("[Usanex Migration] Completed.")
 
 except Exception as e:
-
-    print(
-        "[Usanex Migration] ERROR:",
-        str(e),
-    )
+    print("[Usanex Migration] ERROR:", str(e))
 
 
 # =========================================================
@@ -199,9 +179,7 @@ try:
 
     from .routes.auth import router as auth_router
 
-    app.include_router(
-        auth_router
-    )
+    app.include_router(auth_router)
 
     print(
         "[Usanex] Auth routes loaded."
@@ -210,7 +188,29 @@ try:
 except Exception as e:
 
     print(
-        "[Usanex] Auth router not loaded:",
+        "[Usanex] Auth router ERROR:",
+        str(e),
+    )
+
+
+# =========================================================
+# CONNECTION ROUTES
+# =========================================================
+
+try:
+
+    from .routes.connections import router as connections_router
+
+    app.include_router(connections_router)
+
+    print(
+        "[Usanex] Connection routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Connection router ERROR:",
         str(e),
     )
 
@@ -223,9 +223,7 @@ try:
 
     from .routes.search import router as search_router
 
-    app.include_router(
-        search_router
-    )
+    app.include_router(search_router)
 
     print(
         "[Usanex] Search routes loaded."
@@ -234,7 +232,51 @@ try:
 except Exception as e:
 
     print(
-        "[Usanex] Search router not loaded:",
+        "[Usanex] Search router ERROR:",
+        str(e),
+    )
+
+
+# =========================================================
+# REELS ROUTES
+# =========================================================
+
+try:
+
+    from .routes.reels import router as reels_router
+
+    app.include_router(reels_router)
+
+    print(
+        "[Usanex] Reels routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Reels router ERROR:",
+        str(e),
+    )
+
+
+# =========================================================
+# PROFILE ROUTES
+# =========================================================
+
+try:
+
+    from .routes.profile import router as profile_router
+
+    app.include_router(profile_router)
+
+    print(
+        "[Usanex] Profile routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Profile router ERROR:",
         str(e),
     )
 
@@ -247,9 +289,7 @@ try:
 
     from .routes.pages import router as pages_router
 
-    app.include_router(
-        pages_router
-    )
+    app.include_router(pages_router)
 
     print(
         "[Usanex] Page routes loaded."
@@ -258,6 +298,13 @@ try:
 except Exception as e:
 
     print(
-        "[Usanex] Pages router not loaded:",
+        "[Usanex] Pages router ERROR:",
         str(e),
     )
+
+
+# =========================================================
+# ROUTE SUMMARY
+# =========================================================
+
+print("[Usanex] Server initialization completed.")
