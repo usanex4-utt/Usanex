@@ -47,19 +47,10 @@ app.add_middleware(
 # PROJECT PATHS
 # =========================================================
 
-# server.py:
-# project/
-# ├── backend/
-# │   └── server.py
-# └── frontend/
-#     ├── templates/
-#     └── static/
-
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = BACKEND_DIR.parent
 
 FRONTEND_DIR = PROJECT_DIR / "frontend"
-
 STATIC_DIR = FRONTEND_DIR / "static"
 
 
@@ -68,11 +59,15 @@ STATIC_DIR = FRONTEND_DIR / "static"
 # =========================================================
 
 try:
+
     Base.metadata.create_all(bind=engine)
 
-    print("[Usanex] Database tables checked.")
+    print(
+        "[Usanex] Database tables checked."
+    )
 
 except Exception as e:
+
     print(
         "[Usanex Database] ERROR:",
         str(e),
@@ -84,11 +79,15 @@ except Exception as e:
 # =========================================================
 
 try:
+
     run_migrations()
 
-    print("[Usanex Migration] Completed.")
+    print(
+        "[Usanex Migration] Completed."
+    )
 
 except Exception as e:
+
     print(
         "[Usanex Migration] ERROR:",
         str(e),
@@ -131,9 +130,6 @@ else:
     include_in_schema=False,
 )
 def root():
-
-    # Website open hote hi Register page
-    # par redirect karega.
 
     return RedirectResponse(
         url="/register",
@@ -215,6 +211,30 @@ except Exception as e:
 
     print(
         "[Usanex] Auth router not loaded:",
+        str(e),
+    )
+
+
+# =========================================================
+# SEARCH ROUTES
+# =========================================================
+
+try:
+
+    from .routes.search import router as search_router
+
+    app.include_router(
+        search_router
+    )
+
+    print(
+        "[Usanex] Search routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Search router not loaded:",
         str(e),
     )
 
