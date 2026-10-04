@@ -40,46 +40,44 @@ router = APIRouter(
 # CLOUDINARY CONFIGURATION
 # =========================================================
 
-# Existing Usanex Cloudinary configuration is reused.
-#
-# Supported:
-#
-# CLOUDINARY_URL=cloudinary://API_KEY:API_SECRET@CLOUD_NAME
-#
-# OR:
-#
-# CLOUDINARY_CLOUD_NAME
-# CLOUDINARY_API_KEY
-# CLOUDINARY_API_SECRET
-# =========================================================
+CLOUDINARY_URL = os.getenv("CLOUDINARY_URL")
 
-cloudinary_url = os.getenv("CLOUDINARY_URL")
+CLOUDINARY_CLOUD_NAME = os.getenv(
+    "CLOUDINARY_CLOUD_NAME"
+)
 
-if cloudinary_url:
+CLOUDINARY_API_KEY = os.getenv(
+    "CLOUDINARY_API_KEY"
+)
+
+CLOUDINARY_API_SECRET = os.getenv(
+    "CLOUDINARY_API_SECRET"
+)
+
+
+if CLOUDINARY_URL:
 
     cloudinary.config(
-        cloudinary_url=cloudinary_url,
+        cloudinary_url=CLOUDINARY_URL,
         secure=True,
     )
 
-else:
+elif (
+    CLOUDINARY_CLOUD_NAME
+    and CLOUDINARY_API_KEY
+    and CLOUDINARY_API_SECRET
+):
 
     cloudinary.config(
-        cloud_name=os.getenv(
-            "CLOUDINARY_CLOUD_NAME"
-        ),
-        api_key=os.getenv(
-            "CLOUDINARY_API_KEY"
-        ),
-        api_secret=os.getenv(
-            "CLOUDINARY_API_SECRET"
-        ),
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
         secure=True,
     )
 
 
 # =========================================================
-# ALLOWED IMAGE TYPES
+# CONSTANTS
 # =========================================================
 
 ALLOWED_IMAGE_TYPES = {
@@ -88,11 +86,6 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp",
     "image/gif",
 }
-
-
-# =========================================================
-# MAX PROFILE PHOTO SIZE
-# =========================================================
 
 MAX_PROFILE_PHOTO_SIZE = (
     10 * 1024 * 1024
@@ -133,7 +126,7 @@ class UpdateProfileRequest(BaseModel):
 
 
 # =========================================================
-# CLEAN OPTIONAL TEXT
+# TEXT CLEANER
 # =========================================================
 
 def clean_optional_text(value):
@@ -143,7 +136,7 @@ def clean_optional_text(value):
 
     value = str(value).strip()
 
-    if value == "":
+    if not value:
         return None
 
     return value
@@ -263,7 +256,9 @@ def get_followers_count(
 ) -> int:
 
     count = (
-        db.query(func.count(UserFollow.id))
+        db.query(
+            func.count(UserFollow.id)
+        )
         .filter(
             UserFollow.following_id == user_id
         )
@@ -283,7 +278,9 @@ def get_following_count(
 ) -> int:
 
     count = (
-        db.query(func.count(UserFollow.id))
+        db.query(
+            func.count(UserFollow.id)
+        )
         .filter(
             UserFollow.follower_id == user_id
         )
@@ -316,7 +313,64 @@ def get_user_posts(
 
 
 # =========================================================
-# PROFILE RESPONSE
+# POST SERIALIZER
+# =========================================================
+
+def serialize_post(post):
+
+    return {
+        "id": post.id,
+
+        "content": (
+            getattr(
+                post,
+                "content",
+                None,
+            )
+            or ""
+        ),
+
+        "media_url": (
+            getattr(
+                post,
+                "media_url",
+                None,
+            )
+            or ""
+        ),
+
+        "media_type": (
+            getattr(
+                post,
+                "media_type",
+                None,
+            )
+            or ""
+        ),
+
+        "views": int(
+            getattr(
+                post,
+                "views",
+                0,
+            )
+            or 0
+        ),
+
+        "created_at": (
+            post.created_at.isoformat()
+            if getattr(
+                post,
+                "created_at",
+                None,
+            )
+            else None
+        ),
+    }
+
+
+# =========================================================
+# PROFILE RESPONSE BUILDER
 # =========================================================
 
 def build_profile_response(
@@ -332,19 +386,25 @@ def build_profile_response(
         user_two_id=target_user.id,
     )
 
-    followers_count = get_followers_count(
-        db,
-        target_user.id,
+    followers_count = (
+        get_followers_count(
+            db,
+            target_user.id,
+        )
     )
 
-    following_count = get_following_count(
-        db,
-        target_user.id,
+    following_count = (
+        get_following_count(
+            db,
+            target_user.id,
+        )
     )
 
-    connected_count = get_connected_count(
-        db,
-        target_user.id,
+    connected_count = (
+        get_connected_count(
+            db,
+            target_user.id,
+        )
     )
 
     posts = get_user_posts(
@@ -352,33 +412,10 @@ def build_profile_response(
         target_user.id,
     )
 
-    content = []
-
-    for post in posts:
-
-        content.append(
-            {
-                "id": post.id,
-
-                "content": post.content,
-
-                "media_url": post.media_url,
-
-                "media_type": post.media_type,
-
-                "views": getattr(
-                    post,
-                    "views",
-                    0,
-                ) or 0,
-
-                "created_at": (
-                    post.created_at.isoformat()
-                    if post.created_at
-                    else None
-                ),
-            }
-        )
+    content = [
+        serialize_post(post)
+        for post in posts
+    ]
 
     return {
         "success": True,
@@ -386,29 +423,37 @@ def build_profile_response(
         "user": {
             "id": target_user.id,
 
-            "user_id": target_user.user_id,
+            "user_id":
+                target_user.user_id,
 
-            "username": target_user.username,
+            "username":
+                target_user.username,
 
-            "name": target_user.name,
+            "name":
+                target_user.name,
 
             "profile_photo":
                 target_user.profile_photo,
 
-            "bio": target_user.bio,
+            "bio":
+                target_user.bio,
 
-            "website": target_user.website,
+            "website":
+                target_user.website,
 
-            "instagram": target_user.instagram,
+            "instagram":
+                target_user.instagram,
 
             "social_link":
                 target_user.social_link,
         },
 
         "relationship": {
-            "is_self": is_self,
+            "is_self":
+                is_self,
 
-            "is_connected": connected,
+            "is_connected":
+                connected,
         },
 
         "stats": {
@@ -425,12 +470,13 @@ def build_profile_response(
                 len(posts),
         },
 
-        "content": content,
+        "content":
+            content,
     }
 
 
 # =========================================================
-# MY PROFILE
+# GET MY PROFILE
 # =========================================================
 
 @router.get("/me")
@@ -486,6 +532,10 @@ def update_my_profile(
             detail="Authentication required",
         )
 
+    # -----------------------------------------------------
+    # NAME
+    # -----------------------------------------------------
+
     name = data.name.strip()
 
     if not name:
@@ -495,29 +545,62 @@ def update_my_profile(
             detail="Name cannot be empty",
         )
 
+    if len(name) > 100:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Name must be 100 characters or less.",
+        )
+
+
+    # -----------------------------------------------------
+    # SAVE PROFILE
+    # -----------------------------------------------------
+
     current_user.name = name
 
-    current_user.bio = clean_optional_text(
-        data.bio
+    current_user.bio = (
+        clean_optional_text(
+            data.bio
+        )
     )
 
-    current_user.website = clean_optional_text(
-        data.website
+    current_user.website = (
+        clean_optional_text(
+            data.website
+        )
     )
 
-    current_user.instagram = clean_optional_text(
-        data.instagram
+    current_user.instagram = (
+        clean_optional_text(
+            data.instagram
+        )
     )
 
-    current_user.social_link = clean_optional_text(
-        data.social_link
+    current_user.social_link = (
+        clean_optional_text(
+            data.social_link
+        )
     )
 
-    db.add(current_user)
 
-    db.commit()
+    try:
 
-    db.refresh(current_user)
+        db.add(current_user)
+
+        db.commit()
+
+        db.refresh(current_user)
+
+    except Exception:
+
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to update profile.",
+        )
+
 
     return {
         "success": True,
@@ -526,7 +609,8 @@ def update_my_profile(
             "Profile updated successfully",
 
         "user": {
-            "id": current_user.id,
+            "id":
+                current_user.id,
 
             "user_id":
                 current_user.user_id,
@@ -556,8 +640,8 @@ def update_my_profile(
 
 
 # =========================================================
-# UPLOAD / CHANGE PROFILE PHOTO
-# CLOUDINARY VERSION
+# UPLOAD PROFILE PHOTO
+# CLOUDINARY
 # =========================================================
 
 @router.post("/me/photo")
@@ -568,7 +652,7 @@ async def upload_profile_photo(
 ):
 
     # =====================================================
-    # CURRENT USER
+    # AUTHENTICATION
     # =====================================================
 
     current_user = (
@@ -587,13 +671,28 @@ async def upload_profile_photo(
 
 
     # =====================================================
-    # CHECK FILE TYPE
+    # CLOUDINARY CHECK
+    # =====================================================
+
+    if not CLOUDINARY_URL and not (
+        CLOUDINARY_CLOUD_NAME
+        and CLOUDINARY_API_KEY
+        and CLOUDINARY_API_SECRET
+    ):
+
+        raise HTTPException(
+            status_code=500,
+            detail="Cloudinary is not configured.",
+        )
+
+
+    # =====================================================
+    # FILE TYPE
     # =====================================================
 
     content_type = (
         photo.content_type or ""
     ).lower()
-
 
     if content_type not in ALLOWED_IMAGE_TYPES:
 
@@ -612,7 +711,6 @@ async def upload_profile_photo(
 
     file_data = await photo.read()
 
-
     if not file_data:
 
         raise HTTPException(
@@ -622,7 +720,7 @@ async def upload_profile_photo(
 
 
     # =====================================================
-    # SIZE CHECK
+    # FILE SIZE
     # =====================================================
 
     if len(file_data) > MAX_PROFILE_PHOTO_SIZE:
@@ -637,42 +735,7 @@ async def upload_profile_photo(
 
 
     # =====================================================
-    # CHECK CLOUDINARY CONFIG
-    # =====================================================
-
-    cloud_name = os.getenv(
-        "CLOUDINARY_CLOUD_NAME"
-    )
-
-    api_key = os.getenv(
-        "CLOUDINARY_API_KEY"
-    )
-
-    api_secret = os.getenv(
-        "CLOUDINARY_API_SECRET"
-    )
-
-    cloudinary_url = os.getenv(
-        "CLOUDINARY_URL"
-    )
-
-
-    if not cloudinary_url and not (
-        cloud_name
-        and api_key
-        and api_secret
-    ):
-
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Cloudinary is not configured."
-            ),
-        )
-
-
-    # =====================================================
-    # UNIQUE CLOUDINARY PUBLIC ID
+    # UNIQUE PUBLIC ID
     # =====================================================
 
     public_id = (
@@ -682,7 +745,7 @@ async def upload_profile_photo(
 
 
     # =====================================================
-    # UPLOAD TO CLOUDINARY
+    # CLOUDINARY UPLOAD
     # =====================================================
 
     try:
@@ -711,7 +774,7 @@ async def upload_profile_photo(
 
         print(
             "Cloudinary profile upload error:",
-            error,
+            repr(error),
         )
 
         raise HTTPException(
@@ -724,13 +787,12 @@ async def upload_profile_photo(
 
 
     # =====================================================
-    # CLOUDINARY URL
+    # GET CLOUDINARY URL
     # =====================================================
 
     photo_url = (
         result.get("secure_url")
     )
-
 
     if not photo_url:
 
@@ -744,28 +806,32 @@ async def upload_profile_photo(
 
 
     # =====================================================
-    # OLD CLOUDINARY PHOTO
-    # =====================================================
-
-    old_photo = (
-        current_user.profile_photo
-        or ""
-    )
-
-
-    # =====================================================
-    # SAVE NEW URL IN DATABASE
+    # SAVE URL IN DATABASE
     # =====================================================
 
     current_user.profile_photo = (
         photo_url
     )
 
-    db.add(current_user)
+    try:
 
-    db.commit()
+        db.add(current_user)
 
-    db.refresh(current_user)
+        db.commit()
+
+        db.refresh(current_user)
+
+    except Exception:
+
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Profile photo uploaded but "
+                "could not be saved."
+            ),
+        )
 
 
     # =====================================================
@@ -779,7 +845,7 @@ async def upload_profile_photo(
             "Profile photo updated successfully",
 
         "profile_photo":
-            photo_url,
+            current_user.profile_photo,
 
         "user": {
             "id":
@@ -801,7 +867,7 @@ async def upload_profile_photo(
 
 
 # =========================================================
-# OTHER USER PROFILE
+# GET OTHER USER PROFILE
 # =========================================================
 
 @router.get("/{user_id}")
@@ -810,6 +876,10 @@ def get_profile(
     request: Request,
     db: Session = Depends(get_db),
 ):
+
+    # =====================================================
+    # AUTHENTICATION
+    # =====================================================
 
     current_user = (
         get_current_user_from_request(
@@ -825,6 +895,10 @@ def get_profile(
             detail="Authentication required",
         )
 
+
+    # =====================================================
+    # FIND USER
+    # =====================================================
 
     target_user = (
         db.query(User)
@@ -843,11 +917,20 @@ def get_profile(
         )
 
 
+    # =====================================================
+    # SELF PROFILE
+    # =====================================================
+
     is_self = (
         current_user.id
         == target_user.id
     )
 
+
+    # =====================================================
+    # OTHER USER
+    # ONLY CONNECTED USERS
+    # =====================================================
 
     if not is_self:
 
@@ -867,6 +950,10 @@ def get_profile(
                 ),
             )
 
+
+    # =====================================================
+    # RESPONSE
+    # =====================================================
 
     return build_profile_response(
         db=db,
