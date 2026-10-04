@@ -115,6 +115,31 @@
 
 
         <!-- =================================================
+             FOLLOW / REQUEST ACTION ROW
+        ================================================== -->
+
+        <section class="profile-action-row">
+
+            <button
+                type="button"
+                class="profile-action-button follow-button"
+                id="followButton"
+            >
+                Follow
+            </button>
+
+            <button
+                type="button"
+                class="profile-action-button request-button"
+                id="requestButton"
+            >
+                Request
+            </button>
+
+        </section>
+
+
+        <!-- =================================================
              BIO
         ================================================== -->
 
@@ -137,23 +162,6 @@
 
 
         <!-- =================================================
-             FOLLOW / CONNECTION BUTTON
-        ================================================== -->
-
-        <section class="profile-follow-row">
-
-            <button
-                type="button"
-                id="profileFollowButton"
-                class="profile-follow-button"
-            >
-                Follow
-            </button>
-
-        </section>
-
-
-        <!-- =================================================
              STATS
         ================================================== -->
 
@@ -161,52 +169,68 @@
 
             <div class="profile-stat">
 
-                <strong id="followersCount">
-                    0
-                </strong>
+                <div class="profile-stat-pill">
 
-                <span>
-                    Followers
-                </span>
+                    <strong id="followersCount">
+                        0
+                    </strong>
 
-            </div>
+                    <span>
+                        Followers
+                    </span>
 
-
-            <div class="profile-stat">
-
-                <strong id="connectedCount">
-                    0
-                </strong>
-
-                <span>
-                    Connected
-                </span>
+                </div>
 
             </div>
 
 
             <div class="profile-stat">
 
-                <strong id="followingCount">
-                    0
-                </strong>
+                <div class="profile-stat-pill">
 
-                <span>
-                    Following
-                </span>
+                    <strong id="connectedCount">
+                        0
+                    </strong>
+
+                    <span>
+                        Connected
+                    </span>
+
+                </div>
 
             </div>
 
 
             <div class="profile-stat">
 
-                <strong id="postsCount">
-                    0
-                </strong>
+                <div class="profile-stat-pill">
 
-                <span>
-                    Posts
-                </span>
+                    <strong id="followingCount">
+                        0
+                    </strong>
+
+                    <span>
+                        Following
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="profile-stat">
+
+                <div class="profile-stat-pill">
+
+                    <strong id="postsCount">
+                        0
+                    </strong>
+
+                    <span>
+                        Posts
+                    </span>
+
+                </div>
 
             </div>
 
@@ -583,6 +607,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <rect
                     x="3"
                     y="4"
@@ -592,8 +617,11 @@
                 ></rect>
 
                 <path d="M8 4l3 5"></path>
+
                 <path d="M14 4l3 5"></path>
+
                 <path d="M10 12l5 3-5 3v-6z"></path>
+
             </svg>
 
             <span>
@@ -617,6 +645,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <circle
                     cx="11"
                     cy="11"
@@ -624,6 +653,7 @@
                 ></circle>
 
                 <path d="M20 20l-4-4"></path>
+
             </svg>
 
             <span>
@@ -649,11 +679,13 @@
                     stroke="currentColor"
                     stroke-width="1.8"
                 >
+
                     <path
                         d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
                     ></path>
 
                     <path d="M10 21h4"></path>
+
                 </svg>
 
                 <span
@@ -684,6 +716,7 @@
                 stroke="currentColor"
                 stroke-width="1.8"
             >
+
                 <circle
                     cx="12"
                     cy="8"
@@ -708,7 +741,7 @@
 
 
 <script
-    src="/static/js/my-profile.js?v=40"
+    src="/static/js/my-profile.js?v=41"
     defer
 ></script>
 
