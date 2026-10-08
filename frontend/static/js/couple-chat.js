@@ -1,39 +1,28 @@
 /* =========================================================
-   USANEX COUPLE CHAT
-   Main Frontend Controller
-   Partner-Specific Storage + Real WebSocket + AI + UI
+   USANEX — COUPLE CHAT
+   COMPLETE REPLACEMENT
+   Partner Specific Chat + Room Filter + WebSocket
+   Delivery + Seen Receipts + AI + UI
 ========================================================= */
 
 (() => {
 
     "use strict";
 
-
     /* =====================================================
        CONFIG
     ====================================================== */
 
     const API = {
-
-        analyze:
-            "/api/couple-chat/analyze",
-
-        mood:
-            "/api/couple-chat/mood"
-
+        analyze: "/api/couple-chat/analyze",
+        mood: "/api/couple-chat/mood"
     };
 
-
-    /*
-     * IMPORTANT:
-     * Chat messages are stored separately for every partner.
-     * Old v11 shared storage is intentionally NOT used.
-     */
-
+    const CHAT_STORAGE_PREFIX =
+        "usanex_couple_chat_messages_v12_";
 
     const MODE_STORAGE_PREFIX =
         "usanex_couple_chat_mode_v12_";
-
 
     const RECENT_EMOJI_KEY =
         "usanex_recent_emojis_v11";
@@ -315,134 +304,70 @@
     const $ = selector =>
         document.querySelector(selector);
 
-
-    const app =
-        $("#coupleApp");
-
-    const backButton =
-        $("#coupleBackButton");
-
-    const avatarButton =
-        $("#coupleAvatarButton");
-
-    const partnerAvatar =
-        $("#couplePartnerAvatar");
-
-    const partnerName =
-        $("#couplePartnerName");
-
-    const partnerStatus =
-        $("#couplePartnerStatus");
-
-    const onlineDot =
-        $("#coupleOnlineDot");
-
-    const headerMood =
-        $("#coupleHeaderMood");
-
-    const menuButton =
-        $("#coupleMenuButton");
-
-    const aiButton =
-        $("#coupleAiButton");
-
-    const aiStatus =
-        $("#coupleAiStatus");
-
-    const messagesEl =
-        $("#coupleMessages");
-
-    const conversation =
-        $("#coupleConversation");
-
-    const input =
-        $("#coupleMessageInput");
-
-    const composer =
-        $("#coupleComposer");
-
-    const emojiButton =
-        $("#coupleEmojiButton");
-
-    const attachButton =
-        $("#coupleAttachButton");
-
-    const cameraButton =
-        $("#coupleCameraButton");
-
-    const sendButton =
-        $("#coupleSendButton");
-
-    const fileInput =
-        $("#coupleFileInput");
-
-    const moodOverlay =
-        $("#coupleMoodOverlay");
-
-    const moodGrid =
-        $("#coupleMoodGrid");
-
-    const closeMood =
-        $("#closeMoodPanel");
-
-    const aiOverlay =
-        $("#coupleAiOverlay");
-
-    const closeAi =
-        $("#closeAiPanel");
-
-    const menuOverlay =
-        $("#coupleMenuOverlay");
-
-    const closeMenu =
-        $("#closeCoupleMenu");
-
-    const typingEl =
-        $("#coupleTyping");
-
-    const typingName =
-        $("#coupleTypingName");
-
-    const suggestionsEl =
-        $("#coupleSuggestions");
-
-    const suggestionList =
-        $("#coupleSuggestionList");
-
-    const effectsLayer =
-        $("#coupleEffectsLayer");
-
-    const dayLabel =
-        $("#coupleDayLabel");
-
-    const togetherDays =
-        $("#coupleTogetherDays");
-
-    const connectionStatus =
-        $("#coupleConnectionStatus");
+    const app = $("#coupleApp");
+    const backButton = $("#coupleBackButton");
+    const avatarButton = $("#coupleAvatarButton");
+    const partnerAvatar = $("#couplePartnerAvatar");
+    const partnerName = $("#couplePartnerName");
+    const partnerStatus = $("#couplePartnerStatus");
+    const onlineDot = $("#coupleOnlineDot");
+    const headerMood = $("#coupleHeaderMood");
+    const menuButton = $("#coupleMenuButton");
+    const aiButton = $("#coupleAiButton");
+    const aiStatus = $("#coupleAiStatus");
+    const messagesEl = $("#coupleMessages");
+    const conversation = $("#coupleConversation");
+    const input = $("#coupleMessageInput");
+    const composer = $("#coupleComposer");
+    const emojiButton = $("#coupleEmojiButton");
+    const attachButton = $("#coupleAttachButton");
+    const cameraButton = $("#coupleCameraButton");
+    const sendButton = $("#coupleSendButton");
+    const fileInput = $("#coupleFileInput");
+    const moodOverlay = $("#coupleMoodOverlay");
+    const moodGrid = $("#coupleMoodGrid");
+    const closeMood = $("#closeMoodPanel");
+    const aiOverlay = $("#coupleAiOverlay");
+    const closeAi = $("#closeAiPanel");
+    const menuOverlay = $("#coupleMenuOverlay");
+    const closeMenu = $("#closeCoupleMenu");
+    const typingEl = $("#coupleTyping");
+    const typingName = $("#coupleTypingName");
+    const suggestionsEl = $("#coupleSuggestions");
+    const suggestionList = $("#coupleSuggestionList");
+    const effectsLayer = $("#coupleEffectsLayer");
+    const dayLabel = $("#coupleDayLabel");
+    const togetherDays = $("#coupleTogetherDays");
+    const connectionStatus = $("#coupleConnectionStatus");
 
 
     /* =====================================================
        PARTNER
     ====================================================== */
 
-    const partner =
-        readPartner();
+    const partner = readPartner();
 
 
     /* =====================================================
-       PARTNER-SPECIFIC STORAGE
+       STORAGE KEYS
     ====================================================== */
 
-    function getChatStorageKey() {
+    function getPartnerKey() {
 
-        const partnerId =
+        const id =
             partner.id ||
             "unknown";
 
+        return String(id);
+
+    }
+
+
+    function getChatStorageKey() {
+
         return (
-            "usanex_couple_chat_messages_v12_" +
-            String(partnerId)
+            CHAT_STORAGE_PREFIX +
+            getPartnerKey()
         );
 
     }
@@ -450,13 +375,9 @@
 
     function getModeStorageKey() {
 
-        const partnerId =
-            partner.id ||
-            "unknown";
-
         return (
             MODE_STORAGE_PREFIX +
-            String(partnerId)
+            getPartnerKey()
         );
 
     }
@@ -471,33 +392,24 @@
             getModeStorageKey()
         ) || "calm";
 
-
     let messages =
         loadMessages();
 
+    let realtime = null;
 
-    let realtime =
-        null;
+    let currentRoomId = null;
 
+    let typingTimer = null;
 
-    let typingTimer =
-        null;
+    let partnerTyping = false;
 
+    let manualMood = false;
 
-    let partnerTyping =
-        false;
+    let emojiPicker = null;
 
+    let isInitialHistoryLoaded = false;
 
-    let manualMood =
-        false;
-
-
-    let emojiPicker =
-        null;
-
-
-    let isInitialHistoryLoaded =
-        false;
+    const pendingReceipts = new Map();
 
 
     /* =====================================================
@@ -526,12 +438,10 @@
 
         updateAutomaticNightState();
 
-
         setInterval(
             updateAutomaticNightState,
             60000
         );
-
 
         window.UsanexCoupleChat = {
 
@@ -550,10 +460,8 @@
 
         };
 
-
         window.UsanexCoupleModes =
             COUPLE_MODES;
-
     }
 
 
@@ -567,7 +475,6 @@
             new URLSearchParams(
                 window.location.search
             );
-
 
         return {
 
@@ -607,12 +514,10 @@
 
         }
 
-
         if (partnerAvatar) {
 
             partnerAvatar.src =
                 partner.avatar;
-
 
             partnerAvatar.onerror =
                 () => {
@@ -624,11 +529,88 @@
 
         }
 
-
         setOnlineStatus(
             partner.online,
             partner.last_seen
         );
+
+    }
+
+
+    /* =====================================================
+       CHAT MATCH / ROOM FILTER
+    ====================================================== */
+
+    function belongsToCurrentChat(
+        message
+    ) {
+
+        if (!message) {
+            return false;
+        }
+
+        /*
+         * If backend gives room_id and we know current room,
+         * strictly use the room.
+         */
+
+        if (
+            currentRoomId &&
+            message.room_id
+        ) {
+
+            return (
+                String(
+                    message.room_id
+                ) ===
+                String(
+                    currentRoomId
+                )
+            );
+
+        }
+
+        /*
+         * Fallback:
+         * message must involve current partner.
+         */
+
+        if (partner.id) {
+
+            const partnerId =
+                String(
+                    partner.id
+                );
+
+            const sender =
+                message.sender_id != null
+                    ? String(
+                        message.sender_id
+                    )
+                    : null;
+
+            const receiver =
+                message.receiver_id != null
+                    ? String(
+                        message.receiver_id
+                    )
+                    : null;
+
+            if (
+                sender &&
+                receiver
+            ) {
+
+                return (
+                    sender === partnerId ||
+                    receiver === partnerId
+                );
+
+            }
+
+        }
+
+        return true;
 
     }
 
@@ -665,7 +647,6 @@
                 if (!partner.id) {
                     return;
                 }
-
 
                 window.location.href =
                     `/profile?user_id=${encodeURIComponent(
@@ -772,17 +753,14 @@
                         "[data-mode]"
                     );
 
-
                 if (!button) {
                     return;
                 }
-
 
                 setMode(
                     button.dataset.mode,
                     true
                 );
-
 
                 closeMoodPanel();
 
@@ -822,11 +800,9 @@
                     return;
                 }
 
-
                 fileInput.removeAttribute(
                     "capture"
                 );
-
 
                 fileInput.click();
 
@@ -842,12 +818,10 @@
                     return;
                 }
 
-
                 fileInput.setAttribute(
                     "capture",
                     "environment"
                 );
-
 
                 fileInput.click();
 
@@ -865,60 +839,66 @@
             .querySelectorAll(
                 ".couple-action"
             )
-            .forEach(button => {
+            .forEach(
+                button => {
 
-                button.addEventListener(
-                    "click",
-                    () => {
+                    button.addEventListener(
+                        "click",
+                        () => {
 
-                        handleQuickAction(
-                            button.dataset.action
-                        );
+                            handleQuickAction(
+                                button.dataset.action
+                            );
 
-                    }
-                );
+                        }
+                    );
 
-            });
+                }
+            );
 
 
         document
             .querySelectorAll(
                 "[data-ai-action]"
             )
-            .forEach(button => {
+            .forEach(
+                button => {
 
-                button.addEventListener(
-                    "click",
-                    () => {
+                    button.addEventListener(
+                        "click",
+                        () => {
 
-                        handleAiAction(
-                            button.dataset.aiAction
-                        );
+                            handleAiAction(
+                                button.dataset.aiAction
+                            );
 
-                    }
-                );
+                        }
+                    );
 
-            });
+                }
+            );
 
 
         document
             .querySelectorAll(
                 "[data-menu-action]"
             )
-            .forEach(button => {
+            .forEach(
+                button => {
 
-                button.addEventListener(
-                    "click",
-                    () => {
+                    button.addEventListener(
+                        "click",
+                        () => {
 
-                        handleMenuAction(
-                            button.dataset.menuAction
-                        );
+                            handleMenuAction(
+                                button.dataset.menuAction
+                            );
 
-                    }
-                );
+                        }
+                    );
 
-            });
+                }
+            );
 
 
         document.addEventListener(
@@ -930,7 +910,8 @@
                     !emojiPicker.contains(
                         event.target
                     ) &&
-                    event.target !== emojiButton
+                    event.target !==
+                        emojiButton
                 ) {
 
                     removeEmojiPicker();
@@ -954,16 +935,14 @@
 
 
     /* =====================================================
-       REALTIME INITIALIZATION
+       REALTIME
     ====================================================== */
 
     function initRealtime() {
 
         if (!partner.id) {
 
-            setConnectionState(
-                false
-            );
+            setConnectionState(false);
 
             return;
 
@@ -980,9 +959,7 @@
                 "[Usanex] couple-realtime.js not loaded."
             );
 
-            setConnectionState(
-                false
-            );
+            setConnectionState(false);
 
             return;
 
@@ -1019,7 +996,7 @@
 
 
     /* =====================================================
-       REALTIME CONNECTION
+       CONNECTION
     ====================================================== */
 
     function handleRealtimeConnection(
@@ -1031,28 +1008,75 @@
         }
 
 
-        if (data.connected) {
+        /*
+         * Backend sends:
+         *
+         * {
+         *   type:"connected",
+         *   room:{id:123},
+         *   partner_online:true
+         * }
+         */
 
-            setConnectionState(
-                true
-            );
+        if (
+            data.type === "connected" ||
+            data.connected === true
+        ) {
+
+            setConnectionState(true);
 
 
             if (
-                typeof data.partnerOnline ===
-                "boolean"
+                data.room &&
+                data.room.id
             ) {
 
+                currentRoomId =
+                    data.room.id;
+
+            } else if (
+                data.room_id
+            ) {
+
+                currentRoomId =
+                    data.room_id;
+
+            }
+
+
+            const partnerOnline =
+                typeof data.partner_online ===
+                "boolean"
+                    ? data.partner_online
+                    : (
+                        typeof data.partnerOnline ===
+                        "boolean"
+                            ? data.partnerOnline
+                            : null
+                    );
+
+
+            if (
+                partnerOnline !== null
+            ) {
+
+                partner.online =
+                    partnerOnline;
+
                 setOnlineStatus(
-                    data.partnerOnline,
+                    partnerOnline,
                     partner.last_seen
                 );
 
             }
 
 
+            /*
+             * Some realtime versions send history
+             * inside connection event.
+             */
+
             if (
-                data.history &&
                 Array.isArray(
                     data.history
                 )
@@ -1064,13 +1088,12 @@
 
             }
 
-        } else {
-
-            setConnectionState(
-                false
-            );
+            return;
 
         }
+
+
+        setConnectionState(false);
 
     }
 
@@ -1088,6 +1111,20 @@
         }
 
 
+        /*
+         * Backend directly sends:
+         *
+         * {
+         *   type:"message",
+         *   message_id,
+         *   client_message_id,
+         *   room_id,
+         *   sender_id,
+         *   receiver_id,
+         *   ...
+         * }
+         */
+
         const incoming =
             data.message ||
             data;
@@ -1102,6 +1139,23 @@
             normalizeRealtimeMessage(
                 incoming
             );
+
+
+        /*
+         * VERY IMPORTANT:
+         * Do not allow another couple room's
+         * message to appear here.
+         */
+
+        if (
+            !belongsToCurrentChat(
+                normalized
+            )
+        ) {
+
+            return;
+
+        }
 
 
         if (
@@ -1122,24 +1176,14 @@
 
         if (existing) {
 
-            Object.assign(
+            mergeMessageData(
                 existing,
                 normalized
             );
 
-
-            if (
-                !existing.status ||
-                existing.status === "sent"
-            ) {
-
-                existing.status =
-                    normalized.status ||
-                    existing.status ||
-                    "sent";
-
-            }
-
+            applyPendingReceipt(
+                existing
+            );
 
             saveMessages();
 
@@ -1156,7 +1200,22 @@
 
 
         messages =
-            messages.slice(-500);
+            messages
+                .slice(-500)
+                .sort(
+                    (a, b) =>
+                        new Date(
+                            a.created_at
+                        ) -
+                        new Date(
+                            b.created_at
+                        )
+                );
+
+
+        applyPendingReceipt(
+            normalized
+        );
 
 
         saveMessages();
@@ -1166,6 +1225,11 @@
         scrollToBottom(true);
 
 
+        /*
+         * Partner received our message.
+         * Tell server delivered + seen.
+         */
+
         if (
             !normalized.is_mine &&
             normalized.id
@@ -1174,7 +1238,6 @@
             realtime?.sendDelivered(
                 normalized.id
             );
-
 
             realtime?.sendRead(
                 normalized.id
@@ -1198,7 +1261,7 @@
 
 
     /* =====================================================
-       NORMALIZE REALTIME MESSAGE
+       NORMALIZE MESSAGE
     ====================================================== */
 
     function normalizeRealtimeMessage(
@@ -1210,11 +1273,17 @@
             ...message,
 
             id:
-                message.id ||
+                message.id ??
+                message.message_id ??
                 null,
 
             client_id:
-                message.client_id ||
+                message.client_id ??
+                message.client_message_id ??
+                null,
+
+            room_id:
+                message.room_id ??
                 null,
 
             text:
@@ -1249,6 +1318,7 @@
 
             created_at:
                 message.created_at ||
+                message.timestamp ||
                 new Date().toISOString(),
 
             status:
@@ -1272,18 +1342,22 @@
 
 
     /* =====================================================
-       FIND MESSAGE
+       FIND / MERGE MESSAGE
     ====================================================== */
 
     function findMessage(
         message
     ) {
 
+        /*
+         * 1. Client message ID
+         */
+
         if (
             message.client_id
         ) {
 
-            const byClient =
+            const result =
                 messages.find(
                     item =>
                         item.client_id &&
@@ -1296,18 +1370,22 @@
                 );
 
 
-            if (byClient) {
-                return byClient;
+            if (result) {
+                return result;
             }
 
         }
 
 
+        /*
+         * 2. Database message ID
+         */
+
         if (
             message.id
         ) {
 
-            const byId =
+            const result =
                 messages.find(
                     item =>
                         item.id &&
@@ -1320,14 +1398,161 @@
                 );
 
 
-            if (byId) {
-                return byId;
+            if (result) {
+                return result;
+            }
+
+        }
+
+
+        /*
+         * 3. Fallback reconciliation
+         *
+         * This handles the case where the backend
+         * sends the database message ID but the
+         * optimistic message only has client_id.
+         */
+
+        if (
+            message.is_mine &&
+            message.content
+        ) {
+
+            const incomingTime =
+                new Date(
+                    message.created_at
+                ).getTime();
+
+
+            const fallback =
+                messages.find(
+                    item => {
+
+                        if (
+                            !item.is_mine
+                        ) {
+                            return false;
+                        }
+
+                        if (
+                            item.id &&
+                            message.id &&
+                            String(item.id) ===
+                            String(message.id)
+                        ) {
+                            return true;
+                        }
+
+                        if (
+                            item.content !==
+                            message.content
+                        ) {
+                            return false;
+                        }
+
+                        const itemTime =
+                            new Date(
+                                item.created_at
+                            ).getTime();
+
+
+                        if (
+                            Number.isNaN(
+                                incomingTime
+                            ) ||
+                            Number.isNaN(
+                                itemTime
+                            )
+                        ) {
+
+                            return false;
+
+                        }
+
+
+                        return (
+                            Math.abs(
+                                incomingTime -
+                                itemTime
+                            ) < 30000
+                        );
+
+                    }
+                );
+
+
+            if (fallback) {
+                return fallback;
             }
 
         }
 
 
         return null;
+
+    }
+
+
+    function mergeMessageData(
+        target,
+        source
+    ) {
+
+        const oldStatus =
+            normalizeStatus(
+                target.status
+            );
+
+
+        Object.assign(
+            target,
+            source
+        );
+
+
+        /*
+         * Never downgrade a message.
+         */
+
+        const newStatus =
+            normalizeStatus(
+                source.status
+            );
+
+
+        if (
+            oldStatus === "seen" ||
+            (
+                oldStatus === "delivered" &&
+                newStatus === "sent"
+            )
+        ) {
+
+            target.status =
+                oldStatus;
+
+        } else {
+
+            target.status =
+                newStatus;
+
+        }
+
+
+        /*
+         * Keep optimistic client id if server
+         * response doesn't contain one.
+         */
+
+        if (
+            !target.client_id &&
+            source.client_id
+        ) {
+
+            target.client_id =
+                source.client_id;
+
+        }
 
     }
 
@@ -1360,6 +1585,17 @@
                     );
 
 
+                if (
+                    !belongsToCurrentChat(
+                        normalized
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
                 const existing =
                     findMessage(
                         normalized
@@ -1368,7 +1604,7 @@
 
                 if (existing) {
 
-                    Object.assign(
+                    mergeMessageData(
                         existing,
                         normalized
                     );
@@ -1380,6 +1616,11 @@
                     );
 
                 }
+
+
+                applyPendingReceipt(
+                    normalized
+                );
 
             }
         );
@@ -1430,36 +1671,137 @@
 
 
         const messageId =
-            receipt.message_id ||
-            receipt.client_id ||
-            receipt.id;
+            receipt.message_id ??
+            receipt.id ??
+            receipt.client_message_id ??
+            receipt.client_id ??
+            null;
 
 
-        if (!messageId) {
+        if (
+            messageId === null ||
+            messageId === undefined
+        ) {
+
             return;
+
         }
 
 
-        const message =
+        let message =
             messages.find(
                 item =>
                     (
-                        item.id &&
-                        String(item.id) ===
-                        String(messageId)
+                        item.id != null &&
+                        String(
+                            item.id
+                        ) ===
+                        String(
+                            messageId
+                        )
                     ) ||
                     (
-                        item.client_id &&
-                        String(item.client_id) ===
-                        String(messageId)
+                        item.client_id != null &&
+                        String(
+                            item.client_id
+                        ) ===
+                        String(
+                            messageId
+                        )
                     )
             );
 
 
+        /*
+         * If message is not yet present, save receipt.
+         * It will be applied when server message arrives.
+         */
+
         if (!message) {
+
+            pendingReceipts.set(
+                String(messageId),
+                receipt
+            );
+
             return;
+
         }
 
+
+        applyReceiptToMessage(
+            message,
+            receipt
+        );
+
+
+        saveMessages();
+
+        updateMessageStatusUI(
+            message.client_id ||
+            message.id,
+            message.status
+        );
+
+    }
+
+
+    function applyPendingReceipt(
+        message
+    ) {
+
+        const ids = [
+            message.id,
+            message.client_id
+        ];
+
+
+        for (
+            const id of ids
+        ) {
+
+            if (
+                id === null ||
+                id === undefined
+            ) {
+                continue;
+            }
+
+
+            const key =
+                String(id);
+
+
+            const receipt =
+                pendingReceipts.get(
+                    key
+                );
+
+
+            if (!receipt) {
+                continue;
+            }
+
+
+            applyReceiptToMessage(
+                message,
+                receipt
+            );
+
+
+            pendingReceipts.delete(
+                key
+            );
+
+        }
+
+    }
+
+
+    function applyReceiptToMessage(
+        message,
+        receipt
+    ) {
 
         let status =
             receipt.status;
@@ -1486,25 +1828,22 @@
 
         if (status) {
 
-            const normalizedStatus =
+            const normalized =
                 normalizeStatus(
                     status
                 );
 
 
             if (
-                normalizedStatus ===
-                "seen"
+                normalized === "seen"
             ) {
 
                 message.status =
                     "seen";
 
             } else if (
-                normalizedStatus ===
-                "delivered" &&
-                message.status !==
-                "seen"
+                normalized === "delivered" &&
+                message.status !== "seen"
             ) {
 
                 message.status =
@@ -1537,16 +1876,6 @@
 
         }
 
-
-        saveMessages();
-
-
-        updateMessageStatusUI(
-            message.client_id ||
-            message.id,
-            message.status
-        );
-
     }
 
 
@@ -1573,6 +1902,10 @@
             data.last_seen ||
             data.last_seen_at ||
             null;
+
+
+        partner.online =
+            online;
 
 
         if (lastSeen) {
@@ -1636,11 +1969,9 @@
                 partnerStatus.textContent =
                     "typing...";
 
-
                 partnerStatus.classList.add(
                     "typing"
                 );
-
 
                 partnerStatus.classList.remove(
                     "online"
@@ -1651,7 +1982,7 @@
         } else {
 
             setOnlineStatus(
-                true,
+                partner.online === true,
                 partner.last_seen
             );
 
@@ -1685,14 +2016,24 @@
         }
 
 
+        if (!partner.id) {
+
+            console.error(
+                "[Usanex] Partner ID missing."
+            );
+
+            return;
+
+        }
+
+
         const clientId =
             createMessageId();
 
 
         const message = {
 
-            id:
-                null,
+            id: null,
 
             client_id:
                 clientId,
@@ -1701,8 +2042,10 @@
                 getCurrentUserId(),
 
             receiver_id:
-                partner.id ||
-                null,
+                partner.id,
+
+            room_id:
+                currentRoomId,
 
             content:
                 text,
@@ -1761,8 +2104,21 @@
         stopTyping();
 
 
+        if (
+            !realtime
+        ) {
+
+            setConnectionState(
+                false
+            );
+
+            return;
+
+        }
+
+
         const sent =
-            realtime?.sendMessage(
+            realtime.sendMessage(
                 message
             );
 
@@ -1784,7 +2140,7 @@
 
 
     /* =====================================================
-       MESSAGE ANALYSIS
+       AI ANALYSIS
     ====================================================== */
 
     async function analyzeMessage(
@@ -1797,8 +2153,7 @@
                 await fetch(
                     API.analyze,
                     {
-                        method:
-                            "POST",
+                        method: "POST",
 
                         headers: {
                             "Content-Type":
@@ -1807,19 +2162,13 @@
 
                         body:
                             JSON.stringify({
-
-                                message:
-                                    text,
-
+                                message: text,
                                 current_mode:
                                     currentMode,
-
                                 partner_id:
                                     partner.id ||
                                     null
-
                             })
-
                     }
                 );
 
@@ -1859,8 +2208,7 @@
                 await fetch(
                     API.analyze,
                     {
-                        method:
-                            "POST",
+                        method: "POST",
 
                         headers: {
                             "Content-Type":
@@ -1869,19 +2217,13 @@
 
                         body:
                             JSON.stringify({
-
-                                message:
-                                    text,
-
+                                message: text,
                                 current_mode:
                                     currentMode,
-
                                 partner_id:
                                     partner.id ||
                                     null
-
                             })
-
                     }
                 );
 
@@ -1915,9 +2257,7 @@
 
         if (
             data.mode &&
-            COUPLE_MODES[
-                data.mode
-            ] &&
+            COUPLE_MODES[data.mode] &&
             !manualMood
         ) {
 
@@ -1967,7 +2307,7 @@
 
 
     /* =====================================================
-       MESSAGE RENDERING
+       RENDER MESSAGES
     ====================================================== */
 
     function renderMessages() {
@@ -1987,6 +2327,17 @@
                 if (
                     message.message_type ===
                     "system"
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    !belongsToCurrentChat(
+                        message
+                    )
                 ) {
 
                     return;
@@ -2028,10 +2379,14 @@
                     }`;
 
 
-                bubble.dataset.messageId =
+                const messageDomId =
                     message.client_id ||
                     message.id ||
                     "";
+
+
+                bubble.dataset.messageId =
+                    messageDomId;
 
 
                 if (
@@ -2162,15 +2517,14 @@
 
                     status.className =
                         `couple-message-status ${
-                            message.status ||
-                            "sent"
+                            normalizeStatus(
+                                message.status
+                            )
                         }`;
 
 
                     status.dataset.statusFor =
-                        message.client_id ||
-                        message.id ||
-                        "";
+                        messageDomId;
 
 
                     status.textContent =
@@ -2216,6 +2570,12 @@
     function getStatusTicks(
         status
     ) {
+
+        status =
+            normalizeStatus(
+                status
+            );
+
 
         if (
             status === "seen"
@@ -2279,11 +2639,18 @@
         }
 
 
+        const safeId =
+            String(
+                messageId
+            ).replace(
+                /"/g,
+                '\\"'
+            );
+
+
         const element =
             document.querySelector(
-                `.couple-message-status[data-status-for="${CSS.escape(
-                    String(messageId)
-                )}"]`
+                `.couple-message-status[data-status-for="${safeId}"]`
             );
 
 
@@ -2296,15 +2663,19 @@
         }
 
 
+        const normalized =
+            normalizeStatus(
+                status
+            );
+
+
         element.className =
-            `couple-message-status ${
-                normalizeStatus(status)
-            }`;
+            `couple-message-status ${normalized}`;
 
 
         element.textContent =
             getStatusTicks(
-                status
+                normalized
             );
 
     }
@@ -2334,10 +2705,8 @@
 
         if (
             !current ||
-            message.sender_id ===
-            null ||
-            message.sender_id ===
-            undefined
+            message.sender_id === null ||
+            message.sender_id === undefined
         ) {
 
             return false;
@@ -2349,7 +2718,9 @@
             String(
                 message.sender_id
             ) ===
-            String(current)
+            String(
+                current
+            )
         );
 
     }
@@ -2363,16 +2734,20 @@
         connected
     ) {
 
-        if (
-            connectionStatus
-        ) {
-
-            connectionStatus.textContent =
-                connected
-                    ? "Connected"
-                    : "Reconnecting...";
-
+        if (!connectionStatus) {
+            return;
         }
+
+
+        connectionStatus.textContent =
+            connected
+                ? "Connected"
+                : "Reconnecting...";
+
+        connectionStatus.classList.toggle(
+            "connected",
+            connected
+        );
 
     }
 
@@ -2392,7 +2767,7 @@
 
 
     /* =====================================================
-       PRESENCE UI
+       PRESENCE
     ====================================================== */
 
     function setOnlineStatus(
@@ -2400,10 +2775,14 @@
         lastSeen
     ) {
 
+        partner.online =
+            online === true;
+
+
         if (onlineDot) {
 
             onlineDot.hidden =
-                !online;
+                !partner.online;
 
         }
 
@@ -2413,16 +2792,14 @@
         }
 
 
-        if (online) {
+        if (partner.online) {
 
             partnerStatus.textContent =
                 "Online";
 
-
             partnerStatus.classList.add(
                 "online"
             );
-
 
             partnerStatus.classList.remove(
                 "typing"
@@ -2434,7 +2811,6 @@
                 formatLastSeen(
                     lastSeen
                 );
-
 
             partnerStatus.classList.remove(
                 "online",
@@ -2569,7 +2945,6 @@
             "hidden"
         );
 
-
         highlightCurrentMood();
 
     }
@@ -2606,7 +2981,7 @@
 
 
     /* =====================================================
-       AUTOMATIC TIME MOOD
+       AUTOMATIC MOOD
     ====================================================== */
 
     function applyAutomaticTimeMood() {
@@ -2705,10 +3080,7 @@
         ) {
 
             if (suggestionsEl) {
-
-                suggestionsEl.hidden =
-                    true;
-
+                suggestionsEl.hidden = true;
             }
 
             return;
@@ -2757,11 +3129,9 @@
                                 input.value =
                                     text;
 
-
                                 input.focus();
 
                             }
-
 
                             if (suggestionsEl) {
 
@@ -2793,7 +3163,7 @@
 
 
     /* =====================================================
-       QUICK ACTIONS
+       QUICK ACTION
     ====================================================== */
 
     function handleQuickAction(
@@ -2802,17 +3172,10 @@
 
         const modeMap = {
 
-            love:
-                "romantic",
-
-            memory:
-                "memory",
-
-            question:
-                "deep_conversation",
-
-            game:
-                "game"
+            love: "romantic",
+            memory: "memory",
+            question: "deep_conversation",
+            game: "game"
 
         };
 
@@ -2962,8 +3325,7 @@
 
 
         if (
-            action ===
-            "export"
+            action === "export"
         ) {
 
             exportChat();
@@ -2972,8 +3334,7 @@
 
 
         if (
-            action ===
-            "clear"
+            action === "clear"
         ) {
 
             clearChat();
@@ -3052,9 +3413,7 @@
 
         link.click();
 
-
         link.remove();
-
 
         URL.revokeObjectURL(
             url
@@ -3064,7 +3423,7 @@
 
 
     /* =====================================================
-       CLEAR
+       CLEAR CHAT
     ====================================================== */
 
     function clearChat() {
@@ -3080,8 +3439,10 @@
         }
 
 
-        messages =
-            [];
+        messages = [];
+
+
+        pendingReceipts.clear();
 
 
         saveMessages();
@@ -3092,7 +3453,7 @@
 
 
     /* =====================================================
-       EMOJI DATA
+       EMOJI
     ====================================================== */
 
     const EMOJI_CATEGORIES = {
@@ -3105,7 +3466,7 @@
         love: [
             "❤️","🩷","🧡","💛","💚","💙","💜","🖤",
             "🤍","🤎","🩶","💔","❤️‍🔥","💕","💞","💓",
-            "💗","💖","💘","💝","💟","❣️","💋","💌",
+            "💗","💖","💘","💝","💟","❣️","💋",
             "😍","🥰","😘","😚","😙","😗","🫶"
         ],
 
@@ -3236,23 +3597,14 @@
         const categoryIcons = {
 
             recent: "🕘",
-
             love: "❤️",
-
             smile: "😊",
-
             people: "🫶",
-
             animals: "🐶",
-
             food: "🍕",
-
             activities: "🎮",
-
             travel: "✈️",
-
             objects: "📱",
-
             symbols: "✨"
 
         };
@@ -3536,8 +3888,7 @@
         emoji
     ) {
 
-        let recent =
-            [];
+        let recent = [];
 
 
         try {
@@ -3647,8 +3998,7 @@
 
         const message = {
 
-            id:
-                null,
+            id: null,
 
             client_id:
                 clientId,
@@ -3657,14 +4007,14 @@
                 getCurrentUserId(),
 
             receiver_id:
-                partner.id ||
-                null,
+                partner.id,
 
-            content:
-                "",
+            room_id:
+                currentRoomId,
 
-            text:
-                "",
+            content: "",
+
+            text: "",
 
             message_type:
                 "image",
@@ -3741,12 +4091,21 @@
 
                 return stored
                     .map(
-                        normalizeRealtimeMessage
+                        item =>
+                            normalizeRealtimeMessage(
+                                item
+                            )
                     )
                     .filter(
                         message =>
                             message.message_type !==
                             "system"
+                    )
+                    .filter(
+                        message =>
+                            belongsToCurrentChat(
+                                message
+                            )
                     );
 
             }
@@ -3800,8 +4159,7 @@
             await fetch(
                 API.mood,
                 {
-                    method:
-                        "POST",
+                    method: "POST",
 
                     headers: {
                         "Content-Type":
@@ -3810,16 +4168,13 @@
 
                     body:
                         JSON.stringify({
-
                             partner_id:
                                 partner.id ||
                                 null,
 
                             mode:
                                 currentMode
-
                         })
-
                 }
             );
 
@@ -3842,8 +4197,7 @@
 
 
         if (
-            animation ===
-            "hearts"
+            animation === "hearts"
         ) {
 
             createHeartEffect();
@@ -3865,9 +4219,7 @@
 
     function createHeartEffect() {
 
-        if (
-            !effectsLayer
-        ) {
+        if (!effectsLayer) {
             return;
         }
 
@@ -3918,15 +4270,10 @@
     function getCurrentUserId() {
 
         const keys = [
-
             "user_id",
-
             "currentUser",
-
             "usanexUser",
-
             "user"
-
         ];
 
 
@@ -4023,11 +4370,8 @@
         return date.toLocaleTimeString(
             [],
             {
-                hour:
-                    "2-digit",
-
-                minute:
-                    "2-digit"
+                hour: "2-digit",
+                minute: "2-digit"
             }
         );
 
@@ -4058,11 +4402,8 @@
         return date.toLocaleString(
             [],
             {
-                dateStyle:
-                    "medium",
-
-                timeStyle:
-                    "short"
+                dateStyle: "medium",
+                timeStyle: "short"
             }
         );
 
@@ -4116,14 +4457,9 @@
                 .toLocaleDateString(
                     [],
                     {
-                        weekday:
-                            "long",
-
-                        month:
-                            "short",
-
-                        day:
-                            "numeric"
+                        weekday: "long",
+                        month: "short",
+                        day: "numeric"
                     }
                 );
 
