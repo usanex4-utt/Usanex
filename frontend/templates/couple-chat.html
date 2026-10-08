@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
 
@@ -9,16 +8,13 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
-    <meta
-        name="theme-color"
-        content="#090615"
-    >
+    <meta name="theme-color" content="#07152f">
 
     <title>Couple Chat | Usanex</title>
 
     <link
         rel="stylesheet"
-        href="/static/css/couple-chat.css?v=7"
+        href="/static/css/couple-chat.css?v=10"
     >
 </head>
 
@@ -27,9 +23,8 @@
 <div class="couple-app" id="coupleApp">
 
     <!-- =====================================================
-         COUPLE HEADER
+         HEADER
     ====================================================== -->
-
     <header class="couple-header">
 
         <button
@@ -41,14 +36,12 @@
             ‹
         </button>
 
-
         <button
             type="button"
             class="couple-avatar-button"
             id="coupleAvatarButton"
             aria-label="Open partner profile"
         >
-
             <img
                 id="couplePartnerAvatar"
                 src="/static/images/default-profile.png"
@@ -60,100 +53,54 @@
                 id="coupleOnlineDot"
                 hidden
             ></span>
-
         </button>
-
 
         <div class="couple-header-info">
 
-            <strong
-                id="couplePartnerName"
-            >
+            <strong id="couplePartnerName">
                 Partner
             </strong>
 
-            <span
-                id="couplePartnerStatus"
-            >
-                Your Couple Space
+            <span id="couplePartnerStatus">
+                Offline
             </span>
 
         </div>
 
+        <!-- ONLY MOOD TEXT -->
+        <button
+            type="button"
+            class="couple-header-mood"
+            id="coupleHeaderMood"
+        >
+            Mood
+        </button>
 
-        <div class="couple-header-actions">
-
-            <button
-                type="button"
-                id="coupleMoodButton"
-                aria-label="Change mood"
-            >
-                😊
-            </button>
-
-            <button
-                type="button"
-                id="coupleMenuButton"
-                aria-label="More options"
-            >
-                ⋮
-            </button>
-
-        </div>
+        <button
+            type="button"
+            class="couple-menu-button"
+            id="coupleMenuButton"
+            aria-label="More options"
+        >
+            ⋮
+        </button>
 
     </header>
 
 
     <!-- =====================================================
-         DYNAMIC MOOD BAR
+         AI MINI BAR
     ====================================================== -->
-
     <section
-        class="couple-mood-bar"
-        id="coupleMoodBar"
-    >
-
-        <div class="couple-mood-icon" id="coupleMoodIcon">
-            😌
-        </div>
-
-        <div class="couple-mood-info">
-
-            <span class="couple-mood-label">
-                Current Mood
-            </span>
-
-            <strong id="coupleMoodName">
-                Calm
-            </strong>
-
-        </div>
-
-        <button
-            type="button"
-            class="couple-mood-change"
-            id="coupleMoodChangeButton"
-        >
-            Change
-        </button>
-
-    </section>
-
-
-    <!-- =====================================================
-         AI COUPLE PANEL
-    ====================================================== -->
-
-    <section
-        class="couple-ai-panel"
+        class="couple-ai-mini"
         id="coupleAiPanel"
     >
 
-        <div class="couple-ai-icon">
+        <div class="couple-ai-mini-icon">
             ✨
         </div>
 
-        <div class="couple-ai-content">
+        <div class="couple-ai-mini-content">
 
             <strong>
                 Usanex Couple AI
@@ -167,8 +114,8 @@
 
         <button
             type="button"
-            class="couple-ai-button"
             id="coupleAiButton"
+            class="couple-ai-mini-button"
             aria-label="Open Couple AI"
         >
             ✨
@@ -178,17 +125,16 @@
 
 
     <!-- =====================================================
-         RELATIONSHIP INFO
+         CONNECTION INFO
     ====================================================== -->
-
     <section
-        class="couple-info-card"
+        class="couple-connection-strip"
         id="coupleInfoCard"
     >
 
-        <div class="couple-info-item">
+        <div class="couple-connection-item">
 
-            <span class="couple-info-icon">
+            <span class="connection-icon">
                 ❤️
             </span>
 
@@ -205,12 +151,12 @@
         </div>
 
 
-        <div class="couple-info-divider"></div>
+        <div class="connection-divider"></div>
 
 
-        <div class="couple-info-item">
+        <div class="couple-connection-item">
 
-            <span class="couple-info-icon">
+            <span class="connection-icon">
                 💕
             </span>
 
@@ -232,7 +178,6 @@
     <!-- =====================================================
          QUICK ACTIONS
     ====================================================== -->
-
     <section
         class="couple-quick-actions"
         id="coupleQuickActions"
@@ -281,9 +226,8 @@
 
 
     <!-- =====================================================
-         CONVERSATION
+         CHAT AREA
     ====================================================== -->
-
     <main
         class="couple-conversation"
         id="coupleConversation"
@@ -311,19 +255,40 @@
         </div>
 
 
+        <!-- TYPING -->
+        <div
+            class="couple-typing"
+            id="coupleTyping"
+            hidden
+        >
+
+            <span id="coupleTypingName">
+                Partner
+            </span>
+
+            <span class="typing-dots">
+                <i></i>
+                <i></i>
+                <i></i>
+            </span>
+
+            <span>
+                typing...
+            </span>
+
+        </div>
+
+
+        <!-- MESSAGES -->
         <section
             class="couple-messages"
             id="coupleMessages"
             aria-live="polite"
         >
-
-            <!-- Messages will be inserted by couple-chat.js -->
-
         </section>
 
 
         <!-- AI SUGGESTIONS -->
-
         <section
             class="couple-suggestions"
             id="coupleSuggestions"
@@ -345,22 +310,19 @@
 
 
     <!-- =====================================================
-         MOOD PANEL
+         MOOD OVERLAY
     ====================================================== -->
-
     <div
         class="couple-overlay hidden"
         id="coupleMoodOverlay"
     >
 
-        <section
-            class="couple-mood-panel"
-            id="coupleMoodPanel"
-        >
+        <section class="couple-mood-panel">
 
             <div class="couple-panel-header">
 
                 <div>
+
                     <small>
                         Couple Mood
                     </small>
@@ -368,6 +330,7 @@
                     <h2>
                         Choose your mood
                     </h2>
+
                 </div>
 
                 <button
@@ -391,8 +354,8 @@
                     <span>Romantic</span>
                 </button>
 
-                <button data-mode="deep-love">
-                    🥰
+                <button data-mode="deep_love">
+                    💗
                     <span>Deep Love</span>
                 </button>
 
@@ -412,12 +375,12 @@
                 </button>
 
                 <button data-mode="emotional">
-                    😭
+                    🥹
                     <span>Emotional</span>
                 </button>
 
                 <button data-mode="angry">
-                    😠
+                    😡
                     <span>Angry</span>
                 </button>
 
@@ -427,17 +390,17 @@
                 </button>
 
                 <button data-mode="caring">
-                    🤗
+                    🫶
                     <span>Caring</span>
                 </button>
 
                 <button data-mode="comfort">
-                    🫂
+                    🤗
                     <span>Comfort</span>
                 </button>
 
                 <button data-mode="flirty">
-                    😘
+                    😏
                     <span>Flirty</span>
                 </button>
 
@@ -446,23 +409,23 @@
                     <span>Passionate</span>
                 </button>
 
-                <button data-mode="good-night">
+                <button data-mode="good_night">
                     🌙
                     <span>Good Night</span>
                 </button>
 
-                <button data-mode="good-morning">
-                    ☀️
+                <button data-mode="good_morning">
+                    🌅
                     <span>Good Morning</span>
                 </button>
 
                 <button data-mode="memory">
-                    💭
+                    📸
                     <span>Memory</span>
                 </button>
 
                 <button data-mode="celebration">
-                    🥳
+                    🎉
                     <span>Celebration</span>
                 </button>
 
@@ -471,23 +434,23 @@
                     <span>Birthday</span>
                 </button>
 
-                <button data-mode="future">
+                <button data-mode="future_marriage">
                     💍
                     <span>Future</span>
                 </button>
 
-                <button data-mode="missing-you">
-                    🫶
+                <button data-mode="missing_you">
+                    🥺
                     <span>Missing You</span>
                 </button>
 
                 <button data-mode="apology">
-                    😔
+                    🙏
                     <span>Apology</span>
                 </button>
 
                 <button data-mode="appreciation">
-                    💕
+                    🥰
                     <span>Appreciation</span>
                 </button>
 
@@ -496,18 +459,18 @@
                     <span>Game</span>
                 </button>
 
-                <button data-mode="photo-memory">
-                    📸
-                    <span>Photos</span>
+                <button data-mode="photo_memory">
+                    🖼️
+                    <span>Photo Memory</span>
                 </button>
 
-                <button data-mode="serious">
-                    🤔
+                <button data-mode="serious_talk">
+                    🗣️
                     <span>Serious Talk</span>
                 </button>
 
-                <button data-mode="deep-talk">
-                    🧠
+                <button data-mode="deep_conversation">
+                    💭
                     <span>Deep Talk</span>
                 </button>
 
@@ -524,9 +487,8 @@
 
 
     <!-- =====================================================
-         AI PANEL
+         AI OVERLAY
     ====================================================== -->
-
     <div
         class="couple-overlay hidden"
         id="coupleAiOverlay"
@@ -537,19 +499,20 @@
             <div class="couple-panel-header">
 
                 <div>
+
                     <small>
-                        Usanex AI
+                        Usanex
                     </small>
 
                     <h2>
-                        Couple Assistant
+                        Couple AI ✨
                     </h2>
+
                 </div>
 
                 <button
                     type="button"
                     id="closeAiPanel"
-                    aria-label="Close"
                 >
                     ×
                 </button>
@@ -557,33 +520,110 @@
             </div>
 
 
-            <div class="couple-ai-options">
+            <div class="ai-modal-content">
 
-                <button data-ai-action="suggest">
+                <button
+                    type="button"
+                    class="ai-modal-action"
+                    data-ai-action="suggest"
+                >
                     💬
                     <span>
                         Suggest a reply
                     </span>
                 </button>
 
-                <button data-ai-action="love">
+                <button
+                    type="button"
+                    class="ai-modal-action"
+                    data-ai-action="mood"
+                >
                     ❤️
                     <span>
-                        Make it romantic
+                        Understand mood
                     </span>
                 </button>
 
-                <button data-ai-action="comfort">
-                    🫂
+                <button
+                    type="button"
+                    class="ai-modal-action"
+                    data-ai-action="question"
+                >
+                    💭
                     <span>
-                        Help me comfort them
+                        Give us a question
                     </span>
                 </button>
 
-                <button data-ai-action="game">
+                <button
+                    type="button"
+                    class="ai-modal-action"
+                    data-ai-action="game"
+                >
                     🎮
                     <span>
-                        Start a couple game
+                        Couple game
+                    </span>
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         MENU OVERLAY
+    ====================================================== -->
+    <div
+        class="couple-overlay hidden"
+        id="coupleMenuOverlay"
+    >
+
+        <section class="couple-menu-panel">
+
+            <div class="couple-panel-header">
+
+                <div>
+                    <small>
+                        Conversation
+                    </small>
+
+                    <h2>
+                        Options
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="closeCoupleMenu"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="couple-menu-list">
+
+                <button
+                    type="button"
+                    data-menu-action="export"
+                >
+                    📥
+                    <span>
+                        Export chat
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    data-menu-action="clear"
+                >
+                    🗑️
+                    <span>
+                        Clear local chat
                     </span>
                 </button>
 
@@ -597,17 +637,7 @@
     <!-- =====================================================
          COMPOSER
     ====================================================== -->
-
     <footer class="couple-composer-area">
-
-        <div
-            class="couple-typing"
-            id="coupleTyping"
-            hidden
-        >
-            Partner is typing...
-        </div>
-
 
         <form
             class="couple-composer"
@@ -617,6 +647,7 @@
             <button
                 type="button"
                 id="coupleEmojiButton"
+                class="composer-icon-button"
                 aria-label="Emoji"
             >
                 😊
@@ -635,6 +666,7 @@
             <button
                 type="button"
                 id="coupleAttachButton"
+                class="composer-icon-button"
                 aria-label="Attach"
             >
                 📎
@@ -644,6 +676,7 @@
             <button
                 type="button"
                 id="coupleCameraButton"
+                class="composer-icon-button"
                 aria-label="Camera"
             >
                 📷
@@ -667,26 +700,24 @@
 
 
 <!-- =====================================================
-     FILE INPUT
+     HIDDEN FILE INPUT
 ====================================================== -->
-
 <input
     type="file"
     id="coupleFileInput"
     hidden
     multiple
+    accept="image/*,video/*,.pdf,.doc,.docx,.txt"
 >
 
 
 <!-- =====================================================
      JAVASCRIPT
 ====================================================== -->
-
 <script
-    src="/static/js/couple-chat.js?v=3"
+    src="/static/js/couple-chat.js?v=10"
     defer
 ></script>
 
 </body>
-
 </html>
