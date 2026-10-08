@@ -1,5 +1,5 @@
 # =========================================================
-# USANEX — COUPLE CHAT REALTIME
+# USANEX — COUPLE REALTIME
 # backend/routes/couple_realtime.py
 # =========================================================
 
@@ -13,25 +13,34 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
+
 from sqlalchemy.orm import Session
 
 from ..database.database import SessionLocal
 from ..database.models import User
+
 from ..routes.auth import (
     SESSION_COOKIE_NAME,
     get_valid_session,
 )
+
+from ..services.couple_message_service import (
+    get_or_create_couple_room,
+    create_couple_message,
+    get_couple_messages,
+    mark_message_delivered,
+    mark_message_seen,
+    serialize_message,
+    serialize_receipt,
+)
+
 from ..websocket.couple_manager import (
     couple_manager,
 )
 
 
-# =========================================================
-# ROUTER
-# =========================================================
-
 router = APIRouter(
-    tags=["Couple Realtime"],
+    tags=["Couple Realtime"]
 )
 
 
@@ -40,21 +49,21 @@ router = APIRouter(
 # =========================================================
 
 def utc_now_iso() -> str:
-    return (
-        datetime.now(
-            timezone.utc
-        ).isoformat()
-    )
+
+    return datetime.now(
+        timezone.utc
+    ).isoformat()
 
 
 # =========================================================
-# USER FINDER
+# USER
 # =========================================================
 
 def get_user(
     db: Session,
     user_id: int,
 ):
+
     return (
         db.query(User)
         .filter(
@@ -65,15 +74,7 @@ def get_user(
 
 
 # =========================================================
-# COUPLE WEBSOCKET
-# =========================================================
-#
-# Example:
-#
-# ws://domain/ws/couple/25
-#
-# 25 = partner User.id
-#
+# WEBSOCKET
 # =========================================================
 
 @router.websocket(
@@ -87,6 +88,8 @@ async def couple_realtime(
     db = SessionLocal()
 
     current_user = None
+    partner = None
+    room = None
 
     try:
 
@@ -94,10 +97,8 @@ async def couple_realtime(
         # AUTHENTICATION
         # =================================================
 
-        session_token = (
-            websocket.cookies.get(
-                SESSION_COOKIE_NAME
-            )
+        session_token = websocket.cookies.get(
+            SESSION_COOKIE_NAME
         )
 
         session = get_valid_session(
@@ -150,10 +151,6 @@ async def couple_realtime(
 
             return
 
-        # =================================================
-        # SELF CHAT PROTECTION
-        # =================================================
-
         if current_user.id == partner.id:
 
             await websocket.close(
@@ -164,7 +161,17 @@ async def couple_realtime(
             return
 
         # =================================================
-        # CONNECT USER
+        # COUPLE ROOM
+        # =================================================
+
+        room = get_or_create_couple_room(
+            db=db,
+            user_one_id=current_user.id,
+            user_two_id=partner.id,
+        )
+
+        # =================================================
+        # CONNECT WEBSOCKET
         # =================================================
 
         await couple_manager.connect(
@@ -173,7 +180,7 @@ async def couple_realtime(
         )
 
         # =================================================
-        # CONFIRM CONNECTION
+        # CONNECTION RESPONSE
         # =================================================
 
         await websocket.send_json({
@@ -192,6 +199,10 @@ async def couple_realtime(
                 "name": partner.name,
             },
 
+            "room": {
+                "id": room.id,
+            },
+
             "partner_online":
                 couple_manager.is_online(
                     partner.id
@@ -199,32 +210,58 @@ async def couple_realtime(
 
             "timestamp":
                 utc_now_iso(),
+
         })
 
         # =================================================
-        # TELL PARTNER THAT CURRENT USER IS ONLINE
+        # LOAD RECENT MESSAGES
+        # =================================================
+
+        messages = get_couple_messages(
+            db=db,
+            room_id=room.id,
+            limit=50,
+        )
+
+        await websocket.send_json({
+
+            "type": "message_history",
+
+            "room_id": room.id,
+
+            "messages": [
+                serialize_message(message)
+                for message in messages
+            ],
+
+            "timestamp":
+                utc_now_iso(),
+
+        })
+
+        # =================================================
+        # PRESENCE ONLINE
         # =================================================
 
         await couple_manager.send_presence(
+
             receiver_id=partner.id,
+
             user_id=current_user.id,
+
             is_online=True,
+
             last_seen=None,
+
         )
 
         # =================================================
-        # REALTIME EVENT LOOP
+        # EVENT LOOP
         # =================================================
 
         while True:
 
-            raw_data = (
-                await websocket.receive_text()
-            )
-
-            # =================================================
-            # PARSE
-            # =================================================
+            raw_data = await websocket.receive_text()
 
             try:
 
@@ -240,6 +277,7 @@ async def couple_realtime(
 
                     "message":
                         "Invalid JSON",
+
                 })
 
                 continue
@@ -247,10 +285,6 @@ async def couple_realtime(
             event_type = data.get(
                 "type"
             )
-
-            # =================================================
-            # INVALID EVENT
-            # =================================================
 
             if not event_type:
 
@@ -260,6 +294,7 @@ async def couple_realtime(
 
                     "message":
                         "Event type is required",
+
                 })
 
                 continue
@@ -271,9 +306,13 @@ async def couple_realtime(
             if event_type == "typing_start":
 
                 await couple_manager.send_typing(
+
                     sender_id=current_user.id,
+
                     receiver_id=partner.id,
+
                     is_typing=True,
+
                 )
 
                 continue
@@ -285,9 +324,13 @@ async def couple_realtime(
             if event_type == "typing_stop":
 
                 await couple_manager.send_typing(
+
                     sender_id=current_user.id,
+
                     receiver_id=partner.id,
+
                     is_typing=False,
+
                 )
 
                 continue
@@ -298,7 +341,7 @@ async def couple_realtime(
 
             if event_type == "message":
 
-                message_id = data.get(
+                client_message_id = data.get(
                     "message_id"
                 )
 
@@ -314,14 +357,20 @@ async def couple_realtime(
                     "media_type"
                 )
 
+                message_type = data.get(
+                    "message_type",
+                    "text",
+                )
+
+                reply_to_message_id = data.get(
+                    "reply_to_message_id"
+                )
+
                 # ---------------------------------------------
-                # VALIDATE MESSAGE
+                # Validate
                 # ---------------------------------------------
 
-                if (
-                    not content
-                    and not media_url
-                ):
+                if not content and not media_url:
 
                     await websocket.send_json({
 
@@ -329,6 +378,7 @@ async def couple_realtime(
 
                         "message":
                             "Message cannot be empty",
+
                     })
 
                     continue
@@ -354,86 +404,144 @@ async def couple_realtime(
 
                             "message":
                                 "Message is too long",
+
                         })
 
                         continue
 
                 # ---------------------------------------------
-                # CHECK PARTNER ONLINE
+                # Save message
                 # ---------------------------------------------
 
-                partner_online = (
-                    couple_manager.is_online(
-                        partner.id
-                    )
+                message = create_couple_message(
+
+                    db=db,
+
+                    room_id=room.id,
+
+                    sender_id=current_user.id,
+
+                    receiver_id=partner.id,
+
+                    content=content,
+
+                    media_url=media_url,
+
+                    media_type=media_type,
+
+                    message_type=message_type,
+
+                    reply_to_message_id=
+                        reply_to_message_id,
+
                 )
 
-                # ---------------------------------------------
-                # MESSAGE EVENT
-                # ---------------------------------------------
+                message_payload = {
 
-                message_event = {
-
-                    "type":
-                        "message",
+                    "type": "message",
 
                     "message_id":
-                        message_id,
+                        message.id,
+
+                    "client_message_id":
+                        client_message_id,
+
+                    "room_id":
+                        room.id,
 
                     "sender_id":
-                        current_user.id,
+                        message.sender_id,
 
                     "receiver_id":
-                        partner.id,
+                        message.receiver_id,
 
                     "content":
-                        content,
+                        message.content,
 
                     "media_url":
-                        media_url,
+                        message.media_url,
 
                     "media_type":
-                        media_type,
+                        message.media_type,
+
+                    "message_type":
+                        message.message_type,
 
                     "timestamp":
-                        utc_now_iso(),
+                        message.created_at.isoformat(),
+
                 }
 
                 # ---------------------------------------------
-                # SEND TO PARTNER
+                # Send to partner
                 # ---------------------------------------------
 
                 delivered = (
                     await couple_manager.send_to_user(
 
-                        user_id=
-                            partner.id,
+                        user_id=partner.id,
 
-                        event=
-                            message_event,
+                        event=message_payload,
+
                     )
                 )
 
                 # ---------------------------------------------
-                # RECEIPT
+                # Delivery receipt
                 # ---------------------------------------------
 
-                await websocket.send_json({
+                if delivered:
 
-                    "type":
-                        "message_receipt",
+                    receipt = (
+                        mark_message_delivered(
 
-                    "message_id":
-                        message_id,
+                            db=db,
 
-                    "status":
-                        "delivered"
-                        if delivered
-                        else "sent",
+                            message_id=message.id,
 
-                    "timestamp":
-                        utc_now_iso(),
-                })
+                            receiver_id=partner.id,
+
+                        )
+                    )
+
+                    receipt_payload = (
+                        serialize_receipt(
+                            receipt
+                        )
+                    )
+
+                    receipt_payload[
+                        "type"
+                    ] = "message_receipt"
+
+                    receipt_payload[
+                        "client_message_id"
+                    ] = client_message_id
+
+                    await websocket.send_json(
+                        receipt_payload
+                    )
+
+                else:
+
+                    await websocket.send_json({
+
+                        "type":
+                            "message_receipt",
+
+                        "message_id":
+                            message.id,
+
+                        "client_message_id":
+                            client_message_id,
+
+                        "status":
+                            "sent",
+
+                        "timestamp":
+                            utc_now_iso(),
+
+                    })
 
                 continue
 
@@ -447,26 +555,48 @@ async def couple_realtime(
                     "message_id"
                 )
 
-                await couple_manager.send_to_user(
+                if not message_id:
 
-                    user_id=
-                        partner.id,
+                    continue
 
-                    event={
+                receipt = (
+                    mark_message_delivered(
 
-                        "type":
-                            "message_receipt",
+                        db=db,
 
-                        "message_id":
-                            message_id,
+                        message_id=int(
+                            message_id
+                        ),
 
-                        "status":
-                            "delivered",
+                        receiver_id=
+                            current_user.id,
 
-                        "timestamp":
-                            utc_now_iso(),
-                    },
+                    )
                 )
+
+                if receipt:
+
+                    await couple_manager.send_to_user(
+
+                        user_id=partner.id,
+
+                        event={
+
+                            "type":
+                                "message_receipt",
+
+                            "message_id":
+                                message_id,
+
+                            "status":
+                                "delivered",
+
+                            "timestamp":
+                                utc_now_iso(),
+
+                        },
+
+                    )
 
                 continue
 
@@ -480,26 +610,48 @@ async def couple_realtime(
                     "message_id"
                 )
 
-                await couple_manager.send_to_user(
+                if not message_id:
 
-                    user_id=
-                        partner.id,
+                    continue
 
-                    event={
+                receipt = (
+                    mark_message_seen(
 
-                        "type":
-                            "message_receipt",
+                        db=db,
 
-                        "message_id":
-                            message_id,
+                        message_id=int(
+                            message_id
+                        ),
 
-                        "status":
-                            "seen",
+                        receiver_id=
+                            current_user.id,
 
-                        "timestamp":
-                            utc_now_iso(),
-                    },
+                    )
                 )
+
+                if receipt:
+
+                    await couple_manager.send_to_user(
+
+                        user_id=partner.id,
+
+                        event={
+
+                            "type":
+                                "message_receipt",
+
+                            "message_id":
+                                message_id,
+
+                            "status":
+                                "seen",
+
+                            "timestamp":
+                                utc_now_iso(),
+
+                        },
+
+                    )
 
                 continue
 
@@ -516,6 +668,7 @@ async def couple_realtime(
 
                     "timestamp":
                         utc_now_iso(),
+
                 })
 
                 continue
@@ -531,11 +684,12 @@ async def couple_realtime(
 
                 "message":
                     f"Unknown event: {event_type}",
+
             })
 
-    # =====================================================
+    # =========================================================
     # DISCONNECT
-    # =====================================================
+    # =========================================================
 
     except WebSocketDisconnect:
 
@@ -552,17 +706,16 @@ async def couple_realtime(
 
     finally:
 
-        # =================================================
-        # REMOVE CONNECTION
-        # =================================================
-
         if current_user is not None:
 
             try:
 
                 await couple_manager.disconnect(
+
                     user_id=current_user.id,
+
                     websocket=websocket,
+
                 )
 
             except Exception as e:
@@ -573,17 +726,23 @@ async def couple_realtime(
                     str(e),
                 )
 
-            # =================================================
-            # PARTNER OFFLINE EVENT
-            # =================================================
+            # ---------------------------------------------
+            # Offline event
+            # ---------------------------------------------
 
             try:
 
                 await couple_manager.send_presence(
+
                     receiver_id=partner_user_id,
+
                     user_id=current_user.id,
+
                     is_online=False,
-                    last_seen=utc_now_iso(),
+
+                    last_seen=
+                        utc_now_iso(),
+
                 )
 
             except Exception as e:
