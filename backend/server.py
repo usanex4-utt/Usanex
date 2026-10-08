@@ -301,6 +301,30 @@ except Exception as e:
         str(e),
     )
 
+# =========================================================
+# COUPLE REALTIME ROUTES
+# =========================================================
+
+try:
+
+    from .routes.couple_realtime import (
+        router as couple_realtime_router
+    )
+
+    app.include_router(
+        couple_realtime_router
+    )
+
+    print(
+        "[Usanex] Couple realtime routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Couple realtime router not loaded:",
+        str(e),
+    )
 
 # =========================================================
 # PAGE ROUTES
@@ -333,9 +357,11 @@ except Exception as e:
 print("=================================================")
 print("             USANEX SERVER READY")
 print("=================================================")
-print("Auth routes       : LOADED")
-print("Profile routes    : LOADED")
-print("Connection routes : LOADED")
-print("Reels routes      : LOADED")
-print("Page routes       : LOADED")
+print("Auth routes          : LOADED")
+print("Profile routes       : LOADED")
+print("Connection routes    : LOADED")
+print("Reels routes         : LOADED")
+print("Search routes        : LOADED")
+print("Couple realtime      : LOADED")
+print("Page routes          : LOADED")
 print("=================================================")
