@@ -1,953 +1,473 @@
 /* =========================================================
    USANEX COUPLE CHAT
-   FINAL DYNAMIC EXPERIENCE
-   Version 3.0
-   ========================================================= */
+   Frontend controller
+========================================================= */
 
 (() => {
     "use strict";
 
+
     /* =====================================================
        CONFIG
-       ===================================================== */
+    ====================================================== */
 
-    const CONFIG = {
-        storageKey: "usanex_couple_chat_v3",
-        modeKey: "usanex_couple_mode_v3",
-        recentEmojiKey: "usanex_recent_emojis_v3",
-        partnerKey: "usanex_couple_partner_v3",
-
-        analyzeEndpoint: "/api/couple-chat/analyze",
-        messageEndpoint: "/api/couple-chat/message",
-
-        maxMessages: 500,
-        maxRecentEmoji: 24
+    const API = {
+        analyze: "/api/couple-chat/analyze",
+        message: "/api/couple-chat/message",
+        history: "/api/couple-chat/history",
+        memories: "/api/couple-chat/memories"
     };
 
-    /* =====================================================
-       26 COUPLE MODES
-       ===================================================== */
 
-    const MODES = {
+    const WS_BASE =
+        `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+
+
+    const STORAGE_KEY =
+        "usanex_couple_chat_messages_v10";
+
+
+    const MODE_STORAGE_KEY =
+        "usanex_couple_chat_mode_v10";
+
+
+    const RECENT_EMOJI_KEY =
+        "usanex_recent_emojis_v10";
+
+
+    /* =====================================================
+       26 MODES
+    ====================================================== */
+
+    const COUPLE_MODES = {
+
         romantic: {
-            label: "Romantic",
-            icon: "❤️",
-            emotion: "love",
-            background: "romantic",
-            effect: "hearts",
+            name: "Romantic",
+            emoji: "❤️",
             suggestions: [
                 "I just want to be close to you ❤️",
-                "You make my heart smile.",
-                "I wish you were here with me tonight."
+                "You make my heart feel safe.",
+                "I love having you in my life."
             ]
         },
 
-        "deep-love": {
-            label: "Deep Love",
-            icon: "🥰",
-            emotion: "deep_love",
-            background: "deep-love",
-            effect: "soft-hearts",
+        deep_love: {
+            name: "Deep Love",
+            emoji: "💗",
             suggestions: [
-                "You mean more to me than I can explain ❤️",
-                "I feel lucky to have you.",
-                "You are my safe place."
+                "You mean more to me than words can explain.",
+                "I feel deeply connected to you.",
+                "I want us to keep growing together."
             ]
         },
 
         happy: {
-            label: "Happy",
-            icon: "😊",
-            emotion: "happiness",
-            background: "happy",
-            effect: "sparkles",
+            name: "Happy",
+            emoji: "😊",
             suggestions: [
-                "Today feels better because of you 😊",
-                "Let's make another happy memory.",
-                "You always make me smile."
+                "You made my day better 😊",
+                "I am so happy with you.",
+                "Let's make today special."
             ]
         },
 
         funny: {
-            label: "Funny",
-            icon: "😂",
-            emotion: "fun",
-            background: "funny",
-            effect: "bounce",
+            name: "Funny",
+            emoji: "😂",
             suggestions: [
-                "Okay 😂 challenge accepted!",
-                "You are impossible 😂",
-                "Wait till I get my revenge!"
+                "Okay, now make me laugh 😂",
+                "Challenge accepted!",
+                "You are seriously too funny."
             ]
         },
 
         sad: {
-            label: "Sad",
-            icon: "😢",
-            emotion: "sadness",
-            background: "sad",
-            effect: "rain",
+            name: "Sad",
+            emoji: "😢",
             suggestions: [
-                "I'm here with you.",
-                "Tell me what happened.",
-                "You don't have to handle it alone."
+                "I don't feel okay right now.",
+                "Can you stay with me?",
+                "I just need you right now."
             ]
         },
 
         emotional: {
-            label: "Emotional",
-            icon: "😭",
-            emotion: "emotional",
-            background: "emotional",
-            effect: "slow-particles",
+            name: "Emotional",
+            emoji: "🥹",
             suggestions: [
-                "I understand how you feel.",
-                "Come here, I'm listening.",
-                "You can tell me everything."
+                "That really touched my heart.",
+                "I don't know how to explain what I feel.",
+                "You matter to me so much."
             ]
         },
 
         angry: {
-            label: "Angry",
-            icon: "😠",
-            emotion: "anger",
-            background: "angry",
-            effect: "pulse",
+            name: "Angry",
+            emoji: "😡",
             suggestions: [
-                "Let's talk about it calmly.",
-                "Tell me what upset you.",
-                "I don't want us to fight."
+                "I am upset right now.",
+                "Give me a little time.",
+                "I want us to talk calmly."
             ]
         },
 
         frustrated: {
-            label: "Frustrated",
-            icon: "😤",
-            emotion: "frustration",
-            background: "frustrated",
-            effect: "pulse",
+            name: "Frustrated",
+            emoji: "😤",
             suggestions: [
-                "Take a breath. I'm listening.",
-                "Tell me what's bothering you.",
-                "We'll figure it out together."
+                "Today has been really difficult.",
+                "I need to clear my head.",
+                "Can we talk about this?"
             ]
         },
 
         caring: {
-            label: "Caring",
-            icon: "🤗",
-            emotion: "care",
-            background: "caring",
-            effect: "warm-glow",
+            name: "Caring",
+            emoji: "🫶",
             suggestions: [
-                "Have you eaten?",
-                "Please take care of yourself ❤️",
-                "I'm always here for you."
+                "Did you eat?",
+                "Please take care of yourself.",
+                "I am here if you need me."
             ]
         },
 
         comfort: {
-            label: "Comfort",
-            icon: "🫂",
-            emotion: "comfort",
-            background: "comfort",
-            effect: "breathing",
+            name: "Comfort",
+            emoji: "🤗",
             suggestions: [
-                "Come here, you deserve a hug 🫂",
-                "It's okay. I'm with you.",
-                "You are safe with me."
+                "Come here, everything will be okay.",
+                "You don't have to handle this alone.",
+                "I am with you."
             ]
         },
 
         flirty: {
-            label: "Flirty",
-            icon: "😘",
-            emotion: "flirty",
-            background: "flirty",
-            effect: "hearts",
+            name: "Flirty",
+            emoji: "😏",
             suggestions: [
-                "Why are you making me smile like this? 😘",
-                "Someone is looking cute today.",
-                "Come closer 😉"
+                "Why are you looking so cute today? 😏",
+                "Someone is making me smile.",
+                "You know exactly what you're doing."
             ]
         },
 
         passionate: {
-            label: "Passionate",
-            icon: "🔥",
-            emotion: "passion",
-            background: "passionate",
-            effect: "fire-glow",
+            name: "Passionate",
+            emoji: "🔥",
             suggestions: [
-                "You have no idea what you do to me ❤️",
-                "I can't stop thinking about you.",
-                "You make everything feel intense."
+                "There is something special between us.",
+                "You have my whole attention.",
+                "I can't stop thinking about you."
             ]
         },
 
-        "good-night": {
-            label: "Good Night",
-            icon: "🌙",
-            emotion: "peace",
-            background: "good-night",
-            effect: "stars",
+        good_night: {
+            name: "Good Night",
+            emoji: "🌙",
             suggestions: [
-                "Good night, sleep peacefully 🌙",
-                "Wish I could say good night beside you.",
-                "Sweet dreams ❤️"
+                "Good night ❤️",
+                "Sleep well, my favorite person.",
+                "See you in my dreams."
             ]
         },
 
-        "good-morning": {
-            label: "Good Morning",
-            icon: "☀️",
-            emotion: "fresh",
-            background: "good-morning",
-            effect: "sunrise",
+        good_morning: {
+            name: "Good Morning",
+            emoji: "🌅",
             suggestions: [
-                "Good morning, beautiful ☀️",
-                "I hope your day starts with a smile.",
-                "Morning feels better when I think of you."
+                "Good morning ❤️",
+                "Hope you have a beautiful day.",
+                "You were the first thing I thought about."
             ]
         },
 
         memory: {
-            label: "Memory",
-            icon: "💭",
-            emotion: "nostalgia",
-            background: "memory",
-            effect: "dust",
+            name: "Memory",
+            emoji: "📸",
             suggestions: [
-                "Do you remember that day?",
+                "Remember when we first talked?",
                 "That memory still makes me smile.",
-                "We should create another memory like that."
+                "Let's make another beautiful memory."
             ]
         },
 
         celebration: {
-            label: "Celebration",
-            icon: "🥳",
-            emotion: "celebration",
-            background: "celebration",
-            effect: "confetti",
+            name: "Celebration",
+            emoji: "🎉",
             suggestions: [
-                "We have to celebrate this! 🥳",
-                "This deserves a special memory.",
-                "Cheers to us ❤️"
+                "We did it! 🎉",
+                "This deserves a celebration.",
+                "I am so proud of us."
             ]
         },
 
         birthday: {
-            label: "Birthday",
-            icon: "🎂",
-            emotion: "joy",
-            background: "birthday",
-            effect: "confetti",
+            name: "Birthday",
+            emoji: "🎂",
             suggestions: [
-                "Today is all about you 🎂❤️",
-                "I hope your biggest wish comes true.",
-                "Let's make this birthday unforgettable."
+                "Happy birthday ❤️",
+                "I hope your day is amazing.",
+                "You deserve all the happiness."
             ]
         },
 
-        future: {
-            label: "Future",
-            icon: "💍",
-            emotion: "hope",
-            background: "future",
-            effect: "stars",
+        future_marriage: {
+            name: "Future / Marriage",
+            emoji: "💍",
             suggestions: [
-                "Imagine where we'll be together someday ❤️",
-                "I want to build beautiful memories with you.",
-                "Our future sounds beautiful."
+                "Where do you see us in five years?",
+                "I want to build a future with you.",
+                "Let's talk about our dreams."
             ]
         },
 
-        "missing-you": {
-            label: "Missing You",
-            icon: "🫶",
-            emotion: "longing",
-            background: "missing-you",
-            effect: "hearts",
+        missing_you: {
+            name: "Missing You",
+            emoji: "🥺",
             suggestions: [
-                "I wish you were here right now ❤️",
-                "I miss you more than I can say.",
-                "Come back soon."
+                "I really miss you.",
+                "Wish you were here.",
+                "I can't wait to see you."
             ]
         },
 
         apology: {
-            label: "Apology",
-            icon: "😔",
-            emotion: "regret",
-            background: "apology",
-            effect: "soft-particles",
+            name: "Apology",
+            emoji: "🙏",
             suggestions: [
-                "I'm really sorry.",
-                "I don't want to hurt you.",
+                "I am sorry.",
+                "I didn't mean to hurt you.",
                 "Can we talk about it?"
             ]
         },
 
         appreciation: {
-            label: "Appreciation",
-            icon: "💕",
-            emotion: "gratitude",
-            background: "appreciation",
-            effect: "sparkles",
+            name: "Appreciation",
+            emoji: "🥰",
             suggestions: [
-                "Thank you for being you ❤️",
-                "I appreciate everything you do.",
-                "I'm really lucky to have you."
+                "Thank you for always being there.",
+                "I really appreciate you.",
+                "You make my life better."
             ]
         },
 
         game: {
-            label: "Game",
-            icon: "🎮",
-            emotion: "playful",
-            background: "game",
-            effect: "game",
+            name: "Game / Challenge",
+            emoji: "🎮",
             suggestions: [
-                "Let's play a couple game 🎮",
                 "Truth or dare?",
-                "Let's see who knows the other better."
+                "Let's play a quick game.",
+                "I have a challenge for you 😏"
             ]
         },
 
-        "photo-memory": {
-            label: "Photo Memory",
-            icon: "📸",
-            emotion: "nostalgia",
-            background: "photo-memory",
-            effect: "camera",
+        photo_memory: {
+            name: "Photo Memory",
+            emoji: "🖼️",
             suggestions: [
-                "This photo deserves a memory ❤️",
-                "Look how happy we were.",
-                "Let's make another memory."
+                "Look at this memory ❤️",
+                "This photo brings back so many memories.",
+                "We need more moments like this."
             ]
         },
 
-        serious: {
-            label: "Serious Talk",
-            icon: "🤔",
-            emotion: "serious",
-            background: "serious",
-            effect: "minimal",
+        serious_talk: {
+            name: "Serious Talk",
+            emoji: "🗣️",
             suggestions: [
-                "Let's talk honestly.",
-                "I'm listening carefully.",
-                "Tell me what you're thinking."
+                "Can we talk seriously?",
+                "There is something on my mind.",
+                "I want us to understand each other."
             ]
         },
 
-        "deep-talk": {
-            label: "Deep Talk",
-            icon: "🧠",
-            emotion: "thoughtful",
-            background: "deep-talk",
-            effect: "slow-particles",
+        deep_conversation: {
+            name: "Deep Conversation",
+            emoji: "💭",
             suggestions: [
-                "What's something you never tell anyone?",
+                "What is something you never tell anyone?",
                 "What does love mean to you?",
-                "Tell me what's really on your mind."
+                "Tell me what is really on your mind."
             ]
         },
 
         calm: {
-            label: "Calm",
-            icon: "😌",
-            emotion: "peace",
-            background: "calm",
-            effect: "breathing",
+            name: "Calm / Peaceful",
+            emoji: "😌",
             suggestions: [
                 "Let's just enjoy this moment.",
-                "No pressure. Just us.",
-                "I'm happy being here with you."
+                "No pressure, just us.",
+                "Everything feels peaceful right now."
             ]
         }
+
     };
 
-    /* =====================================================
-       EMOJIS
-       ===================================================== */
-
-    const EMOJIS = {
-        recent: [],
-
-        love: [
-            "❤️","🩷","🧡","💛","💚","💙","🩵","💜","🤎","🖤",
-            "🩶","🤍","💕","💞","💓","💗","💖","💘","💝","💟",
-            "❣️","💌","💋","💑","👩‍❤️‍👨","👨‍❤️‍👨","👩‍❤️‍👩",
-            "🥰","😍","😘","😚","😙","😻","🫶"
-        ],
-
-        smile: [
-            "😀","😃","😄","😁","😆","😅","😂","🤣","😊","🙂",
-            "🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋",
-            "😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥳","🤩",
-            "🥹","☺️","😇","🤭","🫢","🫣"
-        ],
-
-        people: [
-            "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞",
-            "🤟","🤘","🤙","👈","👉","👆","👇","☝️","👍","👎",
-            "👏","🙌","👐","🤝","🙏","💪","🫂","🫶","👀","🫀",
-            "🧠","👑","💎"
-        ],
-
-        animals: [
-            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯",
-            "🦁","🐮","🐷","🐸","🐵","🙈","🙉","🙊","🐔","🐧",
-            "🐦","🐤","🦄","🐝","🦋","🐢","🐍","🐙","🐠","🐬"
-        ],
-
-        food: [
-            "🍎","🍓","🍒","🍉","🍇","🍑","🍊","🍋","🍌","🥭",
-            "🍍","🥝","🍕","🍔","🍟","🌭","🌮","🍿","🍩","🍪",
-            "🎂","🍰","🧁","🍫","🍭","☕","🧋","🍹","🍓"
-        ],
-
-        fun: [
-            "🎮","🎯","🎲","🧩","🎸","🎵","🎶","🎤","🎧","🎬",
-            "🎨","🎉","🎊","🎈","🥳","🏆","⚽","🏀","🏏","🎳",
-            "🎭","🎪","🎠","🚀"
-        ],
-
-        travel: [
-            "✈️","🚗","🚕","🚌","🚆","🚢","🏝️","🏖️","🌍","🌎",
-            "🌙","⭐","🌟","✨","🌈","☀️","🌤️","🌅","🌄","🏔️",
-            "🏕️","🏙️","🌃"
-        ],
-
-        objects: [
-            "📱","💻","📷","📸","🎁","💍","💎","🔑","📚","💡",
-            "🎀","🧸","🕯️","📩","💌","📍","🔒","🔓","⌚","🎒"
-        ],
-
-        symbols: [
-            "✨","⭐","🌟","💫","🔥","💥","💯","✅","❌","❗",
-            "❓","‼️","⁉️","💢","💤","💦","💨","☀️","🌙","☁️",
-            "🌸","🌹","🌷","🌺","🍀"
-        ]
-    };
-
-    /* =====================================================
-       STATE
-       ===================================================== */
-
-    const state = {
-        mode: "calm",
-        intensity: 0.5,
-        timeContext: "night",
-        messages: [],
-        partner: {
-            id: null,
-            name: "Partner",
-            avatar: "/static/images/default-profile.png",
-            online: false
-        },
-        isSending: false,
-        emojiCategory: "love"
-    };
 
     /* =====================================================
        DOM
-       ===================================================== */
+    ====================================================== */
 
-    const $ = (id) => document.getElementById(id);
+    const $ = (selector) =>
+        document.querySelector(selector);
 
-    const app = $("coupleApp");
-    const messagesEl = $("coupleMessages");
-    const input = $("coupleMessageInput");
-    const composer = $("coupleComposer");
 
-    const moodBar = $("coupleMoodBar");
-    const moodIcon = $("coupleMoodIcon");
-    const moodName = $("coupleMoodName");
+    const app = $("#coupleApp");
 
-    const aiStatus = $("coupleAiStatus");
+    const backButton = $("#coupleBackButton");
 
-    const effectsLayer = $("coupleEffectsLayer");
-    const backgroundLayer = $("coupleBackgroundLayer");
+    const avatarButton = $("#coupleAvatarButton");
 
-    const suggestionsEl = $("coupleSuggestions");
-    const suggestionList = $("coupleSuggestionList");
+    const partnerAvatar = $("#couplePartnerAvatar");
 
-    const partnerNameEl = $("couplePartnerName");
-    const partnerAvatarEl = $("couplePartnerAvatar");
-    const onlineDot = $("coupleOnlineDot");
+    const partnerName = $("#couplePartnerName");
 
-    /* =====================================================
-       UTILITIES
-       ===================================================== */
+    const partnerStatus = $("#couplePartnerStatus");
 
-    function escapeHtml(value) {
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+    const onlineDot = $("#coupleOnlineDot");
 
-    function nowTime() {
-        return new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
-    }
+    const headerMood = $("#coupleHeaderMood");
 
-    function safeParse(value, fallback) {
-        try {
-            return JSON.parse(value);
-        } catch {
-            return fallback;
-        }
-    }
+    const menuButton = $("#coupleMenuButton");
 
-    function clamp(value, min, max) {
-        return Math.max(min, Math.min(max, value));
-    }
+    const aiButton = $("#coupleAiButton");
 
-    function normalizeMode(mode) {
-        if (!mode) return "calm";
+    const aiStatus = $("#coupleAiStatus");
 
-        const normalized = String(mode)
-            .trim()
-            .toLowerCase()
-            .replace(/_/g, "-")
-            .replace(/\s+/g, "-");
+    const messagesEl = $("#coupleMessages");
 
-        return MODES[normalized] ? normalized : "calm";
-    }
+    const conversation = $("#coupleConversation");
 
-    /* =====================================================
-       TIME DETECTION
-       ===================================================== */
+    const input = $("#coupleMessageInput");
 
-    function detectTimeContext() {
-        const hour = new Date().getHours();
+    const composer = $("#coupleComposer");
 
-        if (hour >= 5 && hour < 11) {
-            return "morning";
-        }
+    const emojiButton = $("#coupleEmojiButton");
 
-        if (hour >= 11 && hour < 17) {
-            return "day";
-        }
+    const attachButton = $("#coupleAttachButton");
 
-        if (hour >= 17 && hour < 20) {
-            return "evening";
-        }
+    const cameraButton = $("#coupleCameraButton");
 
-        if (hour >= 20 && hour < 24) {
-            return "night";
-        }
+    const sendButton = $("#coupleSendButton");
 
-        return "late-night";
-    }
+    const fileInput = $("#coupleFileInput");
+
+    const moodOverlay = $("#coupleMoodOverlay");
+
+    const moodGrid = $("#coupleMoodGrid");
+
+    const closeMood = $("#closeMoodPanel");
+
+    const aiOverlay = $("#coupleAiOverlay");
+
+    const closeAi = $("#closeAiPanel");
+
+    const menuOverlay = $("#coupleMenuOverlay");
+
+    const closeMenu = $("#closeCoupleMenu");
+
+    const typingEl = $("#coupleTyping");
+
+    const typingName = $("#coupleTypingName");
+
+    const suggestionsEl = $("#coupleSuggestions");
+
+    const suggestionList = $("#coupleSuggestionList");
+
+    const effectsLayer = $("#coupleEffectsLayer");
+
+    const dayLabel = $("#coupleDayLabel");
+
+    const togetherDays = $("#coupleTogetherDays");
+
+    const connectionStatus = $("#coupleConnectionStatus");
+
 
     /* =====================================================
-       DYNAMIC TIME LABEL
-       ===================================================== */
+       STATE
+    ====================================================== */
 
-    function getTimeLabel() {
-        switch (state.timeContext) {
-            case "morning":
-                return "Morning";
-            case "day":
-                return "Day";
-            case "evening":
-                return "Evening";
-            case "night":
-                return "Night";
-            case "late-night":
-                return "Late Night";
-            default:
-                return "Today";
-        }
-    }
+    let currentMode =
+        localStorage.getItem(MODE_STORAGE_KEY) || "calm";
 
-    /* =====================================================
-       THEME ENGINE
-       ===================================================== */
 
-    function applyTheme(mode, intensity = 0.5) {
-        const normalized = normalizeMode(mode);
+    let messages =
+        loadMessages();
 
-        state.mode = normalized;
-        state.intensity = clamp(Number(intensity) || 0.5, 0, 1);
-        state.timeContext = detectTimeContext();
 
-        const config = MODES[normalized];
+    let socket = null;
 
-        document.body.dataset.coupleMode = normalized;
-        document.body.dataset.timeContext = state.timeContext;
+    let socketReady = false;
 
-        document.documentElement.style.setProperty(
-            "--couple-intensity",
-            state.intensity.toFixed(2)
-        );
+    let reconnectTimer = null;
 
-        if (moodIcon) {
-            moodIcon.textContent = config.icon;
-        }
+    let typingTimer = null;
 
-        if (moodName) {
-            moodName.textContent = config.label;
-        }
+    let partnerTyping = false;
 
-        if (aiStatus) {
-            aiStatus.textContent =
-                `Mood: ${config.label} • ${getTimeLabel()} • AI is understanding your conversation...`;
-        }
+    let manualMood = false;
 
-        updateSuggestions(config.suggestions);
+    let emojiPicker = null;
 
-        createModeEffects(config.effect);
 
-        localStorage.setItem(CONFIG.modeKey, normalized);
-    }
+    const partner = readPartner();
+
 
     /* =====================================================
-       BACKGROUND EFFECTS
-       ===================================================== */
+       INITIALIZATION
+    ====================================================== */
 
-    function clearEffects() {
-        if (effectsLayer) {
-            effectsLayer.innerHTML = "";
-        }
-    }
+    function init() {
 
-    function createEffectParticle(char, className, delay = 0) {
-        if (!effectsLayer) return;
+        applyPartner();
 
-        const item = document.createElement("span");
+        applyAutomaticTimeMood();
 
-        item.className = `couple-effect-item ${className}`;
+        renderMessages();
 
-        item.textContent = char;
+        updateMoodTheme();
 
-        item.style.setProperty(
-            "--delay",
-            `${delay}s`
-        );
+        updateConnectionText();
 
-        item.style.setProperty(
-            "--x",
-            `${Math.random() * 100}%`
-        );
+        setupEvents();
 
-        item.style.setProperty(
-            "--size",
-            `${10 + Math.random() * 18}px`
-        );
+        updateDayLabel();
 
-        effectsLayer.appendChild(item);
-    }
+        showWelcomeIfEmpty();
 
-    function createModeEffects(effect) {
-        clearEffects();
+        loadHistory();
 
-        const intensity = state.intensity;
+        connectWebSocket();
 
-        if (effect === "hearts") {
-            const count = Math.round(5 + intensity * 8);
+        setInterval(updateAutomaticNightState, 60 * 1000);
 
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    i % 2 === 0 ? "❤️" : "💕",
-                    "effect-heart",
-                    Math.random() * 5
-                );
-            }
-        }
-
-        if (effect === "soft-hearts") {
-            const count = Math.round(4 + intensity * 6);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    i % 2 === 0 ? "🩷" : "✨",
-                    "effect-soft-heart",
-                    Math.random() * 6
-                );
-            }
-        }
-
-        if (effect === "stars" || effect === "slow-particles") {
-            const count = Math.round(8 + intensity * 10);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    i % 3 === 0 ? "⭐" : "✨",
-                    "effect-star",
-                    Math.random() * 7
-                );
-            }
-        }
-
-        if (effect === "sparkles") {
-            const count = Math.round(7 + intensity * 9);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    "✨",
-                    "effect-sparkle",
-                    Math.random() * 4
-                );
-            }
-        }
-
-        if (effect === "confetti") {
-            const symbols = ["🎉", "🎊", "✨", "🥳", "💖"];
-
-            const count = Math.round(10 + intensity * 12);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    symbols[i % symbols.length],
-                    "effect-confetti",
-                    Math.random() * 4
-                );
-            }
-        }
-
-        if (effect === "rain") {
-            const count = Math.round(8 + intensity * 12);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    "💧",
-                    "effect-rain",
-                    Math.random() * 3
-                );
-            }
-        }
-
-        if (effect === "dust") {
-            const count = Math.round(8 + intensity * 10);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    "•",
-                    "effect-dust",
-                    Math.random() * 5
-                );
-            }
-        }
-
-        if (effect === "fire-glow") {
-            const count = Math.round(5 + intensity * 7);
-
-            for (let i = 0; i < count; i++) {
-                createEffectParticle(
-                    i % 2 ? "🔥" : "✨",
-                    "effect-fire",
-                    Math.random() * 4
-                );
-            }
-        }
-
-        if (effect === "game") {
-            const symbols = ["🎮", "⚡", "🎯", "✨"];
-
-            for (let i = 0; i < 8; i++) {
-                createEffectParticle(
-                    symbols[i % symbols.length],
-                    "effect-game",
-                    Math.random() * 3
-                );
-            }
-        }
-
-        if (effect === "camera") {
-            for (let i = 0; i < 7; i++) {
-                createEffectParticle(
-                    i % 2 ? "✨" : "📸",
-                    "effect-camera",
-                    Math.random() * 5
-                );
-            }
-        }
-
-        if (effect === "warm-glow" || effect === "breathing") {
-            const item = document.createElement("div");
-
-            item.className = `couple-effect-glow ${effect}`;
-
-            effectsLayer.appendChild(item);
-        }
-    }
-
-    /* =====================================================
-       MESSAGE EFFECT
-       ===================================================== */
-
-    function messageEffect() {
-        const config = MODES[state.mode];
-
-        createModeEffects(config.effect);
-
-        if (navigator.vibrate && state.intensity > 0.75) {
-            try {
-                navigator.vibrate(15);
-            } catch {}
-        }
-    }
-
-    /* =====================================================
-       MESSAGE STORAGE
-       ===================================================== */
-
-    function saveMessages() {
-        try {
-            localStorage.setItem(
-                CONFIG.storageKey,
-                JSON.stringify(
-                    state.messages.slice(-CONFIG.maxMessages)
-                )
-            );
-        } catch {}
-    }
-
-    function loadMessages() {
-        const saved = safeParse(
-            localStorage.getItem(CONFIG.storageKey),
-            []
-        );
-
-        if (Array.isArray(saved)) {
-            state.messages = saved;
-        }
-    }
-
-    /* =====================================================
-       MESSAGE RENDER
-       ===================================================== */
-
-    function renderMessages() {
-        if (!messagesEl) return;
-
-        messagesEl.innerHTML = "";
-
-        state.messages.forEach(renderMessage);
-
-        scrollToBottom(false);
-    }
-
-    function renderMessage(message) {
-        if (!messagesEl) return;
-
-        const wrapper = document.createElement("div");
-
-        wrapper.className =
-            `couple-message ${message.sender === "me" ? "me" : "partner"}`;
-
-        const bubble = document.createElement("div");
-
-        bubble.className = "couple-message-bubble";
-
-        const text = document.createElement("div");
-
-        text.className = "couple-message-text";
-
-        text.innerHTML = escapeHtml(message.text)
-            .replace(/\n/g, "<br>");
-
-        const time = document.createElement("span");
-
-        time.className = "couple-message-time";
-
-        time.textContent = message.time || nowTime();
-
-        bubble.appendChild(text);
-        bubble.appendChild(time);
-
-        wrapper.appendChild(bubble);
-
-        messagesEl.appendChild(wrapper);
-    }
-
-    function addMessage(text, sender = "me", extra = {}) {
-        const message = {
-            id:
-                `${Date.now()}_${Math.random().toString(36).slice(2)}`,
-
-            text: String(text),
-
-            sender,
-
-            time: nowTime(),
-
-            mode: state.mode,
-
-            intensity: state.intensity,
-
-            timeContext: state.timeContext,
-
-            ...extra
+        window.UsanexCoupleChat = {
+            sendMessage,
+            setMode,
+            connectWebSocket,
+            getMessages: () => messages
         };
 
-        state.messages.push(message);
-
-        if (state.messages.length > CONFIG.maxMessages) {
-            state.messages =
-                state.messages.slice(-CONFIG.maxMessages);
-        }
-
-        renderMessage(message);
-
-        saveMessages();
-
-        scrollToBottom(true);
-
-        return message;
+        window.UsanexCoupleModes = COUPLE_MODES;
     }
 
-    /* =====================================================
-       SCROLL
-       ===================================================== */
-
-    function scrollToBottom(smooth = true) {
-        if (!messagesEl) return;
-
-        requestAnimationFrame(() => {
-            messagesEl.scrollTo({
-                top: messagesEl.scrollHeight,
-                behavior: smooth ? "smooth" : "auto"
-            });
-        });
-    }
 
     /* =====================================================
-       TYPING
-       ===================================================== */
+       PARTNER
+    ====================================================== */
 
-    function setTyping(show) {
-        const typing = $("coupleTyping");
+    function readPartner() {
 
-        if (!typing) return;
+        const params =
+            new URLSearchParams(window.location.search);
 
-        typing.hidden = !show;
-    }
+        return {
 
-    /* =====================================================
-       PARTNER DATA
-       ===================================================== */
-
-    function getPartnerFromURL() {
-        const params = new URLSearchParams(
-            window.location.search
-        );
-
-        const partner = {
             id:
                 params.get("partner_id") ||
                 params.get("user_id") ||
                 params.get("id") ||
-                null,
+                "",
 
             name:
                 params.get("name") ||
@@ -959,1286 +479,2905 @@
                 "/static/images/default-profile.png",
 
             online:
-                params.get("online") === "1" ||
                 params.get("online") === "true"
+
         };
-
-        const stored = safeParse(
-            localStorage.getItem(CONFIG.partnerKey),
-            null
-        );
-
-        if (
-            stored &&
-            typeof stored === "object"
-        ) {
-            return {
-                ...stored,
-                ...Object.fromEntries(
-                    Object.entries(partner)
-                        .filter(([, value]) => value !== null)
-                )
-            };
-        }
-
-        return partner;
     }
+
 
     function applyPartner() {
-        state.partner = getPartnerFromURL();
 
-        if (partnerNameEl) {
-            partnerNameEl.textContent =
-                state.partner.name || "Partner";
-        }
+        partnerName.textContent =
+            partner.name;
 
-        if (partnerAvatarEl) {
-            partnerAvatarEl.src =
-                state.partner.avatar ||
+
+        partnerAvatar.src =
+            partner.avatar;
+
+
+        partnerAvatar.onerror = () => {
+
+            partnerAvatar.src =
                 "/static/images/default-profile.png";
 
-            partnerAvatarEl.onerror = () => {
-                partnerAvatarEl.src =
-                    "/static/images/default-profile.png";
-            };
-        }
+        };
 
-        if (onlineDot) {
-            onlineDot.hidden = !state.partner.online;
-        }
 
-        try {
-            localStorage.setItem(
-                CONFIG.partnerKey,
-                JSON.stringify(state.partner)
-            );
-        } catch {}
+        setOnlineStatus(
+            partner.online,
+            null
+        );
     }
 
+
     /* =====================================================
-       AI ANALYSIS
-       ===================================================== */
+       EVENTS
+    ====================================================== */
 
-    async function analyzeMessage(text) {
-        try {
-            const response = await fetch(
-                CONFIG.analyzeEndpoint,
-                {
-                    method: "POST",
+    function setupEvents() {
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+        backButton?.addEventListener(
+            "click",
+            () => {
 
-                    body: JSON.stringify({
-                        message: text,
-
-                        mode: state.mode,
-
-                        time_context:
-                            state.timeContext,
-
-                        intensity:
-                            state.intensity,
-
-                        partner_id:
-                            state.partner.id
-                    })
+                if (history.length > 1) {
+                    history.back();
+                } else {
+                    window.location.href = "/chat";
                 }
+
+            }
+        );
+
+
+        avatarButton?.addEventListener(
+            "click",
+            () => {
+
+                if (partner.id) {
+
+                    window.location.href =
+                        `/profile?user_id=${encodeURIComponent(partner.id)}`;
+
+                }
+
+            }
+        );
+
+
+        headerMood?.addEventListener(
+            "click",
+            openMood
+        );
+
+
+        menuButton?.addEventListener(
+            "click",
+            openMenu
+        );
+
+
+        aiButton?.addEventListener(
+            "click",
+            openAi
+        );
+
+
+        closeMood?.addEventListener(
+            "click",
+            closeMoodPanel
+        );
+
+
+        closeAi?.addEventListener(
+            "click",
+            closeAiPanel
+        );
+
+
+        closeMenu?.addEventListener(
+            "click",
+            closeMenuPanel
+        );
+
+
+        moodOverlay?.addEventListener(
+            "click",
+            (event) => {
+
+                if (event.target === moodOverlay) {
+                    closeMoodPanel();
+                }
+
+            }
+        );
+
+
+        aiOverlay?.addEventListener(
+            "click",
+            (event) => {
+
+                if (event.target === aiOverlay) {
+                    closeAiPanel();
+                }
+
+            }
+        );
+
+
+        menuOverlay?.addEventListener(
+            "click",
+            (event) => {
+
+                if (event.target === menuOverlay) {
+                    closeMenuPanel();
+                }
+
+            }
+        );
+
+
+        moodGrid?.addEventListener(
+            "click",
+            (event) => {
+
+                const button =
+                    event.target.closest("[data-mode]");
+
+                if (!button) return;
+
+                setMode(
+                    button.dataset.mode,
+                    true
+                );
+
+                closeMoodPanel();
+
+            }
+        );
+
+
+        composer?.addEventListener(
+            "submit",
+            (event) => {
+
+                event.preventDefault();
+
+                sendMessage();
+
+            }
+        );
+
+
+        input?.addEventListener(
+            "input",
+            handleInput
+        );
+
+
+        emojiButton?.addEventListener(
+            "click",
+            toggleEmojiPicker
+        );
+
+
+        attachButton?.addEventListener(
+            "click",
+            () => {
+
+                fileInput.removeAttribute("capture");
+
+                fileInput.click();
+
+            }
+        );
+
+
+        cameraButton?.addEventListener(
+            "click",
+            () => {
+
+                fileInput.setAttribute(
+                    "capture",
+                    "environment"
+                );
+
+                fileInput.click();
+
+            }
+        );
+
+
+        fileInput?.addEventListener(
+            "change",
+            handleFiles
+        );
+
+
+        document
+            .querySelectorAll(".couple-action")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        handleQuickAction(
+                            button.dataset.action
+                        );
+
+                    }
+                );
+
+            });
+
+
+        document
+            .querySelectorAll("[data-ai-action]")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        handleAiAction(
+                            button.dataset.aiAction
+                        );
+
+                    }
+                );
+
+            });
+
+
+        document
+            .querySelectorAll("[data-menu-action]")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        handleMenuAction(
+                            button.dataset.menuAction
+                        );
+
+                    }
+                );
+
+            });
+
+
+        document.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    emojiPicker &&
+                    !emojiPicker.contains(event.target) &&
+                    event.target !== emojiButton
+                ) {
+                    removeEmojiPicker();
+                }
+
+            }
+        );
+
+
+        window.addEventListener(
+            "beforeunload",
+            () => {
+
+                sendPresence("offline");
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       MOOD
+    ====================================================== */
+
+    function setMode(
+        mode,
+        manual = false
+    ) {
+
+        if (!COUPLE_MODES[mode]) {
+            mode = "calm";
+        }
+
+
+        currentMode = mode;
+
+        manualMood = manual;
+
+
+        localStorage.setItem(
+            MODE_STORAGE_KEY,
+            currentMode
+        );
+
+
+        updateMoodTheme();
+
+        updateSuggestions();
+
+        sendMoodToServer();
+
+    }
+
+
+    function updateMoodTheme() {
+
+        document.body.dataset.coupleMode =
+            currentMode;
+
+
+        const mode =
+            COUPLE_MODES[currentMode];
+
+
+        if (!mode) return;
+
+
+        headerMood.title =
+            `Current mood: ${mode.name}`;
+
+
+        document.documentElement.style.setProperty(
+            "--mood-primary",
+            getComputedStyle(document.body)
+                .getPropertyValue("--mood-primary")
+        );
+
+    }
+
+
+    function openMood() {
+
+        moodOverlay.classList.remove("hidden");
+
+        highlightCurrentMood();
+
+    }
+
+
+    function closeMoodPanel() {
+
+        moodOverlay.classList.add("hidden");
+
+    }
+
+
+    function highlightCurrentMood() {
+
+        moodGrid
+            ?.querySelectorAll("[data-mode]")
+            .forEach(button => {
+
+                button.classList.toggle(
+                    "active",
+                    button.dataset.mode === currentMode
+                );
+
+            });
+
+    }
+
+
+    /* =====================================================
+       AUTOMATIC TIME / NIGHT
+    ====================================================== */
+
+    function applyAutomaticTimeMood() {
+
+        const hour =
+            new Date().getHours();
+
+
+        if (manualMood) return;
+
+
+        if (hour >= 5 && hour < 11) {
+
+            setMode("good_morning", false);
+
+        } else if (hour >= 22 || hour < 5) {
+
+            setMode("good_night", false);
+
+        } else {
+
+            setMode("calm", false);
+
+        }
+
+    }
+
+
+    function updateAutomaticNightState() {
+
+        const hour =
+            new Date().getHours();
+
+
+        const night =
+            hour >= 21 || hour < 6;
+
+
+        document.body.classList.toggle(
+            "night-mode",
+            night
+        );
+
+    }
+
+
+    /* =====================================================
+       SEND MESSAGE
+    ====================================================== */
+
+    async function sendMessage(
+        customText = null,
+        messageType = "text"
+    ) {
+
+        const text =
+            customText !== null
+                ? String(customText).trim()
+                : input.value.trim();
+
+
+        if (!text) return;
+
+
+        const message = {
+
+            id:
+                createMessageId(),
+
+            client_id:
+                createMessageId(),
+
+            sender_id:
+                getCurrentUserId(),
+
+            receiver_id:
+                partner.id || null,
+
+            text,
+
+            message_type:
+                messageType,
+
+            created_at:
+                new Date().toISOString(),
+
+            status:
+                "sent",
+
+            is_mine:
+                true
+
+        };
+
+
+        messages.push(message);
+
+        saveMessages();
+
+        renderMessages();
+
+        scrollToBottom(true);
+
+
+        if (customText === null) {
+            input.value = "";
+        }
+
+
+        stopTyping();
+
+
+        /* WebSocket first */
+
+        if (socketReady) {
+
+            sendSocket({
+
+                type: "message",
+
+                message
+
+            });
+
+        }
+
+
+        /* REST fallback */
+
+        try {
+
+            const response =
+                await fetch(
+                    API.message,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            partner_id:
+                                partner.id || null,
+
+                            message:
+                                text,
+
+                            message_type:
+                                messageType,
+
+                            client_id:
+                                message.client_id
+                        })
+                    }
+                );
+
+
+            if (response.ok) {
+
+                const data =
+                    await response.json()
+                        .catch(() => ({}));
+
+
+                updateMessageFromServer(
+                    message.client_id,
+                    data
+                );
+
+            }
+
+        } catch (error) {
+
+            console.debug(
+                "Couple message REST unavailable",
+                error
             );
 
-            if (!response.ok) {
-                throw new Error(
-                    `Analyze HTTP ${response.status}`
+        }
+
+
+        analyzeMessage(text);
+
+    }
+
+
+    /* =====================================================
+       MESSAGE ANALYSIS
+    ====================================================== */
+
+    async function analyzeMessage(text) {
+
+        try {
+
+            const response =
+                await fetch(
+                    API.analyze,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            message: text,
+
+                            current_mode:
+                                currentMode,
+
+                            partner_id:
+                                partner.id || null
+
+                        })
+                    }
                 );
-            }
+
+
+            if (!response.ok) return;
+
 
             const data =
                 await response.json();
 
-            return data;
-        } catch {
-            return localAnalyze(text);
-        }
-    }
 
-    /* =====================================================
-       LOCAL AI FALLBACK
-       ===================================================== */
-
-    function localAnalyze(text) {
-        const value =
-            String(text).toLowerCase();
-
-        let mode = state.mode;
-
-        const rules = [
-            {
-                words: [
-                    "miss",
-                    "missing",
-                    "yaad",
-                    "याद",
-                    "wish you were",
-                    "without you"
-                ],
-                mode: "missing-you"
-            },
-
-            {
-                words: [
-                    "love",
-                    "pyaar",
-                    "pyar",
-                    "jaan",
-                    "love you",
-                    "❤️",
-                    "💕"
-                ],
-                mode: "romantic"
-            },
-
-            {
-                words: [
-                    "good night",
-                    "gn",
-                    "shubh ratri",
-                    "सो जाओ"
-                ],
-                mode: "good-night"
-            },
-
-            {
-                words: [
-                    "good morning",
-                    "gm",
-                    "suprabhat",
-                    "सुबह"
-                ],
-                mode: "good-morning"
-            },
-
-            {
-                words: [
-                    "sad",
-                    "dukhi",
-                    "उदास",
-                    "cry",
-                    "rona",
-                    "ro raha"
-                ],
-                mode: "sad"
-            },
-
-            {
-                words: [
-                    "angry",
-                    "gussa",
-                    "गुस्सा",
-                    "hate",
-                    "fight"
-                ],
-                mode: "angry"
-            },
-
-            {
-                words: [
-                    "sorry",
-                    "maaf",
-                    "माफ",
-                    "apolog"
-                ],
-                mode: "apology"
-            },
-
-            {
-                words: [
-                    "game",
-                    "play",
-                    "challenge",
-                    "गेम"
-                ],
-                mode: "game"
-            },
-
-            {
-                words: [
-                    "remember",
-                    "yaad hai",
-                    "याद है",
-                    "memory"
-                ],
-                mode: "memory"
-            },
-
-            {
-                words: [
-                    "future",
-                    "marriage",
-                    "shaadi",
-                    "शादी",
-                    "wedding"
-                ],
-                mode: "future"
-            },
-
-            {
-                words: [
-                    "happy",
-                    "khush",
-                    "खुश",
-                    "yay",
-                    "awesome"
-                ],
-                mode: "happy"
-            },
-
-            {
-                words: [
-                    "thank",
-                    "thanks",
-                    "appreciate",
-                    "shukriya"
-                ],
-                mode: "appreciation"
-            }
-        ];
-
-        for (const rule of rules) {
             if (
-                rule.words.some(
-                    word => value.includes(word)
-                )
+                data.mode &&
+                COUPLE_MODES[data.mode] &&
+                !manualMood
             ) {
-                mode = rule.mode;
-                break;
+
+                setMode(
+                    data.mode,
+                    false
+                );
+
             }
-        }
 
-        let intensity = 0.55;
 
-        const exclamationCount =
-            (text.match(/!/g) || []).length;
+            if (data.response) {
 
-        const heartCount =
-            (text.match(/❤️|💕|💗|💖|🩷/g) || []).length;
+                aiStatus.textContent =
+                    data.response;
 
-        const caps =
-            text.length > 5 &&
-            text === text.toUpperCase();
+            } else {
 
-        intensity +=
-            exclamationCount * 0.05;
+                aiStatus.textContent =
+                    "Understanding your conversation...";
 
-        intensity +=
-            heartCount * 0.04;
+            }
 
-        if (caps) {
-            intensity += 0.12;
-        }
 
-        intensity =
-            clamp(intensity, 0.2, 1);
+            if (Array.isArray(data.suggestions)) {
 
-        return {
-            mode,
-            secondary_mode:
-                mode === "romantic"
-                    ? "deep-love"
-                    : "calm",
+                showSuggestions(
+                    data.suggestions
+                );
 
-            emotion:
-                MODES[mode]?.emotion ||
-                "neutral",
+            }
 
-            intensity,
+        } catch (error) {
 
-            time_context:
-                detectTimeContext(),
-
-            animation:
-                MODES[mode]?.effect ||
-                "soft-particles",
-
-            response_style:
-                mode === "sad" ||
-                mode === "emotional"
-                    ? "supportive"
-                    : "warm"
-        };
-    }
-
-    /* =====================================================
-       SEND TO BACKEND
-       ===================================================== */
-
-    async function sendToBackend(text, analysis) {
-        try {
-            const response = await fetch(
-                CONFIG.messageEndpoint,
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        message: text,
-
-                        partner_id:
-                            state.partner.id,
-
-                        mode:
-                            analysis.mode,
-
-                        emotion:
-                            analysis.emotion,
-
-                        intensity:
-                            analysis.intensity,
-
-                        time_context:
-                            analysis.time_context
-                    })
-                }
+            console.debug(
+                "AI analysis unavailable",
+                error
             );
 
-            if (!response.ok) {
-                return null;
-            }
-
-            return await response.json();
-        } catch {
-            return null;
         }
+
     }
 
+
     /* =====================================================
-       SEND MESSAGE
-       ===================================================== */
+       MESSAGE RENDERING
+    ====================================================== */
 
-    async function handleSend(text) {
-        text = String(text || "").trim();
+    function renderMessages() {
 
-        if (!text || state.isSending) {
+        messagesEl.innerHTML = "";
+
+
+        if (!messages.length) {
             return;
         }
 
-        state.isSending = true;
 
-        if (input) {
-            input.value = "";
+        messages.forEach(message => {
+
+            const row =
+                document.createElement("div");
+
+
+            const mine =
+                isOwnMessage(message);
+
+
+            row.className =
+                `couple-message-row ${
+                    mine ? "mine" : "partner"
+                }`;
+
+
+            const bubble =
+                document.createElement("article");
+
+
+            bubble.className =
+                `couple-message ${
+                    mine ? "mine" : "partner"
+                }`;
+
+
+            bubble.dataset.messageId =
+                message.client_id ||
+                message.id;
+
+
+            if (
+                message.message_type === "image" &&
+                message.media_url
+            ) {
+
+                const image =
+                    document.createElement("img");
+
+                image.className =
+                    "couple-message-image";
+
+                image.src =
+                    message.media_url;
+
+                image.alt =
+                    "Photo";
+
+                bubble.appendChild(image);
+
+            }
+
+
+            if (message.text) {
+
+                const text =
+                    document.createElement("div");
+
+                text.className =
+                    "couple-message-text";
+
+                text.textContent =
+                    message.text;
+
+                bubble.appendChild(text);
+
+            }
+
+
+            const meta =
+                document.createElement("div");
+
+            meta.className =
+                "couple-message-meta";
+
+
+            const time =
+                document.createElement("span");
+
+            time.className =
+                "couple-message-time";
+
+            time.textContent =
+                formatTime(
+                    message.created_at
+                );
+
+
+            meta.appendChild(time);
+
+
+            if (mine) {
+
+                const status =
+                    document.createElement("span");
+
+                status.className =
+                    `couple-message-status ${
+                        message.status || "sent"
+                    }`;
+
+                status.dataset.statusFor =
+                    message.client_id ||
+                    message.id;
+
+                status.textContent =
+                    getStatusTicks(
+                        message.status
+                    );
+
+                meta.appendChild(status);
+
+            }
+
+
+            bubble.appendChild(meta);
+
+            row.appendChild(bubble);
+
+            messagesEl.appendChild(row);
+
+        });
+
+
+        updateMoodTheme();
+
+    }
+
+
+    function getStatusTicks(status) {
+
+        if (status === "seen") {
+            return "✓✓";
         }
 
-        const analysis =
-            await analyzeMessage(text);
+        if (status === "delivered") {
+            return "✓✓";
+        }
 
-        if (analysis) {
-            applyTheme(
-                analysis.mode || state.mode,
-                analysis.intensity ??
-                    state.intensity
+        return "✓";
+    }
+
+
+    function isOwnMessage(message) {
+
+        if (
+            typeof message.is_mine === "boolean"
+        ) {
+            return message.is_mine;
+        }
+
+
+        const current =
+            getCurrentUserId();
+
+
+        return (
+            message.sender_id &&
+            current &&
+            String(message.sender_id) ===
+            String(current)
+        );
+
+    }
+
+
+    /* =====================================================
+       SERVER MESSAGE UPDATE
+    ====================================================== */
+
+    function updateMessageFromServer(
+        clientId,
+        data
+    ) {
+
+        const message =
+            messages.find(
+                item =>
+                    item.client_id === clientId
             );
+
+
+        if (!message) return;
+
+
+        if (data.id) {
+            message.id = data.id;
         }
 
-        addMessage(
-            text,
-            "me",
-            {
-                analysis
+
+        if (data.status) {
+
+            message.status =
+                normalizeStatus(
+                    data.status
+                );
+
+        }
+
+
+        if (data.delivered_at) {
+
+            message.delivered_at =
+                data.delivered_at;
+
+            if (message.status !== "seen") {
+                message.status = "delivered";
+            }
+
+        }
+
+
+        if (data.seen_at) {
+
+            message.seen_at =
+                data.seen_at;
+
+            message.status = "seen";
+
+        }
+
+
+        saveMessages();
+
+        updateMessageStatusUI(
+            clientId,
+            message.status
+        );
+
+    }
+
+
+    function updateMessageStatusUI(
+        messageId,
+        status
+    ) {
+
+        const element =
+            document.querySelector(
+                `.couple-message-status[data-status-for="${CSS.escape(messageId)}"]`
+            );
+
+
+        if (!element) {
+            renderMessages();
+            return;
+        }
+
+
+        element.className =
+            `couple-message-status ${status}`;
+
+
+        element.textContent =
+            getStatusTicks(status);
+
+    }
+
+
+    function normalizeStatus(status) {
+
+        if (
+            status === "seen" ||
+            status === "read"
+        ) {
+            return "seen";
+        }
+
+        if (
+            status === "delivered" ||
+            status === "delivery"
+        ) {
+            return "delivered";
+        }
+
+        return "sent";
+
+    }
+
+
+    /* =====================================================
+       HISTORY
+    ====================================================== */
+
+    async function loadHistory() {
+
+        try {
+
+            const url =
+                partner.id
+                    ? `${API.history}?partner_id=${encodeURIComponent(partner.id)}`
+                    : API.history;
+
+
+            const response =
+                await fetch(url);
+
+
+            if (!response.ok) return;
+
+
+            const data =
+                await response.json();
+
+
+            const serverMessages =
+                Array.isArray(data)
+                    ? data
+                    : (
+                        Array.isArray(data.messages)
+                            ? data.messages
+                            : []
+                    );
+
+
+            if (!serverMessages.length) {
+                return;
+            }
+
+
+            messages =
+                mergeMessages(
+                    messages,
+                    serverMessages
+                );
+
+
+            saveMessages();
+
+            renderMessages();
+
+            scrollToBottom(false);
+
+        } catch (error) {
+
+            console.debug(
+                "History unavailable",
+                error
+            );
+
+        }
+
+    }
+
+
+    function mergeMessages(
+        local,
+        server
+    ) {
+
+        const map =
+            new Map();
+
+
+        [...local, ...server]
+            .forEach(message => {
+
+                const key =
+                    message.client_id ||
+                    message.id ||
+                    createMessageId();
+
+
+                map.set(
+                    String(key),
+                    normalizeMessage(message)
+                );
+
+            });
+
+
+        return Array.from(map.values())
+            .sort(
+                (a, b) =>
+                    new Date(a.created_at) -
+                    new Date(b.created_at)
+            );
+
+    }
+
+
+    function normalizeMessage(message) {
+
+        return {
+
+            ...message,
+
+            status:
+                normalizeStatus(
+                    message.status
+                ),
+
+            is_mine:
+                isOwnMessage(message)
+
+        };
+
+    }
+
+
+    /* =====================================================
+       WEBSOCKET
+    ====================================================== */
+
+    function connectWebSocket() {
+
+        if (!partner.id) {
+
+            setConnectionState(false);
+
+            return;
+
+        }
+
+
+        clearTimeout(reconnectTimer);
+
+
+        const spaceId =
+            getCoupleSpaceId();
+
+
+        const url =
+            `${WS_BASE}/ws/couple-chat/${encodeURIComponent(spaceId)}`;
+
+
+        try {
+
+            socket =
+                new WebSocket(url);
+
+        } catch (error) {
+
+            setConnectionState(false);
+
+            scheduleReconnect();
+
+            return;
+
+        }
+
+
+        socket.addEventListener(
+            "open",
+            () => {
+
+                socketReady = true;
+
+                setConnectionState(true);
+
+                sendSocket({
+                    type: "presence",
+                    status: "online"
+                });
+
             }
         );
 
-        messageEffect();
 
-        setTyping(true);
+        socket.addEventListener(
+            "message",
+            handleSocketMessage
+        );
 
-        const backendResponse =
-            await sendToBackend(
-                text,
-                analysis || {}
+
+        socket.addEventListener(
+            "close",
+            () => {
+
+                socketReady = false;
+
+                setConnectionState(false);
+
+                scheduleReconnect();
+
+            }
+        );
+
+
+        socket.addEventListener(
+            "error",
+            () => {
+
+                socketReady = false;
+
+                setConnectionState(false);
+
+            }
+        );
+
+    }
+
+
+    function scheduleReconnect() {
+
+        clearTimeout(reconnectTimer);
+
+
+        reconnectTimer =
+            setTimeout(
+                connectWebSocket,
+                4000
             );
 
-        setTyping(false);
+    }
+
+
+    function sendSocket(payload) {
 
         if (
-            backendResponse &&
-            backendResponse.response
+            !socket ||
+            socket.readyState !== WebSocket.OPEN
         ) {
-            addMessage(
-                backendResponse.response,
-                "partner"
-            );
-        } else {
-            /*
-             * Backend AI not connected yet.
-             * No fake automatic partner response.
-             */
+            return false;
         }
 
-        state.isSending = false;
+
+        try {
+
+            socket.send(
+                JSON.stringify(payload)
+            );
+
+            return true;
+
+        } catch (error) {
+
+            return false;
+
+        }
+
     }
+
+
+    function handleSocketMessage(event) {
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(event.data);
+
+        } catch {
+
+            return;
+
+        }
+
+
+        switch (data.type) {
+
+            case "message":
+                receiveSocketMessage(
+                    data.message || data
+                );
+                break;
+
+
+            case "message_status":
+            case "status":
+                handleMessageStatus(data);
+                break;
+
+
+            case "presence":
+                handlePresence(data);
+                break;
+
+
+            case "typing":
+                handleTypingEvent(data);
+                break;
+
+
+            case "read":
+                handleMessageStatus({
+                    ...data,
+                    status: "seen"
+                });
+                break;
+
+        }
+
+    }
+
+
+    function receiveSocketMessage(message) {
+
+        const normalized =
+            normalizeMessage({
+                ...message,
+
+                is_mine:
+                    false,
+
+                status:
+                    message.status ||
+                    "delivered"
+
+            });
+
+
+        const exists =
+            messages.some(
+                item =>
+                    (
+                        item.id &&
+                        normalized.id &&
+                        String(item.id) ===
+                        String(normalized.id)
+                    ) ||
+                    (
+                        item.client_id &&
+                        normalized.client_id &&
+                        item.client_id ===
+                        normalized.client_id
+                    )
+            );
+
+
+        if (!exists) {
+
+            messages.push(normalized);
+
+            saveMessages();
+
+            renderMessages();
+
+            scrollToBottom(true);
+
+        }
+
+
+        sendDeliveryAck(
+            normalized
+        );
+
+
+        markMessageSeen(
+            normalized
+        );
+
+    }
+
+
+    function handleMessageStatus(data) {
+
+        const id =
+            data.client_id ||
+            data.message_id ||
+            data.id;
+
+
+        if (!id) return;
+
+
+        const message =
+            messages.find(
+                item =>
+                    item.client_id === id ||
+                    String(item.id) === String(id)
+            );
+
+
+        if (!message) return;
+
+
+        const status =
+            normalizeStatus(
+                data.status
+            );
+
+
+        if (
+            status === "seen" ||
+            (
+                status === "delivered" &&
+                message.status === "sent"
+            )
+        ) {
+
+            message.status =
+                status;
+
+        }
+
+
+        if (data.delivered_at) {
+            message.delivered_at =
+                data.delivered_at;
+        }
+
+
+        if (data.seen_at) {
+            message.seen_at =
+                data.seen_at;
+        }
+
+
+        saveMessages();
+
+        updateMessageStatusUI(
+            message.client_id || message.id,
+            message.status
+        );
+
+    }
+
+
+    function sendDeliveryAck(message) {
+
+        sendSocket({
+            type: "delivered",
+            message_id:
+                message.id ||
+                message.client_id
+        });
+
+    }
+
+
+    function markMessageSeen(message) {
+
+        sendSocket({
+            type: "seen",
+            message_id:
+                message.id ||
+                message.client_id
+        });
+
+    }
+
+
+    /* =====================================================
+       PRESENCE
+    ====================================================== */
+
+    function setConnectionState(online) {
+
+        if (online) {
+
+            setOnlineStatus(
+                true,
+                null
+            );
+
+        } else {
+
+            setOnlineStatus(
+                false,
+                partner.last_seen
+            );
+
+        }
+
+    }
+
+
+    function setOnlineStatus(
+        online,
+        lastSeen
+    ) {
+
+        onlineDot.hidden =
+            !online;
+
+
+        if (online) {
+
+            partnerStatus.textContent =
+                "Online";
+
+            partnerStatus.classList.add(
+                "online"
+            );
+
+            partnerStatus.classList.remove(
+                "typing"
+            );
+
+        } else {
+
+            partnerStatus.textContent =
+                formatLastSeen(lastSeen);
+
+            partnerStatus.classList.remove(
+                "online",
+                "typing"
+            );
+
+        }
+
+    }
+
+
+    function handlePresence(data) {
+
+        const online =
+            data.status === "online" ||
+            data.online === true;
+
+
+        partner.last_seen =
+            data.last_seen ||
+            data.last_seen_at ||
+            partner.last_seen;
+
+
+        setOnlineStatus(
+            online,
+            partner.last_seen
+        );
+
+    }
+
+
+    function sendPresence(status) {
+
+        sendSocket({
+            type: "presence",
+            status
+        });
+
+    }
+
+
+    function updateConnectionText() {
+
+        connectionStatus.textContent =
+            "Connected";
+
+    }
+
+
+    /* =====================================================
+       TYPING
+    ====================================================== */
+
+    function handleInput() {
+
+        sendTyping(true);
+
+
+        clearTimeout(typingTimer);
+
+
+        typingTimer =
+            setTimeout(
+                () => sendTyping(false),
+                1400
+            );
+
+    }
+
+
+    function sendTyping(isTyping) {
+
+        sendSocket({
+            type: "typing",
+            typing: isTyping
+        });
+
+    }
+
+
+    function stopTyping() {
+
+        clearTimeout(typingTimer);
+
+        sendTyping(false);
+
+    }
+
+
+    function handleTypingEvent(data) {
+
+        const typing =
+            data.typing === true;
+
+
+        partnerTyping =
+            typing;
+
+
+        typingEl.hidden =
+            !typing;
+
+
+        typingName.textContent =
+            partner.name;
+
+
+        if (typing) {
+
+            partnerStatus.textContent =
+                "typing...";
+
+            partnerStatus.classList.add(
+                "typing"
+            );
+
+            partnerStatus.classList.remove(
+                "online"
+            );
+
+        } else {
+
+            setOnlineStatus(
+                data.online !== false,
+                data.last_seen
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       QUICK ACTIONS
+    ====================================================== */
+
+    function handleQuickAction(action) {
+
+        const modeMap = {
+
+            love: "romantic",
+
+            memory: "memory",
+
+            question: "deep_conversation",
+
+            game: "game"
+
+        };
+
+
+        if (modeMap[action]) {
+
+            setMode(
+                modeMap[action],
+                true
+            );
+
+        }
+
+
+        const mode =
+            COUPLE_MODES[
+                modeMap[action] || currentMode
+            ];
+
+
+        if (!mode) return;
+
+
+        if (mode.suggestions?.length) {
+
+            showSuggestions(
+                mode.suggestions
+            );
+
+        }
+
+    }
+
 
     /* =====================================================
        SUGGESTIONS
-       ===================================================== */
+    ====================================================== */
 
-    function updateSuggestions(items) {
-        if (!suggestionsEl || !suggestionList) {
+    function updateSuggestions() {
+
+        const mode =
+            COUPLE_MODES[currentMode];
+
+
+        if (!mode) return;
+
+
+        showSuggestions(
+            mode.suggestions
+        );
+
+    }
+
+
+    function showSuggestions(items) {
+
+        if (!Array.isArray(items) || !items.length) {
+
+            suggestionsEl.hidden = true;
+
             return;
+
         }
+
 
         suggestionList.innerHTML = "";
 
-        if (!Array.isArray(items) || !items.length) {
-            suggestionsEl.hidden = true;
-            return;
-        }
 
-        items
-            .slice(0, 4)
+        items.slice(0, 5)
             .forEach(text => {
+
                 const button =
                     document.createElement("button");
 
-                button.type = "button";
+
+                button.type =
+                    "button";
+
 
                 button.className =
                     "couple-suggestion";
 
-                button.textContent = text;
+
+                button.textContent =
+                    text;
+
 
                 button.addEventListener(
                     "click",
                     () => {
-                        if (input) {
-                            input.value = text;
-                            input.focus();
-                        }
+
+                        input.value =
+                            text;
+
+                        input.focus();
+
+                        suggestionsEl.hidden =
+                            true;
+
                     }
                 );
 
-                suggestionList.appendChild(button);
+
+                suggestionList.appendChild(
+                    button
+                );
+
             });
 
+
         suggestionsEl.hidden = false;
+
     }
 
+
     /* =====================================================
-       QUICK ACTIONS
-       ===================================================== */
+       AI
+    ====================================================== */
 
-    function handleQuickAction(action) {
-        const actionMap = {
-            love: {
-                mode: "romantic",
-                text:
-                    "I just want to tell you how special you are ❤️"
-            },
+    function openAi() {
 
-            memory: {
-                mode: "memory",
-                text:
-                    "Do you remember one of our favorite moments? 📸"
-            },
-
-            question: {
-                mode: "deep-talk",
-                text:
-                    "Can I ask you something from my heart? 💭"
-            },
-
-            game: {
-                mode: "game",
-                text:
-                    "Let's play a couple game 🎮"
-            }
-        };
-
-        const selected =
-            actionMap[action];
-
-        if (!selected) return;
-
-        applyTheme(
-            selected.mode,
-            0.72
+        aiOverlay.classList.remove(
+            "hidden"
         );
 
-        if (input) {
-            input.value =
-                selected.text;
-
-            input.focus();
-        }
     }
 
-    /* =====================================================
-       MOOD PANEL
-       ===================================================== */
-
-    function openMoodPanel() {
-        const overlay =
-            $("coupleMoodOverlay");
-
-        if (overlay) {
-            overlay.classList.remove("hidden");
-        }
-    }
-
-    function closeMoodPanel() {
-        const overlay =
-            $("coupleMoodOverlay");
-
-        if (overlay) {
-            overlay.classList.add("hidden");
-        }
-    }
-
-    function selectMood(mode) {
-        applyTheme(mode, 0.65);
-
-        closeMoodPanel();
-
-        saveMessages();
-    }
-
-    /* =====================================================
-       AI PANEL
-       ===================================================== */
-
-    function openAiPanel() {
-        const overlay =
-            $("coupleAiOverlay");
-
-        if (overlay) {
-            overlay.classList.remove("hidden");
-        }
-    }
 
     function closeAiPanel() {
-        const overlay =
-            $("coupleAiOverlay");
 
-        if (overlay) {
-            overlay.classList.add("hidden");
-        }
+        aiOverlay.classList.add(
+            "hidden"
+        );
+
     }
+
 
     function handleAiAction(action) {
-        const actions = {
-            suggest:
-                MODES[state.mode]?.suggestions?.[0],
-
-            love:
-                "I want to make this moment a little more romantic ❤️",
-
-            comfort:
-                "I'm here with you. You can tell me anything 🫂",
-
-            game:
-                "Let's start a couple challenge 🎮"
-        };
-
-        const text =
-            actions[action];
-
-        if (!text) return;
-
-        if (input) {
-            input.value = text;
-            input.focus();
-        }
 
         closeAiPanel();
-    }
 
-    /* =====================================================
-       EMOJI PICKER
-       ===================================================== */
 
-    function loadRecentEmojis() {
-        const saved =
-            safeParse(
-                localStorage.getItem(
-                    CONFIG.recentEmojiKey
-                ),
-                []
-            );
+        switch (action) {
 
-        EMOJIS.recent =
-            Array.isArray(saved)
-                ? saved
-                : [];
-    }
+            case "suggest":
 
-    function saveRecentEmoji(emoji) {
-        EMOJIS.recent =
-            [
-                emoji,
-                ...EMOJIS.recent.filter(
-                    item => item !== emoji
-                )
-            ].slice(
-                0,
-                CONFIG.maxRecentEmoji
-            );
+                updateSuggestions();
 
-        localStorage.setItem(
-            CONFIG.recentEmojiKey,
-            JSON.stringify(
-                EMOJIS.recent
-            )
-        );
-    }
+                break;
 
-    function createEmojiPicker() {
-        if ($("coupleEmojiPicker")) {
-            return;
+
+            case "mood":
+
+                openMood();
+
+                break;
+
+
+            case "question":
+
+                setMode(
+                    "deep_conversation",
+                    true
+                );
+
+                showSuggestions(
+                    COUPLE_MODES.deep_conversation
+                        .suggestions
+                );
+
+                break;
+
+
+            case "game":
+
+                setMode(
+                    "game",
+                    true
+                );
+
+                showSuggestions(
+                    COUPLE_MODES.game
+                        .suggestions
+                );
+
+                break;
+
         }
 
-        const picker =
-            document.createElement("section");
+    }
 
-        picker.id =
-            "coupleEmojiPicker";
 
-        picker.className =
-            "couple-emoji-picker";
+    /* =====================================================
+       MENU
+    ====================================================== */
 
-        picker.hidden = true;
+    function openMenu() {
 
-        const tabs =
-            document.createElement("div");
-
-        tabs.className =
-            "couple-emoji-tabs";
-
-        const categories = [
-            ["recent", "🕘"],
-            ["love", "❤️"],
-            ["smile", "😊"],
-            ["people", "👍"],
-            ["animals", "🐶"],
-            ["food", "🍕"],
-            ["fun", "🎮"],
-            ["travel", "✈️"],
-            ["objects", "📱"],
-            ["symbols", "✨"]
-        ];
-
-        categories.forEach(
-            ([category, icon]) => {
-                const button =
-                    document.createElement("button");
-
-                button.type = "button";
-
-                button.textContent = icon;
-
-                button.dataset.category =
-                    category;
-
-                button.addEventListener(
-                    "click",
-                    () => {
-                        state.emojiCategory =
-                            category;
-
-                        renderEmojiGrid();
-                    }
-                );
-
-                tabs.appendChild(button);
-            }
+        menuOverlay.classList.remove(
+            "hidden"
         );
 
-        const grid =
-            document.createElement("div");
-
-        grid.id =
-            "coupleEmojiGrid";
-
-        grid.className =
-            "couple-emoji-grid";
-
-        picker.appendChild(tabs);
-        picker.appendChild(grid);
-
-        document.body.appendChild(picker);
-
-        renderEmojiGrid();
     }
 
-    function renderEmojiGrid() {
-        const grid =
-            $("coupleEmojiGrid");
 
-        if (!grid) return;
+    function closeMenuPanel() {
 
-        const emojis =
-            EMOJIS[state.emojiCategory] ||
-            [];
+        menuOverlay.classList.add(
+            "hidden"
+        );
 
-        grid.innerHTML = "";
-
-        emojis.forEach(emoji => {
-            const button =
-                document.createElement("button");
-
-            button.type = "button";
-
-            button.textContent = emoji;
-
-            button.addEventListener(
-                "click",
-                () => {
-                    if (input) {
-                        input.value += emoji;
-                        input.focus();
-                    }
-
-                    saveRecentEmoji(emoji);
-                }
-            );
-
-            grid.appendChild(button);
-        });
     }
 
-    function toggleEmojiPicker() {
-        const picker =
-            $("coupleEmojiPicker");
 
-        if (!picker) return;
+    function handleMenuAction(action) {
 
-        picker.hidden =
-            !picker.hidden;
-    }
+        closeMenuPanel();
 
-    /* =====================================================
-       FILE / CAMERA
-       ===================================================== */
 
-    function handleFiles(files) {
-        if (!files || !files.length) {
-            return;
+        if (action === "export") {
+
+            exportChat();
+
         }
 
-        [...files].forEach(file => {
-            if (!file.type.startsWith("image/")) {
-                return;
-            }
 
-            const reader =
-                new FileReader();
+        if (action === "clear") {
 
-            reader.onload = () => {
-                addMessage(
-                    `📸 ${file.name}`,
-                    "me",
-                    {
-                        type: "image",
-                        image: reader.result
-                    }
-                );
+            clearChat();
 
-                applyTheme(
-                    "photo-memory",
-                    0.65
-                );
-            };
+        }
 
-            reader.readAsDataURL(file);
-        });
     }
 
-    /* =====================================================
-       EXPORT CHAT
-       ===================================================== */
 
     function exportChat() {
-        const lines =
-            state.messages.map(
-                message =>
-                    `[${message.time}] ${
-                        message.sender === "me"
-                            ? "You"
-                            : state.partner.name
-                    }: ${message.text}`
-            );
+
+        const text =
+            messages.map(message => {
+
+                const who =
+                    isOwnMessage(message)
+                        ? "You"
+                        : partner.name;
+
+
+                return `[${formatDateTime(message.created_at)}] ${who}: ${message.text || "[media]"}`;
+
+            }).join("\n");
+
 
         const blob =
             new Blob(
-                [lines.join("\n")],
+                [text],
                 {
-                    type: "text/plain"
+                    type: "text/plain;charset=utf-8"
                 }
             );
+
 
         const url =
             URL.createObjectURL(blob);
 
+
         const link =
             document.createElement("a");
+
 
         link.href = url;
 
         link.download =
             "usanex-couple-chat.txt";
 
+
         link.click();
 
+
         URL.revokeObjectURL(url);
+
     }
 
-    /* =====================================================
-       CLEAR CHAT
-       ===================================================== */
 
     function clearChat() {
+
         const confirmed =
             window.confirm(
-                "Clear this Couple Chat?"
+                "Clear this chat from this device?"
             );
 
-        if (!confirmed) {
-            return;
-        }
 
-        state.messages = [];
+        if (!confirmed) return;
+
+
+        messages = [];
 
         saveMessages();
 
         renderMessages();
 
-        addMessage(
-            "Your Couple Space is ready again ❤️",
-            "partner"
-        );
     }
 
-    /* =====================================================
-       DEMO WELCOME
-       ===================================================== */
 
-    function createWelcomeMessages() {
-        if (state.messages.length) {
+    /* =====================================================
+       EMOJI PICKER
+    ====================================================== */
+
+    const EMOJI_CATEGORIES = {
+
+        recent: [
+            "❤️","😂","😊","🥰","😍","😘","😭","🥺",
+            "😏","🔥","💕","💗","🫶","✨","😘","💋"
+        ],
+
+        love: [
+            "❤️","🩷","🧡","💛","💚","💙","💜","🖤",
+            "🤍","🤎","🩶","💔","❤️‍🔥","💕","💞","💓",
+            "💗","💖","💘","💝","💟","❣️","💋","💌",
+            "😍","🥰","😘","😚","😙","😗","🫶"
+        ],
+
+        smile: [
+            "😀","😃","😄","😁","😆","😅","😂","🤣",
+            "😊","😇","🙂","🙃","😉","😌","😍","🥰",
+            "😘","😗","😙","😚","😋","😛","😝","😜",
+            "🤪","🤨","🧐","🤓","😎","🤩","🥳"
+        ],
+
+        people: [
+            "👋","🤚","🖐️","✋","🖖","👌","🤏","✌️",
+            "🤞","🤟","🤘","🤙","👈","👉","👆","👇",
+            "☝️","👍","👎","👏","🙌","🙏","🤝","💪",
+            "🫶","❤️‍🩹","🫂","💋","👀","🧠"
+        ],
+
+        animals: [
+            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼",
+            "🐨","🐯","🦁","🐮","🐷","🐸","🐵","🙈",
+            "🙉","🙊","🐔","🐧","🐦","🐤","🦄","🐝",
+            "🦋","🐢","🐍","🐬","🐳","🦈","🐘"
+        ],
+
+        food: [
+            "🍎","🍊","🍋","🍌","🍉","🍇","🍓","🫐",
+            "🍒","🍑","🥭","🍍","🥥","🥝","🍕","🍔",
+            "🍟","🌭","🌮","🍿","🍩","🍪","🎂","🍰",
+            "🍫","🍭","☕","🧋","🍵","🥤","🍓"
+        ],
+
+        activities: [
+            "⚽","🏀","🏈","⚾","🎾","🏐","🎮","🎯",
+            "🎲","🎸","🎹","🎤","🎧","🎬","🎨","🏆",
+            "🏃","🚴","🏊","🧘","💃","🕺","🎉","🎊",
+            "🎁","🎈","🎵","🎶","🎮","🎯"
+        ],
+
+        travel: [
+            "🚗","🚕","🚌","🚎","🏎️","🚓","🚑","🚒",
+            "✈️","🚀","🚁","🚢","⛵","🏝️","🏖️","🏕️",
+            "🏠","🏡","🏙️","🌆","🌃","🌅","🌄","🌉",
+            "🗺️","🧳","🎒","📍","🌎","🌙"
+        ],
+
+        objects: [
+            "📱","💻","⌚","📷","📸","🎥","💡","🔑",
+            "🔒","💎","💍","💰","📚","✏️","📝","📌",
+            "📎","💌","📦","🎁","🕯️","🛏️","☂️","🧸",
+            "🎀","👑","💄","👗","👟"
+        ],
+
+        symbols: [
+            "✨","⭐","🌟","💫","🔥","💥","💯","❗",
+            "❓","‼️","⁉️","✅","❌","⭕","💢","💤",
+            "💭","💬","❤️","💕","☀️","🌙","☁️","🌈",
+            "⚡","❄️","🌸","🌹","🌻","🍀"
+        ]
+
+    };
+
+
+    function toggleEmojiPicker() {
+
+        if (emojiPicker) {
+
+            removeEmojiPicker();
+
             return;
+
         }
 
-        state.messages = [
-            {
-                id: "welcome_1",
-                text: "Hey ❤️",
-                sender: "partner",
-                time: nowTime()
-            },
-
-            {
-                id: "welcome_2",
-                text:
-                    "Welcome to your Couple Space, love 🥰",
-                sender: "partner",
-                time: nowTime()
-            },
-
-            {
-                id: "welcome_3",
-                text:
-                    "Yahan tum dono ki conversations ke mood ke according experience change hoga ✨",
-                sender: "partner",
-                time: nowTime()
-            }
-        ];
-
-        saveMessages();
-    }
-
-    /* =====================================================
-       EVENTS
-       ===================================================== */
-
-    function bindEvents() {
-
-        /* Back */
-
-        $("coupleBackButton")
-            ?.addEventListener(
-                "click",
-                () => {
-                    if (
-                        window.history.length > 1
-                    ) {
-                        window.history.back();
-                    } else {
-                        window.location.href =
-                            "/chat";
-                    }
-                }
-            );
-
-        /* Mood buttons */
-
-        $("coupleMoodButton")
-            ?.addEventListener(
-                "click",
-                openMoodPanel
-            );
-
-        $("coupleMoodChangeButton")
-            ?.addEventListener(
-                "click",
-                openMoodPanel
-            );
-
-        $("closeMoodPanel")
-            ?.addEventListener(
-                "click",
-                closeMoodPanel
-            );
-
-        document
-            .querySelectorAll(
-                "#coupleMoodGrid button"
-            )
-            .forEach(button => {
-                button.addEventListener(
-                    "click",
-                    () => {
-                        selectMood(
-                            button.dataset.mode
-                        );
-                    }
-                );
-            });
-
-        /* AI */
-
-        $("coupleAiButton")
-            ?.addEventListener(
-                "click",
-                openAiPanel
-            );
-
-        $("closeAiPanel")
-            ?.addEventListener(
-                "click",
-                closeAiPanel
-            );
-
-        document
-            .querySelectorAll(
-                "[data-ai-action]"
-            )
-            .forEach(button => {
-                button.addEventListener(
-                    "click",
-                    () => {
-                        handleAiAction(
-                            button.dataset.aiAction
-                        );
-                    }
-                );
-            });
-
-        /* Quick actions */
-
-        document
-            .querySelectorAll(
-                ".couple-action"
-            )
-            .forEach(button => {
-                button.addEventListener(
-                    "click",
-                    () => {
-                        handleQuickAction(
-                            button.dataset.action
-                        );
-                    }
-                );
-            });
-
-        /* Composer */
-
-        composer?.addEventListener(
-            "submit",
-            event => {
-                event.preventDefault();
-
-                handleSend(
-                    input?.value || ""
-                );
-            }
-        );
-
-        /* Emoji */
-
-        $("coupleEmojiButton")
-            ?.addEventListener(
-                "click",
-                toggleEmojiPicker
-            );
-
-        /* Attach */
-
-        $("coupleAttachButton")
-            ?.addEventListener(
-                "click",
-                () => {
-                    $("coupleFileInput")
-                        ?.click();
-                }
-            );
-
-        $("coupleCameraButton")
-            ?.addEventListener(
-                "click",
-                () => {
-                    const fileInput =
-                        $("coupleFileInput");
-
-                    if (!fileInput) return;
-
-                    fileInput.accept =
-                        "image/*";
-
-                    fileInput.setAttribute(
-                        "capture",
-                        "environment"
-                    );
-
-                    fileInput.click();
-                }
-            );
-
-        $("coupleFileInput")
-            ?.addEventListener(
-                "change",
-                event => {
-                    handleFiles(
-                        event.target.files
-                    );
-
-                    event.target.value = "";
-                }
-            );
-
-        /* Outside emoji picker */
-
-        document.addEventListener(
-            "click",
-            event => {
-                const picker =
-                    $("coupleEmojiPicker");
-
-                if (!picker) return;
-
-                if (
-                    picker.hidden
-                ) {
-                    return;
-                }
-
-                const emojiButton =
-                    $("coupleEmojiButton");
-
-                if (
-                    picker.contains(
-                        event.target
-                    ) ||
-                    emojiButton?.contains(
-                        event.target
-                    )
-                ) {
-                    return;
-                }
-
-                picker.hidden = true;
-            }
-        );
-
-        /* Keyboard */
-
-        input?.addEventListener(
-            "keydown",
-            event => {
-                if (
-                    event.key === "Enter" &&
-                    !event.shiftKey
-                ) {
-                    event.preventDefault();
-
-                    handleSend(
-                        input.value
-                    );
-                }
-            }
-        );
-
-        /* Menu */
-
-        $("coupleMenuButton")
-            ?.addEventListener(
-                "click",
-                () => {
-                    const choice =
-                        window.prompt(
-                            "Type: export or clear"
-                        );
-
-                    if (
-                        choice?.toLowerCase() ===
-                        "export"
-                    ) {
-                        exportChat();
-                    }
-
-                    if (
-                        choice?.toLowerCase() ===
-                        "clear"
-                    ) {
-                        clearChat();
-                    }
-                }
-            );
-
-        /* Avatar */
-
-        $("coupleAvatarButton")
-            ?.addEventListener(
-                "click",
-                () => {
-                    if (state.partner.id) {
-                        window.location.href =
-                            `/profile?user_id=${encodeURIComponent(
-                                state.partner.id
-                            )}`;
-                    }
-                }
-            );
-    }
-
-    /* =====================================================
-       AUTO REFRESH TIME THEME
-       ===================================================== */
-
-    function startTimeWatcher() {
-        setInterval(() => {
-            const current =
-                detectTimeContext();
-
-            if (
-                current !==
-                state.timeContext
-            ) {
-                state.timeContext =
-                    current;
-
-                applyTheme(
-                    state.mode,
-                    state.intensity
-                );
-            }
-        }, 60000);
-    }
-
-    /* =====================================================
-       INITIALIZE
-       ===================================================== */
-
-    function init() {
-        loadRecentEmojis();
 
         createEmojiPicker();
 
-        applyPartner();
+    }
 
-        loadMessages();
 
-        createWelcomeMessages();
+    function createEmojiPicker() {
+
+        const panel =
+            document.createElement("div");
+
+
+        panel.className =
+            "couple-emoji-picker";
+
+
+        emojiPicker =
+            panel;
+
+
+        const search =
+            document.createElement("input");
+
+
+        search.className =
+            "emoji-search";
+
+
+        search.placeholder =
+            "Search emoji...";
+
+
+        panel.appendChild(search);
+
+
+        const categories =
+            document.createElement("div");
+
+
+        categories.className =
+            "emoji-categories";
+
+
+        const categoryIcons = {
+
+            recent: "🕘",
+
+            love: "❤️",
+
+            smile: "😊",
+
+            people: "🫶",
+
+            animals: "🐶",
+
+            food: "🍕",
+
+            activities: "🎮",
+
+            travel: "✈️",
+
+            objects: "📱",
+
+            symbols: "✨"
+
+        };
+
+
+        Object.keys(EMOJI_CATEGORIES)
+            .forEach(
+                (category, index) => {
+
+                    const button =
+                        document.createElement("button");
+
+
+                    button.type =
+                        "button";
+
+
+                    button.className =
+                        "emoji-category-button";
+
+
+                    if (index === 0) {
+                        button.classList.add(
+                            "active"
+                        );
+                    }
+
+
+                    button.textContent =
+                        categoryIcons[category];
+
+
+                    button.dataset.category =
+                        category;
+
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            categories
+                                .querySelectorAll(
+                                    ".emoji-category-button"
+                                )
+                                .forEach(
+                                    item =>
+                                        item.classList.remove(
+                                            "active"
+                                        )
+                                );
+
+
+                            button.classList.add(
+                                "active"
+                            );
+
+
+                            renderEmojiGrid(
+                                grid,
+                                category
+                            );
+
+                        }
+                    );
+
+
+                    categories.appendChild(
+                        button
+                    );
+
+                }
+            );
+
+
+        panel.appendChild(
+            categories
+        );
+
+
+        const grid =
+            document.createElement("div");
+
+
+        grid.className =
+            "emoji-grid";
+
+
+        panel.appendChild(grid);
+
+
+        renderEmojiGrid(
+            grid,
+            "recent"
+        );
+
+
+        search.addEventListener(
+            "input",
+            () => {
+
+                const query =
+                    search.value.trim();
+
+
+                if (!query) {
+
+                    renderEmojiGrid(
+                        grid,
+                        "recent"
+                    );
+
+                    return;
+
+                }
+
+
+                const all =
+                    Object.values(
+                        EMOJI_CATEGORIES
+                    ).flat();
+
+
+                renderEmojiGrid(
+                    grid,
+                    null,
+                    [...new Set(all)]
+                );
+
+            }
+        );
+
+
+        document.body.appendChild(
+            panel
+        );
+
+    }
+
+
+    function renderEmojiGrid(
+        grid,
+        category,
+        customList = null
+    ) {
+
+        grid.innerHTML = "";
+
+
+        let list;
+
+
+        if (customList) {
+
+            list = customList;
+
+        } else {
+
+            list =
+                EMOJI_CATEGORIES[
+                    category
+                ] || [];
+
+        }
+
+
+        list.forEach(emoji => {
+
+            const button =
+                document.createElement("button");
+
+
+            button.type =
+                "button";
+
+
+            button.className =
+                "emoji-item";
+
+
+            button.textContent =
+                emoji;
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    insertEmoji(
+                        emoji
+                    );
+
+                }
+            );
+
+
+            grid.appendChild(
+                button
+            );
+
+        });
+
+    }
+
+
+    function insertEmoji(emoji) {
+
+        const start =
+            input.selectionStart ??
+            input.value.length;
+
+
+        const end =
+            input.selectionEnd ??
+            input.value.length;
+
+
+        input.value =
+            input.value.slice(0, start) +
+            emoji +
+            input.value.slice(end);
+
+
+        input.focus();
+
+
+        const cursor =
+            start + emoji.length;
+
+
+        input.setSelectionRange(
+            cursor,
+            cursor
+        );
+
+
+        saveRecentEmoji(
+            emoji
+        );
+
+    }
+
+
+    function saveRecentEmoji(emoji) {
+
+        let recent =
+            [];
+
+
+        try {
+
+            recent =
+                JSON.parse(
+                    localStorage.getItem(
+                        RECENT_EMOJI_KEY
+                    ) || "[]"
+                );
+
+        } catch {}
+
+
+        recent =
+            [
+                emoji,
+                ...recent.filter(
+                    item =>
+                        item !== emoji
+                )
+            ].slice(0, 30);
+
+
+        localStorage.setItem(
+            RECENT_EMOJI_KEY,
+            JSON.stringify(recent)
+        );
+
+    }
+
+
+    function removeEmojiPicker() {
+
+        emojiPicker?.remove();
+
+        emojiPicker = null;
+
+    }
+
+
+    /* =====================================================
+       FILES
+    ====================================================== */
+
+    async function handleFiles(event) {
+
+        const files =
+            Array.from(
+                event.target.files || []
+            );
+
+
+        event.target.value = "";
+
+
+        for (const file of files) {
+
+            if (file.type.startsWith("image/")) {
+
+                await sendImageFile(file);
+
+            } else {
+
+                await sendMessage(
+                    `📎 ${file.name}`,
+                    "file"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    async function sendImageFile(file) {
+
+        const localUrl =
+            URL.createObjectURL(file);
+
+
+        const message = {
+
+            id:
+                createMessageId(),
+
+            client_id:
+                createMessageId(),
+
+            sender_id:
+                getCurrentUserId(),
+
+            receiver_id:
+                partner.id || null,
+
+            text: "",
+
+            message_type:
+                "image",
+
+            media_url:
+                localUrl,
+
+            created_at:
+                new Date().toISOString(),
+
+            status:
+                "sent",
+
+            is_mine:
+                true
+
+        };
+
+
+        messages.push(message);
+
+        saveMessages();
 
         renderMessages();
 
-        const savedMode =
-            localStorage.getItem(
-                CONFIG.modeKey
-            );
+        scrollToBottom(true);
 
-        applyTheme(
-            normalizeMode(
-                savedMode || "calm"
-            ),
-            0.55
-        );
-
-        bindEvents();
-
-        startTimeWatcher();
 
         /*
-         * Re-check time when page becomes visible.
+         * Real media upload endpoint can be connected later.
          */
 
-        document.addEventListener(
-            "visibilitychange",
-            () => {
-                if (
-                    !document.hidden
-                ) {
-                    applyTheme(
-                        state.mode,
-                        state.intensity
-                    );
-                }
-            }
-        );
+        if (socketReady) {
+
+            sendSocket({
+
+                type: "media",
+
+                message
+
+            });
+
+        }
+
     }
 
+
     /* =====================================================
-       PUBLIC API
-       ===================================================== */
+       LOCAL STORAGE
+    ====================================================== */
 
-    window.UsanexCoupleChat = {
-        state,
+    function loadMessages() {
 
-        modes: MODES,
+        try {
 
-        applyTheme,
+            const stored =
+                JSON.parse(
+                    localStorage.getItem(
+                        STORAGE_KEY
+                    ) || "[]"
+                );
 
-        addMessage,
 
-        handleSend,
+            if (Array.isArray(stored)) {
+                return stored.map(
+                    normalizeMessage
+                );
+            }
 
-        clearChat,
+        } catch (error) {
 
-        exportChat,
+            console.debug(
+                "Unable to load couple messages",
+                error
+            );
 
-        openMoodPanel,
+        }
 
-        openAiPanel
-    };
 
-    window.UsanexCoupleModes =
-        MODES;
+        return [];
+
+    }
+
+
+    function saveMessages() {
+
+        try {
+
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(
+                    messages.slice(-500)
+                )
+            );
+
+        } catch (error) {
+
+            console.debug(
+                "Unable to save couple messages",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       WELCOME
+    ====================================================== */
+
+    function showWelcomeIfEmpty() {
+
+        if (messages.length) return;
+
+
+        const hour =
+            new Date().getHours();
+
+
+        let text;
+
+
+        if (hour >= 5 && hour < 11) {
+
+            text =
+                "Good morning ❤️ Start your beautiful conversation.";
+
+        } else if (
+            hour >= 22 ||
+            hour < 5
+        ) {
+
+            text =
+                "Good night 🌙 Your Couple Space is ready.";
+
+        } else {
+
+            text =
+                "Welcome to your Couple Space ❤️";
+
+        }
+
+
+        const welcome = {
+
+            id:
+                "welcome-" +
+                Date.now(),
+
+            client_id:
+                "welcome-" +
+                Date.now(),
+
+            sender_id:
+                "system",
+
+            text,
+
+            message_type:
+                "system",
+
+            created_at:
+                new Date().toISOString(),
+
+            status:
+                "seen",
+
+            is_mine:
+                false
+
+        };
+
+
+        messages.push(
+            welcome
+        );
+
+
+        saveMessages();
+
+        renderMessages();
+
+    }
+
+
+    /* =====================================================
+       HELPERS
+    ====================================================== */
+
+    function getCurrentUserId() {
+
+        const keys = [
+            "user_id",
+            "currentUser",
+            "usanexUser",
+            "user"
+        ];
+
+
+        for (const key of keys) {
+
+            try {
+
+                const value =
+                    localStorage.getItem(
+                        key
+                    );
+
+
+                if (!value) continue;
+
+
+                try {
+
+                    const parsed =
+                        JSON.parse(value);
+
+
+                    if (
+                        typeof parsed ===
+                        "object"
+                    ) {
+
+                        return (
+                            parsed.id ||
+                            parsed.user_id ||
+                            parsed.userId ||
+                            parsed.username ||
+                            null
+                        );
+
+                    }
+
+                } catch {}
+
+
+                return value;
+
+            } catch {}
+
+        }
+
+
+        return null;
+
+    }
+
+
+    function getCoupleSpaceId() {
+
+        const params =
+            new URLSearchParams(
+                location.search
+            );
+
+
+        return (
+            params.get("couple_space_id") ||
+            params.get("space_id") ||
+            partner.id ||
+            "default"
+        );
+
+    }
+
+
+    function createMessageId() {
+
+        return (
+            "msg_" +
+            Date.now().toString(36) +
+            "_" +
+            Math.random()
+                .toString(36)
+                .slice(2, 10)
+        );
+
+    }
+
+
+    function formatTime(value) {
+
+        const date =
+            new Date(value);
+
+
+        if (Number.isNaN(date.getTime())) {
+            return "";
+        }
+
+
+        return date.toLocaleTimeString(
+            [],
+            {
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+
+    }
+
+
+    function formatDateTime(value) {
+
+        const date =
+            new Date(value);
+
+
+        return date.toLocaleString(
+            [],
+            {
+                dateStyle: "medium",
+                timeStyle: "short"
+            }
+        );
+
+    }
+
+
+    function formatLastSeen(value) {
+
+        if (!value) {
+            return "Offline";
+        }
+
+
+        const date =
+            new Date(value);
+
+
+        if (Number.isNaN(date.getTime())) {
+            return "Offline";
+        }
+
+
+        return `Last seen ${formatTime(date)}`;
+
+    }
+
+
+    function updateDayLabel() {
+
+        const today =
+            new Date();
+
+
+        dayLabel.textContent =
+            today.toLocaleDateString(
+                [],
+                {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric"
+                }
+            );
+
+    }
+
+
+    function scrollToBottom(
+        smooth = true
+    ) {
+
+        requestAnimationFrame(
+            () => {
+
+                conversation.scrollTo({
+                    top:
+                        conversation.scrollHeight,
+
+                    behavior:
+                        smooth
+                            ? "smooth"
+                            : "auto"
+                });
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       MOOD / SERVER
+    ====================================================== */
+
+    async function sendMoodToServer() {
+
+        try {
+
+            await fetch(
+                "/api/couple-chat/mood",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        partner_id:
+                            partner.id || null,
+
+                        mode:
+                            currentMode
+
+                    })
+                }
+            );
+
+        } catch {
+
+            /*
+             * Endpoint may not exist yet.
+             * UI continues normally.
+             */
+
+        }
+
+    }
+
+
+    /* =====================================================
+       EFFECTS
+    ====================================================== */
+
+    function createHeartEffect() {
+
+        if (
+            !effectsLayer ||
+            ![
+                "romantic",
+                "deep_love",
+                "missing_you",
+                "flirty",
+                "passionate",
+                "appreciation"
+            ].includes(currentMode)
+        ) {
+            return;
+        }
+
+
+        const heart =
+            document.createElement("span");
+
+
+        heart.className =
+            "couple-heart-effect";
+
+
+        heart.textContent =
+            Math.random() > .5
+                ? "❤️"
+                : "💕";
+
+
+        heart.style.left =
+            `${20 + Math.random() * 60}%`;
+
+
+        heart.style.setProperty(
+            "--drift",
+            `${-50 + Math.random() * 100}px`
+        );
+
+
+        effectsLayer.appendChild(
+            heart
+        );
+
+
+        setTimeout(
+            () => heart.remove(),
+            3000
+        );
+
+    }
+
 
     /* =====================================================
        START
-       ===================================================== */
+    ====================================================== */
 
-    if (
-        document.readyState ===
-        "loading"
-    ) {
-        document.addEventListener(
-            "DOMContentLoaded",
-            init
-        );
-    } else {
-        init();
-    }
+    updateAutomaticNightState();
+
+    init();
 
 })();
