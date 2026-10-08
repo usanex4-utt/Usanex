@@ -17,6 +17,14 @@ from sqlalchemy import (
 )
 
 from .database import Base
+from .couple_models import (
+    CoupleRoom,
+    CoupleMessage,
+    CoupleMessageReceipt,
+    CouplePresence,
+    CoupleMemory,
+    CoupleAIEvent,
+)
 
 
 # =========================================================
