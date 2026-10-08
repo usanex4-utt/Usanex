@@ -278,6 +278,29 @@ except Exception as e:
         str(e),
     )
 
+# =========================================================
+# SEARCH ROUTES
+# =========================================================
+
+try:
+
+    from .routes.search import router as search_router
+
+    app.include_router(
+        search_router
+    )
+
+    print(
+        "[Usanex] Search routes loaded."
+    )
+
+except Exception as e:
+
+    print(
+        "[Usanex] Search router not loaded:",
+        str(e),
+    )
+
 
 # =========================================================
 # PAGE ROUTES
