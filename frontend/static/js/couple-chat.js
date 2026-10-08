@@ -1,7 +1,7 @@
 /* =========================================================
    USANEX COUPLE CHAT
    Main Frontend Controller
-   Real WebSocket + AI + UI
+   Partner-Specific Storage + Real WebSocket + AI + UI
 ========================================================= */
 
 (() => {
@@ -24,12 +24,15 @@
     };
 
 
-    const STORAGE_KEY =
-        "usanex_couple_chat_messages_v11";
+    /*
+     * IMPORTANT:
+     * Chat messages are stored separately for every partner.
+     * Old v11 shared storage is intentionally NOT used.
+     */
 
 
-    const MODE_STORAGE_KEY =
-        "usanex_couple_chat_mode_v11";
+    const MODE_STORAGE_PREFIX =
+        "usanex_couple_chat_mode_v12_";
 
 
     const RECENT_EMOJI_KEY =
@@ -420,12 +423,52 @@
 
 
     /* =====================================================
+       PARTNER
+    ====================================================== */
+
+    const partner =
+        readPartner();
+
+
+    /* =====================================================
+       PARTNER-SPECIFIC STORAGE
+    ====================================================== */
+
+    function getChatStorageKey() {
+
+        const partnerId =
+            partner.id ||
+            "unknown";
+
+        return (
+            "usanex_couple_chat_messages_v12_" +
+            String(partnerId)
+        );
+
+    }
+
+
+    function getModeStorageKey() {
+
+        const partnerId =
+            partner.id ||
+            "unknown";
+
+        return (
+            MODE_STORAGE_PREFIX +
+            String(partnerId)
+        );
+
+    }
+
+
+    /* =====================================================
        STATE
     ====================================================== */
 
     let currentMode =
         localStorage.getItem(
-            MODE_STORAGE_KEY
+            getModeStorageKey()
         ) || "calm";
 
 
@@ -455,10 +498,6 @@
 
     let isInitialHistoryLoaded =
         false;
-
-
-    const partner =
-        readPartner();
 
 
     /* =====================================================
@@ -956,22 +995,17 @@
                 partnerId:
                     partner.id,
 
-
                 onConnection:
                     handleRealtimeConnection,
-
 
                 onMessage:
                     handleRealtimeMessage,
 
-
                 onReceipt:
                     handleRealtimeReceipt,
 
-
                 onPresence:
                     handleRealtimePresence,
-
 
                 onTyping:
                     handleRealtimeTyping
@@ -1086,10 +1120,6 @@
             );
 
 
-        /* ================================================
-           Existing message
-        ================================================ */
-
         if (existing) {
 
             Object.assign(
@@ -1120,10 +1150,6 @@
         }
 
 
-        /* ================================================
-           New partner message
-        ================================================ */
-
         messages.push(
             normalized
         );
@@ -1140,10 +1166,6 @@
         scrollToBottom(true);
 
 
-        /* ================================================
-           Auto delivery
-        ================================================ */
-
         if (
             !normalized.is_mine &&
             normalized.id
@@ -1154,21 +1176,12 @@
             );
 
 
-            /*
-             * Chat is currently open,
-             * therefore message is read.
-             */
-
             realtime?.sendRead(
                 normalized.id
             );
 
         }
 
-
-        /*
-         * AI/UI analysis for partner message
-         */
 
         if (
             normalized.text &&
@@ -1718,11 +1731,6 @@
         };
 
 
-        /*
-         * Optimistic UI.
-         * Message appears immediately.
-         */
-
         messages.push(
             message
         );
@@ -1753,10 +1761,6 @@
         stopTyping();
 
 
-        /* ================================================
-           REAL WEBSOCKET SEND
-        ================================================ */
-
         const sent =
             realtime?.sendMessage(
                 message
@@ -1765,22 +1769,12 @@
 
         if (!sent) {
 
-            /*
-             * Message remains in UI as sent.
-             * It will be retried after connection
-             * only when user sends again.
-             */
-
             setConnectionState(
                 false
             );
 
         }
 
-
-        /*
-         * AI analysis.
-         */
 
         analyzeMessage(
             text
@@ -2040,10 +2034,6 @@
                     "";
 
 
-                /* =========================================
-                   IMAGE
-                ========================================== */
-
                 if (
                     message.message_type ===
                     "image" &&
@@ -2079,10 +2069,6 @@
                 }
 
 
-                /* =========================================
-                   TEXT
-                ========================================== */
-
                 if (
                     message.text
                 ) {
@@ -2107,10 +2093,6 @@
 
                 }
 
-
-                /* =========================================
-                   FILE
-                ========================================== */
 
                 if (
                     message.message_type ===
@@ -2138,10 +2120,6 @@
 
                 }
 
-
-                /* =========================================
-                   META
-                ========================================== */
 
                 const meta =
                     document.createElement(
@@ -2173,10 +2151,6 @@
                     time
                 );
 
-
-                /* =========================================
-                   OWN MESSAGE STATUS
-                ========================================== */
 
                 if (mine) {
 
@@ -2548,7 +2522,7 @@
 
 
         localStorage.setItem(
-            MODE_STORAGE_KEY,
+            getModeStorageKey(),
             currentMode
         );
 
@@ -3725,14 +3699,6 @@
         scrollToBottom(true);
 
 
-        /*
-         * Backend accepts media_url.
-         * Current local blob URL is useful only
-         * for immediate preview. A permanent
-         * Cloudinary upload can later replace
-         * this URL before sending.
-         */
-
         const sent =
             realtime?.sendMessage(
                 message
@@ -3761,7 +3727,7 @@
             const stored =
                 JSON.parse(
                     localStorage.getItem(
-                        STORAGE_KEY
+                        getChatStorageKey()
                     ) ||
                     "[]"
                 );
@@ -3805,7 +3771,7 @@
         try {
 
             localStorage.setItem(
-                STORAGE_KEY,
+                getChatStorageKey(),
                 JSON.stringify(
                     messages.slice(-500)
                 )
@@ -3857,14 +3823,7 @@
                 }
             );
 
-        } catch {
-
-            /*
-             * UI continues even if
-             * mood endpoint is unavailable.
-             */
-
-        }
+        } catch {}
 
     }
 
