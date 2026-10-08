@@ -1,710 +1,1594 @@
 /* =========================================================
-   USANEX COUPLE REALTIME v3
-   Real WebSocket Controller
-   - Stable reconnect
-   - Partner-specific filtering
-   - Message client_id support
-   - Delivery/read receipts
+   USANEX COUPLE REALTIME v4
+   Constructor-based WebSocket Controller
+   Compatible with couple-chat.js
+   ---------------------------------------------------------
+   Features:
+   - Real WebSocket
+   - Partner-specific connection
+   - Room ID support
+   - Message history
+   - client_message_id support
+   - Delivery receipts
+   - Seen receipts
    - Presence
    - Typing
+   - Ping / keep alive
+   - Stable reconnect
+   - Auto reconnect
 ========================================================= */
 
 (() => {
     "use strict";
 
+    /* =====================================================
+       CONFIG
+    ====================================================== */
+
     const WS_BASE =
         `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
 
-    let socket = null;
-    let reconnectTimer = null;
-    let pingTimer = null;
+    const RECONNECT_MIN = 1000;
+    const RECONNECT_MAX = 10000;
+    const PING_INTERVAL = 25000;
 
-    let reconnectAttempt = 0;
-    let intentionallyClosed = false;
-    let connected = false;
 
-    let partnerId = null;
+    /* =====================================================
+       CLASS
+    ====================================================== */
 
-    const listeners = {
-        connected: [],
-        disconnected: [],
-        message: [],
-        history: [],
-        receipt: [],
-        presence: [],
-        typing: [],
-        error: []
-    };
+    class UsanexCoupleRealtime {
 
-    /* =========================================================
-       EVENTS
-    ========================================================= */
+        constructor(options = {}) {
 
-    function on(type, callback) {
-        if (!listeners[type]) return;
-        if (typeof callback !== "function") return;
+            this.partnerId =
+                options.partnerId ??
+                null;
 
-        listeners[type].push(callback);
-    }
+            this.onConnection =
+                typeof options.onConnection === "function"
+                    ? options.onConnection
+                    : () => {};
 
-    function emit(type, data) {
-        if (!listeners[type]) return;
+            this.onMessage =
+                typeof options.onMessage === "function"
+                    ? options.onMessage
+                    : () => {};
 
-        listeners[type].forEach(callback => {
+            this.onHistory =
+                typeof options.onHistory === "function"
+                    ? options.onHistory
+                    : () => {};
+
+            this.onReceipt =
+                typeof options.onReceipt === "function"
+                    ? options.onReceipt
+                    : () => {};
+
+            this.onPresence =
+                typeof options.onPresence === "function"
+                    ? options.onPresence
+                    : () => {};
+
+            this.onTyping =
+                typeof options.onTyping === "function"
+                    ? options.onTyping
+                    : () => {};
+
+            this.onError =
+                typeof options.onError === "function"
+                    ? options.onError
+                    : () => {};
+
+            this.onDisconnect =
+                typeof options.onDisconnect === "function"
+                    ? options.onDisconnect
+                    : () => {};
+
+
+            this.socket = null;
+
+            this.roomId = null;
+
+            this.currentUserId = null;
+
+            this.connected = false;
+
+            this.partnerOnline = false;
+
+            this.reconnectTimer = null;
+
+            this.pingTimer = null;
+
+            this.reconnectAttempt = 0;
+
+            this.intentionallyClosed = false;
+
+            this.connecting = false;
+
+            this.destroyed = false;
+
+        }
+
+
+        /* =================================================
+           CONNECT
+        ================================================== */
+
+        connect() {
+
+            if (this.destroyed) {
+                return false;
+            }
+
+            if (!this.partnerId) {
+
+                console.warn(
+                    "[UsanexRealtime] Partner ID missing."
+                );
+
+                return false;
+            }
+
+
+            this.intentionallyClosed = false;
+
+
+            this.clearReconnect();
+
+
+            /*
+             * Already connected / connecting
+             */
+
+            if (
+                this.socket &&
+                (
+                    this.socket.readyState ===
+                        WebSocket.OPEN ||
+                    this.socket.readyState ===
+                        WebSocket.CONNECTING
+                )
+            ) {
+
+                return true;
+
+            }
+
+
+            /*
+             * Close previous socket
+             */
+
+            if (this.socket) {
+
+                try {
+                    this.socket.close();
+                } catch {}
+
+            }
+
+
+            const url =
+                `${WS_BASE}/ws/couple/${encodeURIComponent(
+                    this.partnerId
+                )}`;
+
+
+            console.log(
+                "[UsanexRealtime] Connecting:",
+                url
+            );
+
+
+            this.connecting = true;
+
+
             try {
-                callback(data);
+
+                this.socket =
+                    new WebSocket(url);
+
             } catch (error) {
-                console.error(
-                    `[UsanexRealtime] ${type} listener error`,
+
+                this.connecting = false;
+
+                this.connected = false;
+
+                this.emitError(
                     error
                 );
+
+                this.scheduleReconnect();
+
+                return false;
             }
-        });
-    }
 
-    /* =========================================================
-       CONNECT
-    ========================================================= */
 
-    function connect(id) {
-
-        if (!id) {
-            console.warn(
-                "[UsanexRealtime] Partner ID missing."
+            this.socket.addEventListener(
+                "open",
+                () => this.handleOpen()
             );
-            return;
+
+
+            this.socket.addEventListener(
+                "message",
+                event =>
+                    this.handleMessage(event)
+            );
+
+
+            this.socket.addEventListener(
+                "close",
+                event =>
+                    this.handleClose(event)
+            );
+
+
+            this.socket.addEventListener(
+                "error",
+                error =>
+                    this.handleSocketError(error)
+            );
+
+
+            return true;
+
         }
 
-        partnerId = String(id);
-        intentionallyClosed = false;
 
-        clearTimeout(reconnectTimer);
+        /* =================================================
+           OPEN
+        ================================================== */
 
-        /*
-         * Already connected/connecting to same partner
-         */
-        if (
-            socket &&
-            (
-                socket.readyState === WebSocket.OPEN ||
-                socket.readyState === WebSocket.CONNECTING
-            )
-        ) {
-            return;
+        handleOpen() {
+
+            this.connecting = false;
+
+            this.connected = true;
+
+            this.reconnectAttempt = 0;
+
+
+            console.log(
+                "[UsanexRealtime] WebSocket connected."
+            );
+
+
+            this.startPing();
+
+
+            /*
+             * IMPORTANT:
+             *
+             * Do not assume history is received here.
+             * Backend sends:
+             *
+             * connected
+             * then message_history
+             */
+
         }
 
-        /*
-         * Close old socket if any
-         */
-        if (socket) {
-            try {
-                socket.close();
-            } catch {}
+
+        /* =================================================
+           CLOSE
+        ================================================== */
+
+        handleClose(event) {
+
+            this.connecting = false;
+
+            this.connected = false;
+
+            this.stopPing();
+
+
+            console.log(
+                "[UsanexRealtime] WebSocket closed:",
+                event.code,
+                event.reason || ""
+            );
+
+
+            this.onDisconnect({
+                connected: false,
+                code: event.code,
+                reason:
+                    event.reason || ""
+            });
+
+
+            this.onConnection({
+                connected: false,
+                code: event.code,
+                reason:
+                    event.reason || ""
+            });
+
+
+            if (
+                !this.intentionallyClosed &&
+                !this.destroyed
+            ) {
+
+                this.scheduleReconnect();
+
+            }
+
         }
 
-        const url =
-            `${WS_BASE}/ws/couple/${encodeURIComponent(partnerId)}`;
 
-        console.log(
-            "[UsanexRealtime] Connecting:",
-            url
-        );
+        /* =================================================
+           SOCKET ERROR
+        ================================================== */
 
-        try {
-
-            socket = new WebSocket(url);
-
-        } catch (error) {
-
-            connected = false;
-
-            emit("error", error);
-
-            scheduleReconnect();
-
-            return;
-        }
-
-        socket.addEventListener(
-            "open",
-            handleOpen
-        );
-
-        socket.addEventListener(
-            "message",
-            handleMessage
-        );
-
-        socket.addEventListener(
-            "close",
-            handleClose
-        );
-
-        socket.addEventListener(
-            "error",
-            handleError
-        );
-    }
-
-    /* =========================================================
-       OPEN
-    ========================================================= */
-
-    function handleOpen() {
-
-        connected = true;
-        reconnectAttempt = 0;
-
-        console.log(
-            "[UsanexRealtime] WebSocket connected."
-        );
-
-        emit("connected", {
-            partner_id: partnerId,
-            websocket_open: true
-        });
-
-        startPing();
-    }
-
-    /* =========================================================
-       CLOSE
-    ========================================================= */
-
-    function handleClose(event) {
-
-        connected = false;
-
-        stopPing();
-
-        console.log(
-            "[UsanexRealtime] WebSocket disconnected:",
-            event.code,
-            event.reason || ""
-        );
-
-        emit("disconnected", {
-            code: event.code,
-            reason: event.reason || ""
-        });
-
-        if (!intentionallyClosed) {
-            scheduleReconnect();
-        }
-    }
-
-    /* =========================================================
-       ERROR
-    ========================================================= */
-
-    function handleError(error) {
-
-        console.warn(
-            "[UsanexRealtime] WebSocket error:",
-            error
-        );
-
-        emit("error", error);
-    }
-
-    /* =========================================================
-       INCOMING MESSAGE
-    ========================================================= */
-
-    function handleMessage(event) {
-
-        let data = null;
-
-        try {
-
-            data = JSON.parse(event.data);
-
-        } catch (error) {
+        handleSocketError(error) {
 
             console.warn(
-                "[UsanexRealtime] Invalid JSON:",
-                event.data
-            );
-
-            return;
-        }
-
-        if (!data || typeof data !== "object") {
-            return;
-        }
-
-        switch (data.type) {
-
-            /* -------------------------------------------------
-               SERVER CONNECTED
-            ------------------------------------------------- */
-
-            case "connected":
-            case "websocket_connected":
-
-                connected = true;
-
-                emit("connected", data);
-
-                break;
-
-
-            /* -------------------------------------------------
-               MESSAGE HISTORY
-            ------------------------------------------------- */
-
-            case "message_history": {
-
-                const messages =
-                    Array.isArray(data.messages)
-                        ? data.messages
-                        : [];
-
-                emit("history", messages);
-
-                break;
-            }
-
-
-            /* -------------------------------------------------
-               NEW MESSAGE
-            ------------------------------------------------- */
-
-            case "message": {
-
-                const message =
-                    data.message || data;
-
-                if (!message) {
-                    break;
-                }
-
-                /*
-                 * Prevent a socket opened for another partner
-                 * from displaying unrelated messages.
-                 */
-                if (!isMessageForCurrentPartner(message)) {
-
-                    console.debug(
-                        "[UsanexRealtime] Ignoring message for another chat.",
-                        message
-                    );
-
-                    break;
-                }
-
-                emit("message", message);
-
-                break;
-            }
-
-
-            /* -------------------------------------------------
-               RECEIPT
-            ------------------------------------------------- */
-
-            case "message_receipt":
-            case "receipt": {
-
-                const receipt =
-                    data.receipt || data;
-
-                emit("receipt", receipt);
-
-                break;
-            }
-
-
-            /* -------------------------------------------------
-               PRESENCE
-            ------------------------------------------------- */
-
-            case "presence":
-            case "user_presence":
-
-                emit("presence", data);
-
-                break;
-
-
-            /* -------------------------------------------------
-               TYPING
-            ------------------------------------------------- */
-
-            case "typing":
-
-                emit("typing", data);
-
-                break;
-
-
-            /* -------------------------------------------------
-               PONG
-            ------------------------------------------------- */
-
-            case "pong":
-
-                break;
-
-
-            /* -------------------------------------------------
-               ERROR
-            ------------------------------------------------- */
-
-            case "error":
-
-                emit("error", data);
-
-                break;
-
-
-            /* -------------------------------------------------
-               UNKNOWN
-            ------------------------------------------------- */
-
-            default:
-
-                console.debug(
-                    "[UsanexRealtime] Unknown event:",
-                    data
-                );
-        }
-    }
-
-    /* =========================================================
-       PARTNER MESSAGE FILTER
-    ========================================================= */
-
-    function isMessageForCurrentPartner(message) {
-
-        if (!partnerId) {
-            return true;
-        }
-
-        /*
-         * If room_id exists, frontend chat.js will perform
-         * final room validation.
-         */
-
-        const senderId =
-            message.sender_id ??
-            message.senderId ??
-            null;
-
-        const receiverId =
-            message.receiver_id ??
-            message.receiverId ??
-            null;
-
-        /*
-         * Own message -> receiver must be partner.
-         * Partner message -> sender must be partner.
-         */
-
-        if (
-            senderId !== null &&
-            String(senderId) === String(partnerId)
-        ) {
-            return true;
-        }
-
-        if (
-            receiverId !== null &&
-            String(receiverId) === String(partnerId)
-        ) {
-            return true;
-        }
-
-        /*
-         * Some server events may not expose IDs.
-         * Don't incorrectly discard those.
-         */
-
-        if (
-            senderId === null &&
-            receiverId === null
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /* =========================================================
-       SEND RAW PAYLOAD
-    ========================================================= */
-
-    function send(payload) {
-
-        if (
-            !socket ||
-            socket.readyState !== WebSocket.OPEN
-        ) {
-
-            console.warn(
-                "[UsanexRealtime] Socket not connected."
-            );
-
-            return false;
-        }
-
-        try {
-
-            socket.send(
-                JSON.stringify(payload)
-            );
-
-            return true;
-
-        } catch (error) {
-
-            console.error(
-                "[UsanexRealtime] Send failed:",
+                "[UsanexRealtime] WebSocket error:",
                 error
             );
 
-            return false;
-        }
-    }
 
-    /* =========================================================
-       SEND MESSAGE
-    ========================================================= */
-
-    function sendMessage(
-        text,
-        messageType = "text",
-        clientId = null
-    ) {
-
-        const cleanText =
-            String(text || "").trim();
-
-        if (!cleanText) {
-            return false;
-        }
-
-        const payload = {
-            type: "message",
-            content: cleanText,
-            message_type: messageType
-        };
-
-        /*
-         * client_id is useful for frontend optimistic-message
-         * reconciliation. Backend can safely ignore it if the
-         * current server implementation doesn't store it.
-         */
-
-        if (clientId) {
-            payload.client_id = String(clientId);
-        }
-
-        return send(payload);
-    }
-
-    /* =========================================================
-       TYPING START
-    ========================================================= */
-
-    function sendTypingStart() {
-
-        return send({
-            type: "typing_start"
-        });
-    }
-
-    /* =========================================================
-       TYPING STOP
-    ========================================================= */
-
-    function sendTypingStop() {
-
-        return send({
-            type: "typing_stop"
-        });
-    }
-
-    /* =========================================================
-       MESSAGE DELIVERED
-    ========================================================= */
-
-    function sendMessageDelivered(messageId) {
-
-        if (
-            messageId === null ||
-            messageId === undefined ||
-            messageId === ""
-        ) {
-            return false;
-        }
-
-        return send({
-            type: "message_delivered",
-            message_id: messageId
-        });
-    }
-
-    /* =========================================================
-       MESSAGE READ
-    ========================================================= */
-
-    function sendMessageRead(messageId) {
-
-        if (
-            messageId === null ||
-            messageId === undefined ||
-            messageId === ""
-        ) {
-            return false;
-        }
-
-        return send({
-            type: "message_read",
-            message_id: messageId
-        });
-    }
-
-    /* =========================================================
-       PING
-    ========================================================= */
-
-    function ping() {
-
-        return send({
-            type: "ping"
-        });
-    }
-
-    /* =========================================================
-       KEEP ALIVE
-    ========================================================= */
-
-    function startPing() {
-
-        stopPing();
-
-        pingTimer =
-            setInterval(() => {
-
-                if (
-                    socket &&
-                    socket.readyState === WebSocket.OPEN
-                ) {
-                    ping();
-                }
-
-            }, 25000);
-    }
-
-    function stopPing() {
-
-        if (pingTimer) {
-
-            clearInterval(pingTimer);
-
-            pingTimer = null;
-        }
-    }
-
-    /* =========================================================
-       RECONNECT
-    ========================================================= */
-
-    function scheduleReconnect() {
-
-        if (intentionallyClosed) {
-            return;
-        }
-
-        clearTimeout(reconnectTimer);
-
-        reconnectAttempt++;
-
-        const delay =
-            Math.min(
-                1000 *
-                Math.pow(1.5, reconnectAttempt - 1),
-                10000
+            this.emitError(
+                error
             );
 
-        console.log(
-            `[UsanexRealtime] Reconnecting in ${delay}ms...`
-        );
-
-        reconnectTimer =
-            setTimeout(() => {
-
-                if (
-                    !intentionallyClosed &&
-                    partnerId
-                ) {
-                    connect(partnerId);
-                }
-
-            }, delay);
-    }
-
-    /* =========================================================
-       DISCONNECT
-    ========================================================= */
-
-    function disconnect() {
-
-        intentionallyClosed = true;
-
-        clearTimeout(reconnectTimer);
-
-        stopPing();
-
-        reconnectAttempt = 0;
-
-        if (socket) {
-
-            try {
-                socket.close(1000, "Client closed");
-            } catch {}
         }
 
-        socket = null;
 
-        connected = false;
+        /* =================================================
+           INCOMING MESSAGE
+        ================================================== */
 
-        emit("disconnected", {
-            code: 1000,
-            reason: "Client closed"
-        });
+        handleMessage(event) {
+
+            let data;
+
+
+            try {
+
+                data =
+                    JSON.parse(
+                        event.data
+                    );
+
+            } catch (error) {
+
+                console.warn(
+                    "[UsanexRealtime] Invalid JSON:",
+                    event.data
+                );
+
+                return;
+
+            }
+
+
+            if (
+                !data ||
+                typeof data !== "object"
+            ) {
+
+                return;
+
+            }
+
+
+            switch (
+                data.type
+            ) {
+
+
+                /* =========================================
+                   CONNECTED
+                ========================================== */
+
+                case "connected":
+                case "websocket_connected":
+
+                    this.handleConnectedEvent(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   HISTORY
+                ========================================== */
+
+                case "message_history":
+
+                    this.handleHistoryEvent(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   MESSAGE
+                ========================================== */
+
+                case "message":
+
+                    this.handleMessageEvent(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   RECEIPT
+                ========================================== */
+
+                case "message_receipt":
+                case "receipt":
+
+                    this.handleReceiptEvent(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   PRESENCE
+                ========================================== */
+
+                case "presence":
+                case "user_presence":
+
+                    this.handlePresenceEvent(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   TYPING
+                ========================================== */
+
+                case "typing":
+
+                    this.handleTypingEvent(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   PONG
+                ========================================== */
+
+                case "pong":
+
+                    break;
+
+
+                /* =========================================
+                   ERROR
+                ========================================== */
+
+                case "error":
+
+                    this.emitError(
+                        data
+                    );
+
+                    break;
+
+
+                /* =========================================
+                   UNKNOWN
+                ========================================== */
+
+                default:
+
+                    console.debug(
+                        "[UsanexRealtime] Unknown event:",
+                        data
+                    );
+
+            }
+
+        }
+
+
+        /* =================================================
+           CONNECTED EVENT
+        ================================================== */
+
+        handleConnectedEvent(data) {
+
+            this.connected = true;
+
+            this.connecting = false;
+
+
+            /*
+             * Current user
+             */
+
+            if (
+                data.user &&
+                data.user.id != null
+            ) {
+
+                this.currentUserId =
+                    data.user.id;
+
+            }
+
+
+            /*
+             * Room
+             */
+
+            if (
+                data.room &&
+                data.room.id != null
+            ) {
+
+                this.roomId =
+                    data.room.id;
+
+            }
+
+
+            if (
+                data.room_id != null
+            ) {
+
+                this.roomId =
+                    data.room_id;
+
+            }
+
+
+            /*
+             * Partner online
+             */
+
+            if (
+                typeof data.partner_online ===
+                "boolean"
+            ) {
+
+                this.partnerOnline =
+                    data.partner_online;
+
+            } else if (
+                typeof data.partnerOnline ===
+                "boolean"
+            ) {
+
+                this.partnerOnline =
+                    data.partnerOnline;
+
+            }
+
+
+            /*
+             * Send normalized connection data
+             * to couple-chat.js
+             */
+
+            this.onConnection({
+
+                connected: true,
+
+                partnerOnline:
+                    this.partnerOnline,
+
+                partner_online:
+                    this.partnerOnline,
+
+                roomId:
+                    this.roomId,
+
+                room_id:
+                    this.roomId,
+
+                user:
+                    data.user || null,
+
+                partner:
+                    data.partner || null,
+
+                timestamp:
+                    data.timestamp || null,
+
+                raw:
+                    data
+
+            });
+
+        }
+
+
+        /* =================================================
+           HISTORY
+        ================================================== */
+
+        handleHistoryEvent(data) {
+
+            const rawMessages =
+                Array.isArray(
+                    data.messages
+                )
+                    ? data.messages
+                    : [];
+
+
+            /*
+             * Save room ID
+             */
+
+            if (
+                data.room_id != null
+            ) {
+
+                this.roomId =
+                    data.room_id;
+
+            }
+
+
+            /*
+             * Normalize backend history
+             */
+
+            const messages =
+                rawMessages
+                    .map(
+                        message =>
+                            this.normalizeMessage(
+                                message
+                            )
+                    )
+                    .filter(
+                        message =>
+                            this.isMessageForPartner(
+                                message
+                            )
+                    );
+
+
+            /*
+             * Current couple-chat.js expects
+             * history inside onConnection().
+             */
+
+            this.onConnection({
+
+                connected: true,
+
+                history:
+                    messages,
+
+                historyLoaded:
+                    true,
+
+                roomId:
+                    this.roomId,
+
+                room_id:
+                    this.roomId
+
+            });
+
+
+            /*
+             * Also expose dedicated history callback
+             */
+
+            this.onHistory(
+                messages
+            );
+
+        }
+
+
+        /* =================================================
+           MESSAGE EVENT
+        ================================================== */
+
+        handleMessageEvent(data) {
+
+            let message =
+                data.message ||
+                data;
+
+
+            if (!message) {
+                return;
+            }
+
+
+            /*
+             * Backend directly sends:
+             *
+             * message_id
+             * client_message_id
+             * room_id
+             * sender_id
+             * receiver_id
+             */
+
+            message =
+                this.normalizeMessage(
+                    message
+                );
+
+
+            /*
+             * STRICT PARTNER FILTER
+             */
+
+            if (
+                !this.isMessageForPartner(
+                    message
+                )
+            ) {
+
+                console.debug(
+                    "[UsanexRealtime] Ignored message from another chat.",
+                    message
+                );
+
+                return;
+
+            }
+
+
+            /*
+             * STRICT ROOM FILTER
+             */
+
+            if (
+                this.roomId != null &&
+                message.room_id != null &&
+                String(
+                    this.roomId
+                ) !==
+                String(
+                    message.room_id
+                )
+            ) {
+
+                console.debug(
+                    "[UsanexRealtime] Ignored message from another room."
+                );
+
+                return;
+
+            }
+
+
+            this.onMessage(
+                message
+            );
+
+        }
+
+
+        /* =================================================
+           RECEIPT EVENT
+        ================================================== */
+
+        handleReceiptEvent(data) {
+
+            let receipt =
+                data.receipt ||
+                data;
+
+
+            if (!receipt) {
+                return;
+            }
+
+
+            /*
+             * Normalize backend receipt
+             */
+
+            receipt = {
+
+                ...receipt,
+
+                message_id:
+                    receipt.message_id ??
+                    receipt.id ??
+                    null,
+
+                client_message_id:
+                    receipt.client_message_id ??
+                    receipt.client_id ??
+                    null,
+
+                status:
+                    this.normalizeReceiptStatus(
+                        receipt
+                    )
+
+            };
+
+
+            this.onReceipt(
+                receipt
+            );
+
+        }
+
+
+        /* =================================================
+           PRESENCE EVENT
+        ================================================== */
+
+        handlePresenceEvent(data) {
+
+            this.onPresence({
+                ...data,
+
+                user_id:
+                    data.user_id ??
+                    data.userId ??
+                    null,
+
+                is_online:
+                    data.is_online === true ||
+                    data.online === true,
+
+                last_seen:
+                    data.last_seen ??
+                    data.last_seen_at ??
+                    null
+
+            });
+
+        }
+
+
+        /* =================================================
+           TYPING EVENT
+        ================================================== */
+
+        handleTypingEvent(data) {
+
+            this.onTyping({
+                ...data,
+
+                is_typing:
+                    data.is_typing === true ||
+                    data.typing === true,
+
+                sender_id:
+                    data.sender_id ??
+                    data.senderId ??
+                    null
+
+            });
+
+        }
+
+
+        /* =================================================
+           NORMALIZE MESSAGE
+        ================================================== */
+
+        normalizeMessage(message) {
+
+            return {
+
+                ...message,
+
+                id:
+                    message.id ??
+                    message.message_id ??
+                    null,
+
+                message_id:
+                    message.message_id ??
+                    message.id ??
+                    null,
+
+                client_id:
+                    message.client_id ??
+                    message.client_message_id ??
+                    null,
+
+                client_message_id:
+                    message.client_message_id ??
+                    message.client_id ??
+                    null,
+
+                room_id:
+                    message.room_id ??
+                    null,
+
+                sender_id:
+                    message.sender_id ??
+                    message.senderId ??
+                    null,
+
+                receiver_id:
+                    message.receiver_id ??
+                    message.receiverId ??
+                    null,
+
+                content:
+                    message.content ??
+                    message.text ??
+                    "",
+
+                text:
+                    message.content ??
+                    message.text ??
+                    "",
+
+                message_type:
+                    message.message_type ||
+                    "text",
+
+                media_url:
+                    message.media_url ??
+                    null,
+
+                media_type:
+                    message.media_type ??
+                    null,
+
+                created_at:
+                    message.created_at ||
+                    message.timestamp ||
+                    new Date().toISOString(),
+
+                timestamp:
+                    message.timestamp ||
+                    message.created_at ||
+                    new Date().toISOString()
+
+            };
+
+        }
+
+
+        /* =================================================
+           PARTNER FILTER
+        ================================================== */
+
+        isMessageForPartner(message) {
+
+            if (!this.partnerId) {
+                return true;
+            }
+
+
+            const senderId =
+                message.sender_id ??
+                message.senderId ??
+                null;
+
+
+            const receiverId =
+                message.receiver_id ??
+                message.receiverId ??
+                null;
+
+
+            const partner =
+                String(
+                    this.partnerId
+                );
+
+
+            /*
+             * Partner -> current user
+             */
+
+            if (
+                senderId != null &&
+                String(
+                    senderId
+                ) === partner
+            ) {
+
+                return true;
+
+            }
+
+
+            /*
+             * Current user -> partner
+             */
+
+            if (
+                receiverId != null &&
+                String(
+                    receiverId
+                ) === partner
+            ) {
+
+                return true;
+
+            }
+
+
+            /*
+             * If IDs are unavailable,
+             * don't accidentally discard event.
+             */
+
+            if (
+                senderId == null &&
+                receiverId == null
+            ) {
+
+                return true;
+
+            }
+
+
+            return false;
+
+        }
+
+
+        /* =================================================
+           SEND RAW
+        ================================================== */
+
+        send(payload) {
+
+            if (
+                !this.socket ||
+                this.socket.readyState !==
+                    WebSocket.OPEN
+            ) {
+
+                console.warn(
+                    "[UsanexRealtime] Socket not connected."
+                );
+
+                return false;
+
+            }
+
+
+            try {
+
+                this.socket.send(
+                    JSON.stringify(
+                        payload
+                    )
+                );
+
+                return true;
+
+            } catch (error) {
+
+                console.error(
+                    "[UsanexRealtime] Send failed:",
+                    error
+                );
+
+                this.emitError(
+                    error
+                );
+
+                return false;
+
+            }
+
+        }
+
+
+        /* =================================================
+           SEND MESSAGE
+        ================================================== */
+
+        sendMessage(message) {
+
+            if (!message) {
+                return false;
+            }
+
+
+            /*
+             * couple-chat.js sends the COMPLETE
+             * optimistic message object.
+             */
+
+            if (
+                typeof message === "object"
+            ) {
+
+                const clientId =
+                    message.client_id ??
+                    message.client_message_id ??
+                    null;
+
+
+                const payload = {
+
+                    type:
+                        "message",
+
+                    message_id:
+                        clientId,
+
+                    content:
+                        message.content ??
+                        message.text ??
+                        null,
+
+                    media_url:
+                        message.media_url ??
+                        null,
+
+                    media_type:
+                        message.media_type ??
+                        null,
+
+                    message_type:
+                        message.message_type ||
+                        "text",
+
+                    reply_to_message_id:
+                        message.reply_to_message_id ??
+                        null
+
+                };
+
+
+                return this.send(
+                    payload
+                );
+
+            }
+
+
+            /*
+             * Backward compatibility:
+             * sendMessage("hello", "text", clientId)
+             */
+
+            const text =
+                String(
+                    message
+                ).trim();
+
+
+            if (!text) {
+                return false;
+            }
+
+
+            return this.send({
+
+                type:
+                    "message",
+
+                message_id:
+                    arguments[2] ??
+                    null,
+
+                content:
+                    text,
+
+                message_type:
+                    arguments[1] ||
+                    "text"
+
+            });
+
+        }
+
+
+        /* =================================================
+           DELIVERED
+        ================================================== */
+
+        sendDelivered(messageId) {
+
+            if (
+                messageId == null ||
+                messageId === ""
+            ) {
+
+                return false;
+
+            }
+
+
+            return this.send({
+
+                type:
+                    "message_delivered",
+
+                message_id:
+                    messageId
+
+            });
+
+        }
+
+
+        /*
+         * Alias for compatibility
+         */
+
+        sendMessageDelivered(messageId) {
+
+            return this.sendDelivered(
+                messageId
+            );
+
+        }
+
+
+        /* =================================================
+           READ / SEEN
+        ================================================== */
+
+        sendRead(messageId) {
+
+            if (
+                messageId == null ||
+                messageId === ""
+            ) {
+
+                return false;
+
+            }
+
+
+            return this.send({
+
+                type:
+                    "message_read",
+
+                message_id:
+                    messageId
+
+            });
+
+        }
+
+
+        /*
+         * Alias for compatibility
+         */
+
+        sendMessageRead(messageId) {
+
+            return this.sendRead(
+                messageId
+            );
+
+        }
+
+
+        /* =================================================
+           TYPING
+        ================================================== */
+
+        startTyping() {
+
+            return this.send({
+
+                type:
+                    "typing_start"
+
+            });
+
+        }
+
+
+        sendTypingStart() {
+
+            return this.startTyping();
+
+        }
+
+
+        stopTyping() {
+
+            return this.send({
+
+                type:
+                    "typing_stop"
+
+            });
+
+        }
+
+
+        sendTypingStop() {
+
+            return this.stopTyping();
+
+        }
+
+
+        /* =================================================
+           PING
+        ================================================== */
+
+        ping() {
+
+            return this.send({
+
+                type:
+                    "ping"
+
+            });
+
+        }
+
+
+        /* =================================================
+           KEEP ALIVE
+        ================================================== */
+
+        startPing() {
+
+            this.stopPing();
+
+
+            this.pingTimer =
+                setInterval(
+                    () => {
+
+                        if (
+                            this.socket &&
+                            this.socket.readyState ===
+                                WebSocket.OPEN
+                        ) {
+
+                            this.ping();
+
+                        }
+
+                    },
+                    PING_INTERVAL
+                );
+
+        }
+
+
+        stopPing() {
+
+            if (
+                this.pingTimer
+            ) {
+
+                clearInterval(
+                    this.pingTimer
+                );
+
+                this.pingTimer =
+                    null;
+
+            }
+
+        }
+
+
+        /* =================================================
+           RECONNECT
+        ================================================== */
+
+        scheduleReconnect() {
+
+            if (
+                this.intentionallyClosed ||
+                this.destroyed ||
+                !this.partnerId
+            ) {
+
+                return;
+
+            }
+
+
+            this.clearReconnect();
+
+
+            this.reconnectAttempt++;
+
+
+            const delay =
+                Math.min(
+                    RECONNECT_MIN *
+                        Math.pow(
+                            1.5,
+                            this.reconnectAttempt - 1
+                        ),
+                    RECONNECT_MAX
+                );
+
+
+            console.log(
+                `[UsanexRealtime] Reconnecting in ${Math.round(
+                    delay
+                )}ms...`
+            );
+
+
+            this.reconnectTimer =
+                setTimeout(
+                    () => {
+
+                        if (
+                            !this.intentionallyClosed &&
+                            !this.destroyed
+                        ) {
+
+                            this.connect();
+
+                        }
+
+                    },
+                    delay
+                );
+
+        }
+
+
+        clearReconnect() {
+
+            if (
+                this.reconnectTimer
+            ) {
+
+                clearTimeout(
+                    this.reconnectTimer
+                );
+
+                this.reconnectTimer =
+                    null;
+
+            }
+
+        }
+
+
+        /* =================================================
+           DISCONNECT
+        ================================================== */
+
+        disconnect() {
+
+            this.intentionallyClosed =
+                true;
+
+
+            this.clearReconnect();
+
+            this.stopPing();
+
+
+            this.reconnectAttempt =
+                0;
+
+
+            if (
+                this.socket
+            ) {
+
+                try {
+
+                    this.socket.close(
+                        1000,
+                        "Client closed"
+                    );
+
+                } catch {}
+
+            }
+
+
+            this.socket =
+                null;
+
+
+            this.connected =
+                false;
+
+
+            this.connecting =
+                false;
+
+        }
+
+
+        /* =================================================
+           DESTROY
+        ================================================== */
+
+        destroy() {
+
+            this.destroyed =
+                true;
+
+            this.disconnect();
+
+        }
+
+
+        /* =================================================
+           RECEIPT NORMALIZER
+        ================================================== */
+
+        normalizeReceiptStatus(
+            receipt
+        ) {
+
+            if (
+                receipt.status ===
+                    "seen" ||
+                receipt.seen === true ||
+                receipt.seen_at
+            ) {
+
+                return "seen";
+
+            }
+
+
+            if (
+                receipt.status ===
+                    "delivered" ||
+                receipt.delivered === true ||
+                receipt.delivered_at
+            ) {
+
+                return "delivered";
+
+            }
+
+
+            return "sent";
+
+        }
+
+
+        /* =================================================
+           ERROR
+        ================================================== */
+
+        emitError(error) {
+
+            try {
+
+                this.onError(
+                    error
+                );
+
+            } catch {}
+
+        }
+
     }
 
-    /* =========================================================
-       PUBLIC API
-    ========================================================= */
 
-    window.UsanexCoupleRealtime = {
+    /* =====================================================
+       EXPORT
+    ====================================================== */
 
-        connect,
+    window.UsanexCoupleRealtime =
+        UsanexCoupleRealtime;
 
-        disconnect,
 
-        send,
-
-        sendMessage,
-
-        sendTypingStart,
-
-        sendTypingStop,
-
-        sendMessageDelivered,
-
-        sendMessageRead,
-
-        ping,
-
-        isConnected: () => connected,
-
-        getPartnerId: () => partnerId,
-
-        on
-    };
+    console.log(
+        "[Usanex] Couple Realtime v4 loaded."
+    );
 
 })();
