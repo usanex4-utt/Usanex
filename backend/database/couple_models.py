@@ -27,26 +27,12 @@ from .database import Base
 def utcnow():
     """
     Current UTC time as naive datetime.
-
-    Existing Usanex database models use
-    SQLAlchemy DateTime without timezone.
     """
-
     return datetime.utcnow()
 
 
 # =========================================================
 # COUPLE ROOM
-# =========================================================
-#
-# One private Couple Chat room belongs to two users.
-#
-# Example:
-#
-# user 10 + user 25
-#        ↓
-# couple room
-#
 # =========================================================
 
 class CoupleRoom(Base):
@@ -71,19 +57,11 @@ class CoupleRoom(Base):
         index=True,
     )
 
-    # -----------------------------------------------------
-    # Room status
-    # -----------------------------------------------------
-
     is_active = Column(
         Boolean,
         default=True,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # Relationship metadata
-    # -----------------------------------------------------
 
     relationship_started_at = Column(
         DateTime,
@@ -121,13 +99,6 @@ class CoupleRoom(Base):
 
 # =========================================================
 # COUPLE MESSAGE
-# =========================================================
-#
-# Real Couple Chat messages.
-#
-# Text / image / video / audio / file
-# can all use this table.
-#
 # =========================================================
 
 class CoupleMessage(Base):
@@ -183,13 +154,6 @@ class CoupleMessage(Base):
 
     # -----------------------------------------------------
     # Message type
-    #
-    # text
-    # image
-    # video
-    # audio
-    # file
-    # system
     # -----------------------------------------------------
 
     message_type = Column(
@@ -199,7 +163,7 @@ class CoupleMessage(Base):
     )
 
     # -----------------------------------------------------
-    # Reply support
+    # Reply
     # -----------------------------------------------------
 
     reply_to_message_id = Column(
@@ -226,9 +190,6 @@ class CoupleMessage(Base):
 
     # -----------------------------------------------------
     # AI metadata
-    #
-    # These fields store the AI analysis attached
-    # to the actual user message.
     # -----------------------------------------------------
 
     ai_mode = Column(
@@ -255,6 +216,10 @@ class CoupleMessage(Base):
         String(50),
         nullable=True,
     )
+
+    # -----------------------------------------------------
+    # Timestamps
+    # -----------------------------------------------------
 
     created_at = Column(
         DateTime,
@@ -295,14 +260,6 @@ class CoupleMessage(Base):
 # =========================================================
 # MESSAGE RECEIPT
 # =========================================================
-#
-# Handles:
-#
-# ✓  Sent
-# ✓✓ Delivered
-# ✓✓ Seen
-#
-# =========================================================
 
 class CoupleMessageReceipt(Base):
 
@@ -327,7 +284,7 @@ class CoupleMessageReceipt(Base):
     )
 
     # -----------------------------------------------------
-    # Delivery
+    # Delivered
     # -----------------------------------------------------
 
     delivered = Column(
@@ -342,7 +299,7 @@ class CoupleMessageReceipt(Base):
     )
 
     # -----------------------------------------------------
-    # Seen / Read
+    # Seen
     # -----------------------------------------------------
 
     seen = Column(
@@ -355,6 +312,10 @@ class CoupleMessageReceipt(Base):
         DateTime,
         nullable=True,
     )
+
+    # -----------------------------------------------------
+    # Timestamps
+    # -----------------------------------------------------
 
     created_at = Column(
         DateTime,
@@ -388,12 +349,6 @@ class CoupleMessageReceipt(Base):
 # =========================================================
 # COUPLE PRESENCE
 # =========================================================
-#
-# Real online/offline state.
-#
-# WebSocket manager updates this.
-#
-# =========================================================
 
 class CouplePresence(Base):
 
@@ -412,19 +367,11 @@ class CouplePresence(Base):
         index=True,
     )
 
-    # -----------------------------------------------------
-    # Online state
-    # -----------------------------------------------------
-
     is_online = Column(
         Boolean,
         default=False,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # Last activity
-    # -----------------------------------------------------
 
     last_seen_at = Column(
         DateTime,
@@ -435,10 +382,6 @@ class CouplePresence(Base):
         DateTime,
         nullable=True,
     )
-
-    # -----------------------------------------------------
-    # Current Couple room
-    # -----------------------------------------------------
 
     current_room_id = Column(
         Integer,
@@ -456,19 +399,6 @@ class CouplePresence(Base):
 
 # =========================================================
 # COUPLE MEMORY
-# =========================================================
-#
-# Long-term relationship memories.
-#
-# Examples:
-#
-# "First met on 14 February"
-# "Favorite song"
-# "Favorite place"
-#
-# AI can use these later for personalized
-# conversation.
-#
 # =========================================================
 
 class CoupleMemory(Base):
@@ -493,10 +423,6 @@ class CoupleMemory(Base):
         index=True,
     )
 
-    # -----------------------------------------------------
-    # Memory
-    # -----------------------------------------------------
-
     memory_type = Column(
         String(50),
         nullable=False,
@@ -512,10 +438,6 @@ class CoupleMemory(Base):
         Text,
         nullable=False,
     )
-
-    # -----------------------------------------------------
-    # AI relevance
-    # -----------------------------------------------------
 
     importance = Column(
         Float,
@@ -560,22 +482,6 @@ class CoupleMemory(Base):
 
 # =========================================================
 # COUPLE AI EVENT
-# =========================================================
-#
-# Stores AI analysis events.
-#
-# IMPORTANT:
-# Do NOT store API keys here.
-#
-# This table is for:
-#
-# emotion
-# intent
-# mode
-# intensity
-# theme
-# AI response metadata
-#
 # =========================================================
 
 class CoupleAIEvent(Base):
@@ -665,8 +571,6 @@ class CoupleAIEvent(Base):
 
     # -----------------------------------------------------
     # Provider metadata
-    #
-    # Never store API keys.
     # -----------------------------------------------------
 
     provider = Column(
@@ -676,4 +580,56 @@ class CoupleAIEvent(Base):
 
     model = Column(
         String(100),
-        nullable
+        nullable=True,
+    )
+
+    processing_time_ms = Column(
+        Integer,
+        nullable=True,
+    )
+
+    # -----------------------------------------------------
+    # Result
+    # -----------------------------------------------------
+
+    success = Column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    error_message = Column(
+        Text,
+        nullable=True,
+    )
+
+    # -----------------------------------------------------
+    # Timestamp
+    # -----------------------------------------------------
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=utcnow,
+        index=True,
+    )
+
+    __table_args__ = (
+
+        Index(
+            "ix_couple_ai_event_room_created",
+            "room_id",
+            "created_at",
+        ),
+
+        Index(
+            "ix_couple_ai_event_message",
+            "message_id",
+        ),
+
+        Index(
+            "ix_couple_ai_event_user_created",
+            "user_id",
+            "created_at",
+        ),
+    )
