@@ -385,7 +385,13 @@
 
     /* =====================================================
        STATE
+       IMPORTANT:
+       currentUserId is declared BEFORE loadMessages()
+       because local storage normalization can call
+       isOwnMessage().
     ====================================================== */
+
+    let currentUserId = null;
 
     let currentMode =
         localStorage.getItem(
@@ -549,10 +555,6 @@
             return false;
         }
 
-        /*
-         * If backend gives room_id and we know current room,
-         * strictly use the room.
-         */
 
         if (
             currentRoomId &&
@@ -570,10 +572,6 @@
 
         }
 
-        /*
-         * Fallback:
-         * message must involve current partner.
-         */
 
         if (partner.id) {
 
@@ -978,6 +976,15 @@
                 onMessage:
                     handleRealtimeMessage,
 
+                /*
+                 * v4 supports a separate history callback.
+                 * Keeping it here makes this chat compatible
+                 * whether history arrives through onConnection
+                 * or onHistory.
+                 */
+                onHistory:
+                    handleRealtimeHistory,
+
                 onReceipt:
                     handleRealtimeReceipt,
 
@@ -1008,20 +1015,36 @@
         }
 
 
-        /*
-         * Backend sends:
-         *
-         * {
-         *   type:"connected",
-         *   room:{id:123},
-         *   partner_online:true
-         * }
-         */
-
         if (
             data.type === "connected" ||
             data.connected === true
         ) {
+
+            /*
+             * IMPORTANT FIX:
+             *
+             * The backend authenticates the user through
+             * the HTTP-only session cookie and sends:
+             *
+             * data.user.id
+             *
+             * We use that ID as the authoritative current
+             * user ID instead of depending only on
+             * localStorage.
+             */
+
+            if (
+                data.user &&
+                data.user.id !== null &&
+                data.user.id !== undefined &&
+                data.user.id !== ""
+            ) {
+
+                currentUserId =
+                    data.user.id;
+
+            }
+
 
             setConnectionState(true);
 
@@ -1072,8 +1095,8 @@
 
 
             /*
-             * Some realtime versions send history
-             * inside connection event.
+             * Some realtime versions include history
+             * inside the connected event.
              */
 
             if (
@@ -1099,6 +1122,69 @@
 
 
     /* =====================================================
+       REALTIME HISTORY
+    ====================================================== */
+
+    function handleRealtimeHistory(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        /*
+         * v4 can pass either:
+         *
+         * [message, message, ...]
+         *
+         * or:
+         *
+         * {
+         *   room_id,
+         *   messages:[...]
+         * }
+         */
+
+        if (Array.isArray(data)) {
+
+            mergeServerMessages(
+                data
+            );
+
+            return;
+
+        }
+
+
+        if (
+            data.room_id &&
+            currentRoomId === null
+        ) {
+
+            currentRoomId =
+                data.room_id;
+
+        }
+
+
+        if (
+            Array.isArray(
+                data.messages
+            )
+        ) {
+
+            mergeServerMessages(
+                data.messages
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
        REALTIME MESSAGE
     ====================================================== */
 
@@ -1110,20 +1196,6 @@
             return;
         }
 
-
-        /*
-         * Backend directly sends:
-         *
-         * {
-         *   type:"message",
-         *   message_id,
-         *   client_message_id,
-         *   room_id,
-         *   sender_id,
-         *   receiver_id,
-         *   ...
-         * }
-         */
 
         const incoming =
             data.message ||
@@ -1142,10 +1214,19 @@
 
 
         /*
-         * VERY IMPORTANT:
-         * Do not allow another couple room's
-         * message to appear here.
+         * currentUserId should already be received
+         * from the connected event.
+         *
+         * Re-evaluate ownership here as an extra safety
+         * measure before rendering the message.
          */
+
+        normalized.is_mine =
+            isOwnMessageByUserId(
+                normalized,
+                currentUserId
+            );
+
 
         if (
             !belongsToCurrentChat(
@@ -1181,6 +1262,16 @@
                 normalized
             );
 
+            /*
+             * After merge, make ownership authoritative
+             * from current authenticated user.
+             */
+            existing.is_mine =
+                isOwnMessageByUserId(
+                    existing,
+                    currentUserId
+                );
+
             applyPendingReceipt(
                 existing
             );
@@ -1188,6 +1279,27 @@
             saveMessages();
 
             renderMessages();
+
+            /*
+             * If this was the server echo of our own
+             * optimistic message, don't send delivery/read
+             * receipts back to ourselves.
+             */
+
+            if (
+                !existing.is_mine &&
+                existing.id
+            ) {
+
+                realtime?.sendDelivered(
+                    existing.id
+                );
+
+                realtime?.sendRead(
+                    existing.id
+                );
+
+            }
 
             return;
 
@@ -1330,9 +1442,17 @@
         };
 
 
+        /*
+         * Do NOT trust an old/stale is_mine flag from
+         * localStorage or another client.
+         *
+         * If currentUserId is available, it is authoritative.
+         */
+
         normalized.is_mine =
-            isOwnMessage(
-                normalized
+            isOwnMessageByUserId(
+                normalized,
+                currentUserId
             );
 
 
@@ -1407,10 +1527,6 @@
 
         /*
          * 3. Fallback reconciliation
-         *
-         * This handles the case where the backend
-         * sends the database message ID but the
-         * optimistic message only has client_id.
          */
 
         if (
@@ -1504,10 +1620,30 @@
             );
 
 
+        /*
+         * Keep optimistic client ID if source doesn't
+         * contain one.
+         */
+
+        const oldClientId =
+            target.client_id;
+
+
         Object.assign(
             target,
             source
         );
+
+
+        if (
+            !target.client_id &&
+            oldClientId
+        ) {
+
+            target.client_id =
+                oldClientId;
+
+        }
 
 
         /*
@@ -1540,19 +1676,15 @@
 
 
         /*
-         * Keep optimistic client id if server
-         * response doesn't contain one.
+         * Always use authenticated current user when
+         * determining message ownership.
          */
 
-        if (
-            !target.client_id &&
-            source.client_id
-        ) {
-
-            target.client_id =
-                source.client_id;
-
-        }
+        target.is_mine =
+            isOwnMessageByUserId(
+                target,
+                currentUserId
+            );
 
     }
 
@@ -1585,10 +1717,27 @@
                     );
 
 
+                normalized.is_mine =
+                    isOwnMessageByUserId(
+                        normalized,
+                        currentUserId
+                    );
+
+
                 if (
                     !belongsToCurrentChat(
                         normalized
                     )
+                ) {
+
+                    return;
+
+                }
+
+
+                if (
+                    normalized.message_type ===
+                    "system"
                 ) {
 
                     return;
@@ -1711,11 +1860,6 @@
                     )
             );
 
-
-        /*
-         * If message is not yet present, save receipt.
-         * It will be applied when server message arrives.
-         */
 
         if (!message) {
 
@@ -2685,31 +2829,44 @@
        OWN MESSAGE
     ====================================================== */
 
-    function isOwnMessage(
-        message
+    function isOwnMessageByUserId(
+        message,
+        userId
     ) {
 
         if (
-            typeof message.is_mine ===
-            "boolean"
+            userId === null ||
+            userId === undefined ||
+            userId === ""
         ) {
 
-            return message.is_mine;
+            /*
+             * If authenticated ID is not available yet,
+             * use the existing explicit flag only as a
+             * temporary fallback.
+             */
+
+            return (
+                typeof message?.is_mine ===
+                "boolean"
+                    ? message.is_mine
+                    : false
+            );
 
         }
 
 
-        const current =
-            getCurrentUserId();
-
-
         if (
-            !current ||
-            message.sender_id === null ||
-            message.sender_id === undefined
+            message?.sender_id === null ||
+            message?.sender_id === undefined
         ) {
 
-            return false;
+            return (
+                typeof message?.is_mine ===
+                "boolean"
+                    ? message.is_mine
+                    : false
+            );
 
         }
 
@@ -2719,8 +2876,24 @@
                 message.sender_id
             ) ===
             String(
-                current
+                userId
             )
+        );
+
+    }
+
+
+    function isOwnMessage(
+        message
+    ) {
+
+        return isOwnMessageByUserId(
+            message,
+            currentUserId !== null &&
+            currentUserId !== undefined &&
+            currentUserId !== ""
+                ? currentUserId
+                : getCurrentUserId()
         );
 
     }
@@ -2743,6 +2916,7 @@
             connected
                 ? "Connected"
                 : "Reconnecting...";
+
 
         connectionStatus.classList.toggle(
             "connected",
@@ -3986,6 +4160,13 @@
         file
     ) {
 
+        /*
+         * NOTE:
+         * blob: URL is local to this browser.
+         * A real media upload endpoint will be needed
+         * later so the partner can see uploaded images.
+         */
+
         const localUrl =
             URL.createObjectURL(
                 file
@@ -4268,6 +4449,28 @@
     ====================================================== */
 
     function getCurrentUserId() {
+
+        /*
+         * FIRST PRIORITY:
+         * Authenticated user ID received from backend
+         * through WebSocket connected event.
+         */
+
+        if (
+            currentUserId !== null &&
+            currentUserId !== undefined &&
+            currentUserId !== ""
+        ) {
+
+            return currentUserId;
+
+        }
+
+
+        /*
+         * FALLBACK:
+         * Existing localStorage implementation.
+         */
 
         const keys = [
             "user_id",
