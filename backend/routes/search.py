@@ -1,3 +1,8 @@
+# =========================================================
+# USANEX — SEARCH ROUTES
+# backend/routes/search.py
+# =========================================================
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -11,6 +16,10 @@ from ..database.models import (
 from .auth import get_current_user_from_request
 
 
+# =========================================================
+# ROUTER
+# =========================================================
+
 router = APIRouter(
     prefix="/api/search",
     tags=["Search"],
@@ -22,9 +31,11 @@ router = APIRouter(
 #
 # Search by:
 # - Name
-# - Username
 # - User ID
 # - Mobile Number
+#
+# Username support:
+# - Automatically used if User model has username field
 #
 # Connection status:
 # - self
@@ -38,41 +49,38 @@ router = APIRouter(
 @router.get("/people")
 def search_people(
     request: Request,
+
     q: str = Query(
         default="",
         min_length=1,
         max_length=100,
     ),
+
     limit: int = Query(
         default=20,
         ge=1,
         le=50,
     ),
+
     offset: int = Query(
         default=0,
         ge=0,
     ),
+
     db: Session = Depends(get_db),
 ):
+
     """
     Search Usanex users.
 
-    Search fields:
-        - name
-        - username
-        - user_id
-        - mobile
+    Supported search:
+        - Name
+        - User ID
+        - Mobile number
+        - Username if available in User model
 
-    Every returned user contains the connection status
-    relative to the currently logged-in user.
-
-    Possible statuses:
-        self
-        none
-        pending_sent
-        pending_received
-        connected
-        rejected
+    Returns connection status relative to
+    currently logged-in user.
     """
 
     # =====================================================
@@ -85,21 +93,27 @@ def search_people(
     )
 
     if current_user is None:
+
         raise HTTPException(
             status_code=401,
             detail="Authentication required",
         )
 
+
     # =====================================================
     # CLEAN SEARCH TEXT
     # =====================================================
 
-    search_text = q.strip()
+    search_text = (q or "").strip()
+
 
     if not search_text:
+
         return {
             "success": True,
+            "ok": True,
             "users": [],
+            "results": [],
             "pagination": {
                 "limit": limit,
                 "offset": offset,
@@ -107,7 +121,59 @@ def search_people(
             },
         }
 
+
     search_pattern = f"%{search_text}%"
+
+
+    # =====================================================
+    # SEARCH FILTERS
+    #
+    # IMPORTANT:
+    # Current User model has:
+    #   user_id
+    #   name
+    #   mobile
+    #   profile_photo
+    #
+    # Username is added ONLY if model supports it.
+    # =====================================================
+
+    search_filters = [
+
+        User.name.ilike(
+            search_pattern
+        ),
+
+        User.user_id.ilike(
+            search_pattern
+        ),
+
+        User.mobile.ilike(
+            search_pattern
+        ),
+
+    ]
+
+
+    # -----------------------------------------------------
+    # OPTIONAL USERNAME
+    # -----------------------------------------------------
+
+    username_column = getattr(
+        User,
+        "username",
+        None,
+    )
+
+
+    if username_column is not None:
+
+        search_filters.append(
+            username_column.ilike(
+                search_pattern
+            )
+        )
+
 
     # =====================================================
     # FIND USERS
@@ -117,10 +183,7 @@ def search_people(
         db.query(User)
         .filter(
             or_(
-                User.name.ilike(search_pattern),
-                User.username.ilike(search_pattern),
-                User.mobile.ilike(search_pattern),
-                User.user_id.ilike(search_pattern),
+                *search_filters
             )
         )
         .order_by(
@@ -131,7 +194,9 @@ def search_people(
         .all()
     )
 
+
     result_users = []
+
 
     # =====================================================
     # BUILD RESULT
@@ -145,33 +210,59 @@ def search_people(
 
         if user.id == current_user.id:
 
-            result_users.append(
-                {
-                    "username": user.username,
-                    "user_id": user.user_id,
-                    "name": user.name,
-                    "profile_photo": user.profile_photo,
-
-                    "connection_status": "self",
-
-                    "is_self": True,
-                    "is_connected": False,
-                    "request_sent": False,
-                    "request_received": False,
-                }
+            user_username = getattr(
+                user,
+                "username",
+                None,
             )
+
+            result_users.append({
+
+                "username":
+                    user_username
+                    or user.user_id,
+
+                "user_id":
+                    user.user_id,
+
+                "name":
+                    user.name,
+
+                "profile_photo":
+                    user.profile_photo,
+
+                "connection_status":
+                    "self",
+
+                "is_self":
+                    True,
+
+                "is_connected":
+                    False,
+
+                "request_sent":
+                    False,
+
+                "request_received":
+                    False,
+
+            })
 
             continue
 
+
         # =================================================
-        # DEFAULT VALUES
+        # DEFAULT CONNECTION VALUES
         # =================================================
 
         connection_status = "none"
 
         is_connected = False
+
         request_sent = False
+
         request_received = False
+
 
         # =================================================
         # STEP 1
@@ -181,24 +272,32 @@ def search_people(
         connection = (
             db.query(UserConnection)
             .filter(
-                UserConnection.status == "connected",
+
+                UserConnection.status
+                == "connected",
+
                 or_(
+
                     (
                         UserConnection.user_one_id
                         == current_user.id
                     )
-                    & (
+                    &
+                    (
                         UserConnection.user_two_id
                         == user.id
                     ),
+
                     (
                         UserConnection.user_one_id
                         == user.id
                     )
-                    & (
+                    &
+                    (
                         UserConnection.user_two_id
                         == current_user.id
                     ),
+
                 ),
             )
             .order_by(
@@ -207,26 +306,31 @@ def search_people(
             .first()
         )
 
+
         if connection is not None:
 
             is_connected = True
+
             connection_status = "connected"
+
 
         else:
 
             # =============================================
             # STEP 2
-            # CHECK CURRENT USER'S LATEST REQUEST
+            # OUTGOING REQUEST
             # =============================================
 
             outgoing_request = (
                 db.query(ConnectionRequest)
                 .filter(
+
                     ConnectionRequest.sender_id
                     == current_user.id,
 
                     ConnectionRequest.receiver_id
                     == user.id,
+
                 )
                 .order_by(
                     ConnectionRequest.id.desc()
@@ -234,19 +338,22 @@ def search_people(
                 .first()
             )
 
+
             # =============================================
             # STEP 3
-            # CHECK OTHER USER'S LATEST REQUEST
+            # INCOMING REQUEST
             # =============================================
 
             incoming_request = (
                 db.query(ConnectionRequest)
                 .filter(
+
                     ConnectionRequest.sender_id
                     == user.id,
 
                     ConnectionRequest.receiver_id
                     == current_user.id,
+
                 )
                 .order_by(
                     ConnectionRequest.id.desc()
@@ -254,61 +361,91 @@ def search_people(
                 .first()
             )
 
-            # =================================================
-            # PRIORITY:
-            #
-            # pending incoming/outgoing
-            # > rejected
-            # > none
-            #
-            # This prevents an old rejected request from
-            # overriding a new active request.
-            # =================================================
+
+            # =============================================
+            # PENDING OUTGOING
+            # =============================================
 
             if (
+
                 outgoing_request is not None
-                and outgoing_request.status == "pending"
+
+                and
+
+                outgoing_request.status
+                == "pending"
+
             ):
 
                 request_sent = True
-                connection_status = "pending_sent"
+
+                connection_status = (
+                    "pending_sent"
+                )
+
+
+            # =============================================
+            # PENDING INCOMING
+            # =============================================
 
             elif (
+
                 incoming_request is not None
-                and incoming_request.status == "pending"
+
+                and
+
+                incoming_request.status
+                == "pending"
+
             ):
 
                 request_received = True
-                connection_status = "pending_received"
+
+                connection_status = (
+                    "pending_received"
+                )
+
 
             else:
 
-                # =============================================
-                # CHECK LATEST REJECTION
-                #
-                # If either side has a latest rejected request,
-                # Search will show Rejected.
-                # =============================================
-
-                rejected_request = None
+                # =========================================
+                # CHECK REJECTED
+                # =========================================
 
                 candidates = []
 
+
                 if (
+
                     outgoing_request is not None
-                    and outgoing_request.status == "rejected"
+
+                    and
+
+                    outgoing_request.status
+                    == "rejected"
+
                 ):
+
                     candidates.append(
                         outgoing_request
                     )
 
+
                 if (
+
                     incoming_request is not None
-                    and incoming_request.status == "rejected"
+
+                    and
+
+                    incoming_request.status
+                    == "rejected"
+
                 ):
+
                     candidates.append(
                         incoming_request
                     )
+
 
                 if candidates:
 
@@ -317,54 +454,98 @@ def search_people(
                         key=lambda item: item.id,
                     )
 
-                if rejected_request is not None:
+                    if rejected_request:
 
-                    connection_status = "rejected"
+                        connection_status = (
+                            "rejected"
+                        )
 
                 else:
 
                     connection_status = "none"
 
-        # =====================================================
-        # APPEND USER
-        # =====================================================
 
-        result_users.append(
-            {
-                "username": user.username,
-                "user_id": user.user_id,
-                "name": user.name,
-                "profile_photo": user.profile_photo,
+        # =================================================
+        # USERNAME
+        # =================================================
 
-                "connection_status":
-                    connection_status,
-
-                "is_self":
-                    False,
-
-                "is_connected":
-                    is_connected,
-
-                "request_sent":
-                    request_sent,
-
-                "request_received":
-                    request_received,
-            }
+        user_username = getattr(
+            user,
+            "username",
+            None,
         )
+
+
+        # =================================================
+        # APPEND USER
+        # =================================================
+
+        result_users.append({
+
+            "username":
+                user_username
+                or user.user_id,
+
+            "user_id":
+                user.user_id,
+
+            "name":
+                user.name,
+
+            "mobile":
+                user.mobile,
+
+            "profile_photo":
+                user.profile_photo,
+
+            "profile_picture":
+                user.profile_photo,
+
+            "connection_status":
+                connection_status,
+
+            "is_self":
+                False,
+
+            "is_connected":
+                is_connected,
+
+            "request_sent":
+                request_sent,
+
+            "request_received":
+                request_received,
+
+        })
+
 
     # =====================================================
     # RESPONSE
     # =====================================================
 
     return {
+
         "success": True,
 
-        "users": result_users,
+        "ok": True,
+
+        "users":
+            result_users,
+
+        "results":
+            result_users,
 
         "pagination": {
-            "limit": limit,
-            "offset": offset,
-            "count": len(result_users),
+
+            "limit":
+                limit,
+
+            "offset":
+                offset,
+
+            "count":
+                len(result_users),
+
         },
+
     }
