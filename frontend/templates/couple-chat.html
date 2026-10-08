@@ -11,12 +11,7 @@
 
     <meta
         name="theme-color"
-        content="#080b18"
-    >
-
-    <meta
-        name="description"
-        content="Usanex Couple Chat — AI powered private couple experience"
+        content="#090615"
     >
 
     <title>Couple Chat | Usanex</title>
@@ -27,40 +22,15 @@
     >
 </head>
 
+<body data-couple-mode="calm">
 
-<body>
-
-<div
-    class="couple-app"
-    id="coupleApp"
->
-
+<div class="couple-app" id="coupleApp">
 
     <!-- =====================================================
-         AMBIENT BACKGROUND
-    ====================================================== -->
-
-    <div
-        class="couple-background"
-        id="coupleBackground"
-        aria-hidden="true"
-    >
-
-        <div class="ambient-orb orb-one"></div>
-        <div class="ambient-orb orb-two"></div>
-        <div class="ambient-orb orb-three"></div>
-
-    </div>
-
-
-    <!-- =====================================================
-         TOP HEADER
+         COUPLE HEADER
     ====================================================== -->
 
     <header class="couple-header">
-
-
-        <!-- BACK -->
 
         <button
             type="button"
@@ -72,72 +42,59 @@
         </button>
 
 
-        <!-- COUPLE PROFILE -->
-
         <button
             type="button"
-            class="couple-profile-button"
-            id="coupleProfileButton"
-            aria-label="Couple profile"
+            class="couple-avatar-button"
+            id="coupleAvatarButton"
+            aria-label="Open partner profile"
         >
 
-            <div class="couple-avatar-group">
+            <img
+                id="couplePartnerAvatar"
+                src="/static/images/default-profile.png"
+                alt="Partner"
+            >
 
-                <img
-                    id="partnerAvatar"
-                    src="/static/images/default-profile.png"
-                    alt="Partner"
-                >
-
-                <span
-                    class="couple-heart-badge"
-                    aria-hidden="true"
-                >
-                    ♥
-                </span>
-
-            </div>
-
-
-            <div class="couple-header-info">
-
-                <strong id="partnerName">
-                    Your Partner
-                </strong>
-
-                <span id="coupleStatus">
-                    Couple Space
-                </span>
-
-            </div>
+            <span
+                class="couple-online-dot"
+                id="coupleOnlineDot"
+                hidden
+            ></span>
 
         </button>
 
 
-        <!-- HEADER ACTIONS -->
+        <div class="couple-header-info">
+
+            <strong
+                id="couplePartnerName"
+            >
+                Partner
+            </strong>
+
+            <span
+                id="couplePartnerStatus"
+            >
+                Your Couple Space
+            </span>
+
+        </div>
+
 
         <div class="couple-header-actions">
 
-
-            <!-- AI -->
-
             <button
                 type="button"
-                class="header-action-button ai-button"
-                id="aiButton"
-                aria-label="Couple AI"
+                id="coupleMoodButton"
+                aria-label="Change mood"
             >
-                ✦
+                😊
             </button>
 
-
-            <!-- MENU -->
-
             <button
                 type="button"
-                class="header-action-button"
                 id="coupleMenuButton"
-                aria-label="Couple menu"
+                aria-label="More options"
             >
                 ⋮
             </button>
@@ -148,175 +105,142 @@
 
 
     <!-- =====================================================
-         COUPLE STATUS BAR
+         DYNAMIC MOOD BAR
     ====================================================== -->
 
     <section
-        class="couple-status-bar"
-        id="coupleStatusBar"
+        class="couple-mood-bar"
+        id="coupleMoodBar"
     >
 
-        <div class="relationship-status">
+        <div class="couple-mood-icon" id="coupleMoodIcon">
+            😌
+        </div>
 
-            <span class="status-heart">
-                ♥
+        <div class="couple-mood-info">
+
+            <span class="couple-mood-label">
+                Current Mood
             </span>
 
-            <span>
-                Together
-            </span>
-
-            <strong id="relationshipDays">
-                0 days
+            <strong id="coupleMoodName">
+                Calm
             </strong>
 
         </div>
 
-
         <button
             type="button"
-            class="mood-button"
-            id="moodButton"
+            class="couple-mood-change"
+            id="coupleMoodChangeButton"
         >
-
-            <span id="currentMoodEmoji">
-                😊
-            </span>
-
-            <span id="currentMoodText">
-                Mood
-            </span>
-
+            Change
         </button>
 
     </section>
 
 
     <!-- =====================================================
-         MAIN COUPLE CHAT
-    ====================================================== -->
-
-    <main
-        class="couple-conversation"
-        id="coupleConversation"
-    >
-
-
-        <!-- AI WELCOME -->
-
-        <section
-            class="ai-welcome-card"
-            id="aiWelcomeCard"
-        >
-
-            <div class="ai-welcome-icon">
-                ✦
-            </div>
-
-            <div class="ai-welcome-content">
-
-                <strong>
-                    Usanex Couple AI
-                </strong>
-
-                <p>
-                    Your private space for meaningful
-                    conversations, memories and moments.
-                </p>
-
-            </div>
-
-            <button
-                type="button"
-                id="dismissAiWelcome"
-                aria-label="Close"
-            >
-                ×
-            </button>
-
-        </section>
-
-
-        <!-- DAY -->
-
-        <div class="couple-day-label">
-            Today
-        </div>
-
-
-        <!-- MESSAGES -->
-
-        <section
-            class="couple-messages"
-            id="coupleMessages"
-            aria-live="polite"
-        >
-
-            <!--
-                Messages will be inserted here
-                by couple-chat.js
-            -->
-
-        </section>
-
-
-        <!-- AI TYPING -->
-
-        <div
-            class="ai-typing"
-            id="aiTyping"
-            hidden
-        >
-
-            <div class="ai-typing-avatar">
-                ✦
-            </div>
-
-            <div class="ai-typing-bubble">
-
-                <span></span>
-                <span></span>
-                <span></span>
-
-            </div>
-
-            <small>
-                Couple AI
-            </small>
-
-        </div>
-
-
-        <!-- EMOTION EFFECT -->
-
-        <div
-            class="emotion-overlay"
-            id="emotionOverlay"
-            aria-hidden="true"
-        >
-
-            <span>♥</span>
-            <span>♥</span>
-            <span>♥</span>
-            <span>♥</span>
-
-        </div>
-
-    </main>
-
-
-    <!-- =====================================================
-         QUICK COUPLE ACTIONS
+         AI COUPLE PANEL
     ====================================================== -->
 
     <section
-        class="quick-actions"
-        id="quickActions"
+        class="couple-ai-panel"
+        id="coupleAiPanel"
+    >
+
+        <div class="couple-ai-icon">
+            ✨
+        </div>
+
+        <div class="couple-ai-content">
+
+            <strong>
+                Usanex Couple AI
+            </strong>
+
+            <span id="coupleAiStatus">
+                Understanding your conversation...
+            </span>
+
+        </div>
+
+        <button
+            type="button"
+            class="couple-ai-button"
+            id="coupleAiButton"
+            aria-label="Open Couple AI"
+        >
+            ✨
+        </button>
+
+    </section>
+
+
+    <!-- =====================================================
+         RELATIONSHIP INFO
+    ====================================================== -->
+
+    <section
+        class="couple-info-card"
+        id="coupleInfoCard"
+    >
+
+        <div class="couple-info-item">
+
+            <span class="couple-info-icon">
+                ❤️
+            </span>
+
+            <div>
+                <small>
+                    Together
+                </small>
+
+                <strong id="coupleTogetherDays">
+                    Just started
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="couple-info-divider"></div>
+
+
+        <div class="couple-info-item">
+
+            <span class="couple-info-icon">
+                💕
+            </span>
+
+            <div>
+                <small>
+                    Connection
+                </small>
+
+                <strong id="coupleConnectionStatus">
+                    Growing
+                </strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         QUICK ACTIONS
+    ====================================================== -->
+
+    <section
+        class="couple-quick-actions"
+        id="coupleQuickActions"
     >
 
         <button
             type="button"
-            class="quick-action"
+            class="couple-action"
             data-action="love"
         >
             <span>❤️</span>
@@ -326,7 +250,7 @@
 
         <button
             type="button"
-            class="quick-action"
+            class="couple-action"
             data-action="memory"
         >
             <span>📸</span>
@@ -336,7 +260,7 @@
 
         <button
             type="button"
-            class="quick-action"
+            class="couple-action"
             data-action="question"
         >
             <span>💭</span>
@@ -346,38 +270,339 @@
 
         <button
             type="button"
-            class="quick-action"
+            class="couple-action"
             data-action="game"
         >
             <span>🎮</span>
             <small>Game</small>
         </button>
 
-
-        <button
-            type="button"
-            class="quick-action"
-            data-action="ai"
-        >
-            <span>✦</span>
-            <small>AI</small>
-        </button>
-
     </section>
 
 
     <!-- =====================================================
-         MESSAGE COMPOSER
+         CONVERSATION
+    ====================================================== -->
+
+    <main
+        class="couple-conversation"
+        id="coupleConversation"
+    >
+
+        <div
+            class="couple-background-layer"
+            id="coupleBackgroundLayer"
+            aria-hidden="true"
+        ></div>
+
+
+        <div
+            class="couple-effects-layer"
+            id="coupleEffectsLayer"
+            aria-hidden="true"
+        ></div>
+
+
+        <div
+            class="couple-day-label"
+            id="coupleDayLabel"
+        >
+            Today
+        </div>
+
+
+        <section
+            class="couple-messages"
+            id="coupleMessages"
+            aria-live="polite"
+        >
+
+            <!-- Messages will be inserted by couple-chat.js -->
+
+        </section>
+
+
+        <!-- AI SUGGESTIONS -->
+
+        <section
+            class="couple-suggestions"
+            id="coupleSuggestions"
+            hidden
+        >
+
+            <div class="couple-suggestions-title">
+                AI Suggestions
+            </div>
+
+            <div
+                class="couple-suggestion-list"
+                id="coupleSuggestionList"
+            ></div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         MOOD PANEL
+    ====================================================== -->
+
+    <div
+        class="couple-overlay hidden"
+        id="coupleMoodOverlay"
+    >
+
+        <section
+            class="couple-mood-panel"
+            id="coupleMoodPanel"
+        >
+
+            <div class="couple-panel-header">
+
+                <div>
+                    <small>
+                        Couple Mood
+                    </small>
+
+                    <h2>
+                        Choose your mood
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="closeMoodPanel"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div
+                class="couple-mood-grid"
+                id="coupleMoodGrid"
+            >
+
+                <button data-mode="romantic">
+                    ❤️
+                    <span>Romantic</span>
+                </button>
+
+                <button data-mode="deep-love">
+                    🥰
+                    <span>Deep Love</span>
+                </button>
+
+                <button data-mode="happy">
+                    😊
+                    <span>Happy</span>
+                </button>
+
+                <button data-mode="funny">
+                    😂
+                    <span>Funny</span>
+                </button>
+
+                <button data-mode="sad">
+                    😢
+                    <span>Sad</span>
+                </button>
+
+                <button data-mode="emotional">
+                    😭
+                    <span>Emotional</span>
+                </button>
+
+                <button data-mode="angry">
+                    😠
+                    <span>Angry</span>
+                </button>
+
+                <button data-mode="frustrated">
+                    😤
+                    <span>Frustrated</span>
+                </button>
+
+                <button data-mode="caring">
+                    🤗
+                    <span>Caring</span>
+                </button>
+
+                <button data-mode="comfort">
+                    🫂
+                    <span>Comfort</span>
+                </button>
+
+                <button data-mode="flirty">
+                    😘
+                    <span>Flirty</span>
+                </button>
+
+                <button data-mode="passionate">
+                    🔥
+                    <span>Passionate</span>
+                </button>
+
+                <button data-mode="good-night">
+                    🌙
+                    <span>Good Night</span>
+                </button>
+
+                <button data-mode="good-morning">
+                    ☀️
+                    <span>Good Morning</span>
+                </button>
+
+                <button data-mode="memory">
+                    💭
+                    <span>Memory</span>
+                </button>
+
+                <button data-mode="celebration">
+                    🥳
+                    <span>Celebration</span>
+                </button>
+
+                <button data-mode="birthday">
+                    🎂
+                    <span>Birthday</span>
+                </button>
+
+                <button data-mode="future">
+                    💍
+                    <span>Future</span>
+                </button>
+
+                <button data-mode="missing-you">
+                    🫶
+                    <span>Missing You</span>
+                </button>
+
+                <button data-mode="apology">
+                    😔
+                    <span>Apology</span>
+                </button>
+
+                <button data-mode="appreciation">
+                    💕
+                    <span>Appreciation</span>
+                </button>
+
+                <button data-mode="game">
+                    🎮
+                    <span>Game</span>
+                </button>
+
+                <button data-mode="photo-memory">
+                    📸
+                    <span>Photos</span>
+                </button>
+
+                <button data-mode="serious">
+                    🤔
+                    <span>Serious Talk</span>
+                </button>
+
+                <button data-mode="deep-talk">
+                    🧠
+                    <span>Deep Talk</span>
+                </button>
+
+                <button data-mode="calm">
+                    😌
+                    <span>Calm</span>
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         AI PANEL
+    ====================================================== -->
+
+    <div
+        class="couple-overlay hidden"
+        id="coupleAiOverlay"
+    >
+
+        <section class="couple-ai-modal">
+
+            <div class="couple-panel-header">
+
+                <div>
+                    <small>
+                        Usanex AI
+                    </small>
+
+                    <h2>
+                        Couple Assistant
+                    </h2>
+                </div>
+
+                <button
+                    type="button"
+                    id="closeAiPanel"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="couple-ai-options">
+
+                <button data-ai-action="suggest">
+                    💬
+                    <span>
+                        Suggest a reply
+                    </span>
+                </button>
+
+                <button data-ai-action="love">
+                    ❤️
+                    <span>
+                        Make it romantic
+                    </span>
+                </button>
+
+                <button data-ai-action="comfort">
+                    🫂
+                    <span>
+                        Help me comfort them
+                    </span>
+                </button>
+
+                <button data-ai-action="game">
+                    🎮
+                    <span>
+                        Start a couple game
+                    </span>
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- =====================================================
+         COMPOSER
     ====================================================== -->
 
     <footer class="couple-composer-area">
 
-
-        <!-- TYPING STATUS -->
-
         <div
-            class="partner-typing"
-            id="partnerTyping"
+            class="couple-typing"
+            id="coupleTyping"
             hidden
         >
             Partner is typing...
@@ -389,47 +614,41 @@
             id="coupleComposer"
         >
 
-
-            <!-- ATTACH -->
-
             <button
                 type="button"
-                class="composer-button"
-                id="coupleAttachButton"
-                aria-label="Attach"
+                id="coupleEmojiButton"
+                aria-label="Emoji"
             >
-                +
+                😊
             </button>
 
 
-            <!-- TEXT -->
-
-            <div class="message-input-wrapper">
-
-                <textarea
-                    id="coupleMessageInput"
-                    rows="1"
-                    maxlength="4000"
-                    placeholder="Write something..."
-                    autocomplete="off"
-                ></textarea>
+            <input
+                type="text"
+                id="coupleMessageInput"
+                placeholder="Message your partner..."
+                maxlength="4000"
+                autocomplete="off"
+            >
 
 
-                <!-- EMOJI -->
-
-                <button
-                    type="button"
-                    class="emoji-button"
-                    id="coupleEmojiButton"
-                    aria-label="Emoji"
-                >
-                    😊
-                </button>
-
-            </div>
+            <button
+                type="button"
+                id="coupleAttachButton"
+                aria-label="Attach"
+            >
+                📎
+            </button>
 
 
-            <!-- SEND -->
+            <button
+                type="button"
+                id="coupleCameraButton"
+                aria-label="Camera"
+            >
+                📷
+            </button>
+
 
             <button
                 type="submit"
@@ -444,402 +663,19 @@
 
     </footer>
 
-
-    <!-- =====================================================
-         AI PANEL
-    ====================================================== -->
-
-    <aside
-        class="ai-panel hidden"
-        id="aiPanel"
-        aria-hidden="true"
-    >
-
-        <div class="ai-panel-header">
-
-            <div>
-
-                <span class="ai-panel-icon">
-                    ✦
-                </span>
-
-                <div>
-
-                    <strong>
-                        Couple AI
-                    </strong>
-
-                    <small>
-                        Your conversation companion
-                    </small>
-
-                </div>
-
-            </div>
-
-
-            <button
-                type="button"
-                id="closeAiPanel"
-                aria-label="Close AI"
-            >
-                ×
-            </button>
-
-        </div>
-
-
-        <div class="ai-panel-body">
-
-
-            <button
-                type="button"
-                class="ai-suggestion"
-                data-ai-action="reply"
-            >
-
-                <span>
-                    💬
-                </span>
-
-                <div>
-
-                    <strong>
-                        Help me reply
-                    </strong>
-
-                    <small>
-                        Suggest a natural response
-                    </small>
-
-                </div>
-
-            </button>
-
-
-            <button
-                type="button"
-                class="ai-suggestion"
-                data-ai-action="question"
-            >
-
-                <span>
-                    💕
-                </span>
-
-                <div>
-
-                    <strong>
-                        Couple question
-                    </strong>
-
-                    <small>
-                        Start a meaningful conversation
-                    </small>
-
-                </div>
-
-            </button>
-
-
-            <button
-                type="button"
-                class="ai-suggestion"
-                data-ai-action="date"
-            >
-
-                <span>
-                    ✨
-                </span>
-
-                <div>
-
-                    <strong>
-                        Date idea
-                    </strong>
-
-                    <small>
-                        Get an activity suggestion
-                    </small>
-
-                </div>
-
-            </button>
-
-
-            <button
-                type="button"
-                class="ai-suggestion"
-                data-ai-action="memory"
-            >
-
-                <span>
-                    📖
-                </span>
-
-                <div>
-
-                    <strong>
-                        Create memory
-                    </strong>
-
-                    <small>
-                        Save this moment
-                    </small>
-
-                </div>
-
-            </button>
-
-        </div>
-
-    </aside>
-
-
-    <!-- =====================================================
-         MOOD PANEL
-    ====================================================== -->
-
-    <div
-        class="mood-panel hidden"
-        id="moodPanel"
-    >
-
-        <div class="mood-panel-box">
-
-            <div class="panel-title-row">
-
-                <strong>
-                    How are you feeling?
-                </strong>
-
-                <button
-                    type="button"
-                    id="closeMoodPanel"
-                >
-                    ×
-                </button>
-
-            </div>
-
-
-            <div class="mood-grid">
-
-                <button
-                    type="button"
-                    data-mood="happy"
-                    data-emoji="😊"
-                >
-                    😊
-                    <small>Happy</small>
-                </button>
-
-
-                <button
-                    type="button"
-                    data-mood="love"
-                    data-emoji="❤️"
-                >
-                    ❤️
-                    <small>In Love</small>
-                </button>
-
-
-                <button
-                    type="button"
-                    data-mood="excited"
-                    data-emoji="🤩"
-                >
-                    🤩
-                    <small>Excited</small>
-                </button>
-
-
-                <button
-                    type="button"
-                    data-mood="calm"
-                    data-emoji="😌"
-                >
-                    😌
-                    <small>Calm</small>
-                </button>
-
-
-                <button
-                    type="button"
-                    data-mood="sad"
-                    data-emoji="🥺"
-                >
-                    🥺
-                    <small>Missing You</small>
-                </button>
-
-
-                <button
-                    type="button"
-                    data-mood="playful"
-                    data-emoji="😜"
-                >
-                    😜
-                    <small>Playful</small>
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         COUPLE MENU
-    ====================================================== -->
-
-    <div
-        class="couple-menu hidden"
-        id="coupleMenu"
-    >
-
-        <div class="couple-menu-panel">
-
-            <div class="couple-menu-title">
-                Couple Space
-            </div>
-
-
-            <button
-                type="button"
-                id="coupleProfileOption"
-            >
-                💕 Couple Profile
-            </button>
-
-
-            <button
-                type="button"
-                id="memoriesOption"
-            >
-                📸 Memories
-            </button>
-
-
-            <button
-                type="button"
-                id="activitiesOption"
-            >
-                🎮 Couple Activities
-            </button>
-
-
-            <button
-                type="button"
-                id="privacyOption"
-            >
-                🔒 Privacy
-            </button>
-
-
-            <button
-                type="button"
-                id="leaveCoupleOption"
-                class="danger-option"
-            >
-                Leave Couple Chat
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         ATTACHMENT MENU
-    ====================================================== -->
-
-    <div
-        class="attachment-sheet hidden"
-        id="attachmentSheet"
-    >
-
-        <div class="attachment-box">
-
-            <div class="panel-title-row">
-
-                <strong>
-                    Share something
-                </strong>
-
-                <button
-                    type="button"
-                    id="closeAttachment"
-                >
-                    ×
-                </button>
-
-            </div>
-
-
-            <div class="attachment-options">
-
-                <button
-                    type="button"
-                    id="photoAttachment"
-                >
-                    📷
-                    <span>
-                        Photo
-                    </span>
-                </button>
-
-
-                <button
-                    type="button"
-                    id="videoAttachment"
-                >
-                    🎥
-                    <span>
-                        Video
-                    </span>
-                </button>
-
-
-                <button
-                    type="button"
-                    id="voiceAttachment"
-                >
-                    🎙️
-                    <span>
-                        Voice
-                    </span>
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         HIDDEN FILE INPUTS
-    ====================================================== -->
-
-    <input
-        type="file"
-        id="couplePhotoInput"
-        accept="image/*"
-        hidden
-    >
-
-    <input
-        type="file"
-        id="coupleVideoInput"
-        accept="video/*"
-        hidden
-    >
-
-
 </div>
+
+
+<!-- =====================================================
+     FILE INPUT
+====================================================== -->
+
+<input
+    type="file"
+    id="coupleFileInput"
+    hidden
+    multiple
+>
 
 
 <!-- =====================================================
