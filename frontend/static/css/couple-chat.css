@@ -1,28 +1,44 @@
 /* =========================================================
    USANEX COUPLE CHAT
-   FINAL PREMIUM DYNAMIC UI
-   Version 5.0
+   PREMIUM MOBILE-FIRST UI
+   VERSION 3.0
    ========================================================= */
 
 :root {
+    --couple-bg: #090615;
+    --couple-bg-2: #12091c;
 
-    --usanex-blue: #1877F2;
-    --usanex-blue-light: #38BDF8;
-    --usanex-blue-dark: #0B3D91;
+    --couple-primary: #ff3f9f;
+    --couple-secondary: #b44cff;
+    --couple-accent: #ff75c8;
 
-    --pink: #ff2f9d;
-    --purple: #9b3cff;
+    --couple-text: #ffffff;
+    --couple-muted: rgba(255,255,255,.62);
+    --couple-soft: rgba(255,255,255,.10);
 
-    --bg: #070a12;
-    --panel: rgba(255,255,255,0.055);
-    --border: rgba(255,255,255,0.11);
+    --couple-card: rgba(255,255,255,.055);
+    --couple-card-strong: rgba(255,255,255,.09);
 
-    --text: #ffffff;
-    --muted: rgba(255,255,255,0.58);
+    --couple-border: rgba(255,255,255,.12);
 
-    --couple-intensity: 0.55;
+    --couple-user-bubble: linear-gradient(
+        135deg,
+        #ff399c 0%,
+        #c94cff 100%
+    );
 
-    --header-height: 53px;
+    --couple-partner-bubble: rgba(255,255,255,.09);
+
+    --couple-shadow:
+        0 10px 40px rgba(0,0,0,.28);
+
+    --couple-radius: 22px;
+
+    --header-height: 70px;
+    --top-row-height: 94px;
+    --info-height: 64px;
+    --quick-height: 74px;
+    --composer-height: 78px;
 }
 
 /* =========================================================
@@ -31,6 +47,8 @@
 
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -38,15 +56,11 @@ html,
 body {
     width: 100%;
     height: 100%;
-
-    margin: 0;
-    padding: 0;
-
+    min-height: 100%;
     overflow: hidden;
 }
 
 body {
-
     font-family:
         Inter,
         -apple-system,
@@ -56,13 +70,21 @@ body {
         Arial,
         sans-serif;
 
-    color: var(--text);
-
     background:
-        #070a12;
+        radial-gradient(
+            circle at 50% 0%,
+            rgba(255, 50, 155, .13),
+            transparent 38%
+        ),
+        linear-gradient(
+            180deg,
+            var(--couple-bg-2),
+            var(--couple-bg)
+        );
 
-    transition:
-        background 0.8s ease;
+    color: var(--couple-text);
+
+    overscroll-behavior: none;
 }
 
 button,
@@ -70,16 +92,26 @@ input {
     font: inherit;
 }
 
+button {
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
 /* =========================================================
-   APP
+   MAIN APP
    ========================================================= */
 
 .couple-app {
+    position: relative;
 
     width: 100%;
     height: 100dvh;
-
-    min-height: 0;
+    min-height: 100dvh;
 
     display: flex;
     flex-direction: column;
@@ -87,24 +119,73 @@ input {
     overflow: hidden;
 
     background:
-
         radial-gradient(
-            circle at 85% 10%,
-            rgba(24,119,242,0.16),
+            circle at 85% 30%,
+            rgba(255, 50, 170, .08),
             transparent 35%
         ),
-
         radial-gradient(
-            circle at 10% 80%,
-            rgba(56,189,248,0.08),
-            transparent 38%
+            circle at 15% 80%,
+            rgba(130, 70, 255, .08),
+            transparent 40%
         ),
+        linear-gradient(
+            180deg,
+            var(--couple-bg-2),
+            var(--couple-bg)
+        );
 
-        #070a12;
+    isolation: isolate;
 
     transition:
-        background 1s ease,
-        box-shadow 1s ease;
+        background .8s ease,
+        color .5s ease;
+}
+
+/* =========================================================
+   BACKGROUND EFFECT
+   ========================================================= */
+
+.couple-app::before {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at 20% 20%,
+            rgba(255,255,255,.035),
+            transparent 25%
+        ),
+        radial-gradient(
+            circle at 80% 70%,
+            rgba(255,255,255,.025),
+            transparent 30%
+        );
+
+    z-index: -3;
+}
+
+.couple-app::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            115deg,
+            transparent 0%,
+            rgba(255,255,255,.015) 45%,
+            transparent 70%
+        );
+
+    z-index: -2;
 }
 
 /* =========================================================
@@ -112,651 +193,542 @@ input {
    ========================================================= */
 
 .couple-header {
+    flex: 0 0 var(--header-height);
 
-    flex:
-        0 0 var(--header-height);
+    width: 100%;
 
-    height:
-        var(--header-height);
+    display: flex;
+    align-items: center;
 
-    min-height:
-        var(--header-height);
+    gap: 9px;
 
     padding:
-        3px 8px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        7px;
+        6px
+        10px;
 
     background:
-        rgba(7,10,18,0.96);
+        rgba(7, 6, 18, .82);
 
     border-bottom:
-        1px solid rgba(24,119,242,0.20);
+        1px solid var(--couple-border);
 
-    backdrop-filter:
-        blur(18px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 
-    z-index:
-        30;
+    z-index: 50;
 }
 
-.couple-back-button,
-.couple-avatar-button,
-.couple-header-actions button {
-
-    border:
-        1px solid rgba(24,119,242,0.22);
-
-    background:
-        rgba(24,119,242,0.08);
-
-    color:
-        white;
-
-    cursor:
-        pointer;
-}
+/* back */
 
 .couple-back-button {
+    flex: 0 0 52px;
 
-    width:
-        37px;
+    width: 52px;
+    height: 52px;
 
-    height:
-        37px;
+    border-radius: 50%;
 
-    flex:
-        0 0 37px;
+    display: grid;
+    place-items: center;
 
-    padding:
-        0;
+    font-size: 36px;
+    line-height: 1;
 
-    border-radius:
-        50%;
+    background:
+        rgba(255,255,255,.055);
 
-    display:
-        flex;
+    border:
+        1px solid var(--couple-border);
 
-    align-items:
-        center;
+    box-shadow:
+        0 5px 20px rgba(0,0,0,.20);
 
-    justify-content:
-        center;
-
-    font-size:
-        30px;
-
-    line-height:
-        30px;
+    transition:
+        transform .2s ease,
+        background .2s ease;
 }
 
+.couple-back-button:active {
+    transform: scale(.91);
+}
+
+/* avatar */
+
 .couple-avatar-button {
+    position: relative;
 
-    position:
-        relative;
+    flex: 0 0 52px;
 
-    width:
-        40px;
+    width: 52px;
+    height: 52px;
 
-    height:
-        40px;
+    border-radius: 50%;
 
-    flex:
-        0 0 40px;
+    overflow: hidden;
 
-    padding:
-        0;
+    background:
+        rgba(255,255,255,.06);
 
-    border-radius:
-        50%;
-
-    overflow:
-        hidden;
+    border:
+        2px solid rgba(255,255,255,.25);
 }
 
 .couple-avatar-button img {
+    width: 100%;
+    height: 100%;
 
-    width:
-        100%;
+    object-fit: cover;
 
-    height:
-        100%;
-
-    object-fit:
-        cover;
-
-    display:
-        block;
+    display: block;
 }
 
 .couple-online-dot {
+    position: absolute;
 
-    position:
-        absolute;
+    right: 2px;
+    bottom: 2px;
 
-    right:
-        1px;
+    width: 12px;
+    height: 12px;
 
-    bottom:
-        1px;
+    border-radius: 50%;
 
-    width:
-        10px;
+    background: #42e98b;
 
-    height:
-        10px;
+    border: 2px solid #090615;
 
-    border-radius:
-        50%;
-
-    background:
-        #2eea78;
-
-    border:
-        2px solid #080b13;
+    box-shadow:
+        0 0 10px rgba(66,233,139,.8);
 }
 
+/* header information */
+
 .couple-header-info {
+    min-width: 0;
+    flex: 1;
 
-    min-width:
-        0;
+    display: flex;
+    flex-direction: column;
 
-    flex:
-        1;
+    justify-content: center;
 
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    justify-content:
-        center;
-
-    overflow:
-        hidden;
+    overflow: hidden;
 }
 
 .couple-header-info strong {
+    font-size: 20px;
+    line-height: 23px;
 
-    font-size:
-        15px;
+    font-weight: 750;
 
-    line-height:
-        17px;
-
-    white-space:
-        nowrap;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .couple-header-info span {
+    margin-top: 1px;
 
-    font-size:
-        9px;
+    color: var(--couple-muted);
 
-    line-height:
-        11px;
+    font-size: 12px;
+    line-height: 16px;
 
-    color:
-        var(--muted);
-
-    white-space:
-        nowrap;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* header buttons */
+
 .couple-header-actions {
+    flex: 0 0 auto;
 
-    display:
-        flex;
+    display: flex;
+    align-items: center;
 
-    gap:
-        4px;
+    gap: 7px;
 }
 
 .couple-header-actions button {
+    width: 50px;
+    height: 50px;
 
-    width:
-        36px;
+    display: grid;
+    place-items: center;
 
-    height:
-        36px;
+    border-radius: 50%;
 
-    padding:
-        0;
+    font-size: 25px;
 
-    border-radius:
-        50%;
+    background:
+        rgba(255,255,255,.055);
 
-    font-size:
-        18px;
+    border:
+        1px solid var(--couple-border);
+
+    box-shadow:
+        0 5px 18px rgba(0,0,0,.18);
+
+    transition: transform .2s ease;
+}
+
+.couple-header-actions button:active {
+    transform: scale(.9);
 }
 
 /* =========================================================
-   TOP ROW
-   MOOD + AI
+   TOP MOOD + AI ROW
+   IMPORTANT: 50% / 50%
    ========================================================= */
 
 .couple-mood-bar,
 .couple-ai-panel {
+    position: relative;
 
-    height:
-        54px;
+    flex: 0 0 var(--top-row-height);
 
-    min-height:
-        54px;
+    min-width: 0;
 
-    margin-top:
-        5px;
-
-    border-radius:
-        17px;
+    min-height: 0;
 
     border:
-        1px solid rgba(24,119,242,0.20);
+        1px solid var(--couple-border);
 
-    overflow:
-        hidden;
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.07),
+            rgba(255,255,255,.035)
+        );
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.16);
+
+    overflow: hidden;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
-/* Mood */
+/*
+   These two sections are siblings.
+   Put them in the same row.
+*/
 
 .couple-mood-bar {
-
-    flex:
-        0 0 calc(50% - 10px);
-
-    width:
-        calc(50% - 10px);
-
-    margin-left:
-        6px;
-
-    margin-right:
-        4px;
-
-    padding:
-        5px 7px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        6px;
-
-    background:
-
-        linear-gradient(
-            110deg,
-            rgba(24,119,242,0.18),
-            rgba(11,61,145,0.08)
-        );
-
-    transition:
-        background 0.8s ease,
-        border-color 0.8s ease;
+    margin-left: 10px;
 }
-
-/* AI */
 
 .couple-ai-panel {
-
-    position:
-        absolute;
-
-    top:
-        calc(var(--header-height) + 5px);
-
-    right:
-        6px;
-
-    width:
-        calc(50% - 4px);
-
-    padding:
-        5px 7px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        5px;
-
-    background:
-
-        linear-gradient(
-            110deg,
-            rgba(24,119,242,0.18),
-            rgba(56,189,248,0.07)
-        );
-
-    transition:
-        background 0.8s ease,
-        border-color 0.8s ease;
+    margin-right: 10px;
 }
 
-.couple-mood-icon,
-.couple-ai-icon {
+/*
+   Parent is not available around these two sections,
+   therefore use display: contents trick through
+   .couple-mood-bar itself is NOT enough.
 
-    width:
-        35px;
+   We make the app top sections participate using
+   absolute/flex positioning below.
+*/
 
-    height:
-        35px;
+.couple-mood-bar {
+    width: calc(50% - 15px);
 
-    flex:
-        0 0 35px;
+    align-self: flex-start;
 
-    border-radius:
-        11px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    background:
-        rgba(24,119,242,0.14);
-
-    font-size:
-        19px;
+    margin-top: 12px;
 }
 
-.couple-mood-info,
-.couple-ai-content {
+.couple-ai-panel {
+    width: calc(50% - 15px);
 
-    min-width:
-        0;
+    align-self: flex-end;
 
-    flex:
-        1;
+    margin-top: -94px;
+}
 
-    display:
-        flex;
+/* mood content */
 
-    flex-direction:
-        column;
+.couple-mood-bar {
+    display: flex;
+    align-items: center;
 
-    justify-content:
-        center;
+    padding: 10px 12px;
+}
+
+.couple-mood-icon {
+    flex: 0 0 54px;
+
+    width: 54px;
+    height: 54px;
+
+    border-radius: 17px;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 28px;
+
+    background:
+        rgba(255,255,255,.075);
+
+    box-shadow:
+        inset 0 0 20px rgba(255,255,255,.025);
+}
+
+.couple-mood-info {
+    min-width: 0;
+    flex: 1;
+
+    margin-left: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
 }
 
 .couple-mood-label {
+    color: var(--couple-muted);
 
-    font-size:
-        7px;
+    font-size: 10px;
 
-    line-height:
-        9px;
+    text-transform: uppercase;
 
-    letter-spacing:
-        0.8px;
+    letter-spacing: 1px;
 
-    color:
-        var(--muted);
-
-    text-transform:
-        uppercase;
+    line-height: 13px;
 }
 
 .couple-mood-info strong {
+    margin-top: 2px;
 
-    font-size:
-        13px;
+    font-size: 18px;
+    line-height: 21px;
 
-    line-height:
-        15px;
+    font-weight: 750;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .couple-mood-change {
+    flex: 0 0 auto;
 
-    height:
-        32px;
+    min-width: 72px;
+    height: 48px;
 
-    padding:
-        0 9px;
+    padding: 0 12px;
 
-    border-radius:
-        10px;
-
-    border:
-        1px solid rgba(24,119,242,0.22);
-
-    color:
-        white;
+    border-radius: 15px;
 
     background:
-        rgba(24,119,242,0.10);
-
-    font-size:
-        9px;
-
-    cursor:
-        pointer;
-}
-
-.couple-ai-content strong {
-
-    font-size:
-        11px;
-
-    line-height:
-        14px;
-
-    white-space:
-        nowrap;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
-}
-
-.couple-ai-content span {
-
-    font-size:
-        7px;
-
-    line-height:
-        10px;
-
-    color:
-        var(--muted);
-
-    white-space:
-        nowrap;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
-}
-
-.couple-ai-button {
-
-    width:
-        32px;
-
-    height:
-        32px;
-
-    flex:
-        0 0 32px;
-
-    padding:
-        0;
-
-    border-radius:
-        50%;
+        rgba(255,255,255,.07);
 
     border:
-        1px solid rgba(24,119,242,0.22);
+        1px solid rgba(255,255,255,.14);
 
-    color:
-        white;
+    font-size: 13px;
 
-    background:
-        rgba(24,119,242,0.10);
+    color: rgba(255,255,255,.88);
 
-    font-size:
-        16px;
+    transition:
+        background .2s ease,
+        transform .2s ease;
+}
 
-    cursor:
-        pointer;
+.couple-mood-change:active {
+    transform: scale(.94);
 }
 
 /* =========================================================
-   INFO
+   COUPLE AI PANEL
+   ========================================================= */
+
+.couple-ai-panel {
+    display: flex;
+    align-items: center;
+
+    padding: 10px;
+}
+
+.couple-ai-icon {
+    flex: 0 0 50px;
+
+    width: 50px;
+    height: 50px;
+
+    border-radius: 16px;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 26px;
+
+    background:
+        rgba(255,255,255,.07);
+}
+
+.couple-ai-content {
+    min-width: 0;
+    flex: 1;
+
+    margin-left: 9px;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+
+    overflow: hidden;
+}
+
+.couple-ai-content strong {
+    font-size: 15px;
+    line-height: 19px;
+
+    font-weight: 750;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.couple-ai-content span {
+    margin-top: 2px;
+
+    color: var(--couple-muted);
+
+    font-size: 10px;
+    line-height: 14px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.couple-ai-button {
+    flex: 0 0 46px;
+
+    width: 46px;
+    height: 46px;
+
+    border-radius: 50%;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 21px;
+
+    background:
+        rgba(255,255,255,.06);
+
+    border:
+        1px solid rgba(255,255,255,.12);
+
+    transition: transform .2s ease;
+}
+
+.couple-ai-button:active {
+    transform: scale(.9);
+}
+
+/* =========================================================
+   SPACE BETWEEN TOP ROW AND INFO
    ========================================================= */
 
 .couple-info-card {
+    flex: 0 0 var(--info-height);
 
-    flex:
-        0 0 40px;
-
-    min-height:
-        40px;
-
-    height:
-        40px;
+    width: calc(100% - 20px);
 
     margin:
-        5px 6px 0;
+        10px
+        10px
+        0;
 
     padding:
-        4px 9px;
+        8px
+        12px;
 
-    display:
-        flex;
+    display: flex;
+    align-items: center;
 
-    align-items:
-        center;
-
-    border-radius:
-        15px;
-
-    border:
-        1px solid rgba(24,119,242,0.14);
+    border-radius: 20px;
 
     background:
-        rgba(24,119,242,0.045);
+        rgba(255,255,255,.055);
+
+    border:
+        1px solid var(--couple-border);
+
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+
+    overflow: hidden;
 }
 
 .couple-info-item {
+    min-width: 0;
+    flex: 1;
 
-    flex:
-        1;
+    display: flex;
+    align-items: center;
 
-    min-width:
-        0;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        6px;
+    gap: 9px;
 }
 
 .couple-info-icon {
+    flex: 0 0 auto;
 
-    font-size:
-        18px;
+    font-size: 28px;
 }
 
 .couple-info-item div {
+    min-width: 0;
 
-    min-width:
-        0;
-
-    display:
-        flex;
-
-    flex-direction:
-        column;
+    display: flex;
+    flex-direction: column;
 }
 
 .couple-info-item small {
+    color: var(--couple-muted);
 
-    font-size:
-        7px;
+    font-size: 9px;
 
-    line-height:
-        8px;
+    text-transform: uppercase;
 
-    letter-spacing:
-        0.8px;
+    letter-spacing: 1px;
 
-    color:
-        var(--muted);
-
-    text-transform:
-        uppercase;
+    line-height: 12px;
 }
 
 .couple-info-item strong {
+    margin-top: 2px;
 
-    font-size:
-        10px;
+    font-size: 14px;
+    line-height: 18px;
 
-    line-height:
-        12px;
-
-    white-space:
-        nowrap;
-
-    overflow:
-        hidden;
-
-    text-overflow:
-        ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .couple-info-divider {
+    width: 1px;
+    height: 32px;
 
-    width:
-        1px;
-
-    height:
-        24px;
-
-    margin:
-        0 7px;
+    flex: 0 0 1px;
 
     background:
-        rgba(255,255,255,0.12);
+        rgba(255,255,255,.14);
+
+    margin: 0 12px;
 }
 
 /* =========================================================
@@ -764,85 +736,66 @@ input {
    ========================================================= */
 
 .couple-quick-actions {
+    flex: 0 0 var(--quick-height);
 
-    flex:
-        0 0 42px;
-
-    min-height:
-        42px;
-
-    height:
-        42px;
+    width: calc(100% - 20px);
 
     margin:
-        4px 6px 2px;
+        8px
+        10px
+        0;
 
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
-        repeat(4, 1fr);
+        repeat(4, minmax(0, 1fr));
 
-    gap:
-        5px;
+    gap: 8px;
 }
 
 .couple-action {
+    min-width: 0;
 
-    border:
-        1px solid rgba(24,119,242,0.14);
+    height: 100%;
 
-    border-radius:
-        13px;
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 3px;
+
+    border-radius: 18px;
 
     background:
-        rgba(24,119,242,0.045);
+        rgba(255,255,255,.045);
 
-    color:
-        white;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    gap:
-        4px;
-
-    cursor:
-        pointer;
+    border:
+        1px solid var(--couple-border);
 
     transition:
-        transform 0.2s ease,
-        background 0.2s ease;
+        transform .2s ease,
+        background .2s ease;
 }
 
 .couple-action:active {
-
-    transform:
-        scale(0.96);
+    transform: scale(.94);
 
     background:
-        rgba(24,119,242,0.15);
+        rgba(255,255,255,.09);
 }
 
 .couple-action span {
-
-    font-size:
-        14px;
+    font-size: 25px;
+    line-height: 27px;
 }
 
 .couple-action small {
+    color: var(--couple-muted);
 
-    font-size:
-        7px;
-
-    color:
-        rgba(255,255,255,0.62);
+    font-size: 10px;
+    line-height: 13px;
 }
 
 /* =========================================================
@@ -850,368 +803,352 @@ input {
    ========================================================= */
 
 .couple-conversation {
+    position: relative;
 
-    position:
-        relative;
+    flex: 1 1 auto;
 
-    flex:
-        1 1 auto;
+    min-height: 0;
 
-    min-height:
-        0;
+    width: 100%;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    display:
-        flex;
+    display: flex;
+    flex-direction: column;
+}
 
-    flex-direction:
-        column;
+/* background layer */
+
+.couple-background-layer {
+    position: absolute;
+    inset: 0;
+
+    pointer-events: none;
+
+    z-index: 0;
+
+    opacity: 1;
 
     background:
-
         radial-gradient(
-            circle at 80% 20%,
-            rgba(24,119,242,0.08),
-            transparent 34%
+            circle at 80% 15%,
+            rgba(255,60,170,.10),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 20% 85%,
+            rgba(120,60,255,.08),
+            transparent 35%
         );
 
     transition:
-        background 1s ease;
+        background 1s ease,
+        opacity .8s ease;
 }
 
-.couple-background-layer {
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    pointer-events:
-        none;
-}
+/* effects */
 
 .couple-effects-layer {
+    position: absolute;
+    inset: 0;
 
-    position:
-        absolute;
+    pointer-events: none;
 
-    inset:
-        0;
+    overflow: hidden;
 
-    overflow:
-        hidden;
-
-    pointer-events:
-        none;
-
-    z-index:
-        2;
+    z-index: 2;
 }
+
+/* =========================================================
+   DAY LABEL
+   ========================================================= */
 
 .couple-day-label {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 5;
 
-    z-index:
-        5;
+    flex: 0 0 auto;
 
-    align-self:
-        center;
-
-    flex:
-        0 0 auto;
+    align-self: center;
 
     margin:
-        2px 0 3px;
-
-    padding:
-        4px 10px;
-
-    border-radius:
-        20px;
-
-    background:
-        rgba(255,255,255,0.045);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    color:
-        rgba(255,255,255,0.45);
-
-    font-size:
-        8px;
-}
-
-.couple-messages {
-
-    position:
-        relative;
-
-    z-index:
-        4;
-
-    flex:
-        1 1 auto;
-
-    min-height:
+        8px
         0;
 
-    width:
-        100%;
-
     padding:
-        2px 10px 7px;
+        6px
+        15px;
 
-    overflow-y:
-        auto;
+    border-radius: 20px;
 
-    overflow-x:
-        hidden;
+    background:
+        rgba(255,255,255,.065);
 
-    scrollbar-width:
-        none;
+    border:
+        1px solid rgba(255,255,255,.08);
 
-    overscroll-behavior:
-        contain;
+    color:
+        rgba(255,255,255,.55);
 
-    -webkit-overflow-scrolling:
-        touch;
-}
+    font-size: 11px;
 
-.couple-messages::-webkit-scrollbar {
-    display:
-        none;
+    backdrop-filter: blur(12px);
 }
 
 /* =========================================================
    MESSAGES
    ========================================================= */
 
-.couple-message {
+.couple-messages {
+    position: relative;
 
-    width:
-        100%;
+    z-index: 4;
 
-    display:
-        flex;
+    flex: 1 1 auto;
 
-    margin:
-        4px 0;
-}
+    min-height: 0;
 
-.couple-message.me {
-    justify-content:
-        flex-end;
-}
+    width: 100%;
 
-.couple-message.partner {
-    justify-content:
-        flex-start;
-}
-
-.couple-message-bubble {
-
-    max-width:
-        min(82%, 350px);
+    overflow-y: auto;
+    overflow-x: hidden;
 
     padding:
-        8px 11px;
+        2px
+        16px
+        12px;
 
-    border-radius:
-        17px;
+    scroll-behavior: smooth;
 
-    font-size:
-        14px;
+    scrollbar-width: none;
+}
 
-    line-height:
-        19px;
+.couple-messages::-webkit-scrollbar {
+    display: none;
+}
 
-    word-break:
-        break-word;
+/* message */
+
+.couple-message {
+    width: 100%;
+
+    display: flex;
+
+    margin:
+        5px 0;
+}
+
+.couple-message.mine {
+    justify-content: flex-end;
+}
+
+.couple-message.theirs {
+    justify-content: flex-start;
+}
+
+/* bubble */
+
+.couple-message-bubble {
+    max-width: min(82%, 430px);
+
+    padding:
+        10px
+        13px;
+
+    border-radius: 18px;
+
+    font-size: 15px;
+
+    line-height: 1.4;
+
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
 
     box-shadow:
-        0 6px 22px rgba(0,0,0,0.17);
+        0 5px 20px rgba(0,0,0,.14);
 
     animation:
-        message-in 0.25s ease;
+        coupleMessageIn .25s ease;
 }
 
-@keyframes message-in {
-
-    from {
-        opacity:
-            0;
-
-        transform:
-            translateY(7px) scale(0.98);
-    }
-
-    to {
-        opacity:
-            1;
-
-        transform:
-            translateY(0) scale(1);
-    }
-}
-
-.couple-message.me
-.couple-message-bubble {
-
-    border-bottom-right-radius:
-        5px;
+.couple-message.mine .couple-message-bubble {
+    color: #fff;
 
     background:
+        var(--couple-user-bubble);
 
-        linear-gradient(
-            135deg,
-            #1877F2,
-            #38BDF8
-        );
-
-    box-shadow:
-        0 7px 23px rgba(24,119,242,0.23);
+    border-bottom-right-radius: 6px;
 }
 
-.couple-message.partner
-.couple-message-bubble {
-
-    border-bottom-left-radius:
-        5px;
+.couple-message.theirs .couple-message-bubble {
+    color:
+        rgba(255,255,255,.92);
 
     background:
-        rgba(255,255,255,0.075);
+        var(--couple-partner-bubble);
 
     border:
-        1px solid rgba(255,255,255,0.08);
+        1px solid rgba(255,255,255,.07);
+
+    border-bottom-left-radius: 6px;
 }
 
 .couple-message-time {
+    display: block;
 
-    display:
-        block;
+    margin-top: 4px;
 
-    margin-top:
-        3px;
+    text-align: right;
 
-    text-align:
-        right;
+    font-size: 9px;
 
-    font-size:
-        7px;
+    line-height: 11px;
 
-    opacity:
-        0.55;
+    opacity: .58;
+}
+
+.couple-message-status {
+    margin-left: 3px;
+
+    font-size: 10px;
+}
+
+/* images */
+
+.couple-message-bubble img {
+    display: block;
+
+    max-width: 100%;
+
+    border-radius: 13px;
+
+    margin-bottom: 4px;
 }
 
 /* =========================================================
-   SUGGESTIONS
+   AI SUGGESTIONS
    ========================================================= */
 
 .couple-suggestions {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 10;
 
-    z-index:
-        6;
+    flex: 0 0 auto;
 
-    flex:
-        0 0 auto;
+    width: calc(100% - 28px);
 
     margin:
-        0 10px 4px;
+        0
+        14px
+        8px;
 
     padding:
-        7px 9px;
+        8px
+        8px
+        9px;
 
-    border-radius:
-        16px;
+    border-radius: 20px;
 
     background:
-        rgba(255,255,255,0.045);
+        rgba(255,255,255,.055);
 
     border:
-        1px solid rgba(255,255,255,0.09);
+        1px solid rgba(255,255,255,.12);
 
-    backdrop-filter:
-        blur(12px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 
-    overflow:
-        hidden;
+    overflow: hidden;
 }
 
 .couple-suggestions-title {
-
-    margin-bottom:
-        5px;
-
-    font-size:
-        8px;
-
-    letter-spacing:
-        1px;
-
-    text-transform:
-        uppercase;
+    padding:
+        0
+        6px
+        6px;
 
     color:
-        rgba(255,255,255,0.40);
+        rgba(255,255,255,.48);
+
+    font-size: 10px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
 }
 
 .couple-suggestion-list {
+    width: 100%;
 
-    display:
-        flex;
+    display: flex;
 
-    gap:
-        7px;
+    gap: 8px;
 
-    overflow-x:
-        auto;
+    overflow-x: auto;
 
-    scrollbar-width:
-        none;
+    scrollbar-width: none;
 }
 
 .couple-suggestion-list::-webkit-scrollbar {
-    display:
-        none;
+    display: none;
 }
 
 .couple-suggestion {
+    flex: 0 0 auto;
 
-    flex:
-        0 0 auto;
+    max-width: 78%;
 
-    max-width:
-        260px;
+    min-height: 42px;
 
     padding:
-        7px 11px;
+        8px
+        14px;
 
-    border-radius:
-        20px;
-
-    border:
-        1px solid rgba(24,119,242,0.15);
+    border-radius: 18px;
 
     background:
-        rgba(24,119,242,0.06);
+        rgba(255,255,255,.055);
+
+    border:
+        1px solid rgba(255,255,255,.10);
 
     color:
-        rgba(255,255,255,0.80);
+        rgba(255,255,255,.82);
 
-    font-size:
+    font-size: 12px;
+
+    white-space: nowrap;
+}
+
+/* =========================================================
+   TYPING
+   ========================================================= */
+
+.couple-typing {
+    position: absolute;
+
+    left: 18px;
+    bottom: 5px;
+
+    z-index: 20;
+
+    padding:
+        5px
         10px;
 
-    cursor:
-        pointer;
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.07);
+
+    color:
+        rgba(255,255,255,.60);
+
+    font-size: 10px;
+
+    backdrop-filter: blur(10px);
 }
 
 /* =========================================================
@@ -1219,415 +1156,111 @@ input {
    ========================================================= */
 
 .couple-composer-area {
+    position: relative;
 
-    position:
-        relative;
+    z-index: 40;
 
-    z-index:
-        20;
+    flex: 0 0 var(--composer-height);
 
-    flex:
-        0 0 auto;
+    width: 100%;
 
     padding:
-        4px 8px
-        calc(6px + env(safe-area-inset-bottom, 0px));
+        8px
+        10px
+        calc(8px + env(safe-area-inset-bottom));
 
     background:
+        rgba(7,6,18,.84);
 
-        linear-gradient(
-            180deg,
-            rgba(7,10,18,0),
-            rgba(7,10,18,0.96) 30%,
-            rgba(7,10,18,1)
-        );
-}
+    border-top:
+        1px solid rgba(255,255,255,.08);
 
-.couple-typing {
-
-    position:
-        absolute;
-
-    left:
-        17px;
-
-    bottom:
-        63px;
-
-    font-size:
-        8px;
-
-    color:
-        rgba(255,255,255,0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 .couple-composer {
+    width: 100%;
+    height: 62px;
 
-    min-height:
-        55px;
+    display: flex;
+    align-items: center;
+
+    gap: 5px;
 
     padding:
-        4px;
+        5px 6px;
 
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        4px;
-
-    border-radius:
-        30px;
+    border-radius: 32px;
 
     background:
-        rgba(12,19,34,0.97);
+        rgba(255,255,255,.055);
 
     border:
-        1px solid rgba(24,119,242,0.27);
+        1px solid rgba(255,255,255,.12);
 
     box-shadow:
-        0 8px 32px rgba(0,0,0,0.35);
-
-    backdrop-filter:
-        blur(18px);
+        0 8px 30px rgba(0,0,0,.22);
 }
 
 .couple-composer > button {
+    flex: 0 0 50px;
 
-    width:
-        43px;
+    width: 50px;
+    height: 50px;
 
-    height:
-        43px;
+    border-radius: 50%;
 
-    flex:
-        0 0 43px;
+    display: grid;
+    place-items: center;
 
-    padding:
-        0;
-
-    border:
-        0;
-
-    border-radius:
-        50%;
-
-    color:
-        white;
+    font-size: 23px;
 
     background:
-        rgba(24,119,242,0.09);
+        rgba(255,255,255,.055);
 
-    font-size:
-        20px;
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
 
-    cursor:
-        pointer;
+.couple-composer > button:active {
+    transform: scale(.9);
 }
 
 #coupleMessageInput {
+    min-width: 0;
+    flex: 1;
 
-    flex:
-        1;
+    height: 50px;
 
-    min-width:
-        0;
+    border: 0;
+    outline: none;
 
-    height:
-        43px;
+    background: transparent;
+
+    color: #fff;
+
+    font-size: 17px;
 
     padding:
-        0 5px;
-
-    border:
-        0;
-
-    outline:
-        none;
-
-    background:
-        transparent;
-
-    color:
-        white;
-
-    font-size:
-        14px;
+        0
+        4px;
 }
 
 #coupleMessageInput::placeholder {
-
     color:
-        rgba(255,255,255,0.38);
+        rgba(255,255,255,.40);
 }
 
 .couple-send-button {
-
     background:
+        var(--couple-user-bubble) !important;
 
-        linear-gradient(
-            135deg,
-            #1877F2,
-            #38BDF8
-        ) !important;
+    font-size: 26px !important;
 
     box-shadow:
-        0 5px 19px rgba(24,119,242,0.34);
-}
-
-/* =========================================================
-   EFFECT ITEMS
-   ========================================================= */
-
-.couple-effect-item {
-
-    position:
-        absolute;
-
-    left:
-        var(--x);
-
-    bottom:
-        -40px;
-
-    font-size:
-        var(--size);
-
-    opacity:
-        0;
-
-    animation:
-        effect-float 6s linear infinite;
-
-    animation-delay:
-        var(--delay);
-
-    filter:
-        drop-shadow(
-            0 0 7px
-            rgba(255,255,255,0.15)
-        );
-}
-
-@keyframes effect-float {
-
-    0% {
-        opacity:
-            0;
-
-        transform:
-            translateY(0)
-            translateX(0)
-            rotate(0deg);
-    }
-
-    10% {
-        opacity:
-            0.65;
-    }
-
-    80% {
-        opacity:
-            0.35;
-    }
-
-    100% {
-        opacity:
-            0;
-
-        transform:
-            translateY(-110vh)
-            translateX(
-                calc(
-                    (var(--couple-intensity) * 60px) - 30px
-                )
-            )
-            rotate(35deg);
-    }
-}
-
-.effect-heart {
-    animation-duration:
-        7s;
-}
-
-.effect-soft-heart {
-    animation-duration:
-        8s;
-
-    opacity:
-        0.4;
-}
-
-.effect-star {
-    animation-duration:
-        9s;
-}
-
-.effect-sparkle {
-    animation-duration:
-        4s;
-}
-
-.effect-confetti {
-    animation-duration:
-        5s;
-
-    animation-name:
-        confetti-fall;
-}
-
-@keyframes confetti-fall {
-
-    0% {
-        opacity:
-            0;
-
-        transform:
-            translateY(-10vh)
-            rotate(0deg);
-    }
-
-    10% {
-        opacity:
-            0.9;
-    }
-
-    100% {
-        opacity:
-            0;
-
-        transform:
-            translateY(110vh)
-            rotate(720deg);
-    }
-}
-
-.effect-rain {
-
-    top:
-        -30px;
-
-    bottom:
-        auto;
-
-    animation-name:
-        rain-fall;
-
-    animation-duration:
-        2.5s;
-
-    opacity:
-        0.35;
-}
-
-@keyframes rain-fall {
-
-    from {
-        transform:
-            translateY(-30px);
-        opacity:
-            0;
-    }
-
-    15% {
-        opacity:
-            0.45;
-    }
-
-    to {
-        transform:
-            translateY(110vh);
-        opacity:
-            0;
-    }
-}
-
-.effect-dust {
-
-    animation-duration:
-        10s;
-
-    color:
-        rgba(255,255,255,0.35);
-}
-
-.effect-fire {
-
-    animation-duration:
-        4s;
-}
-
-.effect-game {
-
-    animation-duration:
-        4s;
-}
-
-.effect-camera {
-
-    animation-duration:
-        8s;
-}
-
-.couple-effect-glow {
-
-    position:
-        absolute;
-
-    inset:
-        10%;
-
-    border-radius:
-        50%;
-
-    filter:
-        blur(40px);
-
-    opacity:
-        calc(
-            0.08 +
-            var(--couple-intensity) * 0.12
-        );
-
-    animation:
-        glow-breathe 4s ease-in-out infinite;
-}
-
-.couple-effect-glow.warm-glow {
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(255,160,90,0.9),
-            transparent 65%
-        );
-}
-
-.couple-effect-glow.breathing {
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(56,189,248,0.8),
-            transparent 65%
-        );
-}
-
-@keyframes glow-breathe {
-
-    0%,
-    100% {
-        transform:
-            scale(0.92);
-    }
-
-    50% {
-        transform:
-            scale(1.08);
-    }
+        0 5px 20px rgba(255,60,170,.25);
 }
 
 /* =========================================================
@@ -1635,1217 +1268,1030 @@ input {
    ========================================================= */
 
 .couple-emoji-picker {
+    position: absolute;
 
-    position:
-        fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(var(--composer-height) + 5px);
 
-    left:
-        7px;
+    z-index: 100;
 
-    right:
-        7px;
+    max-height: min(430px, 55dvh);
 
-    bottom:
-        calc(
-            68px +
-            env(safe-area-inset-bottom, 0px)
-        );
+    padding: 10px;
 
-    z-index:
-        90;
-
-    max-height:
-        310px;
-
-    padding:
-        9px;
-
-    border-radius:
-        20px;
+    border-radius: 22px;
 
     background:
-        rgba(13,18,30,0.98);
+        rgba(18,12,30,.97);
 
     border:
-        1px solid rgba(24,119,242,0.22);
+        1px solid rgba(255,255,255,.13);
 
     box-shadow:
-        0 20px 60px rgba(0,0,0,0.50);
+        0 20px 60px rgba(0,0,0,.5);
 
-    backdrop-filter:
-        blur(20px);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
 
-    overflow:
-        hidden;
+    overflow: hidden;
+}
+
+.couple-emoji-search {
+    width: 100%;
+
+    height: 42px;
+
+    border-radius: 15px;
+
+    padding: 0 13px;
+
+    outline: none;
+
+    border:
+        1px solid rgba(255,255,255,.10);
+
+    background:
+        rgba(255,255,255,.06);
+
+    color: #fff;
+
+    margin-bottom: 8px;
+}
+
+.couple-emoji-search::placeholder {
+    color:
+        rgba(255,255,255,.42);
 }
 
 .couple-emoji-tabs {
+    display: flex;
 
-    display:
-        flex;
+    gap: 5px;
 
-    gap:
-        5px;
+    overflow-x: auto;
 
-    overflow-x:
-        auto;
+    scrollbar-width: none;
 
-    scrollbar-width:
-        none;
+    margin-bottom: 8px;
 }
 
 .couple-emoji-tabs::-webkit-scrollbar {
-    display:
-        none;
+    display: none;
 }
 
 .couple-emoji-tabs button {
+    flex: 0 0 auto;
 
-    min-width:
-        35px;
+    width: 38px;
+    height: 34px;
 
-    height:
-        33px;
-
-    padding:
-        0;
-
-    border:
-        0;
-
-    border-radius:
-        9px;
-
-    color:
-        white;
+    border-radius: 12px;
 
     background:
-        rgba(255,255,255,0.05);
+        rgba(255,255,255,.05);
 
-    font-size:
-        16px;
+    font-size: 17px;
 }
 
 .couple-emoji-grid {
-
-    margin-top:
-        7px;
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
-        repeat(8,1fr);
+        repeat(8, 1fr);
 
-    gap:
-        3px;
+    gap: 4px;
 
-    max-height:
-        235px;
+    max-height: 270px;
 
-    overflow-y:
-        auto;
+    overflow-y: auto;
 
-    scrollbar-width:
-        none;
-}
-
-.couple-emoji-grid::-webkit-scrollbar {
-    display:
-        none;
+    scrollbar-width: thin;
 }
 
 .couple-emoji-grid button {
+    aspect-ratio: 1;
 
-    height:
-        36px;
+    display: grid;
+    place-items: center;
 
-    border:
-        0;
+    border-radius: 10px;
 
-    border-radius:
-        8px;
+    background: transparent;
 
-    background:
-        transparent;
+    font-size: 25px;
 
-    font-size:
-        21px;
+    transition:
+        transform .15s ease,
+        background .15s ease;
 }
 
 .couple-emoji-grid button:active {
+    transform: scale(.82);
 
     background:
-        rgba(24,119,242,0.15);
-
-    transform:
-        scale(1.12);
+        rgba(255,255,255,.08);
 }
 
 /* =========================================================
-   OVERLAYS
+   MOOD OVERLAY
    ========================================================= */
 
 .couple-overlay {
+    position: absolute;
 
-    position:
-        fixed;
+    inset: 0;
 
-    inset:
-        0;
+    z-index: 200;
 
-    z-index:
-        100;
+    display: flex;
 
-    display:
-        flex;
-
-    align-items:
-        flex-end;
-
-    justify-content:
-        center;
-
-    padding:
-        10px;
+    align-items: flex-end;
+    justify-content: center;
 
     background:
-        rgba(0,0,0,0.58);
+        rgba(0,0,0,.58);
 
-    backdrop-filter:
-        blur(8px);
-}
-
-.couple-overlay.hidden {
-    display:
-        none;
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
 }
 
 .couple-mood-panel,
 .couple-ai-modal {
+    width: 100%;
 
-    width:
-        100%;
-
-    max-width:
-        520px;
-
-    max-height:
-        80dvh;
-
-    overflow-y:
-        auto;
+    max-height: 88dvh;
 
     padding:
-        16px;
+        18px
+        15px
+        calc(18px + env(safe-area-inset-bottom));
 
     border-radius:
-        24px;
+        28px
+        28px
+        0
+        0;
 
     background:
-        #111827;
+        linear-gradient(
+            180deg,
+            rgba(30,18,43,.98),
+            rgba(12,8,22,.99)
+        );
 
     border:
-        1px solid rgba(24,119,242,0.20);
+        1px solid rgba(255,255,255,.12);
 
     box-shadow:
-        0 -15px 60px rgba(0,0,0,0.55);
+        0 -20px 60px rgba(0,0,0,.45);
+
+    overflow-y: auto;
 }
 
 .couple-panel-header {
+    display: flex;
 
-    display:
-        flex;
+    align-items: center;
+    justify-content: space-between;
 
-    align-items:
-        center;
-
-    justify-content:
-        space-between;
-
-    margin-bottom:
-        13px;
+    margin-bottom: 15px;
 }
 
 .couple-panel-header small {
-
-    font-size:
-        8px;
-
-    letter-spacing:
-        1px;
-
     color:
-        var(--muted);
+        rgba(255,255,255,.45);
 
-    text-transform:
-        uppercase;
+    font-size: 10px;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1px;
 }
 
 .couple-panel-header h2 {
+    margin-top: 3px;
 
-    margin:
-        2px 0 0;
-
-    font-size:
-        19px;
+    font-size: 22px;
 }
 
 .couple-panel-header button {
+    width: 42px;
+    height: 42px;
 
-    width:
-        37px;
-
-    height:
-        37px;
-
-    border:
-        0;
-
-    border-radius:
-        50%;
-
-    color:
-        white;
+    border-radius: 50%;
 
     background:
-        rgba(24,119,242,0.10);
+        rgba(255,255,255,.07);
 
-    font-size:
-        24px;
+    font-size: 25px;
 }
 
-/* =========================================================
-   MOOD GRID
-   ========================================================= */
+/* mood grid */
 
 .couple-mood-grid {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
-        repeat(4,1fr);
+        repeat(4, minmax(0,1fr));
 
-    gap:
-        7px;
+    gap: 8px;
 }
 
 .couple-mood-grid button {
+    min-width: 0;
 
-    min-height:
-        63px;
+    min-height: 76px;
 
-    padding:
-        5px;
+    padding: 7px;
 
-    border:
-        1px solid rgba(24,119,242,0.12);
+    display: flex;
+    flex-direction: column;
 
-    border-radius:
-        14px;
+    align-items: center;
+    justify-content: center;
+
+    gap: 4px;
+
+    border-radius: 17px;
 
     background:
-        rgba(255,255,255,0.045);
+        rgba(255,255,255,.05);
 
-    color:
-        white;
+    border:
+        1px solid rgba(255,255,255,.08);
 
-    display:
-        flex;
+    font-size: 24px;
 
-    flex-direction:
-        column;
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
 
-    align-items:
-        center;
+.couple-mood-grid button:active {
+    transform: scale(.94);
 
-    justify-content:
-        center;
-
-    gap:
-        3px;
-
-    font-size:
-        21px;
+    background:
+        rgba(255,255,255,.11);
 }
 
 .couple-mood-grid button span {
-
-    font-size:
-        8px;
+    font-size: 9px;
 
     color:
-        rgba(255,255,255,0.62);
+        rgba(255,255,255,.68);
 
-    text-align:
-        center;
+    text-align: center;
 }
 
-/* =========================================================
-   AI OPTIONS
-   ========================================================= */
+/* AI modal */
 
 .couple-ai-options {
-
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
-        repeat(2,1fr);
+        repeat(2, minmax(0,1fr));
 
-    gap:
-        9px;
+    gap: 10px;
 }
 
 .couple-ai-options button {
+    min-height: 85px;
 
-    min-height:
-        85px;
+    display: flex;
+    flex-direction: column;
 
-    border:
-        1px solid rgba(24,119,242,0.13);
+    align-items: center;
+    justify-content: center;
 
-    border-radius:
-        15px;
+    gap: 7px;
+
+    border-radius: 19px;
 
     background:
-        rgba(24,119,242,0.06);
+        rgba(255,255,255,.055);
 
-    color:
-        white;
+    border:
+        1px solid rgba(255,255,255,.10);
 
-    display:
-        flex;
-
-    flex-direction:
-        column;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    gap:
-        5px;
-
-    font-size:
-        23px;
+    font-size: 25px;
 }
 
 .couple-ai-options button span {
-
-    font-size:
-        9px;
+    font-size: 11px;
 
     color:
-        rgba(255,255,255,0.65);
+        rgba(255,255,255,.75);
 }
 
 /* =========================================================
-   DEFAULT USANEX BLUE
+   26 MOOD THEMES
    ========================================================= */
 
-body[data-couple-mode="calm"] .couple-app,
-body[data-couple-mode="serious"] .couple-app,
-body[data-couple-mode="deep-talk"] .couple-app {
+/* Romantic */
 
-    background:
+body[data-couple-mode="romantic"],
+.couple-app[data-couple-mode="romantic"] {
+    --couple-primary: #ff3f9f;
+    --couple-secondary: #d13cff;
+    --couple-accent: #ff83cb;
 
-        radial-gradient(
-            circle at 80% 10%,
-            rgba(24,119,242,0.18),
-            transparent 36%
-        ),
+    --couple-user-bubble:
+        linear-gradient(135deg,#ff3d9f,#c746ff);
 
-        radial-gradient(
-            circle at 10% 80%,
-            rgba(56,189,248,0.09),
-            transparent 38%
-        ),
+    --couple-bg:
+        #120514;
 
-        #070a12;
+    --couple-bg-2:
+        #26091f;
+}
+
+/* Deep Love */
+
+body[data-couple-mode="deep-love"],
+.couple-app[data-couple-mode="deep-love"] {
+    --couple-primary: #ff5ca8;
+    --couple-secondary: #8f4cff;
+
+    --couple-bg:
+        #100619;
+
+    --couple-bg-2:
+        #260a25;
+}
+
+/* Happy */
+
+body[data-couple-mode="happy"],
+.couple-app[data-couple-mode="happy"] {
+    --couple-primary: #ffc83d;
+    --couple-secondary: #ff7b3d;
+
+    --couple-bg:
+        #171008;
+
+    --couple-bg-2:
+        #2b1806;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#ffad32,#ff4f9d);
+}
+
+/* Funny */
+
+body[data-couple-mode="funny"],
+.couple-app[data-couple-mode="funny"] {
+    --couple-primary: #ffcf3d;
+    --couple-secondary: #49d8ff;
+
+    --couple-bg:
+        #08131a;
+
+    --couple-bg-2:
+        #16120a;
+}
+
+/* Sad */
+
+body[data-couple-mode="sad"],
+.couple-app[data-couple-mode="sad"] {
+    --couple-primary: #65aaff;
+    --couple-secondary: #5968d9;
+
+    --couple-bg:
+        #070e1c;
+
+    --couple-bg-2:
+        #101b32;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#507dff,#7d5cff);
+}
+
+/* Emotional */
+
+body[data-couple-mode="emotional"],
+.couple-app[data-couple-mode="emotional"] {
+    --couple-primary: #a777ff;
+    --couple-secondary: #ff5cba;
+
+    --couple-bg:
+        #10081c;
+
+    --couple-bg-2:
+        #26102d;
+}
+
+/* Angry */
+
+body[data-couple-mode="angry"],
+.couple-app[data-couple-mode="angry"] {
+    --couple-primary: #ff4444;
+    --couple-secondary: #ff7a32;
+
+    --couple-bg:
+        #140606;
+
+    --couple-bg-2:
+        #2a0808;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#ff3434,#ff7133);
+}
+
+/* Frustrated */
+
+body[data-couple-mode="frustrated"],
+.couple-app[data-couple-mode="frustrated"] {
+    --couple-primary: #ff873d;
+    --couple-secondary: #e84949;
+
+    --couple-bg:
+        #160a07;
+
+    --couple-bg-2:
+        #24120a;
+}
+
+/* Caring */
+
+body[data-couple-mode="caring"],
+.couple-app[data-couple-mode="caring"] {
+    --couple-primary: #52e6b1;
+    --couple-secondary: #4aa8ff;
+
+    --couple-bg:
+        #06130f;
+
+    --couple-bg-2:
+        #081d22;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#28cfa4,#498cff);
+}
+
+/* Comfort */
+
+body[data-couple-mode="comfort"],
+.couple-app[data-couple-mode="comfort"] {
+    --couple-primary: #a58aff;
+    --couple-secondary: #71a5ff;
+
+    --couple-bg:
+        #0b0a1c;
+
+    --couple-bg-2:
+        #17132e;
+}
+
+/* Flirty */
+
+body[data-couple-mode="flirty"],
+.couple-app[data-couple-mode="flirty"] {
+    --couple-primary: #ff4fa7;
+    --couple-secondary: #ff78d0;
+
+    --couple-bg:
+        #160717;
+
+    --couple-bg-2:
+        #300a22;
+}
+
+/* Passionate */
+
+body[data-couple-mode="passionate"],
+.couple-app[data-couple-mode="passionate"] {
+    --couple-primary: #ff402f;
+    --couple-secondary: #ff0d74;
+
+    --couple-bg:
+        #180504;
+
+    --couple-bg-2:
+        #32060e;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#ff342f,#ff008d);
+}
+
+/* Good Night */
+
+body[data-couple-mode="good-night"],
+.couple-app[data-couple-mode="good-night"] {
+    --couple-primary: #6d8dff;
+    --couple-secondary: #8d5cff;
+
+    --couple-bg:
+        #030817;
+
+    --couple-bg-2:
+        #0b1332;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#496fff,#8054e8);
+}
+
+/* Good Morning */
+
+body[data-couple-mode="good-morning"],
+.couple-app[data-couple-mode="good-morning"] {
+    --couple-primary: #ffd65a;
+    --couple-secondary: #ff9c52;
+
+    --couple-bg:
+        #171007;
+
+    --couple-bg-2:
+        #2b1807;
+}
+
+/* Memory */
+
+body[data-couple-mode="memory"],
+.couple-app[data-couple-mode="memory"] {
+    --couple-primary: #e7a56f;
+    --couple-secondary: #c97861;
+
+    --couple-bg:
+        #160d09;
+
+    --couple-bg-2:
+        #28160e;
+}
+
+/* Celebration */
+
+body[data-couple-mode="celebration"],
+.couple-app[data-couple-mode="celebration"] {
+    --couple-primary: #ffd32f;
+    --couple-secondary: #ff45aa;
+
+    --couple-bg:
+        #160b16;
+
+    --couple-bg-2:
+        #2b1608;
+}
+
+/* Birthday */
+
+body[data-couple-mode="birthday"],
+.couple-app[data-couple-mode="birthday"] {
+    --couple-primary: #ff77bd;
+    --couple-secondary: #6d9cff;
+
+    --couple-bg:
+        #10091b;
+
+    --couple-bg-2:
+        #29102c;
+}
+
+/* Future */
+
+body[data-couple-mode="future"],
+.couple-app[data-couple-mode="future"] {
+    --couple-primary: #d69cff;
+    --couple-secondary: #6ea5ff;
+
+    --couple-bg:
+        #09091b;
+
+    --couple-bg-2:
+        #181634;
+}
+
+/* Missing You */
+
+body[data-couple-mode="missing-you"],
+.couple-app[data-couple-mode="missing-you"] {
+    --couple-primary: #8e8cff;
+    --couple-secondary: #c27cff;
+
+    --couple-bg:
+        #08091a;
+
+    --couple-bg-2:
+        #17112d;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#726cff,#c25bdb);
+}
+
+/* Apology */
+
+body[data-couple-mode="apology"],
+.couple-app[data-couple-mode="apology"] {
+    --couple-primary: #9ba6c8;
+    --couple-secondary: #7d87ad;
+
+    --couple-bg:
+        #090c15;
+
+    --couple-bg-2:
+        #171a26;
+}
+
+/* Appreciation */
+
+body[data-couple-mode="appreciation"],
+.couple-app[data-couple-mode="appreciation"] {
+    --couple-primary: #ff75b6;
+    --couple-secondary: #ffb26b;
+
+    --couple-bg:
+        #160a12;
+
+    --couple-bg-2:
+        #28120e;
+}
+
+/* Game */
+
+body[data-couple-mode="game"],
+.couple-app[data-couple-mode="game"] {
+    --couple-primary: #49d8ff;
+    --couple-secondary: #a85cff;
+
+    --couple-bg:
+        #050b18;
+
+    --couple-bg-2:
+        #11102b;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#00bce8,#874cff);
+}
+
+/* Photo Memory */
+
+body[data-couple-mode="photo-memory"],
+.couple-app[data-couple-mode="photo-memory"] {
+    --couple-primary: #ff9b6e;
+    --couple-secondary: #ff65b7;
+
+    --couple-bg:
+        #160a0a;
+
+    --couple-bg-2:
+        #29100e;
+}
+
+/* Serious */
+
+body[data-couple-mode="serious"],
+.couple-app[data-couple-mode="serious"] {
+    --couple-primary: #8e9bb9;
+    --couple-secondary: #667594;
+
+    --couple-bg:
+        #070a10;
+
+    --couple-bg-2:
+        #111725;
+}
+
+/* Deep Talk */
+
+body[data-couple-mode="deep-talk"],
+.couple-app[data-couple-mode="deep-talk"] {
+    --couple-primary: #788cff;
+    --couple-secondary: #a36cff;
+
+    --couple-bg:
+        #060916;
+
+    --couple-bg-2:
+        #121634;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#536cff,#995cff);
+}
+
+/* Calm */
+
+body[data-couple-mode="calm"],
+.couple-app[data-couple-mode="calm"] {
+    --couple-primary: #5b9fff;
+    --couple-secondary: #4e77d9;
+
+    --couple-bg:
+        #050c18;
+
+    --couple-bg-2:
+        #0d1b31;
+
+    --couple-user-bubble:
+        linear-gradient(135deg,#267de8,#5a4cff);
 }
 
 /* =========================================================
-   ROMANTIC ❤️
+   DYNAMIC COMPONENT COLORS
    ========================================================= */
 
-body[data-couple-mode="romantic"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 80% 8%,
-            rgba(255,45,150,0.30),
-            transparent 38%
-        ),
-
-        radial-gradient(
-            circle at 10% 75%,
-            rgba(255,20,120,0.16),
-            transparent 40%
-        ),
-
-        linear-gradient(
-            180deg,
-            #190714,
-            #0b0612
-        );
-}
-
-body[data-couple-mode="romantic"] .couple-header {
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(65,5,42,0.98),
-            rgba(22,5,23,0.98)
-        );
-
-    border-bottom-color:
-        rgba(255,60,165,0.30);
-}
-
-body[data-couple-mode="romantic"] .couple-mood-bar,
-body[data-couple-mode="romantic"] .couple-ai-panel {
-
-    background:
-
-        linear-gradient(
-            100deg,
-            rgba(255,45,150,0.23),
-            rgba(190,35,160,0.12)
-        );
-
+.couple-mood-bar,
+.couple-ai-panel {
     border-color:
-        rgba(255,70,170,0.30);
-}
-
-body[data-couple-mode="romantic"] .couple-conversation {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 5%,
-            rgba(255,45,150,0.21),
-            transparent 40%
-        ),
-
-        linear-gradient(
-            180deg,
-            rgba(45,5,34,0.55),
-            rgba(9,3,15,0.94)
+        color-mix(
+            in srgb,
+            var(--couple-primary) 25%,
+            rgba(255,255,255,.10)
         );
 }
 
-body[data-couple-mode="romantic"]
-.couple-message.me
-.couple-message-bubble {
-
+.couple-mood-icon,
+.couple-ai-icon {
     background:
-
-        linear-gradient(
-            135deg,
-            #ff2f9d,
-            #ff55b8,
-            #b63cff
+        color-mix(
+            in srgb,
+            var(--couple-primary) 15%,
+            rgba(255,255,255,.04)
         );
-
-    box-shadow:
-        0 7px 27px
-        rgba(255,35,150,0.30);
 }
 
-body[data-couple-mode="romantic"]
-.couple-composer {
-
+.couple-mood-change,
+.couple-ai-button {
     border-color:
-        rgba(255,55,160,0.32);
-
-    background:
-        rgba(37,7,31,0.97);
-}
-
-/* =========================================================
-   DEEP LOVE
-   ========================================================= */
-
-body[data-couple-mode="deep-love"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 70% 10%,
-            rgba(255,45,150,0.25),
-            transparent 36%
-        ),
-
-        radial-gradient(
-            circle at 20% 80%,
-            rgba(150,45,255,0.17),
-            transparent 38%
-        ),
-
-        #10071a;
-}
-
-/* =========================================================
-   HAPPY
-   ========================================================= */
-
-body[data-couple-mode="happy"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 5%,
-            rgba(56,189,248,0.25),
-            transparent 40%
-        ),
-
-        #06101a;
-}
-
-/* =========================================================
-   FUNNY
-   ========================================================= */
-
-body[data-couple-mode="funny"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 20% 20%,
-            rgba(255,193,7,0.18),
-            transparent 35%
-        ),
-
-        radial-gradient(
-            circle at 80% 70%,
-            rgba(24,119,242,0.16),
-            transparent 38%
-        ),
-
-        #0b0d15;
-}
-
-/* =========================================================
-   SAD
-   ========================================================= */
-
-body[data-couple-mode="sad"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 15%,
-            rgba(60,100,190,0.17),
-            transparent 38%
-        ),
-
-        linear-gradient(
-            180deg,
-            #07101e,
-            #050912
-        );
-}
-
-body[data-couple-mode="sad"] .couple-conversation {
-
-    background:
-        linear-gradient(
-            180deg,
-            rgba(5,15,30,0.4),
-            rgba(3,7,15,0.95)
+        color-mix(
+            in srgb,
+            var(--couple-primary) 28%,
+            rgba(255,255,255,.10)
         );
 }
 
 /* =========================================================
-   EMOTIONAL
+   ANIMATIONS
    ========================================================= */
 
-body[data-couple-mode="emotional"] .couple-app {
+@keyframes coupleMessageIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.98);
+    }
 
-    background:
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
 
-        radial-gradient(
-            circle at 60% 20%,
-            rgba(120,75,220,0.22),
-            transparent 40%
-        ),
+@keyframes coupleFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
 
-        #090817;
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes couplePulse {
+    0% {
+        box-shadow:
+            0 0 0 0
+            color-mix(
+                in srgb,
+                var(--couple-primary) 35%,
+                transparent
+            );
+    }
+
+    70% {
+        box-shadow:
+            0 0 0 12px
+            transparent;
+    }
+
+    100% {
+        box-shadow:
+            0 0 0 0
+            transparent;
+    }
 }
 
 /* =========================================================
-   ANGRY
+   EFFECT CLASSES
    ========================================================= */
 
-body[data-couple-mode="angry"] .couple-app {
+.couple-heart-effect {
+    position: absolute;
 
-    background:
+    animation:
+        coupleHeartFloat 3s ease-in forwards;
 
-        radial-gradient(
-            circle at 50% 15%,
-            rgba(255,40,55,0.23),
-            transparent 38%
-        ),
-
-        #120608;
+    pointer-events: none;
 }
 
-body[data-couple-mode="angry"] .couple-header,
-body[data-couple-mode="angry"] .couple-mood-bar,
-body[data-couple-mode="angry"] .couple-ai-panel {
+@keyframes coupleHeartFloat {
+    0% {
+        opacity: 0;
+        transform:
+            translateY(30px)
+            scale(.5);
+    }
 
-    border-color:
-        rgba(255,60,60,0.30);
+    15% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform:
+            translateY(-220px)
+            translateX(var(--heart-x, 0px))
+            scale(1.15);
+    }
+}
+
+.couple-sparkle-effect {
+    position: absolute;
+
+    animation:
+        coupleSparkle 1.8s ease-out forwards;
+}
+
+@keyframes coupleSparkle {
+    0% {
+        opacity: 0;
+        transform: scale(.2);
+    }
+
+    25% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(1.8) translateY(-30px);
+    }
 }
 
 /* =========================================================
-   FRUSTRATED
-   ========================================================= */
-
-body[data-couple-mode="frustrated"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 15%,
-            rgba(255,100,30,0.20),
-            transparent 38%
-        ),
-
-        #110a07;
-}
-
-/* =========================================================
-   CARING
-   ========================================================= */
-
-body[data-couple-mode="caring"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 10%,
-            rgba(255,165,110,0.20),
-            transparent 38%
-        ),
-
-        #120c0a;
-}
-
-/* =========================================================
-   COMFORT
-   ========================================================= */
-
-body[data-couple-mode="comfort"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 10%,
-            rgba(56,189,248,0.22),
-            transparent 40%
-        ),
-
-        #061015;
-}
-
-/* =========================================================
-   FLIRTY
-   ========================================================= */
-
-body[data-couple-mode="flirty"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 80% 10%,
-            rgba(255,45,170,0.28),
-            transparent 38%
-        ),
-
-        radial-gradient(
-            circle at 10% 80%,
-            rgba(150,50,255,0.16),
-            transparent 38%
-        ),
-
-        #110719;
-}
-
-/* =========================================================
-   PASSIONATE
-   ========================================================= */
-
-body[data-couple-mode="passionate"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 10%,
-            rgba(255,65,25,0.25),
-            transparent 38%
-        ),
-
-        #150705;
-}
-
-body[data-couple-mode="passionate"]
-.couple-message.me
-.couple-message-bubble {
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #ff3d2f,
-            #ff7a2f
-        );
-}
-
-/* =========================================================
-   GOOD NIGHT 🌙
-   ========================================================= */
-
-body[data-couple-mode="good-night"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 75% 10%,
-            rgba(100,130,255,0.18),
-            transparent 35%
-        ),
-
-        radial-gradient(
-            circle at 20% 70%,
-            rgba(50,80,180,0.10),
-            transparent 40%
-        ),
-
-        linear-gradient(
-            180deg,
-            #050a1c,
-            #03050d
-        );
-}
-
-body[data-couple-mode="good-night"] .couple-header {
-
-    background:
-        rgba(3,7,22,0.98);
-}
-
-/* =========================================================
-   GOOD MORNING ☀️
-   ========================================================= */
-
-body[data-couple-mode="good-morning"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(255,190,90,0.22),
-            transparent 38%
-        ),
-
-        radial-gradient(
-            circle at 80% 60%,
-            rgba(56,189,248,0.15),
-            transparent 38%
-        ),
-
-        linear-gradient(
-            180deg,
-            #0b1724,
-            #071018
-        );
-}
-
-/* =========================================================
-   MEMORY
-   ========================================================= */
-
-body[data-couple-mode="memory"] .couple-app,
-body[data-couple-mode="photo-memory"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 15%,
-            rgba(205,145,80,0.18),
-            transparent 40%
-        ),
-
-        #120e0a;
-}
-
-/* =========================================================
-   CELEBRATION
-   ========================================================= */
-
-body[data-couple-mode="celebration"] .couple-app,
-body[data-couple-mode="birthday"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 30% 20%,
-            rgba(255,80,150,0.20),
-            transparent 35%
-        ),
-
-        radial-gradient(
-            circle at 80% 70%,
-            rgba(255,180,40,0.16),
-            transparent 35%
-        ),
-
-        #100b16;
-}
-
-/* =========================================================
-   FUTURE / MARRIAGE
-   ========================================================= */
-
-body[data-couple-mode="future"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 10%,
-            rgba(255,205,100,0.18),
-            transparent 38%
-        ),
-
-        #100d0b;
-}
-
-body[data-couple-mode="future"]
-.couple-message.me
-.couple-message-bubble {
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #d5a93a,
-            #f3d47b
-        );
-
-    color:
-        #241b05;
-}
-
-/* =========================================================
-   MISSING YOU
-   ========================================================= */
-
-body[data-couple-mode="missing-you"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 75% 10%,
-            rgba(255,55,160,0.17),
-            transparent 35%
-        ),
-
-        radial-gradient(
-            circle at 15% 75%,
-            rgba(50,90,200,0.13),
-            transparent 40%
-        ),
-
-        #070914;
-}
-
-/* =========================================================
-   APOLOGY
-   ========================================================= */
-
-body[data-couple-mode="apology"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 20%,
-            rgba(120,150,190,0.13),
-            transparent 38%
-        ),
-
-        #0b0d12;
-}
-
-/* =========================================================
-   APPRECIATION
-   ========================================================= */
-
-body[data-couple-mode="appreciation"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 50% 10%,
-            rgba(255,80,150,0.18),
-            transparent 38%
-        ),
-
-        radial-gradient(
-            circle at 70% 70%,
-            rgba(255,200,80,0.10),
-            transparent 35%
-        ),
-
-        #110a12;
-}
-
-/* =========================================================
-   GAME
-   ========================================================= */
-
-body[data-couple-mode="game"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 30% 20%,
-            rgba(24,119,242,0.22),
-            transparent 35%
-        ),
-
-        radial-gradient(
-            circle at 80% 70%,
-            rgba(150,50,255,0.18),
-            transparent 35%
-        ),
-
-        #080912;
-}
-
-body[data-couple-mode="game"]
-.couple-message.me
-.couple-message-bubble {
-
-    background:
-
-        linear-gradient(
-            135deg,
-            #1877F2,
-            #873cff
-        );
-}
-
-/* =========================================================
-   SERIOUS
-   ========================================================= */
-
-body[data-couple-mode="serious"] .couple-app {
-
-    background:
-        #080c14;
-}
-
-body[data-couple-mode="serious"]
-.couple-action,
-body[data-couple-mode="serious"]
-.couple-info-card {
-
-    background:
-        rgba(255,255,255,0.025);
-}
-
-/* =========================================================
-   DEEP TALK
-   ========================================================= */
-
-body[data-couple-mode="deep-talk"] .couple-app {
-
-    background:
-
-        radial-gradient(
-            circle at 60% 20%,
-            rgba(90,60,190,0.19),
-            transparent 40%
-        ),
-
-        #090816;
-}
-
-/* =========================================================
-   TIME LAYERS
-   ========================================================= */
-
-/* Night adds atmosphere without destroying mood */
-
-body[data-time-context="night"]
-.couple-conversation::after,
-body[data-time-context="late-night"]
-.couple-conversation::after {
-
-    content:
-        "";
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    pointer-events:
-        none;
-
-    z-index:
-        1;
-
-    background:
-
-        radial-gradient(
-            circle at 15% 15%,
-            rgba(255,255,255,0.07) 0 1px,
-            transparent 2px
-        ),
-
-        radial-gradient(
-            circle at 70% 20%,
-            rgba(255,255,255,0.05) 0 1px,
-            transparent 2px
-        ),
-
-        radial-gradient(
-            circle at 45% 60%,
-            rgba(255,255,255,0.04) 0 1px,
-            transparent 2px
-        );
-
-    background-size:
-        120px 120px,
-        180px 180px,
-        150px 150px;
-
-    opacity:
-        0.55;
-}
-
-/* Late night darker */
-
-body[data-time-context="late-night"]
-.couple-app {
-
-    filter:
-        saturate(0.88);
-}
-
-body[data-time-context="late-night"]
-.couple-header {
-
-    background:
-        rgba(3,5,12,0.98);
-}
-
-/* Morning */
-
-body[data-time-context="morning"]
-.couple-app {
-
-    box-shadow:
-        inset 0 80px 100px
-        rgba(56,189,248,0.025);
-}
-
-/* Evening */
-
-body[data-time-context="evening"]
-.couple-app {
-
-    box-shadow:
-        inset 0 80px 120px
-        rgba(255,100,60,0.035);
-}
-
-/* =========================================================
-   RESPONSIVE
+   DESKTOP
    ========================================================= */
 
 @media (min-width: 700px) {
 
     .couple-app {
+        max-width: 760px;
 
-        max-width:
-            650px;
-
-        margin:
-            0 auto;
+        margin: 0 auto;
 
         border-left:
-            1px solid rgba(255,255,255,0.05);
+            1px solid rgba(255,255,255,.08);
 
         border-right:
-            1px solid rgba(255,255,255,0.05);
+            1px solid rgba(255,255,255,.08);
     }
 
     .couple-message-bubble {
-        max-width:
-            70%;
-    }
-}
-
-/* =========================================================
-   SMALL HEIGHT PHONES
-   ========================================================= */
-
-@media (max-height: 700px) {
-
-    .couple-header {
-
-        --header-height:
-            50px;
+        max-width: 65%;
     }
 
     .couple-mood-bar,
     .couple-ai-panel {
+        width: calc(50% - 15px);
+    }
+}
 
-        height:
-            51px;
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
 
-        min-height:
-            51px;
+@media (max-width: 380px) {
+
+    :root {
+        --header-height: 64px;
+        --top-row-height: 82px;
+        --info-height: 59px;
+        --quick-height: 68px;
+        --composer-height: 72px;
     }
 
-    .couple-info-card {
+    .couple-header {
+        padding:
+            5px
+            7px;
 
-        height:
-            38px;
-
-        min-height:
-            38px;
-
-        flex-basis:
-            38px;
+        gap: 6px;
     }
 
-    .couple-quick-actions {
+    .couple-back-button,
+    .couple-header-actions button {
+        width: 45px;
+        height: 45px;
 
-        height:
-            39px;
-
-        min-height:
-            39px;
-
-        flex-basis:
-            39px;
+        flex-basis: 45px;
     }
 
-    .couple-message {
+    .couple-avatar-button {
+        width: 46px;
+        height: 46px;
 
-        margin:
-            3px 0;
+        flex-basis: 46px;
+    }
+
+    .couple-header-info strong {
+        font-size: 18px;
+    }
+
+    .couple-header-info span {
+        font-size: 10px;
+    }
+
+    .couple-mood-bar {
+        margin-top: 9px;
+    }
+
+    .couple-mood-icon {
+        width: 44px;
+        height: 44px;
+
+        flex-basis: 44px;
+
+        font-size: 23px;
+    }
+
+    .couple-mood-info {
+        margin-left: 7px;
+    }
+
+    .couple-mood-info strong {
+        font-size: 15px;
+    }
+
+    .couple-mood-change {
+        min-width: 58px;
+        height: 40px;
+
+        padding: 0 8px;
+
+        font-size: 11px;
+    }
+
+    .couple-ai-icon {
+        width: 42px;
+        height: 42px;
+
+        flex-basis: 42px;
+
+        font-size: 22px;
+    }
+
+    .couple-ai-content {
+        margin-left: 6px;
+    }
+
+    .couple-ai-content strong {
+        font-size: 12px;
+    }
+
+    .couple-ai-content span {
+        font-size: 8px;
+    }
+
+    .couple-ai-button {
+        width: 40px;
+        height: 40px;
+
+        flex-basis: 40px;
+    }
+
+    .couple-info-item strong {
+        font-size: 12px;
+    }
+
+    .couple-info-icon {
+        font-size: 23px;
+    }
+
+    .couple-info-divider {
+        margin: 0 7px;
+    }
+
+    .couple-action span {
+        font-size: 22px;
+    }
+
+    .couple-action small {
+        font-size: 9px;
+    }
+
+    .couple-message-bubble {
+        font-size: 14px;
+    }
+
+    .couple-composer > button {
+        width: 44px;
+        height: 44px;
+
+        flex-basis: 44px;
+    }
+
+    #coupleMessageInput {
+        font-size: 15px;
     }
 }
 
@@ -2858,17 +2304,29 @@ body[data-time-context="evening"]
     *,
     *::before,
     *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+    }
+}
 
-        animation-duration:
-            0.01ms !important;
+/* =========================================================
+   SAFE AREA
+   ========================================================= */
 
-        animation-iteration-count:
-            1 !important;
+@supports (padding: max(0px)) {
 
-        transition-duration:
-            0.01ms !important;
+    .couple-header {
+        padding-top:
+            max(6px, env(safe-area-inset-top));
+    }
 
-        scroll-behavior:
-            auto !important;
+    .couple-composer-area {
+        padding-bottom:
+            max(
+                8px,
+                env(safe-area-inset-bottom)
+            );
     }
 }
