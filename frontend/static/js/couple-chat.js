@@ -1,9 +1,11 @@
 /* =========================================================
    USANEX COUPLE CHAT
-   Frontend controller
+   Main Frontend Controller
+   Real WebSocket + AI + UI
 ========================================================= */
 
 (() => {
+
     "use strict";
 
 
@@ -12,31 +14,30 @@
     ====================================================== */
 
     const API = {
-        analyze: "/api/couple-chat/analyze",
-        message: "/api/couple-chat/message",
-        history: "/api/couple-chat/history",
-        memories: "/api/couple-chat/memories"
+
+        analyze:
+            "/api/couple-chat/analyze",
+
+        mood:
+            "/api/couple-chat/mood"
+
     };
 
 
-    const WS_BASE =
-        `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
-
-
     const STORAGE_KEY =
-        "usanex_couple_chat_messages_v10";
+        "usanex_couple_chat_messages_v11";
 
 
     const MODE_STORAGE_KEY =
-        "usanex_couple_chat_mode_v10";
+        "usanex_couple_chat_mode_v11";
 
 
     const RECENT_EMOJI_KEY =
-        "usanex_recent_emojis_v10";
+        "usanex_recent_emojis_v11";
 
 
     /* =====================================================
-       26 MODES
+       26 COUPLE MODES
     ====================================================== */
 
     const COUPLE_MODES = {
@@ -308,79 +309,114 @@
        DOM
     ====================================================== */
 
-    const $ = (selector) =>
+    const $ = selector =>
         document.querySelector(selector);
 
 
-    const app = $("#coupleApp");
+    const app =
+        $("#coupleApp");
 
-    const backButton = $("#coupleBackButton");
+    const backButton =
+        $("#coupleBackButton");
 
-    const avatarButton = $("#coupleAvatarButton");
+    const avatarButton =
+        $("#coupleAvatarButton");
 
-    const partnerAvatar = $("#couplePartnerAvatar");
+    const partnerAvatar =
+        $("#couplePartnerAvatar");
 
-    const partnerName = $("#couplePartnerName");
+    const partnerName =
+        $("#couplePartnerName");
 
-    const partnerStatus = $("#couplePartnerStatus");
+    const partnerStatus =
+        $("#couplePartnerStatus");
 
-    const onlineDot = $("#coupleOnlineDot");
+    const onlineDot =
+        $("#coupleOnlineDot");
 
-    const headerMood = $("#coupleHeaderMood");
+    const headerMood =
+        $("#coupleHeaderMood");
 
-    const menuButton = $("#coupleMenuButton");
+    const menuButton =
+        $("#coupleMenuButton");
 
-    const aiButton = $("#coupleAiButton");
+    const aiButton =
+        $("#coupleAiButton");
 
-    const aiStatus = $("#coupleAiStatus");
+    const aiStatus =
+        $("#coupleAiStatus");
 
-    const messagesEl = $("#coupleMessages");
+    const messagesEl =
+        $("#coupleMessages");
 
-    const conversation = $("#coupleConversation");
+    const conversation =
+        $("#coupleConversation");
 
-    const input = $("#coupleMessageInput");
+    const input =
+        $("#coupleMessageInput");
 
-    const composer = $("#coupleComposer");
+    const composer =
+        $("#coupleComposer");
 
-    const emojiButton = $("#coupleEmojiButton");
+    const emojiButton =
+        $("#coupleEmojiButton");
 
-    const attachButton = $("#coupleAttachButton");
+    const attachButton =
+        $("#coupleAttachButton");
 
-    const cameraButton = $("#coupleCameraButton");
+    const cameraButton =
+        $("#coupleCameraButton");
 
-    const sendButton = $("#coupleSendButton");
+    const sendButton =
+        $("#coupleSendButton");
 
-    const fileInput = $("#coupleFileInput");
+    const fileInput =
+        $("#coupleFileInput");
 
-    const moodOverlay = $("#coupleMoodOverlay");
+    const moodOverlay =
+        $("#coupleMoodOverlay");
 
-    const moodGrid = $("#coupleMoodGrid");
+    const moodGrid =
+        $("#coupleMoodGrid");
 
-    const closeMood = $("#closeMoodPanel");
+    const closeMood =
+        $("#closeMoodPanel");
 
-    const aiOverlay = $("#coupleAiOverlay");
+    const aiOverlay =
+        $("#coupleAiOverlay");
 
-    const closeAi = $("#closeAiPanel");
+    const closeAi =
+        $("#closeAiPanel");
 
-    const menuOverlay = $("#coupleMenuOverlay");
+    const menuOverlay =
+        $("#coupleMenuOverlay");
 
-    const closeMenu = $("#closeCoupleMenu");
+    const closeMenu =
+        $("#closeCoupleMenu");
 
-    const typingEl = $("#coupleTyping");
+    const typingEl =
+        $("#coupleTyping");
 
-    const typingName = $("#coupleTypingName");
+    const typingName =
+        $("#coupleTypingName");
 
-    const suggestionsEl = $("#coupleSuggestions");
+    const suggestionsEl =
+        $("#coupleSuggestions");
 
-    const suggestionList = $("#coupleSuggestionList");
+    const suggestionList =
+        $("#coupleSuggestionList");
 
-    const effectsLayer = $("#coupleEffectsLayer");
+    const effectsLayer =
+        $("#coupleEffectsLayer");
 
-    const dayLabel = $("#coupleDayLabel");
+    const dayLabel =
+        $("#coupleDayLabel");
 
-    const togetherDays = $("#coupleTogetherDays");
+    const togetherDays =
+        $("#coupleTogetherDays");
 
-    const connectionStatus = $("#coupleConnectionStatus");
+    const connectionStatus =
+        $("#coupleConnectionStatus");
 
 
     /* =====================================================
@@ -388,33 +424,45 @@
     ====================================================== */
 
     let currentMode =
-        localStorage.getItem(MODE_STORAGE_KEY) || "calm";
+        localStorage.getItem(
+            MODE_STORAGE_KEY
+        ) || "calm";
 
 
     let messages =
         loadMessages();
 
 
-    let socket = null;
-
-    let socketReady = false;
-
-    let reconnectTimer = null;
-
-    let typingTimer = null;
-
-    let partnerTyping = false;
-
-    let manualMood = false;
-
-    let emojiPicker = null;
+    let realtime =
+        null;
 
 
-    const partner = readPartner();
+    let typingTimer =
+        null;
+
+
+    let partnerTyping =
+        false;
+
+
+    let manualMood =
+        false;
+
+
+    let emojiPicker =
+        null;
+
+
+    let isInitialHistoryLoaded =
+        false;
+
+
+    const partner =
+        readPartner();
 
 
     /* =====================================================
-       INITIALIZATION
+       INIT
     ====================================================== */
 
     function init() {
@@ -427,28 +475,46 @@
 
         updateMoodTheme();
 
-        updateConnectionText();
+        updateSuggestions();
 
-        setupEvents();
+        updateConnectionText();
 
         updateDayLabel();
 
-        showWelcomeIfEmpty();
+        setupEvents();
 
-        loadHistory();
+        initRealtime();
 
-        connectWebSocket();
+        updateAutomaticNightState();
 
-        setInterval(updateAutomaticNightState, 60 * 1000);
+
+        setInterval(
+            updateAutomaticNightState,
+            60000
+        );
+
 
         window.UsanexCoupleChat = {
+
             sendMessage,
+
             setMode,
-            connectWebSocket,
-            getMessages: () => messages
+
+            getMessages:
+                () => messages,
+
+            reconnect:
+                () => realtime?.connect(),
+
+            isRealtimeConnected:
+                () => realtime?.connected === true
+
         };
 
-        window.UsanexCoupleModes = COUPLE_MODES;
+
+        window.UsanexCoupleModes =
+            COUPLE_MODES;
+
     }
 
 
@@ -459,7 +525,10 @@
     function readPartner() {
 
         const params =
-            new URLSearchParams(window.location.search);
+            new URLSearchParams(
+                window.location.search
+            );
+
 
         return {
 
@@ -479,34 +548,49 @@
                 "/static/images/default-profile.png",
 
             online:
-                params.get("online") === "true"
+                params.get("online") === "true",
+
+            last_seen:
+                params.get("last_seen") ||
+                null
 
         };
+
     }
 
 
     function applyPartner() {
 
-        partnerName.textContent =
-            partner.name;
+        if (partnerName) {
+
+            partnerName.textContent =
+                partner.name;
+
+        }
 
 
-        partnerAvatar.src =
-            partner.avatar;
-
-
-        partnerAvatar.onerror = () => {
+        if (partnerAvatar) {
 
             partnerAvatar.src =
-                "/static/images/default-profile.png";
+                partner.avatar;
 
-        };
+
+            partnerAvatar.onerror =
+                () => {
+
+                    partnerAvatar.src =
+                        "/static/images/default-profile.png";
+
+                };
+
+        }
 
 
         setOnlineStatus(
             partner.online,
-            null
+            partner.last_seen
         );
+
     }
 
 
@@ -521,9 +605,14 @@
             () => {
 
                 if (history.length > 1) {
+
                     history.back();
+
                 } else {
-                    window.location.href = "/chat";
+
+                    window.location.href =
+                        "/chat";
+
                 }
 
             }
@@ -534,12 +623,15 @@
             "click",
             () => {
 
-                if (partner.id) {
-
-                    window.location.href =
-                        `/profile?user_id=${encodeURIComponent(partner.id)}`;
-
+                if (!partner.id) {
+                    return;
                 }
+
+
+                window.location.href =
+                    `/profile?user_id=${encodeURIComponent(
+                        partner.id
+                    )}`;
 
             }
         );
@@ -583,10 +675,15 @@
 
         moodOverlay?.addEventListener(
             "click",
-            (event) => {
+            event => {
 
-                if (event.target === moodOverlay) {
+                if (
+                    event.target ===
+                    moodOverlay
+                ) {
+
                     closeMoodPanel();
+
                 }
 
             }
@@ -595,10 +692,15 @@
 
         aiOverlay?.addEventListener(
             "click",
-            (event) => {
+            event => {
 
-                if (event.target === aiOverlay) {
+                if (
+                    event.target ===
+                    aiOverlay
+                ) {
+
                     closeAiPanel();
+
                 }
 
             }
@@ -607,10 +709,15 @@
 
         menuOverlay?.addEventListener(
             "click",
-            (event) => {
+            event => {
 
-                if (event.target === menuOverlay) {
+                if (
+                    event.target ===
+                    menuOverlay
+                ) {
+
                     closeMenuPanel();
+
                 }
 
             }
@@ -619,17 +726,24 @@
 
         moodGrid?.addEventListener(
             "click",
-            (event) => {
+            event => {
 
                 const button =
-                    event.target.closest("[data-mode]");
+                    event.target.closest(
+                        "[data-mode]"
+                    );
 
-                if (!button) return;
+
+                if (!button) {
+                    return;
+                }
+
 
                 setMode(
                     button.dataset.mode,
                     true
                 );
+
 
                 closeMoodPanel();
 
@@ -639,7 +753,7 @@
 
         composer?.addEventListener(
             "submit",
-            (event) => {
+            event => {
 
                 event.preventDefault();
 
@@ -665,7 +779,15 @@
             "click",
             () => {
 
-                fileInput.removeAttribute("capture");
+                if (!fileInput) {
+                    return;
+                }
+
+
+                fileInput.removeAttribute(
+                    "capture"
+                );
+
 
                 fileInput.click();
 
@@ -677,10 +799,16 @@
             "click",
             () => {
 
+                if (!fileInput) {
+                    return;
+                }
+
+
                 fileInput.setAttribute(
                     "capture",
                     "environment"
                 );
+
 
                 fileInput.click();
 
@@ -695,7 +823,9 @@
 
 
         document
-            .querySelectorAll(".couple-action")
+            .querySelectorAll(
+                ".couple-action"
+            )
             .forEach(button => {
 
                 button.addEventListener(
@@ -713,7 +843,9 @@
 
 
         document
-            .querySelectorAll("[data-ai-action]")
+            .querySelectorAll(
+                "[data-ai-action]"
+            )
             .forEach(button => {
 
                 button.addEventListener(
@@ -731,7 +863,9 @@
 
 
         document
-            .querySelectorAll("[data-menu-action]")
+            .querySelectorAll(
+                "[data-menu-action]"
+            )
             .forEach(button => {
 
                 button.addEventListener(
@@ -750,14 +884,18 @@
 
         document.addEventListener(
             "click",
-            (event) => {
+            event => {
 
                 if (
                     emojiPicker &&
-                    !emojiPicker.contains(event.target) &&
+                    !emojiPicker.contains(
+                        event.target
+                    ) &&
                     event.target !== emojiButton
                 ) {
+
                     removeEmojiPicker();
+
                 }
 
             }
@@ -768,10 +906,1616 @@
             "beforeunload",
             () => {
 
-                sendPresence("offline");
+                realtime?.stopTyping();
 
             }
         );
+
+    }
+
+
+    /* =====================================================
+       REALTIME INITIALIZATION
+    ====================================================== */
+
+    function initRealtime() {
+
+        if (!partner.id) {
+
+            setConnectionState(
+                false
+            );
+
+            return;
+
+        }
+
+
+        if (
+            typeof window
+                .UsanexCoupleRealtime !==
+            "function"
+        ) {
+
+            console.error(
+                "[Usanex] couple-realtime.js not loaded."
+            );
+
+            setConnectionState(
+                false
+            );
+
+            return;
+
+        }
+
+
+        realtime =
+            new window.UsanexCoupleRealtime({
+
+                partnerId:
+                    partner.id,
+
+
+                onConnection:
+                    handleRealtimeConnection,
+
+
+                onMessage:
+                    handleRealtimeMessage,
+
+
+                onReceipt:
+                    handleRealtimeReceipt,
+
+
+                onPresence:
+                    handleRealtimePresence,
+
+
+                onTyping:
+                    handleRealtimeTyping
+
+            });
+
+
+        realtime.connect();
+
+    }
+
+
+    /* =====================================================
+       REALTIME CONNECTION
+    ====================================================== */
+
+    function handleRealtimeConnection(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        if (data.connected) {
+
+            setConnectionState(
+                true
+            );
+
+
+            if (
+                typeof data.partnerOnline ===
+                "boolean"
+            ) {
+
+                setOnlineStatus(
+                    data.partnerOnline,
+                    partner.last_seen
+                );
+
+            }
+
+
+            if (
+                data.history &&
+                Array.isArray(
+                    data.history
+                )
+            ) {
+
+                mergeServerMessages(
+                    data.history
+                );
+
+            }
+
+        } else {
+
+            setConnectionState(
+                false
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       REALTIME MESSAGE
+    ====================================================== */
+
+    function handleRealtimeMessage(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        const incoming =
+            data.message ||
+            data;
+
+
+        if (!incoming) {
+            return;
+        }
+
+
+        const normalized =
+            normalizeRealtimeMessage(
+                incoming
+            );
+
+
+        if (
+            normalized.message_type ===
+            "system"
+        ) {
+
+            return;
+
+        }
+
+
+        const existing =
+            findMessage(
+                normalized
+            );
+
+
+        /* ================================================
+           Existing message
+        ================================================ */
+
+        if (existing) {
+
+            Object.assign(
+                existing,
+                normalized
+            );
+
+
+            if (
+                !existing.status ||
+                existing.status === "sent"
+            ) {
+
+                existing.status =
+                    normalized.status ||
+                    existing.status ||
+                    "sent";
+
+            }
+
+
+            saveMessages();
+
+            renderMessages();
+
+            return;
+
+        }
+
+
+        /* ================================================
+           New partner message
+        ================================================ */
+
+        messages.push(
+            normalized
+        );
+
+
+        messages =
+            messages.slice(-500);
+
+
+        saveMessages();
+
+        renderMessages();
+
+        scrollToBottom(true);
+
+
+        /* ================================================
+           Auto delivery
+        ================================================ */
+
+        if (
+            !normalized.is_mine &&
+            normalized.id
+        ) {
+
+            realtime?.sendDelivered(
+                normalized.id
+            );
+
+
+            /*
+             * Chat is currently open,
+             * therefore message is read.
+             */
+
+            realtime?.sendRead(
+                normalized.id
+            );
+
+        }
+
+
+        /*
+         * AI/UI analysis for partner message
+         */
+
+        if (
+            normalized.text &&
+            !normalized.is_mine
+        ) {
+
+            analyzeIncomingMessage(
+                normalized.text
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       NORMALIZE REALTIME MESSAGE
+    ====================================================== */
+
+    function normalizeRealtimeMessage(
+        message
+    ) {
+
+        const normalized = {
+
+            ...message,
+
+            id:
+                message.id ||
+                null,
+
+            client_id:
+                message.client_id ||
+                null,
+
+            text:
+                message.content ??
+                message.text ??
+                "",
+
+            content:
+                message.content ??
+                message.text ??
+                "",
+
+            message_type:
+                message.message_type ||
+                "text",
+
+            media_url:
+                message.media_url ||
+                null,
+
+            media_type:
+                message.media_type ||
+                null,
+
+            sender_id:
+                message.sender_id ??
+                null,
+
+            receiver_id:
+                message.receiver_id ??
+                null,
+
+            created_at:
+                message.created_at ||
+                new Date().toISOString(),
+
+            status:
+                normalizeStatus(
+                    message.status ||
+                    "sent"
+                )
+
+        };
+
+
+        normalized.is_mine =
+            isOwnMessage(
+                normalized
+            );
+
+
+        return normalized;
+
+    }
+
+
+    /* =====================================================
+       FIND MESSAGE
+    ====================================================== */
+
+    function findMessage(
+        message
+    ) {
+
+        if (
+            message.client_id
+        ) {
+
+            const byClient =
+                messages.find(
+                    item =>
+                        item.client_id &&
+                        String(
+                            item.client_id
+                        ) ===
+                        String(
+                            message.client_id
+                        )
+                );
+
+
+            if (byClient) {
+                return byClient;
+            }
+
+        }
+
+
+        if (
+            message.id
+        ) {
+
+            const byId =
+                messages.find(
+                    item =>
+                        item.id &&
+                        String(
+                            item.id
+                        ) ===
+                        String(
+                            message.id
+                        )
+                );
+
+
+            if (byId) {
+                return byId;
+            }
+
+        }
+
+
+        return null;
+
+    }
+
+
+    /* =====================================================
+       SERVER HISTORY
+    ====================================================== */
+
+    function mergeServerMessages(
+        serverMessages
+    ) {
+
+        if (
+            !Array.isArray(
+                serverMessages
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        serverMessages.forEach(
+            serverMessage => {
+
+                const normalized =
+                    normalizeRealtimeMessage(
+                        serverMessage
+                    );
+
+
+                const existing =
+                    findMessage(
+                        normalized
+                    );
+
+
+                if (existing) {
+
+                    Object.assign(
+                        existing,
+                        normalized
+                    );
+
+                } else {
+
+                    messages.push(
+                        normalized
+                    );
+
+                }
+
+            }
+        );
+
+
+        messages =
+            messages
+                .slice(-500)
+                .sort(
+                    (a, b) =>
+                        new Date(
+                            a.created_at
+                        ) -
+                        new Date(
+                            b.created_at
+                        )
+                );
+
+
+        saveMessages();
+
+        renderMessages();
+
+        scrollToBottom(false);
+
+        isInitialHistoryLoaded =
+            true;
+
+    }
+
+
+    /* =====================================================
+       RECEIPTS
+    ====================================================== */
+
+    function handleRealtimeReceipt(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        const receipt =
+            data.receipt ||
+            data;
+
+
+        const messageId =
+            receipt.message_id ||
+            receipt.client_id ||
+            receipt.id;
+
+
+        if (!messageId) {
+            return;
+        }
+
+
+        const message =
+            messages.find(
+                item =>
+                    (
+                        item.id &&
+                        String(item.id) ===
+                        String(messageId)
+                    ) ||
+                    (
+                        item.client_id &&
+                        String(item.client_id) ===
+                        String(messageId)
+                    )
+            );
+
+
+        if (!message) {
+            return;
+        }
+
+
+        let status =
+            receipt.status;
+
+
+        if (
+            receipt.seen === true ||
+            receipt.seen_at
+        ) {
+
+            status =
+                "seen";
+
+        } else if (
+            receipt.delivered === true ||
+            receipt.delivered_at
+        ) {
+
+            status =
+                "delivered";
+
+        }
+
+
+        if (status) {
+
+            const normalizedStatus =
+                normalizeStatus(
+                    status
+                );
+
+
+            if (
+                normalizedStatus ===
+                "seen"
+            ) {
+
+                message.status =
+                    "seen";
+
+            } else if (
+                normalizedStatus ===
+                "delivered" &&
+                message.status !==
+                "seen"
+            ) {
+
+                message.status =
+                    "delivered";
+
+            }
+
+        }
+
+
+        if (
+            receipt.delivered_at
+        ) {
+
+            message.delivered_at =
+                receipt.delivered_at;
+
+        }
+
+
+        if (
+            receipt.seen_at
+        ) {
+
+            message.seen_at =
+                receipt.seen_at;
+
+            message.status =
+                "seen";
+
+        }
+
+
+        saveMessages();
+
+
+        updateMessageStatusUI(
+            message.client_id ||
+            message.id,
+            message.status
+        );
+
+    }
+
+
+    /* =====================================================
+       PRESENCE
+    ====================================================== */
+
+    function handleRealtimePresence(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        const online =
+            data.is_online === true ||
+            data.online === true ||
+            data.status === "online";
+
+
+        const lastSeen =
+            data.last_seen ||
+            data.last_seen_at ||
+            null;
+
+
+        if (lastSeen) {
+
+            partner.last_seen =
+                lastSeen;
+
+        }
+
+
+        setOnlineStatus(
+            online,
+            partner.last_seen
+        );
+
+    }
+
+
+    /* =====================================================
+       TYPING
+    ====================================================== */
+
+    function handleRealtimeTyping(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        const typing =
+            data.is_typing === true ||
+            data.typing === true;
+
+
+        partnerTyping =
+            typing;
+
+
+        if (typingEl) {
+
+            typingEl.hidden =
+                !typing;
+
+        }
+
+
+        if (typingName) {
+
+            typingName.textContent =
+                partner.name;
+
+        }
+
+
+        if (typing) {
+
+            if (partnerStatus) {
+
+                partnerStatus.textContent =
+                    "typing...";
+
+
+                partnerStatus.classList.add(
+                    "typing"
+                );
+
+
+                partnerStatus.classList.remove(
+                    "online"
+                );
+
+            }
+
+        } else {
+
+            setOnlineStatus(
+                true,
+                partner.last_seen
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       SEND MESSAGE
+    ====================================================== */
+
+    async function sendMessage(
+        customText = null,
+        messageType = "text"
+    ) {
+
+        const text =
+            customText !== null
+                ? String(
+                    customText
+                ).trim()
+                : (
+                    input?.value ||
+                    ""
+                ).trim();
+
+
+        if (!text) {
+            return;
+        }
+
+
+        const clientId =
+            createMessageId();
+
+
+        const message = {
+
+            id:
+                null,
+
+            client_id:
+                clientId,
+
+            sender_id:
+                getCurrentUserId(),
+
+            receiver_id:
+                partner.id ||
+                null,
+
+            content:
+                text,
+
+            text:
+                text,
+
+            message_type:
+                messageType,
+
+            media_url:
+                null,
+
+            media_type:
+                null,
+
+            created_at:
+                new Date().toISOString(),
+
+            status:
+                "sent",
+
+            is_mine:
+                true
+
+        };
+
+
+        /*
+         * Optimistic UI.
+         * Message appears immediately.
+         */
+
+        messages.push(
+            message
+        );
+
+
+        messages =
+            messages.slice(-500);
+
+
+        saveMessages();
+
+        renderMessages();
+
+        scrollToBottom(true);
+
+
+        if (
+            customText === null &&
+            input
+        ) {
+
+            input.value =
+                "";
+
+        }
+
+
+        stopTyping();
+
+
+        /* ================================================
+           REAL WEBSOCKET SEND
+        ================================================ */
+
+        const sent =
+            realtime?.sendMessage(
+                message
+            );
+
+
+        if (!sent) {
+
+            /*
+             * Message remains in UI as sent.
+             * It will be retried after connection
+             * only when user sends again.
+             */
+
+            setConnectionState(
+                false
+            );
+
+        }
+
+
+        /*
+         * AI analysis.
+         */
+
+        analyzeMessage(
+            text
+        );
+
+    }
+
+
+    /* =====================================================
+       MESSAGE ANALYSIS
+    ====================================================== */
+
+    async function analyzeMessage(
+        text
+    ) {
+
+        try {
+
+            const response =
+                await fetch(
+                    API.analyze,
+                    {
+                        method:
+                            "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                message:
+                                    text,
+
+                                current_mode:
+                                    currentMode,
+
+                                partner_id:
+                                    partner.id ||
+                                    null
+
+                            })
+
+                    }
+                );
+
+
+            if (!response.ok) {
+                return;
+            }
+
+
+            const data =
+                await response.json();
+
+
+            applyAIAnalysis(
+                data
+            );
+
+        } catch (error) {
+
+            console.debug(
+                "[Usanex AI] analysis unavailable",
+                error
+            );
+
+        }
+
+    }
+
+
+    async function analyzeIncomingMessage(
+        text
+    ) {
+
+        try {
+
+            const response =
+                await fetch(
+                    API.analyze,
+                    {
+                        method:
+                            "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                message:
+                                    text,
+
+                                current_mode:
+                                    currentMode,
+
+                                partner_id:
+                                    partner.id ||
+                                    null
+
+                            })
+
+                    }
+                );
+
+
+            if (!response.ok) {
+                return;
+            }
+
+
+            const data =
+                await response.json();
+
+
+            applyAIAnalysis(
+                data
+            );
+
+        } catch {}
+
+    }
+
+
+    function applyAIAnalysis(
+        data
+    ) {
+
+        if (!data) {
+            return;
+        }
+
+
+        if (
+            data.mode &&
+            COUPLE_MODES[
+                data.mode
+            ] &&
+            !manualMood
+        ) {
+
+            setMode(
+                data.mode,
+                false
+            );
+
+        }
+
+
+        if (
+            aiStatus &&
+            data.response
+        ) {
+
+            aiStatus.textContent =
+                data.response;
+
+        }
+
+
+        if (
+            Array.isArray(
+                data.suggestions
+            )
+        ) {
+
+            showSuggestions(
+                data.suggestions
+            );
+
+        }
+
+
+        if (
+            data.animation
+        ) {
+
+            triggerAIAnimation(
+                data.animation
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       MESSAGE RENDERING
+    ====================================================== */
+
+    function renderMessages() {
+
+        if (!messagesEl) {
+            return;
+        }
+
+
+        messagesEl.innerHTML =
+            "";
+
+
+        messages.forEach(
+            message => {
+
+                if (
+                    message.message_type ===
+                    "system"
+                ) {
+
+                    return;
+
+                }
+
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                const mine =
+                    isOwnMessage(
+                        message
+                    );
+
+
+                row.className =
+                    `couple-message-row ${
+                        mine
+                            ? "mine"
+                            : "partner"
+                    }`;
+
+
+                const bubble =
+                    document.createElement(
+                        "article"
+                    );
+
+
+                bubble.className =
+                    `couple-message ${
+                        mine
+                            ? "mine"
+                            : "partner"
+                    }`;
+
+
+                bubble.dataset.messageId =
+                    message.client_id ||
+                    message.id ||
+                    "";
+
+
+                /* =========================================
+                   IMAGE
+                ========================================== */
+
+                if (
+                    message.message_type ===
+                    "image" &&
+                    message.media_url
+                ) {
+
+                    const image =
+                        document.createElement(
+                            "img"
+                        );
+
+
+                    image.className =
+                        "couple-message-image";
+
+
+                    image.src =
+                        message.media_url;
+
+
+                    image.alt =
+                        "Photo";
+
+
+                    image.loading =
+                        "lazy";
+
+
+                    bubble.appendChild(
+                        image
+                    );
+
+                }
+
+
+                /* =========================================
+                   TEXT
+                ========================================== */
+
+                if (
+                    message.text
+                ) {
+
+                    const text =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    text.className =
+                        "couple-message-text";
+
+
+                    text.textContent =
+                        message.text;
+
+
+                    bubble.appendChild(
+                        text
+                    );
+
+                }
+
+
+                /* =========================================
+                   FILE
+                ========================================== */
+
+                if (
+                    message.message_type ===
+                    "file"
+                ) {
+
+                    const file =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    file.className =
+                        "couple-message-file";
+
+
+                    file.textContent =
+                        message.text ||
+                        "📎 File";
+
+
+                    bubble.appendChild(
+                        file
+                    );
+
+                }
+
+
+                /* =========================================
+                   META
+                ========================================== */
+
+                const meta =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                meta.className =
+                    "couple-message-meta";
+
+
+                const time =
+                    document.createElement(
+                        "span"
+                    );
+
+
+                time.className =
+                    "couple-message-time";
+
+
+                time.textContent =
+                    formatTime(
+                        message.created_at
+                    );
+
+
+                meta.appendChild(
+                    time
+                );
+
+
+                /* =========================================
+                   OWN MESSAGE STATUS
+                ========================================== */
+
+                if (mine) {
+
+                    const status =
+                        document.createElement(
+                            "span"
+                        );
+
+
+                    status.className =
+                        `couple-message-status ${
+                            message.status ||
+                            "sent"
+                        }`;
+
+
+                    status.dataset.statusFor =
+                        message.client_id ||
+                        message.id ||
+                        "";
+
+
+                    status.textContent =
+                        getStatusTicks(
+                            message.status
+                        );
+
+
+                    meta.appendChild(
+                        status
+                    );
+
+                }
+
+
+                bubble.appendChild(
+                    meta
+                );
+
+
+                row.appendChild(
+                    bubble
+                );
+
+
+                messagesEl.appendChild(
+                    row
+                );
+
+            }
+        );
+
+
+        updateMoodTheme();
+
+    }
+
+
+    /* =====================================================
+       STATUS
+    ====================================================== */
+
+    function getStatusTicks(
+        status
+    ) {
+
+        if (
+            status === "seen"
+        ) {
+
+            return "✓✓";
+
+        }
+
+
+        if (
+            status === "delivered"
+        ) {
+
+            return "✓✓";
+
+        }
+
+
+        return "✓";
+
+    }
+
+
+    function normalizeStatus(
+        status
+    ) {
+
+        if (
+            status === "seen" ||
+            status === "read"
+        ) {
+
+            return "seen";
+
+        }
+
+
+        if (
+            status === "delivered" ||
+            status === "delivery"
+        ) {
+
+            return "delivered";
+
+        }
+
+
+        return "sent";
+
+    }
+
+
+    function updateMessageStatusUI(
+        messageId,
+        status
+    ) {
+
+        if (!messageId) {
+            return;
+        }
+
+
+        const element =
+            document.querySelector(
+                `.couple-message-status[data-status-for="${CSS.escape(
+                    String(messageId)
+                )}"]`
+            );
+
+
+        if (!element) {
+
+            renderMessages();
+
+            return;
+
+        }
+
+
+        element.className =
+            `couple-message-status ${
+                normalizeStatus(status)
+            }`;
+
+
+        element.textContent =
+            getStatusTicks(
+                status
+            );
+
+    }
+
+
+    /* =====================================================
+       OWN MESSAGE
+    ====================================================== */
+
+    function isOwnMessage(
+        message
+    ) {
+
+        if (
+            typeof message.is_mine ===
+            "boolean"
+        ) {
+
+            return message.is_mine;
+
+        }
+
+
+        const current =
+            getCurrentUserId();
+
+
+        if (
+            !current ||
+            message.sender_id ===
+            null ||
+            message.sender_id ===
+            undefined
+        ) {
+
+            return false;
+
+        }
+
+
+        return (
+            String(
+                message.sender_id
+            ) ===
+            String(current)
+        );
+
+    }
+
+
+    /* =====================================================
+       CONNECTION STATE
+    ====================================================== */
+
+    function setConnectionState(
+        connected
+    ) {
+
+        if (
+            connectionStatus
+        ) {
+
+            connectionStatus.textContent =
+                connected
+                    ? "Connected"
+                    : "Reconnecting...";
+
+        }
+
+    }
+
+
+    function updateConnectionText() {
+
+        if (
+            connectionStatus
+        ) {
+
+            connectionStatus.textContent =
+                "Connecting...";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       PRESENCE UI
+    ====================================================== */
+
+    function setOnlineStatus(
+        online,
+        lastSeen
+    ) {
+
+        if (onlineDot) {
+
+            onlineDot.hidden =
+                !online;
+
+        }
+
+
+        if (!partnerStatus) {
+            return;
+        }
+
+
+        if (online) {
+
+            partnerStatus.textContent =
+                "Online";
+
+
+            partnerStatus.classList.add(
+                "online"
+            );
+
+
+            partnerStatus.classList.remove(
+                "typing"
+            );
+
+        } else {
+
+            partnerStatus.textContent =
+                formatLastSeen(
+                    lastSeen
+                );
+
+
+            partnerStatus.classList.remove(
+                "online",
+                "typing"
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       TYPING
+    ====================================================== */
+
+    function handleInput() {
+
+        if (!realtime) {
+            return;
+        }
+
+
+        realtime.startTyping();
+
+
+        clearTimeout(
+            typingTimer
+        );
+
+
+        typingTimer =
+            setTimeout(
+                () => {
+
+                    realtime.stopTyping();
+
+                },
+                1400
+            );
+
+    }
+
+
+    function stopTyping() {
+
+        clearTimeout(
+            typingTimer
+        );
+
+
+        typingTimer =
+            null;
+
+
+        realtime?.stopTyping();
 
     }
 
@@ -785,14 +2529,22 @@
         manual = false
     ) {
 
-        if (!COUPLE_MODES[mode]) {
-            mode = "calm";
+        if (
+            !COUPLE_MODES[mode]
+        ) {
+
+            mode =
+                "calm";
+
         }
 
 
-        currentMode = mode;
+        currentMode =
+            mode;
 
-        manualMood = manual;
+
+        manualMood =
+            manual;
 
 
         localStorage.setItem(
@@ -817,28 +2569,32 @@
 
 
         const mode =
-            COUPLE_MODES[currentMode];
+            COUPLE_MODES[
+                currentMode
+            ];
 
 
-        if (!mode) return;
+        if (!mode) {
+            return;
+        }
 
 
-        headerMood.title =
-            `Current mood: ${mode.name}`;
+        if (headerMood) {
 
+            headerMood.title =
+                `Current mood: ${mode.name}`;
 
-        document.documentElement.style.setProperty(
-            "--mood-primary",
-            getComputedStyle(document.body)
-                .getPropertyValue("--mood-primary")
-        );
+        }
 
     }
 
 
     function openMood() {
 
-        moodOverlay.classList.remove("hidden");
+        moodOverlay?.classList.remove(
+            "hidden"
+        );
+
 
         highlightCurrentMood();
 
@@ -847,7 +2603,9 @@
 
     function closeMoodPanel() {
 
-        moodOverlay.classList.add("hidden");
+        moodOverlay?.classList.add(
+            "hidden"
+        );
 
     }
 
@@ -855,43 +2613,65 @@
     function highlightCurrentMood() {
 
         moodGrid
-            ?.querySelectorAll("[data-mode]")
-            .forEach(button => {
+            ?.querySelectorAll(
+                "[data-mode]"
+            )
+            .forEach(
+                button => {
 
-                button.classList.toggle(
-                    "active",
-                    button.dataset.mode === currentMode
-                );
+                    button.classList.toggle(
+                        "active",
+                        button.dataset.mode ===
+                        currentMode
+                    );
 
-            });
+                }
+            );
 
     }
 
 
     /* =====================================================
-       AUTOMATIC TIME / NIGHT
+       AUTOMATIC TIME MOOD
     ====================================================== */
 
     function applyAutomaticTimeMood() {
+
+        if (manualMood) {
+            return;
+        }
+
 
         const hour =
             new Date().getHours();
 
 
-        if (manualMood) return;
+        if (
+            hour >= 5 &&
+            hour < 11
+        ) {
 
+            setMode(
+                "good_morning",
+                false
+            );
 
-        if (hour >= 5 && hour < 11) {
+        } else if (
+            hour >= 22 ||
+            hour < 5
+        ) {
 
-            setMode("good_morning", false);
-
-        } else if (hour >= 22 || hour < 5) {
-
-            setMode("good_night", false);
+            setMode(
+                "good_night",
+                false
+            );
 
         } else {
 
-            setMode("calm", false);
+            setMode(
+                "calm",
+                false
+            );
 
         }
 
@@ -905,7 +2685,8 @@
 
 
         const night =
-            hour >= 21 || hour < 6;
+            hour >= 21 ||
+            hour < 6;
 
 
         document.body.classList.toggle(
@@ -917,1162 +2698,120 @@
 
 
     /* =====================================================
-       SEND MESSAGE
+       SUGGESTIONS
     ====================================================== */
 
-    async function sendMessage(
-        customText = null,
-        messageType = "text"
-    ) {
+    function updateSuggestions() {
 
-        const text =
-            customText !== null
-                ? String(customText).trim()
-                : input.value.trim();
+        const mode =
+            COUPLE_MODES[
+                currentMode
+            ];
 
 
-        if (!text) return;
-
-
-        const message = {
-
-            id:
-                createMessageId(),
-
-            client_id:
-                createMessageId(),
-
-            sender_id:
-                getCurrentUserId(),
-
-            receiver_id:
-                partner.id || null,
-
-            text,
-
-            message_type:
-                messageType,
-
-            created_at:
-                new Date().toISOString(),
-
-            status:
-                "sent",
-
-            is_mine:
-                true
-
-        };
-
-
-        messages.push(message);
-
-        saveMessages();
-
-        renderMessages();
-
-        scrollToBottom(true);
-
-
-        if (customText === null) {
-            input.value = "";
-        }
-
-
-        stopTyping();
-
-
-        /* WebSocket first */
-
-        if (socketReady) {
-
-            sendSocket({
-
-                type: "message",
-
-                message
-
-            });
-
-        }
-
-
-        /* REST fallback */
-
-        try {
-
-            const response =
-                await fetch(
-                    API.message,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            partner_id:
-                                partner.id || null,
-
-                            message:
-                                text,
-
-                            message_type:
-                                messageType,
-
-                            client_id:
-                                message.client_id
-                        })
-                    }
-                );
-
-
-            if (response.ok) {
-
-                const data =
-                    await response.json()
-                        .catch(() => ({}));
-
-
-                updateMessageFromServer(
-                    message.client_id,
-                    data
-                );
-
-            }
-
-        } catch (error) {
-
-            console.debug(
-                "Couple message REST unavailable",
-                error
-            );
-
-        }
-
-
-        analyzeMessage(text);
-
-    }
-
-
-    /* =====================================================
-       MESSAGE ANALYSIS
-    ====================================================== */
-
-    async function analyzeMessage(text) {
-
-        try {
-
-            const response =
-                await fetch(
-                    API.analyze,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-
-                            message: text,
-
-                            current_mode:
-                                currentMode,
-
-                            partner_id:
-                                partner.id || null
-
-                        })
-                    }
-                );
-
-
-            if (!response.ok) return;
-
-
-            const data =
-                await response.json();
-
-
-            if (
-                data.mode &&
-                COUPLE_MODES[data.mode] &&
-                !manualMood
-            ) {
-
-                setMode(
-                    data.mode,
-                    false
-                );
-
-            }
-
-
-            if (data.response) {
-
-                aiStatus.textContent =
-                    data.response;
-
-            } else {
-
-                aiStatus.textContent =
-                    "Understanding your conversation...";
-
-            }
-
-
-            if (Array.isArray(data.suggestions)) {
-
-                showSuggestions(
-                    data.suggestions
-                );
-
-            }
-
-        } catch (error) {
-
-            console.debug(
-                "AI analysis unavailable",
-                error
-            );
-
-        }
-
-    }
-
-
-    /* =====================================================
-       MESSAGE RENDERING
-    ====================================================== */
-
-    function renderMessages() {
-
-        messagesEl.innerHTML = "";
-
-
-        if (!messages.length) {
+        if (!mode) {
             return;
         }
 
 
-        messages.forEach(message => {
-
-            const row =
-                document.createElement("div");
-
-
-            const mine =
-                isOwnMessage(message);
-
-
-            row.className =
-                `couple-message-row ${
-                    mine ? "mine" : "partner"
-                }`;
-
-
-            const bubble =
-                document.createElement("article");
-
-
-            bubble.className =
-                `couple-message ${
-                    mine ? "mine" : "partner"
-                }`;
-
-
-            bubble.dataset.messageId =
-                message.client_id ||
-                message.id;
-
-
-            if (
-                message.message_type === "image" &&
-                message.media_url
-            ) {
-
-                const image =
-                    document.createElement("img");
-
-                image.className =
-                    "couple-message-image";
-
-                image.src =
-                    message.media_url;
-
-                image.alt =
-                    "Photo";
-
-                bubble.appendChild(image);
-
-            }
-
-
-            if (message.text) {
-
-                const text =
-                    document.createElement("div");
-
-                text.className =
-                    "couple-message-text";
-
-                text.textContent =
-                    message.text;
-
-                bubble.appendChild(text);
-
-            }
-
-
-            const meta =
-                document.createElement("div");
-
-            meta.className =
-                "couple-message-meta";
-
-
-            const time =
-                document.createElement("span");
-
-            time.className =
-                "couple-message-time";
-
-            time.textContent =
-                formatTime(
-                    message.created_at
-                );
-
-
-            meta.appendChild(time);
-
-
-            if (mine) {
-
-                const status =
-                    document.createElement("span");
-
-                status.className =
-                    `couple-message-status ${
-                        message.status || "sent"
-                    }`;
-
-                status.dataset.statusFor =
-                    message.client_id ||
-                    message.id;
-
-                status.textContent =
-                    getStatusTicks(
-                        message.status
-                    );
-
-                meta.appendChild(status);
-
-            }
-
-
-            bubble.appendChild(meta);
-
-            row.appendChild(bubble);
-
-            messagesEl.appendChild(row);
-
-        });
-
-
-        updateMoodTheme();
-
-    }
-
-
-    function getStatusTicks(status) {
-
-        if (status === "seen") {
-            return "✓✓";
-        }
-
-        if (status === "delivered") {
-            return "✓✓";
-        }
-
-        return "✓";
-    }
-
-
-    function isOwnMessage(message) {
-
-        if (
-            typeof message.is_mine === "boolean"
-        ) {
-            return message.is_mine;
-        }
-
-
-        const current =
-            getCurrentUserId();
-
-
-        return (
-            message.sender_id &&
-            current &&
-            String(message.sender_id) ===
-            String(current)
+        showSuggestions(
+            mode.suggestions
         );
 
     }
 
 
-    /* =====================================================
-       SERVER MESSAGE UPDATE
-    ====================================================== */
-
-    function updateMessageFromServer(
-        clientId,
-        data
+    function showSuggestions(
+        items
     ) {
 
-        const message =
-            messages.find(
-                item =>
-                    item.client_id === clientId
-            );
+        if (
+            !Array.isArray(items) ||
+            !items.length
+        ) {
 
+            if (suggestionsEl) {
 
-        if (!message) return;
+                suggestionsEl.hidden =
+                    true;
 
-
-        if (data.id) {
-            message.id = data.id;
-        }
-
-
-        if (data.status) {
-
-            message.status =
-                normalizeStatus(
-                    data.status
-                );
-
-        }
-
-
-        if (data.delivered_at) {
-
-            message.delivered_at =
-                data.delivered_at;
-
-            if (message.status !== "seen") {
-                message.status = "delivered";
             }
 
-        }
-
-
-        if (data.seen_at) {
-
-            message.seen_at =
-                data.seen_at;
-
-            message.status = "seen";
+            return;
 
         }
 
 
-        saveMessages();
-
-        updateMessageStatusUI(
-            clientId,
-            message.status
-        );
-
-    }
-
-
-    function updateMessageStatusUI(
-        messageId,
-        status
-    ) {
-
-        const element =
-            document.querySelector(
-                `.couple-message-status[data-status-for="${CSS.escape(messageId)}"]`
-            );
-
-
-        if (!element) {
-            renderMessages();
+        if (!suggestionList) {
             return;
         }
 
 
-        element.className =
-            `couple-message-status ${status}`;
+        suggestionList.innerHTML =
+            "";
 
 
-        element.textContent =
-            getStatusTicks(status);
+        items
+            .slice(0, 5)
+            .forEach(
+                text => {
 
-    }
-
-
-    function normalizeStatus(status) {
-
-        if (
-            status === "seen" ||
-            status === "read"
-        ) {
-            return "seen";
-        }
-
-        if (
-            status === "delivered" ||
-            status === "delivery"
-        ) {
-            return "delivered";
-        }
-
-        return "sent";
-
-    }
+                    const button =
+                        document.createElement(
+                            "button"
+                        );
 
 
-    /* =====================================================
-       HISTORY
-    ====================================================== */
-
-    async function loadHistory() {
-
-        try {
-
-            const url =
-                partner.id
-                    ? `${API.history}?partner_id=${encodeURIComponent(partner.id)}`
-                    : API.history;
+                    button.type =
+                        "button";
 
 
-            const response =
-                await fetch(url);
+                    button.className =
+                        "couple-suggestion";
 
 
-            if (!response.ok) return;
+                    button.textContent =
+                        text;
 
 
-            const data =
-                await response.json();
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            if (input) {
+
+                                input.value =
+                                    text;
 
 
-            const serverMessages =
-                Array.isArray(data)
-                    ? data
-                    : (
-                        Array.isArray(data.messages)
-                            ? data.messages
-                            : []
+                                input.focus();
+
+                            }
+
+
+                            if (suggestionsEl) {
+
+                                suggestionsEl.hidden =
+                                    true;
+
+                            }
+
+                        }
                     );
 
 
-            if (!serverMessages.length) {
-                return;
-            }
-
-
-            messages =
-                mergeMessages(
-                    messages,
-                    serverMessages
-                );
-
-
-            saveMessages();
-
-            renderMessages();
-
-            scrollToBottom(false);
-
-        } catch (error) {
-
-            console.debug(
-                "History unavailable",
-                error
-            );
-
-        }
-
-    }
-
-
-    function mergeMessages(
-        local,
-        server
-    ) {
-
-        const map =
-            new Map();
-
-
-        [...local, ...server]
-            .forEach(message => {
-
-                const key =
-                    message.client_id ||
-                    message.id ||
-                    createMessageId();
-
-
-                map.set(
-                    String(key),
-                    normalizeMessage(message)
-                );
-
-            });
-
-
-        return Array.from(map.values())
-            .sort(
-                (a, b) =>
-                    new Date(a.created_at) -
-                    new Date(b.created_at)
-            );
-
-    }
-
-
-    function normalizeMessage(message) {
-
-        return {
-
-            ...message,
-
-            status:
-                normalizeStatus(
-                    message.status
-                ),
-
-            is_mine:
-                isOwnMessage(message)
-
-        };
-
-    }
-
-
-    /* =====================================================
-       WEBSOCKET
-    ====================================================== */
-
-    function connectWebSocket() {
-
-        if (!partner.id) {
-
-            setConnectionState(false);
-
-            return;
-
-        }
-
-
-        clearTimeout(reconnectTimer);
-
-
-        const spaceId =
-            getCoupleSpaceId();
-
-
-        const url =
-            `${WS_BASE}/ws/couple-chat/${encodeURIComponent(spaceId)}`;
-
-
-        try {
-
-            socket =
-                new WebSocket(url);
-
-        } catch (error) {
-
-            setConnectionState(false);
-
-            scheduleReconnect();
-
-            return;
-
-        }
-
-
-        socket.addEventListener(
-            "open",
-            () => {
-
-                socketReady = true;
-
-                setConnectionState(true);
-
-                sendSocket({
-                    type: "presence",
-                    status: "online"
-                });
-
-            }
-        );
-
-
-        socket.addEventListener(
-            "message",
-            handleSocketMessage
-        );
-
-
-        socket.addEventListener(
-            "close",
-            () => {
-
-                socketReady = false;
-
-                setConnectionState(false);
-
-                scheduleReconnect();
-
-            }
-        );
-
-
-        socket.addEventListener(
-            "error",
-            () => {
-
-                socketReady = false;
-
-                setConnectionState(false);
-
-            }
-        );
-
-    }
-
-
-    function scheduleReconnect() {
-
-        clearTimeout(reconnectTimer);
-
-
-        reconnectTimer =
-            setTimeout(
-                connectWebSocket,
-                4000
-            );
-
-    }
-
-
-    function sendSocket(payload) {
-
-        if (
-            !socket ||
-            socket.readyState !== WebSocket.OPEN
-        ) {
-            return false;
-        }
-
-
-        try {
-
-            socket.send(
-                JSON.stringify(payload)
-            );
-
-            return true;
-
-        } catch (error) {
-
-            return false;
-
-        }
-
-    }
-
-
-    function handleSocketMessage(event) {
-
-        let data;
-
-
-        try {
-
-            data =
-                JSON.parse(event.data);
-
-        } catch {
-
-            return;
-
-        }
-
-
-        switch (data.type) {
-
-            case "message":
-                receiveSocketMessage(
-                    data.message || data
-                );
-                break;
-
-
-            case "message_status":
-            case "status":
-                handleMessageStatus(data);
-                break;
-
-
-            case "presence":
-                handlePresence(data);
-                break;
-
-
-            case "typing":
-                handleTypingEvent(data);
-                break;
-
-
-            case "read":
-                handleMessageStatus({
-                    ...data,
-                    status: "seen"
-                });
-                break;
-
-        }
-
-    }
-
-
-    function receiveSocketMessage(message) {
-
-        const normalized =
-            normalizeMessage({
-                ...message,
-
-                is_mine:
-                    false,
-
-                status:
-                    message.status ||
-                    "delivered"
-
-            });
-
-
-        const exists =
-            messages.some(
-                item =>
-                    (
-                        item.id &&
-                        normalized.id &&
-                        String(item.id) ===
-                        String(normalized.id)
-                    ) ||
-                    (
-                        item.client_id &&
-                        normalized.client_id &&
-                        item.client_id ===
-                        normalized.client_id
-                    )
+                    suggestionList.appendChild(
+                        button
+                    );
+
+                }
             );
 
 
-        if (!exists) {
+        if (suggestionsEl) {
 
-            messages.push(normalized);
-
-            saveMessages();
-
-            renderMessages();
-
-            scrollToBottom(true);
-
-        }
-
-
-        sendDeliveryAck(
-            normalized
-        );
-
-
-        markMessageSeen(
-            normalized
-        );
-
-    }
-
-
-    function handleMessageStatus(data) {
-
-        const id =
-            data.client_id ||
-            data.message_id ||
-            data.id;
-
-
-        if (!id) return;
-
-
-        const message =
-            messages.find(
-                item =>
-                    item.client_id === id ||
-                    String(item.id) === String(id)
-            );
-
-
-        if (!message) return;
-
-
-        const status =
-            normalizeStatus(
-                data.status
-            );
-
-
-        if (
-            status === "seen" ||
-            (
-                status === "delivered" &&
-                message.status === "sent"
-            )
-        ) {
-
-            message.status =
-                status;
-
-        }
-
-
-        if (data.delivered_at) {
-            message.delivered_at =
-                data.delivered_at;
-        }
-
-
-        if (data.seen_at) {
-            message.seen_at =
-                data.seen_at;
-        }
-
-
-        saveMessages();
-
-        updateMessageStatusUI(
-            message.client_id || message.id,
-            message.status
-        );
-
-    }
-
-
-    function sendDeliveryAck(message) {
-
-        sendSocket({
-            type: "delivered",
-            message_id:
-                message.id ||
-                message.client_id
-        });
-
-    }
-
-
-    function markMessageSeen(message) {
-
-        sendSocket({
-            type: "seen",
-            message_id:
-                message.id ||
-                message.client_id
-        });
-
-    }
-
-
-    /* =====================================================
-       PRESENCE
-    ====================================================== */
-
-    function setConnectionState(online) {
-
-        if (online) {
-
-            setOnlineStatus(
-                true,
-                null
-            );
-
-        } else {
-
-            setOnlineStatus(
-                false,
-                partner.last_seen
-            );
-
-        }
-
-    }
-
-
-    function setOnlineStatus(
-        online,
-        lastSeen
-    ) {
-
-        onlineDot.hidden =
-            !online;
-
-
-        if (online) {
-
-            partnerStatus.textContent =
-                "Online";
-
-            partnerStatus.classList.add(
-                "online"
-            );
-
-            partnerStatus.classList.remove(
-                "typing"
-            );
-
-        } else {
-
-            partnerStatus.textContent =
-                formatLastSeen(lastSeen);
-
-            partnerStatus.classList.remove(
-                "online",
-                "typing"
-            );
-
-        }
-
-    }
-
-
-    function handlePresence(data) {
-
-        const online =
-            data.status === "online" ||
-            data.online === true;
-
-
-        partner.last_seen =
-            data.last_seen ||
-            data.last_seen_at ||
-            partner.last_seen;
-
-
-        setOnlineStatus(
-            online,
-            partner.last_seen
-        );
-
-    }
-
-
-    function sendPresence(status) {
-
-        sendSocket({
-            type: "presence",
-            status
-        });
-
-    }
-
-
-    function updateConnectionText() {
-
-        connectionStatus.textContent =
-            "Connected";
-
-    }
-
-
-    /* =====================================================
-       TYPING
-    ====================================================== */
-
-    function handleInput() {
-
-        sendTyping(true);
-
-
-        clearTimeout(typingTimer);
-
-
-        typingTimer =
-            setTimeout(
-                () => sendTyping(false),
-                1400
-            );
-
-    }
-
-
-    function sendTyping(isTyping) {
-
-        sendSocket({
-            type: "typing",
-            typing: isTyping
-        });
-
-    }
-
-
-    function stopTyping() {
-
-        clearTimeout(typingTimer);
-
-        sendTyping(false);
-
-    }
-
-
-    function handleTypingEvent(data) {
-
-        const typing =
-            data.typing === true;
-
-
-        partnerTyping =
-            typing;
-
-
-        typingEl.hidden =
-            !typing;
-
-
-        typingName.textContent =
-            partner.name;
-
-
-        if (typing) {
-
-            partnerStatus.textContent =
-                "typing...";
-
-            partnerStatus.classList.add(
-                "typing"
-            );
-
-            partnerStatus.classList.remove(
-                "online"
-            );
-
-        } else {
-
-            setOnlineStatus(
-                data.online !== false,
-                data.last_seen
-            );
+            suggestionsEl.hidden =
+                false;
 
         }
 
@@ -2083,44 +2822,54 @@
        QUICK ACTIONS
     ====================================================== */
 
-    function handleQuickAction(action) {
+    function handleQuickAction(
+        action
+    ) {
 
         const modeMap = {
 
-            love: "romantic",
+            love:
+                "romantic",
 
-            memory: "memory",
+            memory:
+                "memory",
 
-            question: "deep_conversation",
+            question:
+                "deep_conversation",
 
-            game: "game"
+            game:
+                "game"
 
         };
 
 
-        if (modeMap[action]) {
+        const mode =
+            modeMap[action];
+
+
+        if (mode) {
 
             setMode(
-                modeMap[action],
+                mode,
                 true
             );
 
         }
 
 
-        const mode =
+        const selected =
             COUPLE_MODES[
-                modeMap[action] || currentMode
+                mode ||
+                currentMode
             ];
 
 
-        if (!mode) return;
-
-
-        if (mode.suggestions?.length) {
+        if (
+            selected?.suggestions
+        ) {
 
             showSuggestions(
-                mode.suggestions
+                selected.suggestions
             );
 
         }
@@ -2129,93 +2878,12 @@
 
 
     /* =====================================================
-       SUGGESTIONS
-    ====================================================== */
-
-    function updateSuggestions() {
-
-        const mode =
-            COUPLE_MODES[currentMode];
-
-
-        if (!mode) return;
-
-
-        showSuggestions(
-            mode.suggestions
-        );
-
-    }
-
-
-    function showSuggestions(items) {
-
-        if (!Array.isArray(items) || !items.length) {
-
-            suggestionsEl.hidden = true;
-
-            return;
-
-        }
-
-
-        suggestionList.innerHTML = "";
-
-
-        items.slice(0, 5)
-            .forEach(text => {
-
-                const button =
-                    document.createElement("button");
-
-
-                button.type =
-                    "button";
-
-
-                button.className =
-                    "couple-suggestion";
-
-
-                button.textContent =
-                    text;
-
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        input.value =
-                            text;
-
-                        input.focus();
-
-                        suggestionsEl.hidden =
-                            true;
-
-                    }
-                );
-
-
-                suggestionList.appendChild(
-                    button
-                );
-
-            });
-
-
-        suggestionsEl.hidden = false;
-
-    }
-
-
-    /* =====================================================
-       AI
+       AI PANEL
     ====================================================== */
 
     function openAi() {
 
-        aiOverlay.classList.remove(
+        aiOverlay?.classList.remove(
             "hidden"
         );
 
@@ -2224,14 +2892,16 @@
 
     function closeAiPanel() {
 
-        aiOverlay.classList.add(
+        aiOverlay?.classList.add(
             "hidden"
         );
 
     }
 
 
-    function handleAiAction(action) {
+    function handleAiAction(
+        action
+    ) {
 
         closeAiPanel();
 
@@ -2260,7 +2930,8 @@
                 );
 
                 showSuggestions(
-                    COUPLE_MODES.deep_conversation
+                    COUPLE_MODES
+                        .deep_conversation
                         .suggestions
                 );
 
@@ -2275,7 +2946,8 @@
                 );
 
                 showSuggestions(
-                    COUPLE_MODES.game
+                    COUPLE_MODES
+                        .game
                         .suggestions
                 );
 
@@ -2292,7 +2964,7 @@
 
     function openMenu() {
 
-        menuOverlay.classList.remove(
+        menuOverlay?.classList.remove(
             "hidden"
         );
 
@@ -2301,26 +2973,34 @@
 
     function closeMenuPanel() {
 
-        menuOverlay.classList.add(
+        menuOverlay?.classList.add(
             "hidden"
         );
 
     }
 
 
-    function handleMenuAction(action) {
+    function handleMenuAction(
+        action
+    ) {
 
         closeMenuPanel();
 
 
-        if (action === "export") {
+        if (
+            action ===
+            "export"
+        ) {
 
             exportChat();
 
         }
 
 
-        if (action === "clear") {
+        if (
+            action ===
+            "clear"
+        ) {
 
             clearChat();
 
@@ -2329,52 +3009,89 @@
     }
 
 
+    /* =====================================================
+       EXPORT
+    ====================================================== */
+
     function exportChat() {
 
         const text =
-            messages.map(message => {
+            messages
+                .map(
+                    message => {
 
-                const who =
-                    isOwnMessage(message)
-                        ? "You"
-                        : partner.name;
+                        const who =
+                            isOwnMessage(
+                                message
+                            )
+                                ? "You"
+                                : partner.name;
 
 
-                return `[${formatDateTime(message.created_at)}] ${who}: ${message.text || "[media]"}`;
+                        return (
+                            `[${formatDateTime(
+                                message.created_at
+                            )}] ` +
+                            `${who}: ` +
+                            `${message.text || "[media]"}`
+                        );
 
-            }).join("\n");
+                    }
+                )
+                .join("\n");
 
 
         const blob =
             new Blob(
                 [text],
                 {
-                    type: "text/plain;charset=utf-8"
+                    type:
+                        "text/plain;charset=utf-8"
                 }
             );
 
 
         const url =
-            URL.createObjectURL(blob);
+            URL.createObjectURL(
+                blob
+            );
 
 
         const link =
-            document.createElement("a");
+            document.createElement(
+                "a"
+            );
 
 
-        link.href = url;
+        link.href =
+            url;
+
 
         link.download =
             "usanex-couple-chat.txt";
 
 
+        document.body.appendChild(
+            link
+        );
+
+
         link.click();
 
 
-        URL.revokeObjectURL(url);
+        link.remove();
+
+
+        URL.revokeObjectURL(
+            url
+        );
 
     }
 
+
+    /* =====================================================
+       CLEAR
+    ====================================================== */
 
     function clearChat() {
 
@@ -2384,10 +3101,14 @@
             );
 
 
-        if (!confirmed) return;
+        if (!confirmed) {
+            return;
+        }
 
 
-        messages = [];
+        messages =
+            [];
+
 
         saveMessages();
 
@@ -2397,14 +3118,14 @@
 
 
     /* =====================================================
-       EMOJI PICKER
+       EMOJI DATA
     ====================================================== */
 
     const EMOJI_CATEGORIES = {
 
         recent: [
             "❤️","😂","😊","🥰","😍","😘","😭","🥺",
-            "😏","🔥","💕","💗","🫶","✨","😘","💋"
+            "😏","🔥","💕","💗","🫶","✨","💋"
         ],
 
         love: [
@@ -2439,14 +3160,14 @@
             "🍎","🍊","🍋","🍌","🍉","🍇","🍓","🫐",
             "🍒","🍑","🥭","🍍","🥥","🥝","🍕","🍔",
             "🍟","🌭","🌮","🍿","🍩","🍪","🎂","🍰",
-            "🍫","🍭","☕","🧋","🍵","🥤","🍓"
+            "🍫","🍭","☕","🧋","🍵","🥤"
         ],
 
         activities: [
             "⚽","🏀","🏈","⚾","🎾","🏐","🎮","🎯",
             "🎲","🎸","🎹","🎤","🎧","🎬","🎨","🏆",
             "🏃","🚴","🏊","🧘","💃","🕺","🎉","🎊",
-            "🎁","🎈","🎵","🎶","🎮","🎯"
+            "🎁","🎈","🎵","🎶"
         ],
 
         travel: [
@@ -2473,6 +3194,10 @@
     };
 
 
+    /* =====================================================
+       EMOJI PICKER
+    ====================================================== */
+
     function toggleEmojiPicker() {
 
         if (emojiPicker) {
@@ -2492,7 +3217,9 @@
     function createEmojiPicker() {
 
         const panel =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         panel.className =
@@ -2504,7 +3231,9 @@
 
 
         const search =
-            document.createElement("input");
+            document.createElement(
+                "input"
+            );
 
 
         search.className =
@@ -2515,11 +3244,15 @@
             "Search emoji...";
 
 
-        panel.appendChild(search);
+        panel.appendChild(
+            search
+        );
 
 
         const categories =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         categories.className =
@@ -2551,12 +3284,19 @@
         };
 
 
-        Object.keys(EMOJI_CATEGORIES)
+        Object.keys(
+            EMOJI_CATEGORIES
+        )
             .forEach(
-                (category, index) => {
+                (
+                    category,
+                    index
+                ) => {
 
                     const button =
-                        document.createElement("button");
+                        document.createElement(
+                            "button"
+                        );
 
 
                     button.type =
@@ -2567,15 +3307,21 @@
                         "emoji-category-button";
 
 
-                    if (index === 0) {
+                    if (
+                        index === 0
+                    ) {
+
                         button.classList.add(
                             "active"
                         );
+
                     }
 
 
                     button.textContent =
-                        categoryIcons[category];
+                        categoryIcons[
+                            category
+                        ];
 
 
                     button.dataset.category =
@@ -2626,14 +3372,18 @@
 
 
         const grid =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         grid.className =
             "emoji-grid";
 
 
-        panel.appendChild(grid);
+        panel.appendChild(
+            grid
+        );
 
 
         renderEmojiGrid(
@@ -2647,7 +3397,9 @@
             () => {
 
                 const query =
-                    search.value.trim();
+                    search.value
+                        .trim()
+                        .toLowerCase();
 
 
                 if (!query) {
@@ -2663,15 +3415,19 @@
 
 
                 const all =
-                    Object.values(
-                        EMOJI_CATEGORIES
-                    ).flat();
+                    [
+                        ...new Set(
+                            Object.values(
+                                EMOJI_CATEGORIES
+                            ).flat()
+                        )
+                    ];
 
 
                 renderEmojiGrid(
                     grid,
                     null,
-                    [...new Set(all)]
+                    all
                 );
 
             }
@@ -2691,66 +3447,74 @@
         customList = null
     ) {
 
-        grid.innerHTML = "";
-
-
-        let list;
-
-
-        if (customList) {
-
-            list = customList;
-
-        } else {
-
-            list =
-                EMOJI_CATEGORIES[
-                    category
-                ] || [];
-
+        if (!grid) {
+            return;
         }
 
 
-        list.forEach(emoji => {
-
-            const button =
-                document.createElement("button");
+        grid.innerHTML =
+            "";
 
 
-            button.type =
-                "button";
+        const list =
+            customList ||
+            EMOJI_CATEGORIES[
+                category
+            ] ||
+            [];
 
 
-            button.className =
-                "emoji-item";
+        list.forEach(
+            emoji => {
 
-
-            button.textContent =
-                emoji;
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    insertEmoji(
-                        emoji
+                const button =
+                    document.createElement(
+                        "button"
                     );
 
-                }
-            );
+
+                button.type =
+                    "button";
 
 
-            grid.appendChild(
-                button
-            );
+                button.className =
+                    "emoji-item";
 
-        });
+
+                button.textContent =
+                    emoji;
+
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        insertEmoji(
+                            emoji
+                        );
+
+                    }
+                );
+
+
+                grid.appendChild(
+                    button
+                );
+
+            }
+        );
 
     }
 
 
-    function insertEmoji(emoji) {
+    function insertEmoji(
+        emoji
+    ) {
+
+        if (!input) {
+            return;
+        }
+
 
         const start =
             input.selectionStart ??
@@ -2763,16 +3527,22 @@
 
 
         input.value =
-            input.value.slice(0, start) +
+            input.value.slice(
+                0,
+                start
+            ) +
             emoji +
-            input.value.slice(end);
+            input.value.slice(
+                end
+            );
 
 
         input.focus();
 
 
         const cursor =
-            start + emoji.length;
+            start +
+            emoji.length;
 
 
         input.setSelectionRange(
@@ -2788,7 +3558,9 @@
     }
 
 
-    function saveRecentEmoji(emoji) {
+    function saveRecentEmoji(
+        emoji
+    ) {
 
         let recent =
             [];
@@ -2800,7 +3572,8 @@
                 JSON.parse(
                     localStorage.getItem(
                         RECENT_EMOJI_KEY
-                    ) || "[]"
+                    ) ||
+                    "[]"
                 );
 
         } catch {}
@@ -2813,12 +3586,15 @@
                     item =>
                         item !== emoji
                 )
-            ].slice(0, 30);
+            ]
+                .slice(0, 30);
 
 
         localStorage.setItem(
             RECENT_EMOJI_KEY,
-            JSON.stringify(recent)
+            JSON.stringify(
+                recent
+            )
         );
 
     }
@@ -2828,31 +3604,44 @@
 
         emojiPicker?.remove();
 
-        emojiPicker = null;
+        emojiPicker =
+            null;
 
     }
 
 
     /* =====================================================
-       FILES
+       FILES / IMAGE
     ====================================================== */
 
-    async function handleFiles(event) {
+    async function handleFiles(
+        event
+    ) {
 
         const files =
             Array.from(
-                event.target.files || []
+                event.target.files ||
+                []
             );
 
 
-        event.target.value = "";
+        event.target.value =
+            "";
 
 
-        for (const file of files) {
+        for (
+            const file of files
+        ) {
 
-            if (file.type.startsWith("image/")) {
+            if (
+                file.type.startsWith(
+                    "image/"
+                )
+            ) {
 
-                await sendImageFile(file);
+                await sendImageFile(
+                    file
+                );
 
             } else {
 
@@ -2868,33 +3657,49 @@
     }
 
 
-    async function sendImageFile(file) {
+    async function sendImageFile(
+        file
+    ) {
 
         const localUrl =
-            URL.createObjectURL(file);
+            URL.createObjectURL(
+                file
+            );
+
+
+        const clientId =
+            createMessageId();
 
 
         const message = {
 
             id:
-                createMessageId(),
+                null,
 
             client_id:
-                createMessageId(),
+                clientId,
 
             sender_id:
                 getCurrentUserId(),
 
             receiver_id:
-                partner.id || null,
+                partner.id ||
+                null,
 
-            text: "",
+            content:
+                "",
+
+            text:
+                "",
 
             message_type:
                 "image",
 
             media_url:
                 localUrl,
+
+            media_type:
+                file.type,
 
             created_at:
                 new Date().toISOString(),
@@ -2908,7 +3713,10 @@
         };
 
 
-        messages.push(message);
+        messages.push(
+            message
+        );
+
 
         saveMessages();
 
@@ -2918,18 +3726,24 @@
 
 
         /*
-         * Real media upload endpoint can be connected later.
+         * Backend accepts media_url.
+         * Current local blob URL is useful only
+         * for immediate preview. A permanent
+         * Cloudinary upload can later replace
+         * this URL before sending.
          */
 
-        if (socketReady) {
-
-            sendSocket({
-
-                type: "media",
-
+        const sent =
+            realtime?.sendMessage(
                 message
+            );
 
-            });
+
+        if (!sent) {
+
+            setConnectionState(
+                false
+            );
 
         }
 
@@ -2948,20 +3762,33 @@
                 JSON.parse(
                     localStorage.getItem(
                         STORAGE_KEY
-                    ) || "[]"
+                    ) ||
+                    "[]"
                 );
 
 
-            if (Array.isArray(stored)) {
-                return stored.map(
-                    normalizeMessage
-                );
+            if (
+                Array.isArray(
+                    stored
+                )
+            ) {
+
+                return stored
+                    .map(
+                        normalizeRealtimeMessage
+                    )
+                    .filter(
+                        message =>
+                            message.message_type !==
+                            "system"
+                    );
+
             }
 
         } catch (error) {
 
             console.debug(
-                "Unable to load couple messages",
+                "[Usanex] local messages unavailable",
                 error
             );
 
@@ -2987,7 +3814,7 @@
         } catch (error) {
 
             console.debug(
-                "Unable to save couple messages",
+                "[Usanex] unable to save messages",
                 error
             );
 
@@ -2997,283 +3824,7 @@
 
 
     /* =====================================================
-       WELCOME
-    ====================================================== */
-
-    function showWelcomeIfEmpty() {
-
-        if (messages.length) return;
-
-
-        const hour =
-            new Date().getHours();
-
-
-        let text;
-
-
-        if (hour >= 5 && hour < 11) {
-
-            text =
-                "Good morning ❤️ Start your beautiful conversation.";
-
-        } else if (
-            hour >= 22 ||
-            hour < 5
-        ) {
-
-            text =
-                "Good night 🌙 Your Couple Space is ready.";
-
-        } else {
-
-            text =
-                "Welcome to your Couple Space ❤️";
-
-        }
-
-
-        const welcome = {
-
-            id:
-                "welcome-" +
-                Date.now(),
-
-            client_id:
-                "welcome-" +
-                Date.now(),
-
-            sender_id:
-                "system",
-
-            text,
-
-            message_type:
-                "system",
-
-            created_at:
-                new Date().toISOString(),
-
-            status:
-                "seen",
-
-            is_mine:
-                false
-
-        };
-
-
-        messages.push(
-            welcome
-        );
-
-
-        saveMessages();
-
-        renderMessages();
-
-    }
-
-
-    /* =====================================================
-       HELPERS
-    ====================================================== */
-
-    function getCurrentUserId() {
-
-        const keys = [
-            "user_id",
-            "currentUser",
-            "usanexUser",
-            "user"
-        ];
-
-
-        for (const key of keys) {
-
-            try {
-
-                const value =
-                    localStorage.getItem(
-                        key
-                    );
-
-
-                if (!value) continue;
-
-
-                try {
-
-                    const parsed =
-                        JSON.parse(value);
-
-
-                    if (
-                        typeof parsed ===
-                        "object"
-                    ) {
-
-                        return (
-                            parsed.id ||
-                            parsed.user_id ||
-                            parsed.userId ||
-                            parsed.username ||
-                            null
-                        );
-
-                    }
-
-                } catch {}
-
-
-                return value;
-
-            } catch {}
-
-        }
-
-
-        return null;
-
-    }
-
-
-    function getCoupleSpaceId() {
-
-        const params =
-            new URLSearchParams(
-                location.search
-            );
-
-
-        return (
-            params.get("couple_space_id") ||
-            params.get("space_id") ||
-            partner.id ||
-            "default"
-        );
-
-    }
-
-
-    function createMessageId() {
-
-        return (
-            "msg_" +
-            Date.now().toString(36) +
-            "_" +
-            Math.random()
-                .toString(36)
-                .slice(2, 10)
-        );
-
-    }
-
-
-    function formatTime(value) {
-
-        const date =
-            new Date(value);
-
-
-        if (Number.isNaN(date.getTime())) {
-            return "";
-        }
-
-
-        return date.toLocaleTimeString(
-            [],
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        );
-
-    }
-
-
-    function formatDateTime(value) {
-
-        const date =
-            new Date(value);
-
-
-        return date.toLocaleString(
-            [],
-            {
-                dateStyle: "medium",
-                timeStyle: "short"
-            }
-        );
-
-    }
-
-
-    function formatLastSeen(value) {
-
-        if (!value) {
-            return "Offline";
-        }
-
-
-        const date =
-            new Date(value);
-
-
-        if (Number.isNaN(date.getTime())) {
-            return "Offline";
-        }
-
-
-        return `Last seen ${formatTime(date)}`;
-
-    }
-
-
-    function updateDayLabel() {
-
-        const today =
-            new Date();
-
-
-        dayLabel.textContent =
-            today.toLocaleDateString(
-                [],
-                {
-                    weekday: "long",
-                    month: "short",
-                    day: "numeric"
-                }
-            );
-
-    }
-
-
-    function scrollToBottom(
-        smooth = true
-    ) {
-
-        requestAnimationFrame(
-            () => {
-
-                conversation.scrollTo({
-                    top:
-                        conversation.scrollHeight,
-
-                    behavior:
-                        smooth
-                            ? "smooth"
-                            : "auto"
-                });
-
-            }
-        );
-
-    }
-
-
-    /* =====================================================
-       MOOD / SERVER
+       SERVER MOOD
     ====================================================== */
 
     async function sendMoodToServer() {
@@ -3281,32 +3832,36 @@
         try {
 
             await fetch(
-                "/api/couple-chat/mood",
+                API.mood,
                 {
-                    method: "POST",
+                    method:
+                        "POST",
 
                     headers: {
                         "Content-Type":
                             "application/json"
                     },
 
-                    body: JSON.stringify({
+                    body:
+                        JSON.stringify({
 
-                        partner_id:
-                            partner.id || null,
+                            partner_id:
+                                partner.id ||
+                                null,
 
-                        mode:
-                            currentMode
+                            mode:
+                                currentMode
 
-                    })
+                        })
+
                 }
             );
 
         } catch {
 
             /*
-             * Endpoint may not exist yet.
-             * UI continues normally.
+             * UI continues even if
+             * mood endpoint is unavailable.
              */
 
         }
@@ -3315,28 +3870,53 @@
 
 
     /* =====================================================
-       EFFECTS
+       AI ANIMATION
     ====================================================== */
+
+    function triggerAIAnimation(
+        animation
+    ) {
+
+        if (!effectsLayer) {
+            return;
+        }
+
+
+        if (
+            animation ===
+            "hearts"
+        ) {
+
+            createHeartEffect();
+
+            setTimeout(
+                createHeartEffect,
+                250
+            );
+
+            setTimeout(
+                createHeartEffect,
+                500
+            );
+
+        }
+
+    }
+
 
     function createHeartEffect() {
 
         if (
-            !effectsLayer ||
-            ![
-                "romantic",
-                "deep_love",
-                "missing_you",
-                "flirty",
-                "passionate",
-                "appreciation"
-            ].includes(currentMode)
+            !effectsLayer
         ) {
             return;
         }
 
 
         const heart =
-            document.createElement("span");
+            document.createElement(
+                "span"
+            );
 
 
         heart.className =
@@ -3344,7 +3924,7 @@
 
 
         heart.textContent =
-            Math.random() > .5
+            Math.random() > 0.5
                 ? "❤️"
                 : "💕";
 
@@ -3373,10 +3953,257 @@
 
 
     /* =====================================================
-       START
+       HELPERS
     ====================================================== */
 
-    updateAutomaticNightState();
+    function getCurrentUserId() {
+
+        const keys = [
+
+            "user_id",
+
+            "currentUser",
+
+            "usanexUser",
+
+            "user"
+
+        ];
+
+
+        for (
+            const key of keys
+        ) {
+
+            try {
+
+                const value =
+                    localStorage.getItem(
+                        key
+                    );
+
+
+                if (!value) {
+                    continue;
+                }
+
+
+                try {
+
+                    const parsed =
+                        JSON.parse(
+                            value
+                        );
+
+
+                    if (
+                        parsed &&
+                        typeof parsed ===
+                        "object"
+                    ) {
+
+                        return (
+                            parsed.id ||
+                            parsed.user_id ||
+                            parsed.userId ||
+                            null
+                        );
+
+                    }
+
+                } catch {}
+
+
+                return value;
+
+            } catch {}
+
+        }
+
+
+        return null;
+
+    }
+
+
+    function createMessageId() {
+
+        return (
+            "client_" +
+            Date.now().toString(36) +
+            "_" +
+            Math.random()
+                .toString(36)
+                .slice(2, 10)
+        );
+
+    }
+
+
+    function formatTime(
+        value
+    ) {
+
+        const date =
+            new Date(
+                value
+            );
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "";
+
+        }
+
+
+        return date.toLocaleTimeString(
+            [],
+            {
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit"
+            }
+        );
+
+    }
+
+
+    function formatDateTime(
+        value
+    ) {
+
+        const date =
+            new Date(
+                value
+            );
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "";
+
+        }
+
+
+        return date.toLocaleString(
+            [],
+            {
+                dateStyle:
+                    "medium",
+
+                timeStyle:
+                    "short"
+            }
+        );
+
+    }
+
+
+    function formatLastSeen(
+        value
+    ) {
+
+        if (!value) {
+            return "Offline";
+        }
+
+
+        const date =
+            new Date(
+                value
+            );
+
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return "Offline";
+
+        }
+
+
+        return (
+            `Last seen ${formatTime(
+                date
+            )}`
+        );
+
+    }
+
+
+    function updateDayLabel() {
+
+        if (!dayLabel) {
+            return;
+        }
+
+
+        dayLabel.textContent =
+            new Date()
+                .toLocaleDateString(
+                    [],
+                    {
+                        weekday:
+                            "long",
+
+                        month:
+                            "short",
+
+                        day:
+                            "numeric"
+                    }
+                );
+
+    }
+
+
+    function scrollToBottom(
+        smooth = true
+    ) {
+
+        if (!conversation) {
+            return;
+        }
+
+
+        requestAnimationFrame(
+            () => {
+
+                conversation.scrollTo({
+
+                    top:
+                        conversation.scrollHeight,
+
+                    behavior:
+                        smooth
+                            ? "smooth"
+                            : "auto"
+
+                });
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       START
+    ====================================================== */
 
     init();
 
