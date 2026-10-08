@@ -1,5 +1,5 @@
 # =========================================================
-# USANEX — COUPLE REALTIME
+# USANEX — COUPLE REALTIME v2
 # backend/routes/couple_realtime.py
 # =========================================================
 
@@ -28,6 +28,7 @@ from ..services.couple_message_service import (
     get_or_create_couple_room,
     create_couple_message,
     get_couple_messages,
+    get_message,
     mark_message_delivered,
     mark_message_seen,
     serialize_message,
@@ -48,7 +49,7 @@ router = APIRouter(
 # TIME
 # =========================================================
 
-def utc_now_iso() -> str:
+def utc_now_iso():
 
     return datetime.now(
         timezone.utc
@@ -74,6 +75,19 @@ def get_user(
 
 
 # =========================================================
+# CLIENT MESSAGE ID
+# =========================================================
+
+def get_client_message_id(data):
+
+    return (
+        data.get("client_message_id")
+        or data.get("client_id")
+        or data.get("message_id")
+    )
+
+
+# =========================================================
 # WEBSOCKET
 # =========================================================
 
@@ -94,7 +108,7 @@ async def couple_realtime(
     try:
 
         # =================================================
-        # AUTHENTICATION
+        # AUTH
         # =================================================
 
         session_token = websocket.cookies.get(
@@ -161,7 +175,7 @@ async def couple_realtime(
             return
 
         # =================================================
-        # COUPLE ROOM
+        # ROOM
         # =================================================
 
         room = get_or_create_couple_room(
@@ -171,7 +185,7 @@ async def couple_realtime(
         )
 
         # =================================================
-        # CONNECT WEBSOCKET
+        # CONNECT
         # =================================================
 
         await couple_manager.connect(
@@ -180,7 +194,7 @@ async def couple_realtime(
         )
 
         # =================================================
-        # CONNECTION RESPONSE
+        # CONNECTED EVENT
         # =================================================
 
         await websocket.send_json({
@@ -203,6 +217,8 @@ async def couple_realtime(
                 "id": room.id,
             },
 
+            "room_id": room.id,
+
             "partner_online":
                 couple_manager.is_online(
                     partner.id
@@ -214,7 +230,7 @@ async def couple_realtime(
         })
 
         # =================================================
-        # LOAD RECENT MESSAGES
+        # MESSAGE HISTORY
         # =================================================
 
         messages = get_couple_messages(
@@ -240,7 +256,7 @@ async def couple_realtime(
         })
 
         # =================================================
-        # PRESENCE ONLINE
+        # ONLINE PRESENCE
         # =================================================
 
         await couple_manager.send_presence(
@@ -277,6 +293,19 @@ async def couple_realtime(
 
                     "message":
                         "Invalid JSON",
+
+                })
+
+                continue
+
+            if not isinstance(data, dict):
+
+                await websocket.send_json({
+
+                    "type": "error",
+
+                    "message":
+                        "Invalid event",
 
                 })
 
@@ -336,13 +365,20 @@ async def couple_realtime(
                 continue
 
             # =================================================
-            # MESSAGE
+            # NEW MESSAGE
             # =================================================
 
             if event_type == "message":
 
-                client_message_id = data.get(
-                    "message_id"
+                # ---------------------------------------------
+                # IMPORTANT:
+                # Accept all frontend client ID formats
+                # ---------------------------------------------
+
+                client_message_id = (
+                    data.get("client_message_id")
+                    or data.get("client_id")
+                    or data.get("message_id")
                 )
 
                 content = data.get(
@@ -367,7 +403,7 @@ async def couple_realtime(
                 )
 
                 # ---------------------------------------------
-                # Validate
+                # VALIDATION
                 # ---------------------------------------------
 
                 if not content and not media_url:
@@ -378,6 +414,9 @@ async def couple_realtime(
 
                         "message":
                             "Message cannot be empty",
+
+                        "client_message_id":
+                            client_message_id,
 
                     })
 
@@ -390,7 +429,6 @@ async def couple_realtime(
                     ).strip()
 
                     if not content:
-
                         content = None
 
                     if (
@@ -405,12 +443,15 @@ async def couple_realtime(
                             "message":
                                 "Message is too long",
 
+                            "client_message_id":
+                                client_message_id,
+
                         })
 
                         continue
 
                 # ---------------------------------------------
-                # Save message
+                # SAVE
                 # ---------------------------------------------
 
                 message = create_couple_message(
@@ -435,6 +476,10 @@ async def couple_realtime(
                         reply_to_message_id,
 
                 )
+
+                # ---------------------------------------------
+                # SERVER MESSAGE
+                # ---------------------------------------------
 
                 message_payload = {
 
@@ -472,9 +517,9 @@ async def couple_realtime(
 
                 }
 
-                # ---------------------------------------------
-                # Send to partner
-                # ---------------------------------------------
+                # =================================================
+                # SEND MESSAGE TO PARTNER
+                # =================================================
 
                 delivered = (
                     await couple_manager.send_to_user(
@@ -486,9 +531,20 @@ async def couple_realtime(
                     )
                 )
 
-                # ---------------------------------------------
-                # Delivery receipt
-                # ---------------------------------------------
+                # =================================================
+                # ALSO SEND SERVER MESSAGE BACK TO SENDER
+                #
+                # This is important for optimistic-message
+                # reconciliation.
+                # =================================================
+
+                await websocket.send_json(
+                    message_payload
+                )
+
+                # =================================================
+                # DELIVERY RECEIPT
+                # =================================================
 
                 if delivered:
 
@@ -499,28 +555,39 @@ async def couple_realtime(
 
                             message_id=message.id,
 
-                            receiver_id=partner.id,
+                            receiver_id=
+                                partner.id,
 
                         )
                     )
 
-                    receipt_payload = (
-                        serialize_receipt(
-                            receipt
+                    if receipt:
+
+                        receipt_payload = (
+                            serialize_receipt(
+                                receipt
+                            )
                         )
-                    )
 
-                    receipt_payload[
-                        "type"
-                    ] = "message_receipt"
+                        receipt_payload[
+                            "type"
+                        ] = "message_receipt"
 
-                    receipt_payload[
-                        "client_message_id"
-                    ] = client_message_id
+                        receipt_payload[
+                            "client_message_id"
+                        ] = client_message_id
 
-                    await websocket.send_json(
-                        receipt_payload
-                    )
+                        receipt_payload[
+                            "message_id"
+                        ] = message.id
+
+                        receipt_payload[
+                            "status"
+                        ] = "delivered"
+
+                        await websocket.send_json(
+                            receipt_payload
+                        )
 
                 else:
 
@@ -556,7 +623,16 @@ async def couple_realtime(
                 )
 
                 if not message_id:
+                    continue
 
+                try:
+                    message_id = int(
+                        message_id
+                    )
+                except (
+                    TypeError,
+                    ValueError
+                ):
                     continue
 
                 receipt = (
@@ -564,9 +640,7 @@ async def couple_realtime(
 
                         db=db,
 
-                        message_id=int(
-                            message_id
-                        ),
+                        message_id=message_id,
 
                         receiver_id=
                             current_user.id,
@@ -575,6 +649,26 @@ async def couple_realtime(
                 )
 
                 if receipt:
+
+                    # -----------------------------------------
+                    # Get original message
+                    # -----------------------------------------
+
+                    original_message = get_message(
+                        db=db,
+                        message_id=message_id,
+                    )
+
+                    client_message_id = None
+
+                    if original_message:
+
+                        # If service/model supports it
+                        client_message_id = getattr(
+                            original_message,
+                            "client_message_id",
+                            None,
+                        )
 
                     await couple_manager.send_to_user(
 
@@ -587,6 +681,9 @@ async def couple_realtime(
 
                             "message_id":
                                 message_id,
+
+                            "client_message_id":
+                                client_message_id,
 
                             "status":
                                 "delivered",
@@ -601,7 +698,7 @@ async def couple_realtime(
                 continue
 
             # =================================================
-            # MESSAGE READ / SEEN
+            # MESSAGE READ
             # =================================================
 
             if event_type == "message_read":
@@ -611,7 +708,16 @@ async def couple_realtime(
                 )
 
                 if not message_id:
+                    continue
 
+                try:
+                    message_id = int(
+                        message_id
+                    )
+                except (
+                    TypeError,
+                    ValueError
+                ):
                     continue
 
                 receipt = (
@@ -619,9 +725,7 @@ async def couple_realtime(
 
                         db=db,
 
-                        message_id=int(
-                            message_id
-                        ),
+                        message_id=message_id,
 
                         receiver_id=
                             current_user.id,
@@ -630,6 +734,21 @@ async def couple_realtime(
                 )
 
                 if receipt:
+
+                    original_message = get_message(
+                        db=db,
+                        message_id=message_id,
+                    )
+
+                    client_message_id = None
+
+                    if original_message:
+
+                        client_message_id = getattr(
+                            original_message,
+                            "client_message_id",
+                            None,
+                        )
 
                     await couple_manager.send_to_user(
 
@@ -642,6 +761,9 @@ async def couple_realtime(
 
                             "message_id":
                                 message_id,
+
+                            "client_message_id":
+                                client_message_id,
 
                             "status":
                                 "seen",
@@ -674,7 +796,7 @@ async def couple_realtime(
                 continue
 
             # =================================================
-            # UNKNOWN EVENT
+            # UNKNOWN
             # =================================================
 
             await websocket.send_json({
@@ -701,7 +823,7 @@ async def couple_realtime(
 
         print(
             "[Usanex Couple WebSocket] ERROR:",
-            str(e),
+            repr(e),
         )
 
     finally:
@@ -723,11 +845,11 @@ async def couple_realtime(
                 print(
                     "[Usanex Couple] "
                     "Disconnect manager error:",
-                    str(e),
+                    repr(e),
                 )
 
             # ---------------------------------------------
-            # Offline event
+            # OFFLINE
             # ---------------------------------------------
 
             try:
@@ -750,7 +872,7 @@ async def couple_realtime(
                 print(
                     "[Usanex Couple] "
                     "Offline event error:",
-                    str(e),
+                    repr(e),
                 )
 
         db.close()
