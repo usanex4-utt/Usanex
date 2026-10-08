@@ -2,6 +2,7 @@
    USANEX — CHAT PAGE
    Text + HD Image Messaging
    DIRECT PHOTO SEND VERSION
+   COUPLE CHAT NAVIGATION ENABLED
 ========================================================= */
 
 "use strict";
@@ -1937,6 +1938,114 @@ function setupHeaderButtons() {
 
     }
 
+
+    /* =====================================================
+       COUPLE CHAT
+       Chat → Couple Chat
+    ===================================================== */
+
+    const coupleChatButton =
+        $("coupleChatButton");
+
+
+    if (coupleChatButton) {
+
+        coupleChatButton.addEventListener(
+            "click",
+            () => {
+
+                /*
+                 * Partner ID
+                 */
+
+                const partnerId =
+                    chatState.selectedUserId;
+
+
+                /*
+                 * Partner name
+                 */
+
+                const partnerName =
+                    chatState.selectedUser?.name ||
+                    chatState.selectedUser?.full_name ||
+                    chatState.selectedUser?.username ||
+                    $("selectedName")?.textContent?.trim() ||
+                    "";
+
+
+                /*
+                 * Partner avatar
+                 */
+
+                const partnerAvatar =
+                    chatState.selectedUser?.profile_photo ||
+                    chatState.selectedUser?.avatar ||
+                    chatState.selectedUser?.photo ||
+                    $("selectedAvatar")?.src ||
+                    "";
+
+
+                /*
+                 * URL parameters
+                 */
+
+                const params =
+                    new URLSearchParams();
+
+
+                if (partnerId) {
+
+                    params.set(
+                        "partner_id",
+                        partnerId
+                    );
+
+                }
+
+
+                if (
+                    partnerName &&
+                    partnerName !== "Loading..." &&
+                    partnerName !== "Select a chat"
+                ) {
+
+                    params.set(
+                        "name",
+                        partnerName
+                    );
+
+                }
+
+
+                if (partnerAvatar) {
+
+                    params.set(
+                        "avatar",
+                        partnerAvatar
+                    );
+
+                }
+
+
+                /*
+                 * Open Couple Chat
+                 */
+
+                const query =
+                    params.toString();
+
+
+                window.location.href =
+                    query
+                        ? `/couple-chat?${query}`
+                        : "/couple-chat";
+
+            }
+        );
+
+    }
+
 }
 
 
@@ -2375,5 +2484,5 @@ function scrollMessages() {
 ========================================================= */
 
 console.log(
-    "Usanex Chat JS loaded — DIRECT IMAGE SEND enabled."
+    "Usanex Chat JS loaded — DIRECT IMAGE SEND + COUPLE CHAT enabled."
 );
