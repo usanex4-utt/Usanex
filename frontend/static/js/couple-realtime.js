@@ -1,7 +1,12 @@
-
 /* =========================================================
-   USANEX COUPLE REALTIME
-   Real WebSocket controller
+   USANEX COUPLE REALTIME v3
+   Real WebSocket Controller
+   - Stable reconnect
+   - Partner-specific filtering
+   - Message client_id support
+   - Delivery/read receipts
+   - Presence
+   - Typing
 ========================================================= */
 
 (() => {
@@ -12,11 +17,13 @@
 
     let socket = null;
     let reconnectTimer = null;
+    let pingTimer = null;
+
     let reconnectAttempt = 0;
     let intentionallyClosed = false;
+    let connected = false;
 
     let partnerId = null;
-    let connected = false;
 
     const listeners = {
         connected: [],
@@ -29,8 +36,13 @@
         error: []
     };
 
+    /* =========================================================
+       EVENTS
+    ========================================================= */
+
     function on(type, callback) {
         if (!listeners[type]) return;
+        if (typeof callback !== "function") return;
 
         listeners[type].push(callback);
     }
@@ -50,6 +62,10 @@
         });
     }
 
+    /* =========================================================
+       CONNECT
+    ========================================================= */
+
     function connect(id) {
 
         if (!id) {
@@ -64,6 +80,9 @@
 
         clearTimeout(reconnectTimer);
 
+        /*
+         * Already connected/connecting to same partner
+         */
         if (
             socket &&
             (
@@ -72,6 +91,15 @@
             )
         ) {
             return;
+        }
+
+        /*
+         * Close old socket if any
+         */
+        if (socket) {
+            try {
+                socket.close();
+            } catch {}
         }
 
         const url =
@@ -83,11 +111,15 @@
         );
 
         try {
+
             socket = new WebSocket(url);
+
         } catch (error) {
+
             connected = false;
 
             emit("error", error);
+
             scheduleReconnect();
 
             return;
@@ -114,27 +146,41 @@
         );
     }
 
+    /* =========================================================
+       OPEN
+    ========================================================= */
+
     function handleOpen() {
 
         connected = true;
         reconnectAttempt = 0;
 
         console.log(
-            "[UsanexRealtime] Connected."
+            "[UsanexRealtime] WebSocket connected."
         );
 
         emit("connected", {
-            partner_id: partnerId
+            partner_id: partnerId,
+            websocket_open: true
         });
+
+        startPing();
     }
+
+    /* =========================================================
+       CLOSE
+    ========================================================= */
 
     function handleClose(event) {
 
         connected = false;
 
+        stopPing();
+
         console.log(
-            "[UsanexRealtime] Disconnected.",
-            event.code
+            "[UsanexRealtime] WebSocket disconnected:",
+            event.code,
+            event.reason || ""
         );
 
         emit("disconnected", {
@@ -147,89 +193,177 @@
         }
     }
 
+    /* =========================================================
+       ERROR
+    ========================================================= */
+
     function handleError(error) {
 
-        connected = false;
-
         console.warn(
-            "[UsanexRealtime] WebSocket error.",
+            "[UsanexRealtime] WebSocket error:",
             error
         );
 
         emit("error", error);
     }
 
+    /* =========================================================
+       INCOMING MESSAGE
+    ========================================================= */
+
     function handleMessage(event) {
 
-        let data;
+        let data = null;
 
         try {
+
             data = JSON.parse(event.data);
+
         } catch (error) {
+
             console.warn(
-                "[UsanexRealtime] Invalid JSON.",
+                "[UsanexRealtime] Invalid JSON:",
                 event.data
             );
+
+            return;
+        }
+
+        if (!data || typeof data !== "object") {
             return;
         }
 
         switch (data.type) {
 
+            /* -------------------------------------------------
+               SERVER CONNECTED
+            ------------------------------------------------- */
+
             case "connected":
             case "websocket_connected":
+
+                connected = true;
+
                 emit("connected", data);
+
                 break;
 
-            case "message_history":
-                emit(
-                    "history",
+
+            /* -------------------------------------------------
+               MESSAGE HISTORY
+            ------------------------------------------------- */
+
+            case "message_history": {
+
+                const messages =
                     Array.isArray(data.messages)
                         ? data.messages
-                        : []
-                );
-                break;
+                        : [];
 
-            case "message":
-                emit(
-                    "message",
-                    data.message || data
-                );
+                emit("history", messages);
+
                 break;
+            }
+
+
+            /* -------------------------------------------------
+               NEW MESSAGE
+            ------------------------------------------------- */
+
+            case "message": {
+
+                const message =
+                    data.message || data;
+
+                if (!message) {
+                    break;
+                }
+
+                /*
+                 * Prevent a socket opened for another partner
+                 * from displaying unrelated messages.
+                 */
+                if (!isMessageForCurrentPartner(message)) {
+
+                    console.debug(
+                        "[UsanexRealtime] Ignoring message for another chat.",
+                        message
+                    );
+
+                    break;
+                }
+
+                emit("message", message);
+
+                break;
+            }
+
+
+            /* -------------------------------------------------
+               RECEIPT
+            ------------------------------------------------- */
 
             case "message_receipt":
-            case "receipt":
-                emit(
-                    "receipt",
-                    data.receipt || data
-                );
+            case "receipt": {
+
+                const receipt =
+                    data.receipt || data;
+
+                emit("receipt", receipt);
+
                 break;
+            }
+
+
+            /* -------------------------------------------------
+               PRESENCE
+            ------------------------------------------------- */
 
             case "presence":
             case "user_presence":
-                emit(
-                    "presence",
-                    data
-                );
+
+                emit("presence", data);
+
                 break;
+
+
+            /* -------------------------------------------------
+               TYPING
+            ------------------------------------------------- */
 
             case "typing":
-                emit(
-                    "typing",
-                    data
-                );
+
+                emit("typing", data);
+
                 break;
+
+
+            /* -------------------------------------------------
+               PONG
+            ------------------------------------------------- */
 
             case "pong":
+
                 break;
+
+
+            /* -------------------------------------------------
+               ERROR
+            ------------------------------------------------- */
 
             case "error":
-                emit(
-                    "error",
-                    data
-                );
+
+                emit("error", data);
+
                 break;
 
+
+            /* -------------------------------------------------
+               UNKNOWN
+            ------------------------------------------------- */
+
             default:
+
                 console.debug(
                     "[UsanexRealtime] Unknown event:",
                     data
@@ -237,12 +371,80 @@
         }
     }
 
+    /* =========================================================
+       PARTNER MESSAGE FILTER
+    ========================================================= */
+
+    function isMessageForCurrentPartner(message) {
+
+        if (!partnerId) {
+            return true;
+        }
+
+        /*
+         * If room_id exists, frontend chat.js will perform
+         * final room validation.
+         */
+
+        const senderId =
+            message.sender_id ??
+            message.senderId ??
+            null;
+
+        const receiverId =
+            message.receiver_id ??
+            message.receiverId ??
+            null;
+
+        /*
+         * Own message -> receiver must be partner.
+         * Partner message -> sender must be partner.
+         */
+
+        if (
+            senderId !== null &&
+            String(senderId) === String(partnerId)
+        ) {
+            return true;
+        }
+
+        if (
+            receiverId !== null &&
+            String(receiverId) === String(partnerId)
+        ) {
+            return true;
+        }
+
+        /*
+         * Some server events may not expose IDs.
+         * Don't incorrectly discard those.
+         */
+
+        if (
+            senderId === null &&
+            receiverId === null
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /* =========================================================
+       SEND RAW PAYLOAD
+    ========================================================= */
+
     function send(payload) {
 
         if (
             !socket ||
             socket.readyState !== WebSocket.OPEN
         ) {
+
+            console.warn(
+                "[UsanexRealtime] Socket not connected."
+            );
+
             return false;
         }
 
@@ -265,7 +467,15 @@
         }
     }
 
-    function sendMessage(text, messageType = "text") {
+    /* =========================================================
+       SEND MESSAGE
+    ========================================================= */
+
+    function sendMessage(
+        text,
+        messageType = "text",
+        clientId = null
+    ) {
 
         const cleanText =
             String(text || "").trim();
@@ -274,12 +484,28 @@
             return false;
         }
 
-        return send({
+        const payload = {
             type: "message",
             content: cleanText,
             message_type: messageType
-        });
+        };
+
+        /*
+         * client_id is useful for frontend optimistic-message
+         * reconciliation. Backend can safely ignore it if the
+         * current server implementation doesn't store it.
+         */
+
+        if (clientId) {
+            payload.client_id = String(clientId);
+        }
+
+        return send(payload);
     }
+
+    /* =========================================================
+       TYPING START
+    ========================================================= */
 
     function sendTypingStart() {
 
@@ -288,6 +514,10 @@
         });
     }
 
+    /* =========================================================
+       TYPING STOP
+    ========================================================= */
+
     function sendTypingStop() {
 
         return send({
@@ -295,9 +525,19 @@
         });
     }
 
+    /* =========================================================
+       MESSAGE DELIVERED
+    ========================================================= */
+
     function sendMessageDelivered(messageId) {
 
-        if (!messageId) return false;
+        if (
+            messageId === null ||
+            messageId === undefined ||
+            messageId === ""
+        ) {
+            return false;
+        }
 
         return send({
             type: "message_delivered",
@@ -305,15 +545,29 @@
         });
     }
 
+    /* =========================================================
+       MESSAGE READ
+    ========================================================= */
+
     function sendMessageRead(messageId) {
 
-        if (!messageId) return false;
+        if (
+            messageId === null ||
+            messageId === undefined ||
+            messageId === ""
+        ) {
+            return false;
+        }
 
         return send({
             type: "message_read",
             message_id: messageId
         });
     }
+
+    /* =========================================================
+       PING
+    ========================================================= */
 
     function ping() {
 
@@ -322,22 +576,40 @@
         });
     }
 
-    function disconnect() {
+    /* =========================================================
+       KEEP ALIVE
+    ========================================================= */
 
-        intentionallyClosed = true;
+    function startPing() {
 
-        clearTimeout(reconnectTimer);
+        stopPing();
 
-        if (socket) {
+        pingTimer =
+            setInterval(() => {
 
-            try {
-                socket.close();
-            } catch {}
-        }
+                if (
+                    socket &&
+                    socket.readyState === WebSocket.OPEN
+                ) {
+                    ping();
+                }
 
-        socket = null;
-        connected = false;
+            }, 25000);
     }
+
+    function stopPing() {
+
+        if (pingTimer) {
+
+            clearInterval(pingTimer);
+
+            pingTimer = null;
+        }
+    }
+
+    /* =========================================================
+       RECONNECT
+    ========================================================= */
 
     function scheduleReconnect() {
 
@@ -351,22 +623,62 @@
 
         const delay =
             Math.min(
-                1000 * Math.pow(1.5, reconnectAttempt),
+                1000 *
+                Math.pow(1.5, reconnectAttempt - 1),
                 10000
             );
 
+        console.log(
+            `[UsanexRealtime] Reconnecting in ${delay}ms...`
+        );
+
         reconnectTimer =
-            setTimeout(
-                () => {
+            setTimeout(() => {
 
-                    if (partnerId) {
-                        connect(partnerId);
-                    }
+                if (
+                    !intentionallyClosed &&
+                    partnerId
+                ) {
+                    connect(partnerId);
+                }
 
-                },
-                delay
-            );
+            }, delay);
     }
+
+    /* =========================================================
+       DISCONNECT
+    ========================================================= */
+
+    function disconnect() {
+
+        intentionallyClosed = true;
+
+        clearTimeout(reconnectTimer);
+
+        stopPing();
+
+        reconnectAttempt = 0;
+
+        if (socket) {
+
+            try {
+                socket.close(1000, "Client closed");
+            } catch {}
+        }
+
+        socket = null;
+
+        connected = false;
+
+        emit("disconnected", {
+            code: 1000,
+            reason: "Client closed"
+        });
+    }
+
+    /* =========================================================
+       PUBLIC API
+    ========================================================= */
 
     window.UsanexCoupleRealtime = {
 
@@ -389,6 +701,8 @@
         ping,
 
         isConnected: () => connected,
+
+        getPartnerId: () => partnerId,
 
         on
     };
