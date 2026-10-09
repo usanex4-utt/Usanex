@@ -9,18 +9,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const micBtn = document.getElementById("micBtn");
     const backBtn = document.getElementById("backBtn");
 
+    if (!form || !input || !conversation || !micBtn) {
+        console.error("NEXA: Required HTML elements missing.");
+        return;
+    }
+
     const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
 
     let recognition = null;
     let wakeMode = false;
     let waitingForCommand = false;
     let processing = false;
     let speaking = false;
-    let manualListening = false;
+    let restartTimer = null;
+    let lastError = "";
 
-    // ---------------- MESSAGE UI ----------------
-
+    // -------------------------------
+    // MESSAGE UI
+    // -------------------------------
     function addMessage(text, type = "assistant") {
         const bubble = document.createElement("div");
 
@@ -60,11 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return bubble;
     }
 
-    // ---------------- VOICE OUTPUT ----------------
-
-    function speakReply(text, onFinished = () => {}) {
+    // -------------------------------
+    // VOICE OUTPUT
+    // -------------------------------
+    function speakReply(text, callback = () => {}) {
         if (!("speechSynthesis" in window)) {
-            onFinished();
+            callback();
             return;
         }
 
@@ -77,31 +86,30 @@ document.addEventListener("DOMContentLoaded", () => {
         speech.volume = 1;
 
         const voices = window.speechSynthesis.getVoices();
-        const hindiVoice = voices.find(voice =>
-            voice.lang.toLowerCase().startsWith("hi")
-        );
+        const voice =
+            voices.find(v => v.lang.toLowerCase().startsWith("hi")) ||
+            voices.find(v => v.lang.toLowerCase().startsWith("en"));
 
-        if (hindiVoice) {
-            speech.voice = hindiVoice;
-        }
+        if (voice) speech.voice = voice;
 
         speaking = true;
 
         speech.onend = () => {
             speaking = false;
-            onFinished();
+            callback();
         };
 
         speech.onerror = () => {
             speaking = false;
-            onFinished();
+            callback();
         };
 
         window.speechSynthesis.speak(speech);
     }
 
-    // ---------------- WAKE WORD ----------------
-
+    // -------------------------------
+    // WAKE WORD
+    // -------------------------------
     function normalizeSpeech(text) {
         return text
             .toLowerCase()
@@ -113,15 +121,12 @@ document.addEventListener("DOMContentLoaded", () => {
     function extractWakeCommand(text) {
         const normalized = normalizeSpeech(text);
 
-        // English and common Hindi recognition variants
         const wakePattern =
-            /(?:hey\s*nexa|hey\s*nex[a-z]*|हे\s*नेक्सा|है\s*नेक्सा|नेक्सा)/i;
+            /\bhey\s+nexa\b|\bhey\s+nex[a-z]*\b|हे\s*नेक्सा|है\s*नेक्सा|नेक्सा/i;
 
         const match = wakePattern.exec(normalized);
 
-        if (!match) {
-            return null;
-        }
+        if (!match) return null;
 
         return normalized
             .slice(match.index + match[0].length)
@@ -129,158 +134,195 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateMicButton() {
-        if (wakeMode) {
-            micBtn.textContent = "🔴";
-            micBtn.setAttribute(
-                "aria-label",
-                "Stop Hey NEXA listening"
-            );
-            micBtn.title = "Hey NEXA mode is active";
-        } else {
-            micBtn.textContent = "🎙";
-            micBtn.setAttribute("aria-label", "Enable Hey NEXA");
-            micBtn.title = "Start voice assistant";
-        }
+        micBtn.textContent = wakeMode ? "🔴" : "🎙";
+
+        micBtn.setAttribute(
+            "aria-label",
+            wakeMode
+                ? "Stop NEXA voice listening"
+                : "Start NEXA voice listening"
+        );
+
+        micBtn.title = wakeMode
+            ? "NEXA listening is ON — tap to stop"
+            : "Start Hey NEXA voice mode";
     }
 
     function startRecognition() {
-        if (
-            !recognition ||
-            !wakeMode ||
-            processing ||
-            speaking
-        ) {
+        if (!recognition || !wakeMode || processing || speaking) {
             return;
         }
 
         try {
             recognition.start();
-        } catch (_) {
-            // The browser may already be starting recognition.
+        } catch (error) {
+            // Recognition may already be starting.
+            console.log("NEXA start:", error.message);
+        }
+    }
+
+    function scheduleRecognitionRestart() {
+        clearTimeout(restartTimer);
+
+        if (wakeMode && !processing && !speaking) {
+            restartTimer = setTimeout(startRecognition, 700);
         }
     }
 
     function stopRecognition() {
-        if (!recognition) return;
+        clearTimeout(restartTimer);
 
-        try {
-            recognition.stop();
-        } catch (_) {
-            // Recognition may already be stopped.
+        if (recognition) {
+            try {
+                recognition.stop();
+            } catch (_) {}
         }
     }
 
-    function enableWakeMode() {
+    // -------------------------------
+    // SPEECH RECOGNITION SETUP
+    // -------------------------------
+    function createRecognition() {
         if (!SpeechRecognition) {
             addMessage(
-                "Bhai, is browser mein voice recognition supported nahi hai. " +
-                "Android par supported browser mein Usanex kholo."
+                "Is Chrome/browser mein voice recognition available nahi hai. Chrome update karke dobara try karo."
             );
-            return;
+            return false;
         }
 
+        recognition = new SpeechRecognition();
+
+        // English and Hindi phrases are both supported as attempts.
+        recognition.lang = "en-IN";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 5;
+
+        recognition.onstart = () => {
+            console.log("NEXA: Speech recognition started.");
+            lastError = "";
+            addMessage(
+                'NEXA sun raha hai. "Hey NEXA" bolo, phir apna sawaal bolo.'
+            );
+        };
+
+        recognition.onresult = (event) => {
+            let finalTranscript = "";
+            let interimTranscript = "";
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const result = event.results[i];
+
+                if (result.isFinal) {
+                    finalTranscript += " " + result[0].transcript;
+                } else {
+                    interimTranscript += " " + result[0].transcript;
+                }
+            }
+
+            if (interimTranscript.trim()) {
+                console.log("NEXA heard (interim):", interimTranscript.trim());
+            }
+
+            if (finalTranscript.trim()) {
+                console.log("NEXA heard:", finalTranscript.trim());
+                handleRecognizedSpeech(finalTranscript.trim());
+            }
+        };
+
+        recognition.onerror = (event) => {
+            lastError = event.error || "unknown";
+            console.error("NEXA voice error:", lastError);
+
+            const messages = {
+                "not-allowed":
+                    "Microphone permission blocked hai. Chrome site settings mein Microphone Allow karo.",
+                "service-not-allowed":
+                    "Browser ne speech service block ki hai. Chrome settings check karo.",
+                "audio-capture":
+                    "Microphone access nahi mil raha. Phone settings mein mic permission check karo.",
+                "network":
+                    "Speech recognition network service fail hui. Internet check karo; browser speech service unavailable bhi ho sakti hai.",
+                "no-speech":
+                    "Awaaz detect nahi hui. Mic ke paas saaf aur thoda zor se bolo.",
+                "language-not-supported":
+                    "Selected speech language supported nahi hai. Chrome update karke try karo.",
+                "aborted":
+                    "Voice listening stop hui."
+            };
+
+            addMessage(
+                "NEXA voice error: " +
+                lastError +
+                ". " +
+                (messages[lastError] || "Chrome microphone aur speech recognition service check karo.")
+            );
+
+            if (
+                lastError === "not-allowed" ||
+                lastError === "service-not-allowed"
+            ) {
+                wakeMode = false;
+                waitingForCommand = false;
+                updateMicButton();
+            }
+        };
+
+        recognition.onnomatch = () => {
+            console.log("NEXA: Speech detected but not understood.");
+            addMessage(
+                "Awaaz mili, lekin samajh nahi aayi. Dheere aur saaf bolo."
+            );
+        };
+
+        recognition.onspeechend = () => {
+            console.log("NEXA: Speech ended.");
+        };
+
+        recognition.onend = () => {
+            console.log("NEXA: Recognition ended.");
+
+            // Keep trying while voice mode is enabled.
+            // Some browser speech services may still stop working.
+            scheduleRecognitionRestart();
+        };
+
+        return true;
+    }
+
+    // -------------------------------
+    // START / STOP VOICE MODE
+    // -------------------------------
+    function enableWakeMode() {
         if (!window.isSecureContext) {
             addMessage(
-                "Microphone ke liye secure HTTPS connection zaroori hai."
+                "Microphone ke liye HTTPS zaroori hai. Usanex ko secure HTTPS URL par kholo."
             );
             return;
         }
 
-        if (!recognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = "hi-IN";
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 3;
-
-            recognition.onresult = (event) => {
-                for (
-                    let i = event.resultIndex;
-                    i < event.results.length;
-                    i++
-                ) {
-                    if (!event.results[i].isFinal) continue;
-
-                    let transcript = "";
-
-                    for (
-                        let j = 0;
-                        j < event.results[i].length;
-                        j++
-                    ) {
-                        const alternative =
-                            event.results[i][j].transcript;
-
-                        if (
-                            extractWakeCommand(alternative) !== null
-                        ) {
-                            transcript = alternative;
-                            break;
-                        }
-
-                        if (!transcript) {
-                            transcript = alternative;
-                        }
-                    }
-
-                    handleRecognizedSpeech(transcript);
-                }
-            };
-
-            recognition.onerror = (event) => {
-                if (
-                    event.error === "not-allowed" ||
-                    event.error === "service-not-allowed"
-                ) {
-                    wakeMode = false;
-                    waitingForCommand = false;
-                    updateMicButton();
-
-                    addMessage(
-                        "Microphone permission allow karo, phir NEXA " +
-                        "ko dobara start karo."
-                    );
-                    return;
-                }
-
-                if (event.error === "no-speech") {
-                    return;
-                }
-
-                if (event.error === "network") {
-                    addMessage(
-                        "Voice recognition service available nahi hai. " +
-                        "Internet connection check karke dobara try karo."
-                    );
-                }
-            };
-
-            recognition.onend = () => {
-                if (wakeMode && !processing && !speaking) {
-                    // Small delay lets the browser finish stopping.
-                    window.setTimeout(startRecognition, 350);
-                }
-            };
+        if (!SpeechRecognition) {
+            addMessage(
+                "Voice input is browser mein supported nahi hai. Updated Google Chrome try karo."
+            );
+            return;
         }
+
+        if (!recognition && !createRecognition()) return;
 
         wakeMode = true;
         waitingForCommand = false;
-        manualListening = false;
         updateMicButton();
 
-        addMessage(
-            'NEXA listening mode on hai. "Hey NEXA" bolo, ' +
-            "phir apna sawal poochho. 💙"
-        );
-
+        // Ask for microphone permission through the browser.
         startRecognition();
     }
 
     function disableWakeMode() {
         wakeMode = false;
         waitingForCommand = false;
-        manualListening = false;
 
+        clearTimeout(restartTimer);
         stopRecognition();
 
         if ("speechSynthesis" in window) {
@@ -294,12 +336,14 @@ document.addEventListener("DOMContentLoaded", () => {
         addMessage("NEXA voice listening band kar di gayi hai.");
     }
 
+    // -------------------------------
+    // HANDLE SPOKEN COMMAND
+    // -------------------------------
     function handleRecognizedSpeech(transcript) {
         if (processing || speaking) return;
 
         const command = extractWakeCommand(transcript);
 
-        // Waiting for the actual question after the wake phrase
         if (waitingForCommand) {
             waitingForCommand = false;
 
@@ -310,73 +354,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const cleanText = normalizeSpeech(transcript);
 
-            if (
-                cleanText &&
-                !/^(hey\s*nexa|हे\s*नेक्सा|नेक्सा)$/.test(cleanText)
-            ) {
+            if (cleanText) {
                 sendMessage(cleanText);
             }
 
             return;
         }
 
-        // Wake word detected
+        // Only respond to commands containing the wake word.
         if (command !== null) {
             if (command.length > 0) {
-                // Example: "Hey NEXA, Usanex kya hai?"
                 sendMessage(command);
                 return;
             }
 
-            // Example: "Hey NEXA" followed by the question
             waitingForCommand = true;
-
             stopRecognition();
 
-            speakReply("Haan bhai, bolo. Main sun raha hoon.", () => {
+            speakReply("Haan, bolo. Main sun raha hoon.", () => {
                 if (wakeMode && waitingForCommand) {
                     startRecognition();
                 }
             });
-
-            return;
         }
-
-        // Ignore unrelated speech while waiting for the wake phrase
     }
 
-    // ---------------- CHAT REQUEST ----------------
-
+    // -------------------------------
+    // SEND MESSAGE TO NEXA BACKEND
+    // -------------------------------
     async function sendMessage(rawText) {
-        const message = rawText.trim();
+        const message = String(rawText || "").trim();
 
         if (!message || processing) return;
 
         processing = true;
-        manualListening = false;
         waitingForCommand = false;
-
         stopRecognition();
 
         addMessage(message, "user");
         input.value = "";
 
-        const pending = addMessage("Ek pal bhai…");
-
-        let reply = "";
+        const pending = addMessage("Ek pal, bhai…");
 
         try {
-            const response = await fetch(
-                "/api/ai-assistant/chat",
-                {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ message })
-                }
-            );
+            const response = await fetch("/api/ai-assistant/chat", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ message })
+            });
 
             const data = await response.json().catch(() => ({}));
 
@@ -386,30 +414,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
-            reply = data.reply || "Abhi jawab nahi mil paya.";
-        } catch (error) {
-            reply =
-                error.message ||
-                "Bhai, NEXA se connection nahi ho paya.";
-        }
+            pending.querySelector("p").textContent =
+                data.reply || "Abhi jawab nahi mil paya.";
 
-        pending.querySelector("p").textContent = reply;
+            const reply = pending.querySelector("p").textContent;
 
-        if (wakeMode && "speechSynthesis" in window) {
-            speakReply(reply, () => {
+            if (wakeMode) {
+                speakReply(reply, () => {
+                    processing = false;
+                    scheduleRecognitionRestart();
+                });
+            } else {
                 processing = false;
+            }
+        } catch (error) {
+            pending.querySelector("p").textContent =
+                error.message || "NEXA se connection nahi ho paya.";
 
-                if (wakeMode) {
-                    startRecognition();
-                }
-            });
-        } else {
             processing = false;
+            scheduleRecognitionRestart();
         }
     }
 
-    // ---------------- MANUAL MICROPHONE ----------------
-
+    // -------------------------------
+    // BUTTONS / MENU
+    // -------------------------------
     micBtn.addEventListener("click", () => {
         if (wakeMode) {
             disableWakeMode();
@@ -418,70 +447,63 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ---------------- CHAT FORM ----------------
-
     form.addEventListener("submit", (event) => {
         event.preventDefault();
         sendMessage(input.value);
     });
 
-    document.querySelectorAll("[data-prompt]").forEach(button => {
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
         button.addEventListener("click", () => {
             sendMessage(button.dataset.prompt);
         });
     });
 
-    // ---------------- MENU ----------------
-
-    menuBtn.addEventListener("click", () => {
-        const isOpen = !dropdown.hidden;
-        dropdown.hidden = isOpen;
-        menuBtn.setAttribute("aria-expanded", String(!isOpen));
-    });
-
-    document.addEventListener("click", (event) => {
-        if (!event.target.closest(".menu-wrap")) {
-            dropdown.hidden = true;
-            menuBtn.setAttribute("aria-expanded", "false");
-        }
-    });
-
-    dropdown.querySelectorAll("[data-action]").forEach(button => {
-        button.addEventListener("click", () => {
-            const action = button.dataset.action;
-            dropdown.hidden = true;
-            menuBtn.setAttribute("aria-expanded", "false");
-
-            const responses = {
-                chat: "Bhai, neeche message likhkar chat shuru karo.",
-                private:
-                    "Private Chat ko secure backend se connect karna baaki hai.",
-                memory:
-                    "Personal Memory feature ko secure backend se connect karna baaki hai.",
-                quick:
-                    "Couple Chat aur Reels actions ko app routes se connect karna baaki hai.",
-                settings: "NEXA settings abhi development mein hain."
-            };
-
-            addMessage(
-                responses[action] || "Batao bhai, kya help chahiye?"
-            );
+    if (menuBtn && dropdown) {
+        menuBtn.addEventListener("click", () => {
+            const open = !dropdown.hidden;
+            dropdown.hidden = open;
+            menuBtn.setAttribute("aria-expanded", String(!open));
         });
-    });
 
-    // ---------------- BACK BUTTON ----------------
+        document.addEventListener("click", (event) => {
+            if (!event.target.closest(".menu-wrap")) {
+                dropdown.hidden = true;
+                menuBtn.setAttribute("aria-expanded", "false");
+            }
+        });
 
-    backBtn.addEventListener("click", () => {
-        if (wakeMode) {
-            disableWakeMode();
-        }
+        dropdown.querySelectorAll("[data-action]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const action = button.dataset.action;
+                dropdown.hidden = true;
+                menuBtn.setAttribute("aria-expanded", "false");
 
-        if (history.length > 1) {
-            history.back();
-        } else {
-            window.location.href = "/home";
-        }
-    });
+                const responses = {
+                    chat: "Bhai, neeche message likhkar chat shuru karo.",
+                    private: "Private Chat ko secure backend se connect karna baaki hai.",
+                    memory: "Personal Memory feature ko secure backend se connect karna baaki hai.",
+                    quick: "Couple Chat aur Reels actions ko app routes se connect karna baaki hai.",
+                    settings: "NEXA settings abhi development mein hain."
+                };
+
+                addMessage(
+                    responses[action] || "Batao bhai, kya help chahiye?"
+                );
+            });
+        });
+    }
+
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            if (wakeMode) disableWakeMode();
+
+            if (history.length > 1) {
+                history.back();
+            } else {
+                window.location.href = "/home";
+            }
+        });
+    }
 
     updateMicButton();
 });
