@@ -10,4 +10,3 @@ jinja2
 cryptography
 websockets
 cloudinary
-openai
