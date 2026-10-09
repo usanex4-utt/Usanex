@@ -1,99 +1,282 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#080D20">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <title>NEXA — AI Assistant</title>
+    <meta name="theme-color" content="#080d18">
+    <title>NEXA | Usanex</title>
 
     <link rel="stylesheet" href="/static/css/nexa.css">
     <script src="/static/js/nexa.js" defer></script>
 </head>
+
 <body>
+<main class="app">
 
-<main class="nexa-app">
+    <!-- TOP HEADER -->
+    <header class="topbar">
+        <button class="icon-btn" id="backBtn"
+                type="button" aria-label="Back">
+            <svg viewBox="0 0 24 24">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </button>
 
-    <!-- HEADER -->
-    <header class="header">
-        <button class="back-btn" id="backBtn" aria-label="Back">←</button>
+        <div class="brand-title">NEXA</div>
 
-        <div class="header-title">Nexa<span>.</span></div>
+        <button class="icon-btn" id="menuBtn"
+                type="button" aria-label="Menu">
+            <svg viewBox="0 0 24 24">
+                <circle cx="5" cy="12" r="1.5"/>
+                <circle cx="12" cy="12" r="1.5"/>
+                <circle cx="19" cy="12" r="1.5"/>
+            </svg>
+        </button>
 
-        <div class="menu-wrap">
-            <button class="menu-btn" id="menuBtn"
-                    aria-label="Open menu" aria-expanded="false">⋮</button>
+        <!-- MENU -->
+        <div class="menu-panel" id="dropdown" hidden>
+            <button class="menu-item" data-action="memory">
+                <span class="menu-icon">▤</span>
+                <span>
+                    <strong>Memory</strong>
+                    <small>Your saved information</small>
+                </span>
+            </button>
 
-            <nav class="dropdown" id="dropdown" hidden>
-                <button data-action="chat">💬 <span>Chat</span></button>
-                <button data-action="private">🔒 <span>Private Chat</span></button>
-                <button data-action="memory">🧠 <span>Memory</span></button>
-                <button data-action="quick">⚡ <span>Quick Actions</span></button>
-                <button data-action="settings">⚙️ <span>Settings</span></button>
-            </nav>
+            <button class="menu-item" data-action="private-chat">
+                <span class="menu-icon">♧</span>
+                <span>
+                    <strong>Private Chat</strong>
+                    <small>Private conversation</small>
+                </span>
+            </button>
+
+            <button class="menu-item" data-action="quick-actions">
+                <span class="menu-icon">✦</span>
+                <span>
+                    <strong>Quick Action</strong>
+                    <small>Useful shortcuts</small>
+                </span>
+            </button>
+
+            <button class="menu-item" data-action="settings">
+                <span class="menu-icon">⚙</span>
+                <span>
+                    <strong>Settings</strong>
+                    <small>Assistant preferences</small>
+                </span>
+            </button>
         </div>
     </header>
 
-    <!-- ASSISTANT BRAND -->
-    <section class="hero">
-        <div class="orb-area">
-            <div class="orb-ring ring-outer"></div>
-            <div class="orb-ring ring-inner"></div>
+    <!-- CHAT -->
+    <section class="chat-area" id="chatArea">
 
-            <div class="orb">
-                <div class="eyes"><i></i><i></i></div>
+        <!-- WELCOME SCREEN -->
+        <div class="welcome" id="welcome">
+
+            <!-- 3D-STYLE ASSISTANT ICON: NO TEXT -->
+            <div class="nexa-orb" id="nexaOrb"
+                 aria-label="NEXA assistant icon">
+                <div class="orb-halo"></div>
+
+                <svg class="orb-svg" viewBox="0 0 120 120"
+                     aria-hidden="true">
+                    <defs>
+                        <linearGradient id="orbGradient"
+                                        x1="0" y1="0"
+                                        x2="1" y2="1">
+                            <stop offset="0%" stop-color="#9BF3FF"/>
+                            <stop offset="38%" stop-color="#4388FF"/>
+                            <stop offset="72%" stop-color="#625DFF"/>
+                            <stop offset="100%" stop-color="#A34DFF"/>
+                        </linearGradient>
+
+                        <linearGradient id="orbShine"
+                                        x1="0" y1="0"
+                                        x2="0.9" y2="1">
+                            <stop offset="0%" stop-color="#FFFFFF"
+                                  stop-opacity=".85"/>
+                            <stop offset="100%" stop-color="#FFFFFF"
+                                  stop-opacity="0"/>
+                        </linearGradient>
+
+                        <radialGradient id="orbDepth"
+                                        cx="30%" cy="20%" r="90%">
+                            <stop offset="0%" stop-color="#FFFFFF"
+                                  stop-opacity=".42"/>
+                            <stop offset="50%" stop-color="#FFFFFF"
+                                  stop-opacity=".02"/>
+                            <stop offset="100%" stop-color="#03091C"
+                                  stop-opacity=".58"/>
+                        </radialGradient>
+
+                        <filter id="orbBlur"
+                                x="-100%" y="-100%"
+                                width="300%" height="300%">
+                            <feGaussianBlur stdDeviation="7"/>
+                        </filter>
+                    </defs>
+
+                    <!-- Light aura -->
+                    <circle cx="60" cy="60" r="42"
+                            fill="#4388FF"
+                            opacity=".55"
+                            filter="url(#orbBlur)"/>
+
+                    <!-- Main sphere -->
+                    <circle cx="60" cy="60" r="39"
+                            fill="url(#orbGradient)"/>
+
+                    <!-- Sphere depth -->
+                    <circle cx="60" cy="60" r="39"
+                            fill="url(#orbDepth)"/>
+
+                    <!-- Glass reflection -->
+                    <ellipse cx="47" cy="37"
+                             rx="20" ry="10"
+                             fill="url(#orbShine)"
+                             transform="rotate(-30 47 37)"/>
+
+                    <!-- Assistant sparkle -->
+                    <path d="M60 35
+                             L67 53
+                             L85 60
+                             L67 67
+                             L60 85
+                             L53 67
+                             L35 60
+                             L53 53 Z"
+                          fill="#FFFFFF"/>
+
+                    <circle cx="91" cy="31" r="4"
+                            fill="#A8F4FF"/>
+
+                    <circle cx="28" cy="82" r="3"
+                            fill="#A7B8FF"/>
+                </svg>
+
+                <span class="orb-ring ring-one"></span>
+                <span class="orb-ring ring-two"></span>
+            </div>
+
+            <!-- NEXA heading intentionally removed from center -->
+            <p class="welcome-subtitle">
+                Your personal AI assistant
+            </p>
+
+            <p class="welcome-text">
+                Namaste! Aap jo chahein, type karein ya bolkar batayein.
+            </p>
+
+            <div class="suggestions" id="suggestions">
+                <button class="suggestion"
+                        data-prompt="Usanex ke features samjhao">
+                    Usanex ke features
+                </button>
+
+                <button class="suggestion"
+                        data-prompt="Mujhe aaj ke kaam plan karne mein help karo">
+                    Aaj ke kaam plan karo
+                </button>
+
+                <button class="suggestion"
+                        data-prompt="Meri AI learning roadmap banao">
+                    AI learning roadmap
+                </button>
             </div>
         </div>
 
-        <h1 class="logo">Nexa<span>.</span></h1>
-        <p class="subtitle">AI ASSISTANT</p>
+        <!-- MESSAGES -->
+        <div class="conversation" id="conversation"
+             aria-live="polite"></div>
 
-        <p class="welcome">Hello! Main NEXA hoon 💙</p>
-        <p class="intro">
-            Batao bhai, aaj main tumhari kya madad karun?
+    </section>
+
+    <!-- MESSAGE COMPOSER -->
+    <footer class="composer-wrap">
+
+        <div class="voice-status" id="voiceStatus"
+             aria-live="polite"></div>
+
+        <form class="composer" id="chatForm">
+
+            <!-- PLUS -->
+            <button type="button"
+                    class="composer-btn"
+                    id="plusBtn"
+                    aria-label="More options"
+                    title="More options">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+
+            <!-- TEXT INPUT -->
+            <textarea id="messageInput"
+                      rows="1"
+                      placeholder="NEXA se kuch bhi poochho..."
+                      aria-label="Message to NEXA"></textarea>
+
+            <!-- MICROPHONE -->
+            <button type="button"
+                    class="composer-btn mic-btn"
+                    id="micBtn"
+                    aria-label="Voice input"
+                    aria-pressed="false"
+                    title="Speak">
+                <svg viewBox="0 0 24 24">
+                    <rect x="9" y="3" width="6" height="12"
+                          rx="3"/>
+                    <path d="M5 11a7 7 0 0 0 14 0"/>
+                    <path d="M12 18v3M9 21h6"/>
+                </svg>
+            </button>
+
+            <!-- SEND -->
+            <button type="submit"
+                    class="send-btn"
+                    id="sendBtn"
+                    aria-label="Send message"
+                    title="Send">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+            </button>
+        </form>
+
+        <p class="disclaimer">
+            NEXA kabhi-kabhi galat jawab de sakta hai.
         </p>
-    </section>
-
-    <!-- CHAT MESSAGES -->
-    <section class="conversation" id="conversation" aria-live="polite">
-        <div class="assistant-message">
-            <div class="avatar">N</div>
-            <div class="message-content">
-                <span class="sender">NEXA</span>
-                <p>Kaise ho? 😊 Chat karein ya Usanex mein kuch karna hai?</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- SIMPLE SUGGESTIONS -->
-    <section class="suggestions">
-        <button data-prompt="Hello NEXA, kaise ho?">Hello 👋</button>
-        <button data-prompt="Meri shopping list banane mein madad karo">Shopping list</button>
-        <button data-prompt="Couple Chat kholo">Couple Chat</button>
-    </section>
-
-    <!-- MESSAGE INPUT -->
-    <form class="composer" id="chatForm">
-        <input
-            id="messageInput"
-            type="text"
-            placeholder="NEXA se baat karo..."
-            maxlength="2000"
-            autocomplete="off"
-            aria-label="Message NEXA"
-        >
-
-        <button type="button" class="mic-btn" id="micBtn"
-                aria-label="Voice input">🎙</button>
-
-        <button type="submit" class="send-btn"
-                aria-label="Send message">➤</button>
-    </form>
-
-    <p class="privacy-note">🔒 Aapki privacy important hai</p>
+    </footer>
 
 </main>
+
+<!-- QUICK ACTION SHEET -->
+<div class="sheet-backdrop" id="sheetBackdrop" hidden>
+    <section class="option-sheet"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="sheetTitle">
+
+        <div class="sheet-handle"></div>
+
+        <div class="sheet-heading">
+            <h2 id="sheetTitle">Quick actions</h2>
+
+            <button type="button"
+                    id="closeSheet"
+                    class="icon-btn"
+                    aria-label="Close">
+                ✕
+            </button>
+        </div>
+
+        <div class="sheet-content" id="sheetContent"></div>
+    </section>
+</div>
 
 </body>
 </html>
