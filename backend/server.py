@@ -350,6 +350,23 @@ except Exception as e:
     )
 
 
+
+# =========================================================
+# NEXA AI ASSISTANT ROUTES
+# =========================================================
+
+try:
+    from .routes.ai_assistant import router as ai_assistant_router
+
+    app.include_router(ai_assistant_router)
+
+    print("[Usanex] NEXA AI Assistant routes loaded.")
+
+except Exception as e:
+    print("[Usanex] NEXA AI Assistant routes not loaded:", str(e))
+    
+
+
 # =========================================================
 # STARTUP INFORMATION
 # =========================================================
