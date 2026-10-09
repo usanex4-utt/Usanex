@@ -2,123 +2,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#03091d">
-  <title>NEXA — AI Assistant | Usanex</title>
-  <link rel="stylesheet" href="/static/css/nexa.css">
-  <script src="/static/js/nexa.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080D20">
+
+    <title>NEXA — AI Assistant</title>
+
+    <link rel="stylesheet" href="/static/css/nexa.css">
+    <script src="/static/js/nexa.js" defer></script>
 </head>
 <body>
-  <main class="nexa-app">
 
-    <header class="topbar">
-      <button class="icon-btn" id="backBtn" aria-label="Go back">←</button>
+<main class="nexa-app">
 
-      <div class="mini-orb">
-        <span>•</span>
-      </div>
+    <!-- HEADER -->
+    <header class="header">
+        <button class="back-btn" id="backBtn" aria-label="Back">←</button>
 
-      <div class="brand-info">
-        <h2>NEXA</h2>
-        <p><span class="online-dot"></span> AI Assistant</p>
-      </div>
+        <div class="header-title">Nexa<span>.</span></div>
 
-      <button class="icon-btn" id="menuBtn" aria-label="Options">⋮</button>
+        <div class="menu-wrap">
+            <button class="menu-btn" id="menuBtn"
+                    aria-label="Open menu" aria-expanded="false">⋮</button>
+
+            <nav class="dropdown" id="dropdown" hidden>
+                <button data-action="chat">💬 <span>Chat</span></button>
+                <button data-action="private">🔒 <span>Private Chat</span></button>
+                <button data-action="memory">🧠 <span>Memory</span></button>
+                <button data-action="quick">⚡ <span>Quick Actions</span></button>
+                <button data-action="settings">⚙️ <span>Settings</span></button>
+            </nav>
+        </div>
     </header>
 
-    <section class="hero" id="hero">
-      <div class="orb-wrap">
-        <div class="orb-ring ring-one"></div>
-        <div class="orb-ring ring-two"></div>
-        <div class="orb">
-          <div class="orb-eyes"><i></i><i></i></div>
+    <!-- ASSISTANT BRAND -->
+    <section class="hero">
+        <div class="orb-area">
+            <div class="orb-ring ring-outer"></div>
+            <div class="orb-ring ring-inner"></div>
+
+            <div class="orb">
+                <div class="eyes"><i></i><i></i></div>
+            </div>
         </div>
-        <div class="orbit orbit-one"></div>
-      </div>
 
-      <h1 class="logo">Nexa<span>.</span></h1>
-      <p class="subtitle">A I&nbsp; A S S I S T A N T</p>
+        <h1 class="logo">Nexa<span>.</span></h1>
+        <p class="subtitle">AI ASSISTANT</p>
 
-      <p class="welcome">
-        Hello! I'm NEXA — Your Personal AI Assistant 💙
-      </p>
-
-      <p class="intro">
-        Main yahan hoon aapki madad ke liye.<br>
-        Chat karein, kuchh poochhein, ya bas baat karein. 😊
-      </p>
+        <p class="welcome">Hello! Main NEXA hoon 💙</p>
+        <p class="intro">
+            Batao bhai, aaj main tumhari kya madad karun?
+        </p>
     </section>
 
-    <section class="feature-grid" aria-label="Assistant features">
-      <button class="feature-card" data-action="chat">
-        <span class="feature-icon blue">☏</span>
-        <span><b>Chat</b><small>Kuch bhi poochho</small></span>
-      </button>
-
-      <button class="feature-card" data-action="memory">
-        <span class="feature-icon purple">♧</span>
-        <span><b>Memory</b><small>Aapki personal yaadein</small></span>
-      </button>
-
-      <button class="feature-card" data-action="actions">
-        <span class="feature-icon pink">ϟ</span>
-        <span><b>Quick Actions</b><small>Couple Chat · Reels</small></span>
-      </button>
-
-      <button class="feature-card" data-action="security">
-        <span class="feature-icon green">♢</span>
-        <span><b>Privacy</b><small>Sirf aapke liye</small></span>
-      </button>
-
-      <button class="feature-card" data-action="preferences">
-        <span class="feature-icon pink">♡</span>
-        <span><b>Personalized</b><small>Aapki pasand ke hisaab se</small></span>
-      </button>
-
-      <button class="feature-card" data-action="voice">
-        <span class="feature-icon blue">≋</span>
-        <span><b>Voice Support</b><small>Bolo, main sun raha hoon</small></span>
-      </button>
-    </section>
-
-    <section class="conversation" id="conversation">
-      <div class="assistant-message">
-        <div class="message-orb">N</div>
-        <div>
-          <h3>Bhai, kaise ho? 😊</h3>
-          <p>Aaj kya karna pasand karoge? Chat, Reels ya kuch aur?</p>
+    <!-- CHAT MESSAGES -->
+    <section class="conversation" id="conversation" aria-live="polite">
+        <div class="assistant-message">
+            <div class="avatar">N</div>
+            <div class="message-content">
+                <span class="sender">NEXA</span>
+                <p>Kaise ho? 😊 Chat karein ya Usanex mein kuch karna hai?</p>
+            </div>
         </div>
-      </div>
     </section>
 
-    <section class="quick-prompts" aria-label="Suggested messages">
-      <button data-prompt="Mujhse friendly baat karo">💬 Baat karein</button>
-      <button data-prompt="Meri shopping list mein madad karo">📝 Shopping list</button>
-      <button data-prompt="Couple Chat kholo">⚡ Quick Actions</button>
+    <!-- SIMPLE SUGGESTIONS -->
+    <section class="suggestions">
+        <button data-prompt="Hello NEXA, kaise ho?">Hello 👋</button>
+        <button data-prompt="Meri shopping list banane mein madad karo">Shopping list</button>
+        <button data-prompt="Couple Chat kholo">Couple Chat</button>
     </section>
 
+    <!-- MESSAGE INPUT -->
     <form class="composer" id="chatForm">
-      <button class="attach-btn" type="button" id="attachBtn"
-              aria-label="Attachment">＋</button>
+        <input
+            id="messageInput"
+            type="text"
+            placeholder="NEXA se baat karo..."
+            maxlength="2000"
+            autocomplete="off"
+            aria-label="Message NEXA"
+        >
 
-      <label class="sr-only" for="messageInput">Message NEXA</label>
-      <input id="messageInput" type="text"
-             placeholder="Type a message..."
-             maxlength="2000" autocomplete="off">
+        <button type="button" class="mic-btn" id="micBtn"
+                aria-label="Voice input">🎙</button>
 
-      <button class="mic-btn" id="micBtn" type="button"
-              aria-label="Voice input">🎙</button>
-
-      <button class="send-btn" type="submit"
-              aria-label="Send message">➤</button>
+        <button type="submit" class="send-btn"
+                aria-label="Send message">➤</button>
     </form>
 
-    <footer class="bottom-note">
-      <span class="privacy-dot"></span>
-      Your conversations are personal
-    </footer>
+    <p class="privacy-note">🔒 Aapki privacy important hai</p>
 
-  </main>
+</main>
+
 </body>
 </html>
