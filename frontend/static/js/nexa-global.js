@@ -1,8 +1,7 @@
 
 /* =====================================================
-   USANEX — GLOBAL NEXA VOICE ASSISTANT
-   Wake word: Hello NEXA
-   Works on pages where this script is loaded
+   USANEX — NEXA GLOBAL VOICE ASSISTANT
+   Pink Floating Button + Voice Greeting + Wake Word
 ===================================================== */
 
 (() => {
@@ -12,115 +11,132 @@
     window.__USANEX_NEXA_GLOBAL__ = true;
 
     const API_URL = "/api/ai-assistant/chat";
-    const WAKE_LANGUAGE = "en-IN";
-    const COMMAND_LANGUAGE = "hi-IN";
-    const SILENCE_LIMIT = 10000;
-
     const SpeechRecognition =
         window.SpeechRecognition ||
         window.webkitSpeechRecognition;
 
-    let recognition = null;
-    let mode = "idle";
-    let enabled = false;
-    let speaking = false;
-    let busy = false;
-    let silenceTimer = null;
-    let finalTranscript = "";
-    let restartTimer = null;
+    const SILENCE_LIMIT = 10000;
 
-    // Floating NEXA status indicator
+    let enabled = false;
+    let mode = "idle";
+    let recognition = null;
+    let silenceTimer = null;
+    let restartTimer = null;
+    let finalTranscript = "";
+    let busy = false;
+    let speaking = false;
+    let dragged = false;
+
+    /* ---------- Floating Pink Button ---------- */
+
     const widget = document.createElement("button");
     widget.type = "button";
     widget.id = "usanexNexaGlobal";
+    widget.setAttribute("aria-label", "NEXA Voice Assistant");
     widget.innerHTML = `
-        <span class="nexa-global-orb"></span>
+        <span class="nexa-global-orb">🎙️</span>
         <span class="nexa-global-label">NEXA</span>
     `;
 
     Object.assign(widget.style, {
         position: "fixed",
-        right: "18px",
-        bottom: "90px",
+        right: "22px",
+        bottom: "110px",
         zIndex: "99999",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        gap: "9px",
-        padding: "10px 15px",
-        border: "1px solid #4269ff",
-        borderRadius: "30px",
-        background: "#10172a",
+        justifyContent: "center",
+        gap: "3px",
+        width: "72px",
+        height: "72px",
+        padding: "0",
+        border: "2px solid #ff65dc",
+        borderRadius: "50%",
+        background: "radial-gradient(circle, #7024a9, #16091f 75%)",
         color: "#ffffff",
-        fontSize: "14px",
-        fontWeight: "600",
-        boxShadow: "0 4px 22px #4269ff55",
-        cursor: "pointer"
+        fontSize: "12px",
+        fontWeight: "700",
+        boxShadow: "0 0 14px #ff36d7, 0 0 30px #ff36d788",
+        cursor: "grab",
+        touchAction: "none",
+        userSelect: "none"
     });
 
     const orb = widget.querySelector(".nexa-global-orb");
-
-    Object.assign(orb.style, {
-        width: "12px",
-        height: "12px",
-        borderRadius: "50%",
-        background: "#6885ff",
-        boxShadow: "0 0 12px #6885ff"
-    });
-
     const label = widget.querySelector(".nexa-global-label");
 
-    document.body.appendChild(widget);
+    orb.style.fontSize = "24px";
 
-    // Status message
+    const styles = document.createElement("style");
+    styles.textContent = `
+        @keyframes nexaPinkPulse {
+            0%,100% {
+                box-shadow: 0 0 12px #ff36d7, 0 0 24px #ff36d766;
+            }
+            50% {
+                box-shadow: 0 0 22px #ff36d7, 0 0 42px #ff36d7aa;
+            }
+        }
+        #usanexNexaGlobal {
+            animation: nexaPinkPulse 2s ease-in-out infinite;
+        }
+        #usanexNexaStatus {
+            position: fixed;
+            z-index: 99998;
+            left: 50%;
+            bottom: 175px;
+            transform: translateX(-50%);
+            max-width: 85vw;
+            padding: 10px 16px;
+            border: 1px solid #ff65dc;
+            border-radius: 18px;
+            background: #170d24;
+            color: white;
+            font: 14px sans-serif;
+            text-align: center;
+            box-shadow: 0 0 15px #ff36d766;
+        }
+    `;
+    document.head.appendChild(styles);
+
     const status = document.createElement("div");
     status.id = "usanexNexaStatus";
-    status.textContent = "NEXA ready";
-    Object.assign(status.style, {
-        position: "fixed",
-        right: "18px",
-        bottom: "145px",
-        zIndex: "99999",
-        maxWidth: "calc(100vw - 36px)",
-        padding: "10px 14px",
-        borderRadius: "12px",
-        background: "#10172a",
-        color: "#ffffff",
-        fontSize: "13px",
-        display: "none",
-        boxShadow: "0 4px 20px #0005"
-    });
-
+    status.style.display = "none";
+    document.body.appendChild(widget);
     document.body.appendChild(status);
 
-    function setStatus(message, color = "#6885ff") {
+    function setStatus(message, visible = true) {
         status.textContent = message;
-        status.style.display = "block";
-        orb.style.background = color;
-        orb.style.boxShadow = `0 0 12px ${color}`;
+        status.style.display = visible ? "block" : "none";
     }
 
-    function clearSilenceTimer() {
+    function clearTimers() {
         clearTimeout(silenceTimer);
+        clearTimeout(restartTimer);
         silenceTimer = null;
+        restartTimer = null;
     }
 
     function stopRecognition() {
-        clearTimeout(restartTimer);
-        clearSilenceTimer();
+        clearTimers();
 
         if (recognition) {
-            recognition.onend = null;
+            const old = recognition;
+            recognition = null;
+            old.onend = null;
 
             try {
-                recognition.stop();
+                old.stop();
             } catch (_) {}
-
-            recognition = null;
         }
     }
 
+    /* ---------- NEXA Speaks ---------- */
+
     function speak(text, callback) {
         if (!("speechSynthesis" in window)) {
+            setStatus("Is browser mein voice output available nahi hai.");
             if (callback) callback();
             return;
         }
@@ -129,8 +145,8 @@
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "hi-IN";
-        utterance.rate = 1;
-        utterance.pitch = 1;
+        utterance.rate = 0.95;
+        utterance.pitch = 1.05;
 
         speaking = true;
 
@@ -147,31 +163,24 @@
         window.speechSynthesis.speak(utterance);
     }
 
-    function createRecognition(language, continuous = true) {
-        const instance = new SpeechRecognition();
-
-        instance.lang = language;
-        instance.continuous = continuous;
-        instance.interimResults = true;
-        instance.maxAlternatives = 1;
-
-        return instance;
-    }
+    /* ---------- Wake Word Listener ---------- */
 
     function startWakeListening() {
-        if (!enabled || busy || speaking) return;
+        if (!enabled || busy || speaking || recognition) return;
 
         if (!SpeechRecognition) {
-            setStatus("Is browser mein voice recognition supported nahi hai.", "#ff6464");
+            setStatus("Voice recognition supported nahi hai.");
             return;
         }
 
-        stopRecognition();
         mode = "wake";
-        setStatus('Listening — "Hello NEXA" boliye');
+        setStatus('“Hello NEXA” boliye', false);
 
-        const instance = createRecognition(WAKE_LANGUAGE, true);
+        const instance = new SpeechRecognition();
         recognition = instance;
+        instance.lang = "en-IN";
+        instance.continuous = true;
+        instance.interimResults = true;
 
         instance.onresult = (event) => {
             let heard = "";
@@ -180,15 +189,9 @@
                 heard += event.results[i][0].transcript + " ";
             }
 
-            const normalized = heard.toLowerCase();
-
-            if (
-                /hello\s+nexa|hey\s+nexa|हेलो\s+नेक्सा|हैलो\s+नेक्सा|हे\s+नेक्सा/i
-                    .test(normalized)
-            ) {
+            if (/hello\s+nexa|hey\s+nexa|हेलो\s+नेक्सा|हैलो\s+नेक्सा/i.test(heard)) {
                 stopRecognition();
                 mode = "greeting";
-                setStatus("NEXA is ready", "#41d995");
 
                 speak(
                     "Yes sir, boliye. Main aapki kya help kar sakta hoon?",
@@ -204,7 +207,7 @@
                 event.error === "service-not-allowed") {
                 enabled = false;
                 mode = "idle";
-                setStatus("Microphone permission allow karein.", "#ff6464");
+                setStatus("Microphone permission allow karein.");
             }
         };
 
@@ -212,7 +215,7 @@
             if (recognition === instance) recognition = null;
 
             if (enabled && mode === "wake" && !busy && !speaking) {
-                restartTimer = setTimeout(startWakeListening, 700);
+                restartTimer = setTimeout(startWakeListening, 800);
             }
         };
 
@@ -224,27 +227,28 @@
         }
     }
 
+    /* ---------- Listen to User Question ---------- */
+
     function startCommandListening() {
-        if (!enabled || busy) return;
+        if (!enabled || busy || recognition) return;
 
-        stopRecognition();
-        finalTranscript = "";
         mode = "command";
+        finalTranscript = "";
+        setStatus("Sir, boliye. Main sun raha hoon.");
 
-        setStatus("Sir, main sun raha hoon...");
+        if (!SpeechRecognition) return;
 
-        const instance = createRecognition(COMMAND_LANGUAGE, true);
+        const instance = new SpeechRecognition();
         recognition = instance;
+        instance.lang = "hi-IN";
+        instance.continuous = true;
+        instance.interimResults = true;
 
         function resetSilenceTimer() {
-            clearSilenceTimer();
-
-            silenceTimer = setTimeout(() => {
-                finishCommand();
-            }, SILENCE_LIMIT);
+            clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => finishCommand(), SILENCE_LIMIT);
         }
 
-        // Silence countdown starts as soon as command mode opens.
         resetSilenceTimer();
 
         instance.onresult = (event) => {
@@ -252,20 +256,18 @@
 
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 const result = event.results[i];
-                const text = result[0].transcript.trim();
+                const words = result[0].transcript.trim();
 
-                if (result.isFinal && text) {
+                if (result.isFinal && words) {
                     finalTranscript +=
-                        (finalTranscript ? " " : "") + text;
-                } else if (text) {
-                    interim += text + " ";
+                        (finalTranscript ? " " : "") + words;
+                } else {
+                    interim += words + " ";
                 }
             }
 
-            const currentText = (finalTranscript + " " + interim).trim();
-
-            if (currentText) {
-                setStatus("Aap: " + currentText);
+            if ((finalTranscript + interim).trim()) {
+                setStatus("NEXA sun raha hai...", false);
                 resetSilenceTimer();
             }
         };
@@ -275,7 +277,7 @@
                 enabled = false;
                 mode = "idle";
                 stopRecognition();
-                setStatus("Microphone permission allow karein.", "#ff6464");
+                setStatus("Microphone permission allow karein.");
             } else if (event.error !== "aborted") {
                 finishCommand(false);
             }
@@ -283,7 +285,6 @@
 
         instance.onend = () => {
             if (recognition === instance) recognition = null;
-
             if (enabled && mode === "command" && !busy) {
                 finishCommand();
             }
@@ -292,14 +293,17 @@
         try {
             instance.start();
         } catch (_) {
+            recognition = null;
             finishCommand(false);
         }
     }
 
+    /* ---------- Send Question to NEXA ---------- */
+
     async function finishCommand(shouldSend = true) {
         if (mode !== "command") return;
 
-        clearSilenceTimer();
+        clearTimeout(silenceTimer);
 
         const message = finalTranscript.trim();
 
@@ -307,36 +311,30 @@
         mode = "processing";
 
         if (!shouldSend || !message) {
-            setStatus("10 seconds tak awaaz nahi aayi. Mic band hai.");
             mode = "idle";
+            setStatus("", false);
 
             if (enabled) {
-                setTimeout(startWakeListening, 800);
+                restartTimer = setTimeout(startWakeListening, 700);
             }
             return;
         }
 
         busy = true;
-        setStatus("NEXA jawab taiyar kar raha hai...");
+        setStatus("", false);
 
         try {
             const response = await fetch(API_URL, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 credentials: "same-origin",
-                body: JSON.stringify({
-                    message: message
-                })
+                body: JSON.stringify({ message })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(
-                    data.detail || data.message || "NEXA request failed"
-                );
+                throw new Error(data.detail || "NEXA request failed");
             }
 
             const reply =
@@ -347,65 +345,123 @@
                 data.text ||
                 "Sir, abhi jawab nahi mil paya.";
 
-            setStatus("NEXA: " + reply);
             speak(reply, () => {
                 busy = false;
                 mode = "idle";
 
                 if (enabled) {
-                    setTimeout(startWakeListening, 800);
+                    restartTimer = setTimeout(startWakeListening, 800);
                 }
             });
 
         } catch (error) {
-            console.error("NEXA error:", error);
-            setStatus("NEXA se connect nahi ho paya. API check karein.", "#ff6464");
-            speak("Sorry sir, abhi connection mein problem hai.", () => {
-                busy = false;
-                mode = "idle";
+            console.error("NEXA voice error:", error);
+            busy = false;
+            mode = "idle";
 
-                if (enabled) {
-                    setTimeout(startWakeListening, 1000);
-                }
+            speak("Sorry sir, abhi connection mein problem hai.", () => {
+                if (enabled) startWakeListening();
             });
         }
     }
 
-    widget.addEventListener("click", () => {
+    /* ---------- ON / OFF ---------- */
+
+    function turnOn() {
         if (!SpeechRecognition) {
-            setStatus("Voice recognition supported nahi hai.", "#ff6464");
-            return;
-        }
-
-        if (enabled) {
-            enabled = false;
-            mode = "idle";
-            busy = false;
-            stopRecognition();
-
-            if ("speechSynthesis" in window) {
-                window.speechSynthesis.cancel();
-            }
-
-            speaking = false;
-            widget.style.opacity = "0.65";
-            label.textContent = "NEXA OFF";
-            setStatus("NEXA voice listening band hai.");
+            setStatus("Aapka browser voice recognition support nahi karta.");
             return;
         }
 
         enabled = true;
-        manuallyStart();
-    });
-
-    function manuallyStart() {
+        busy = false;
         widget.style.opacity = "1";
-        label.textContent = "NEXA ON";
+        label.textContent = "NEXA";
+        orb.textContent = "🎙️";
 
-        // Start microphone from this user gesture.
-        startWakeListening();
+        // ON karte hi automatic greeting.
+        mode = "greeting";
+        setStatus("", false);
+
+        speak("Hello sir, kaise hain aap?", () => {
+            if (enabled) startWakeListening();
+        });
     }
 
-    // Initial state: do not activate microphone without permission/gesture.
-    setStatus('NEXA start karne ke liye button dabayein.');
+    function turnOff() {
+        enabled = false;
+        busy = false;
+        mode = "idle";
+        stopRecognition();
+
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+
+        speaking = false;
+        widget.style.opacity = "0.85";
+        label.textContent = "NEXA";
+        orb.textContent = "🎙️";
+
+        // No unwanted OFF/listening message.
+        setStatus("", false);
+    }
+
+    /* ---------- Drag Button Anywhere ---------- */
+
+    let startX = 0;
+    let startY = 0;
+    let originX = 0;
+    let originY = 0;
+
+    widget.addEventListener("pointerdown", (event) => {
+        startX = event.clientX;
+        startY = event.clientY;
+
+        const rect = widget.getBoundingClientRect();
+        originX = rect.left;
+        originY = rect.top;
+        dragged = false;
+
+        widget.setPointerCapture(event.pointerId);
+    });
+
+    widget.addEventListener("pointermove", (event) => {
+        if (!widget.hasPointerCapture(event.pointerId)) return;
+
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+
+        if (Math.abs(dx) > 7 || Math.abs(dy) > 7) dragged = true;
+        if (!dragged) return;
+
+        const x = Math.max(0, Math.min(
+            window.innerWidth - widget.offsetWidth,
+            originX + dx
+        ));
+
+        const y = Math.max(0, Math.min(
+            window.innerHeight - widget.offsetHeight,
+            originY + dy
+        ));
+
+        widget.style.left = x + "px";
+        widget.style.top = y + "px";
+        widget.style.right = "auto";
+        widget.style.bottom = "auto";
+    });
+
+    widget.addEventListener("pointerup", (event) => {
+        if (widget.hasPointerCapture(event.pointerId)) {
+            widget.releasePointerCapture(event.pointerId);
+        }
+
+        if (!dragged) {
+            if (enabled) turnOff();
+            else turnOn();
+        }
+    });
+
+    // Initial state: wait for a tap to enable microphone/audio.
+    setStatus("", false);
 })();
