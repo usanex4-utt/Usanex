@@ -1,7 +1,7 @@
 # =========================================================
-# USANEX — NEXA PERSONAL AI ASSISTANT
+# USANEX — NEXA PERSONAL ASSISTANT
 # File: backend/routes/ai_assistant.py
-# OpenAI API: NOT REQUIRED
+# No OpenAI API required
 # =========================================================
 
 import re
@@ -21,155 +21,143 @@ router = APIRouter(
 
 
 class NEXAChatRequest(BaseModel):
-    message: str = Field(
-        ...,
-        min_length=1,
-        max_length=4000,
-    )
+    message: str = Field(..., min_length=1, max_length=4000)
 
 
 def get_logged_in_user(request: Request, db: Session):
-    user = get_current_user_from_request(
-        request=request,
-        db=db,
-    )
+    user = get_current_user_from_request(request=request, db=db)
 
     if user is None:
         raise HTTPException(
             status_code=401,
-            detail="Please log in to use NEXA.",
+            detail="Please log in to use NEXA."
         )
 
     return user
 
 
 def normalize_text(text: str) -> str:
-    """Normalize user text for basic intent matching."""
-    return re.sub(r"\s+", " ", text.lower()).strip()
+    text = text.lower().strip()
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def contains_any(text: str, phrases: tuple) -> bool:
+    return any(phrase in text for phrase in phrases)
 
 
 def generate_nexa_reply(message: str, user_name: str) -> str:
-    """
-    Initial rule-based NEXA engine.
-    This works locally without an external AI API.
-    It is not yet a trained language model.
-    """
-
     text = normalize_text(message)
 
-    # Greetings
-    greetings = (
-        "hi", "hello", "hey", "hii", "namaste",
-        "namaskar", "kaise ho", "good morning",
-        "good evening", "good afternoon",
-    )
+    if not text:
+        return "Sir, aap apna sawal dobara boliye."
 
-    if text in greetings or text.startswith(
-        ("hello ", "hi ", "hey ", "namaste ")
+    # Greetings
+    if text in (
+        "hi", "hello", "hey", "hii", "namaste",
+        "namaskar", "good morning", "good evening",
+        "good afternoon", "kaise ho", "kaise hain"
     ):
         return (
-            f"Hello {user_name}! 💙 Main NEXA hoon, "
-            "tumhara Usanex personal assistant. "
-            "Batao, aaj kya help chahiye?"
+            f"Hello sir {user_name}! Main NEXA hoon. "
+            "Bataiye, main aapki kya help kar sakta hoon?"
         )
 
-    # Assistant identity
-    if any(term in text for term in (
+    # Identity
+    if contains_any(text, (
         "who are you", "tum kaun ho", "aap kaun ho",
-        "your name", "tumhara naam", "nexa kaun",
+        "tumhara naam", "aapka naam", "your name",
+        "nexa kaun"
     )):
         return (
-            "Main NEXA hoon 💙, Usanex ka personal AI assistant. "
-            "Abhi mera basic Python response engine active hai. "
-            "Hum ise dheere-dheere apne knowledge aur model "
-            "se improve karenge."
+            "Sir, main NEXA hoon, Usanex ka personal assistant. "
+            "Main aapke sawalon aur Usanex project mein madad "
+            "karne ke liye bana hoon."
         )
 
-    # Usanex project
+    # Capabilities
+    if contains_any(text, (
+        "what can you do", "kya kar sakte ho",
+        "kya kar sakte hain", "meri help", "help me",
+        "madad karo", "help chahiye"
+    )):
+        return (
+            "Sir, main abhi basic Python engine par kaam kar raha hoon. "
+            "Main greetings, Usanex ke ideas, basic coding aur AI "
+            "development ke baare mein madad kar sakta hoon. "
+            "Abhi mere paas har topic ka jawab nahi hai."
+        )
+
+    # Usanex
     if "usanex" in text:
         return (
-            "Usanex ek social communication platform hai. 💙 "
-            "Is project mein login, profiles, connections, "
-            "notifications, chat aur doosre features ko "
-            "step-by-step develop kiya ja sakta hai. "
-            "Main abhi tumhare private account data ko "
-            "automatically access nahi karta."
+            "Sir, Usanex aapka social communication platform hai. "
+            "Ismein profiles, connections, notifications, chat aur "
+            "NEXA assistant jaise features hain. Aap bataiye, "
+            "Usanex ke kis feature par kaam karna hai?"
         )
 
     # Couple chat
-    if any(term in text for term in (
-        "couple chat", "couple-chat", "partner chat",
+    if contains_any(text, (
+        "couple chat", "partner chat", "couple-chat"
     )):
         return (
-            "Couple Chat 💙 ke liye hum partner-specific chat, "
-            "message delivery/seen status aur conversation "
-            "features par kaam kar sakte hain. "
-            "Actual chat kholne ke liye app route integration "
-            "alag se implement karna hoga."
+            "Sir, Couple Chat mein partner-specific conversations, "
+            "message delivery aur seen status jaise features par "
+            "kaam kiya ja sakta hai. Aap kis feature ko improve "
+            "karna chahte hain?"
         )
 
-    # Usanex-related assignment or ideas
-    if any(term in text for term in (
-        "assignment", "project idea", "feature idea",
+    # AI and machine learning
+    if contains_any(text, (
+        "artificial intelligence", "machine learning",
+        "deep learning", "language model", "llm",
+        "apna ai", "khud ka ai", "own ai", "train model"
     )):
         return (
-            "Usanex se related ek idea: NEXA ke andar "
-            "'Smart Learning & Project Helper' section banaya "
-            "ja sakta hai. Ismein users project ideas, coding "
-            "guidance aur step-by-step explanations le sakte hain. "
-            "Yeh existing Usanex app ke andar hi rahega."
-        )
-
-    # AI development
-    if any(term in text for term in (
-        "train model", "own model", "apna ai",
-        "khud ka ai", "machine learning", "deep learning",
-        "language model", "llm",
-    )):
-        return (
-            "Apna AI banane ke liye hum 3 steps lenge 💙:\n"
-            "1. Python-based response engine.\n"
-            "2. Curated knowledge aur search system.\n"
-            "3. Training data, evaluation aur testing ke baad "
-            "apna chhota language model.\n\n"
-            "Abhi NEXA ka engine basic hai; ise trained model "
-            "samajhna sahi nahi hoga."
+            "Sir, apna AI banane ke liye Python, data preparation, "
+            "model selection, training aur testing seekhna hoga. "
+            "Bina external AI API ke local model ya rule-based "
+            "system use kiya ja sakta hai. Dono ki capabilities "
+            "alag hoti hain. Aap chahen to hum ise step-by-step "
+            "develop kar sakte hain."
         )
 
     # Python and coding
-    if any(term in text for term in (
-        "python", "coding", "code", "programming",
-        "fastapi", "api",
+    if contains_any(text, (
+        "python", "coding", "programming", "fastapi",
+        "api", "javascript", "html", "css", "error", "bug"
     )):
         return (
-            "Main coding mein step-by-step help karne ke liye "
-            "taiyar hoon 💻. Abhi mera built-in knowledge "
-            "limited hai. Apna code ya exact error bhejo, "
-            "toh main available information ke basis par "
-            "guide kar sakta hoon."
+            "Sir, coding mein help karne ke liye apna code, error "
+            "message ya exact requirement batayein. Main available "
+            "information ke basis par step-by-step guidance dunga."
         )
 
-    # Help
-    if any(term in text for term in (
-        "help", "madad", "kya kar sakte", "what can you do",
+    # Assignment and project
+    if contains_any(text, (
+        "assignment", "project idea", "feature idea",
+        "college project"
     )):
         return (
-            "Main abhi in basic topics par help kar sakta hoon 💙:\n"
-            "• Usanex ke features aur ideas\n"
-            "• NEXA ko develop karne ki planning\n"
-            "• Basic coding guidance\n"
-            "• AI model banane ke initial steps\n\n"
-            "Abhi main har sawal ka jawab nahi jaanta. "
-            "Hum naye verified knowledge se ise improve karenge."
+            "Sir, Usanex ke andar ek Smart Learning section banaya "
+            "ja sakta hai. Ismein project ideas, coding guidance, "
+            "concept explanations aur learning progress ho sakti hai. "
+            "Aap kis idea ko implement karna chahte hain?"
         )
 
-    # Default response
+    # Thanks
+    if contains_any(text, (
+        "thank you", "thanks", "shukriya", "dhanyawad"
+    )):
+        return "You're welcome sir! 💙 Bataiye, aur kya help chahiye?"
+
+    # Name and time-independent conversational fallback
     return (
-        f"{user_name}, tumhara message mujhe mil gaya. 💙\n\n"
-        "Abhi main ek initial Python-based assistant hoon, "
-        "isliye mere paas har topic ka ready answer nahi hai. "
-        "Apna sawal thoda aur detail mein likho ya Usanex, "
-        "coding aur AI development se related sawal poochho."
+        f"Ji sir, aapne kaha: {message}. "
+        "Main abhi basic Python-based assistant hoon aur har sawal "
+        "ka jawab nahi jaanta. Aap apna sawal thoda detail mein "
+        "batayein; main available rules ke hisaab se madad karunga."
     )
 
 
@@ -184,7 +172,7 @@ def nexa_status(
         "success": True,
         "assistant": "NEXA",
         "engine": "python-basic",
-        "message": f"Hello {user.name}, NEXA is ready.",
+        "message": f"Hello {user.name}, NEXA is ready."
     }
 
 
@@ -195,13 +183,12 @@ def nexa_chat(
     db: Session = Depends(get_db),
 ):
     user = get_logged_in_user(request, db)
-
     message = payload.message.strip()
 
     if not message:
         raise HTTPException(
             status_code=400,
-            detail="Please enter a message.",
+            detail="Please say your question again."
         )
 
     reply = generate_nexa_reply(
