@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta
@@ -10,33 +9,33 @@
 
     <title>Home | Usanex</title>
 
-    <link rel="stylesheet" href="/static/css/home.css?v=24">
+    <link rel="stylesheet" href="/static/css/home.css?v=25">
 
     <style>
-        /* ================= HEADER NEXA ASSISTANT ================= */
-
+        /* ===== HEADER ===== */
         .top-header {
             display: flex;
             align-items: center;
-            gap: 9px;
+            gap: 8px;
         }
 
         .brand {
             flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .header-nexa-button {
             flex: 1;
             min-width: 0;
-            height: 39px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 7px;
-            padding: 0 8px;
-            border: 1px solid rgba(72, 135, 255, .30);
-            border-radius: 12px;
-            background: linear-gradient(110deg, #111b30, #10121d);
+            padding: 0 9px;
+            border: 1px solid rgba(72, 135, 255, .35);
+            border-radius: 13px;
+            background: linear-gradient(110deg, #111d35, #10121e);
             color: #dce9ff;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
@@ -66,9 +65,14 @@
             flex-shrink: 0;
         }
 
+        /* ===== CONTENT SAFETY ===== */
+        [hidden] {
+            display: none !important;
+        }
+
         @media (max-width: 380px) {
             .top-header {
-                gap: 6px;
+                gap: 5px;
             }
 
             .header-nexa-button {
@@ -84,11 +88,9 @@
 </head>
 
 <body>
-
 <div class="app-shell">
 
     <!-- HEADER -->
-
     <header class="top-header">
 
         <button
@@ -106,13 +108,11 @@
             <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
         </div>
 
-        <!-- PERSONAL ASSISTANT IN HEADER -->
-
         <button
             type="button"
             class="header-nexa-button"
             id="nexaAssistantButton"
-            aria-label="Open Your Personal Assistant"
+            aria-label="Open NEXA Personal Assistant"
         >
             <span class="header-nexa-dot"></span>
             <span class="header-nexa-text">Personal Assistant</span>
@@ -123,23 +123,16 @@
             class="header-plus"
             id="headerPlus"
             aria-label="Create"
-        >
-            +
-        </button>
+        >+</button>
 
     </header>
 
-
     <!-- MAIN CONTENT -->
-
     <main class="main-area">
-
         <div class="content-scroll">
 
             <!-- NEX MOMENT -->
-
             <section class="status-section">
-
                 <div class="section-header">
                     <h2>Nex Moment</h2>
 
@@ -147,13 +140,10 @@
                         type="button"
                         class="see-all"
                         id="momentSeeAll"
-                    >
-                        See all
-                    </button>
+                    >See all</button>
                 </div>
 
                 <div class="moments">
-
                     <div class="moment-item">
                         <div class="moment-avatar your-moment">
                             <div class="moment-plus">+</div>
@@ -190,19 +180,15 @@
                         <div class="moment-avatar">K</div>
                         <span>Karan</span>
                     </div>
-
                 </div>
             </section>
 
-
             <!-- CONNECTED PEOPLE -->
-
             <section
                 class="connected-people-section"
                 id="connectedPeopleSection"
                 hidden
             >
-
                 <div class="connected-section-header">
                     <h2 id="connectedSectionTitle">All Connected</h2>
 
@@ -216,16 +202,13 @@
                     class="connected-people-list"
                     id="connectedPeopleList"
                 ></div>
-
             </section>
 
         </div>
     </main>
 
-
     <!-- BOTTOM NAVIGATION -->
-
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" aria-label="Main navigation">
 
         <button type="button" class="nav-item active" id="homeNav">
             <svg viewBox="0 0 24 24" fill="none"
@@ -284,15 +267,11 @@
 
     </nav>
 
-
     <!-- SIDE MENU -->
-
     <div class="menu-overlay" id="menuOverlay" hidden>
-
         <div class="menu-panel" role="dialog" aria-modal="true">
 
             <div class="menu-header">
-
                 <div class="menu-brand">
                     <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
                 </div>
@@ -303,40 +282,40 @@
                     class="close-menu"
                     aria-label="Close menu"
                 >×</button>
-
             </div>
 
             <div class="menu-items">
-
                 <button type="button" id="menuAllConnected">All Connected</button>
                 <button type="button" id="menuFamily">Family</button>
                 <button type="button" id="menuFriends">Friends</button>
                 <button type="button" id="menuCoupleChat">Couple Chat</button>
                 <button type="button" id="menuSettings">Settings</button>
                 <button type="button" id="logoutButton">Logout</button>
-
             </div>
         </div>
     </div>
 
 </div>
 
+<!-- EXISTING FEATURE SCRIPTS -->
+<script src="/static/js/home.js?v=25" defer></script>
+<script src="/static/js/create-sheet.js?v=1" defer></script>
 
-<!-- EXISTING HOME FEATURES -->
-    <script>
-    document.getElementById("nexaAssistantButton")
-        .addEventListener("click", function () {
+<!-- NEXA FLOATING VOICE BUTTON -->
+<script src="/static/js/nexa-global.js?v=3" defer></script>
+
+<!-- NEXA HEADER BUTTON -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const nexaButton = document.getElementById("nexaAssistantButton");
+
+    if (nexaButton) {
+        nexaButton.addEventListener("click", function () {
             window.location.href = "/nexa";
         });
+    }
+});
 </script>
-
-<script src="/static/js/nexa-global.js?v=2" defer></script>
-
-<script src="/static/js/home.js?v=24"></script>
-<script src="/static/js/create-sheet.js?v=1"></script>
-
-<!-- NEXA PAGE NAVIGATION -->
-
 
 </body>
 </html>
