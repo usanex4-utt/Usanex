@@ -3,7 +3,6 @@
 
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -11,87 +10,84 @@
 
     <title>Home | Usanex</title>
 
-    <link
-        rel="stylesheet"
-        href="/static/css/home.css?v=23"
-    >
+    <link rel="stylesheet" href="/static/css/home.css?v=24">
 
     <style>
-        /* NEXA Personal Assistant bar */
-        .nexa-assistant-bar {
+        /* ================= HEADER NEXA ASSISTANT ================= */
+
+        .top-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            width: 100%;
-            min-height: 54px;
-            box-sizing: border-box;
-            padding: 0 17px;
-            margin: 0;
-            border: 1px solid rgba(91, 151, 255, 0.25);
-            border-radius: 18px;
-            background: linear-gradient(
-                110deg,
-                #17243b,
-                #171b29
-            );
-            color: #ffffff;
+            gap: 9px;
+        }
+
+        .brand {
+            flex-shrink: 0;
+        }
+
+        .header-nexa-button {
+            flex: 1;
+            min-width: 0;
+            height: 39px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 8px;
+            border: 1px solid rgba(72, 135, 255, .30);
+            border-radius: 12px;
+            background: linear-gradient(110deg, #111b30, #10121d);
+            color: #dce9ff;
             cursor: pointer;
-            text-align: left;
             -webkit-tap-highlight-color: transparent;
         }
 
-        .nexa-assistant-bar:active {
-            transform: scale(0.99);
+        .header-nexa-button:active {
+            transform: scale(.97);
         }
 
-        .nexa-assistant-search-icon {
-            width: 23px;
-            height: 23px;
-            flex: 0 0 23px;
-            color: #80b7ff;
+        .header-nexa-dot {
+            width: 8px;
+            height: 8px;
+            flex: 0 0 8px;
+            border-radius: 50%;
+            background: #438cff;
         }
 
-        .nexa-assistant-label {
-            flex: 1;
-            min-width: 0;
-            color: #dce9ff;
-            font-size: 14px;
-            font-weight: 500;
-            letter-spacing: 0.1px;
+        .header-nexa-text {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-size: 12px;
+            font-weight: 600;
         }
 
-        .nexa-assistant-sparkle {
-            width: 22px;
-            height: 22px;
-            flex: 0 0 22px;
-            color: #80b7ff;
+        .header-plus {
+            flex-shrink: 0;
         }
 
-        .nexa-assistant-area {
-            padding: 10px 14px;
-            background: inherit;
-        }
-
-        @media (min-width: 700px) {
-            .nexa-assistant-area {
-                padding-left: 20px;
-                padding-right: 20px;
+        @media (max-width: 380px) {
+            .top-header {
+                gap: 6px;
             }
 
-            .nexa-assistant-bar {
-                max-width: 650px;
-                margin: 0 auto;
+            .header-nexa-button {
+                gap: 5px;
+                padding: 0 5px;
+            }
+
+            .header-nexa-text {
+                font-size: 10px;
             }
         }
     </style>
-
 </head>
 
 <body>
 
 <div class="app-shell">
 
-    <!-- ================= HEADER ================= -->
+    <!-- HEADER -->
 
     <header class="top-header">
 
@@ -110,13 +106,23 @@
             <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
         </div>
 
-        <!-- CREATE BUTTON — EXISTING FEATURE -->
+        <!-- PERSONAL ASSISTANT IN HEADER -->
+
+        <button
+            type="button"
+            class="header-nexa-button"
+            id="nexaAssistantButton"
+            aria-label="Open Your Personal Assistant"
+        >
+            <span class="header-nexa-dot"></span>
+            <span class="header-nexa-text">Personal Assistant</span>
+        </button>
 
         <button
             type="button"
             class="header-plus"
             id="headerPlus"
-            aria-label="create"
+            aria-label="Create"
         >
             +
         </button>
@@ -124,13 +130,13 @@
     </header>
 
 
-    <!-- ================= MAIN ================= -->
+    <!-- MAIN CONTENT -->
 
     <main class="main-area">
 
         <div class="content-scroll">
 
-            <!-- ================= NEX MOMENT ================= -->
+            <!-- NEX MOMENT -->
 
             <section class="status-section">
 
@@ -186,11 +192,10 @@
                     </div>
 
                 </div>
-
             </section>
 
 
-            <!-- ================= CONNECTION CATEGORY ================= -->
+            <!-- CONNECTED PEOPLE -->
 
             <section
                 class="connected-people-section"
@@ -199,16 +204,12 @@
             >
 
                 <div class="connected-section-header">
-                    <h2 id="connectedSectionTitle">
-                        All Connected
-                    </h2>
+                    <h2 id="connectedSectionTitle">All Connected</h2>
 
                     <span
                         class="connected-count"
                         id="connectedPeopleCount"
-                    >
-                        0
-                    </span>
+                    >0</span>
                 </div>
 
                 <div
@@ -219,91 +220,25 @@
             </section>
 
         </div>
-
     </main>
 
 
-    <!-- ================= NEXA ASSISTANT BAR ================= -->
-    <!-- Navigation ke bilkul upar -->
-
-    <div class="nexa-assistant-area">
-
-        <button
-            type="button"
-            class="nexa-assistant-bar"
-            id="nexaAssistantButton"
-            aria-label="Open Your Personal Assistant"
-        >
-
-            <svg
-                class="nexa-assistant-search-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.9"
-                stroke-linecap="round"
-            >
-                <circle cx="10.8" cy="10.8" r="7"></circle>
-                <path d="m16 16 4.2 4.2"></path>
-            </svg>
-
-            <span class="nexa-assistant-label">
-                Your Personal Assistant
-            </span>
-
-            <svg
-                class="nexa-assistant-sparkle"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-            >
-                <path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3z"></path>
-                <path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14z"></path>
-            </svg>
-
-        </button>
-
-    </div>
-
-
-    <!-- ================= BOTTOM NAV ================= -->
+    <!-- BOTTOM NAVIGATION -->
 
     <nav class="bottom-nav">
 
-        <!-- HOME -->
-        <button
-            type="button"
-            class="nav-item active"
-            id="homeNav"
-        >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
+        <button type="button" class="nav-item active" id="homeNav">
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.8">
                 <path d="M3 10.5L12 3l9 7.5"></path>
                 <path d="M5.5 9.5V21h13V9.5"></path>
             </svg>
             <span>Home</span>
         </button>
 
-        <!-- REEL -->
-        <button
-            type="button"
-            class="nav-item"
-            id="reelNav"
-        >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
+        <button type="button" class="nav-item" id="reelNav">
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.8">
                 <rect x="3" y="4" width="18" height="16" rx="3"></rect>
                 <path d="M8 4l3 5"></path>
                 <path d="M14 4l3 5"></path>
@@ -312,37 +247,19 @@
             <span>Reel</span>
         </button>
 
-        <!-- SEARCH -->
-        <button
-            type="button"
-            class="nav-item"
-            id="searchNav"
-        >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
+        <button type="button" class="nav-item" id="searchNav">
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.8">
                 <circle cx="11" cy="11" r="7"></circle>
                 <path d="M20 20l-4-4"></path>
             </svg>
             <span>Search</span>
         </button>
 
-        <!-- NOTIFICATION -->
-        <button
-            type="button"
-            class="nav-item"
-            id="notificationNav"
-        >
+        <button type="button" class="nav-item" id="notificationNav">
             <span class="notification-icon-wrapper">
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                >
+                <svg viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.8">
                     <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
                     <path d="M10 21h4"></path>
                 </svg>
@@ -356,18 +273,9 @@
             <span>Notification</span>
         </button>
 
-        <!-- PROFILE -->
-        <button
-            type="button"
-            class="nav-item"
-            id="profileNav"
-        >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-            >
+        <button type="button" class="nav-item" id="profileNav">
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.8">
                 <circle cx="12" cy="8" r="4"></circle>
                 <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
             </svg>
@@ -377,19 +285,11 @@
     </nav>
 
 
-    <!-- ================= SIDE MENU ================= -->
+    <!-- SIDE MENU -->
 
-    <div
-        class="menu-overlay"
-        id="menuOverlay"
-        hidden
-    >
+    <div class="menu-overlay" id="menuOverlay" hidden>
 
-        <div
-            class="menu-panel"
-            role="dialog"
-            aria-modal="true"
-        >
+        <div class="menu-panel" role="dialog" aria-modal="true">
 
             <div class="menu-header">
 
@@ -402,57 +302,32 @@
                     id="closeMenu"
                     class="close-menu"
                     aria-label="Close menu"
-                >
-                    ×
-                </button>
+                >×</button>
 
             </div>
 
             <div class="menu-items">
 
-                <button type="button" id="menuAllConnected">
-                    All Connected
-                </button>
-
-                <button type="button" id="menuFamily">
-                    Family
-                </button>
-
-                <button type="button" id="menuFriends">
-                    Friends
-                </button>
-
-                <button type="button" id="menuCoupleChat">
-                    Couple Chat
-                </button>
-
-                <button type="button" id="menuSettings">
-                    Settings
-                </button>
-
-                <button type="button" id="logoutButton">
-                    Logout
-                </button>
+                <button type="button" id="menuAllConnected">All Connected</button>
+                <button type="button" id="menuFamily">Family</button>
+                <button type="button" id="menuFriends">Friends</button>
+                <button type="button" id="menuCoupleChat">Couple Chat</button>
+                <button type="button" id="menuSettings">Settings</button>
+                <button type="button" id="logoutButton">Logout</button>
 
             </div>
-
         </div>
-
     </div>
 
 </div>
 
 
-<!-- ================= HOME JAVASCRIPT ================= -->
+<!-- EXISTING HOME FEATURES -->
 
-<script src="/static/js/home.js?v=23"></script>
-
-<!-- ================= CREATE BOTTOM SHEET ================= -->
-
+<script src="/static/js/home.js?v=24"></script>
 <script src="/static/js/create-sheet.js?v=1"></script>
 
-
-<!-- ================= NEXA BUTTON NAVIGATION ================= -->
+<!-- NEXA PAGE NAVIGATION -->
 
 <script>
     document
@@ -461,9 +336,10 @@
             window.location.href = "/nexa";
         });
 </script>
-    
-<script src="/static/js/nexa-global.js" defer></script>
-    
+
+<!-- GLOBAL NEXA VOICE BUTTON -->
+
+<script src="/static/js/nexa-global.js?v=2" defer></script>
 
 </body>
 </html>
