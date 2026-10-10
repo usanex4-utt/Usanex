@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -54,8 +55,10 @@ def nexa_chat(
             "engine": "python-basic",
         }
 
-    except Exception:
+    except Exception as exc:
+        print(f"[NEXA] Chat error: {exc}")
         raise HTTPException(
             status_code=500,
             detail="NEXA could not process your message.",
         )
+        
