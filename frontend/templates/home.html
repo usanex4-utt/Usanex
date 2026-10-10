@@ -323,23 +323,20 @@
 
 
 <!-- EXISTING HOME FEATURES -->
+    <script>
+    document.getElementById("nexaAssistantButton")
+        .addEventListener("click", function () {
+            window.location.href = "/nexa";
+        });
+</script>
+
+<script src="/static/js/nexa-global.js?v=2" defer></script>
 
 <script src="/static/js/home.js?v=24"></script>
 <script src="/static/js/create-sheet.js?v=1"></script>
 
 <!-- NEXA PAGE NAVIGATION -->
 
-<script>
-    document
-        .getElementById("nexaAssistantButton")
-        .addEventListener("click", function () {
-            window.location.href = "/nexa";
-        });
-</script>
-
-<!-- GLOBAL NEXA VOICE BUTTON -->
-
-<script src="/static/js/nexa-global.js?v=2" defer></script>
 
 </body>
 </html>
