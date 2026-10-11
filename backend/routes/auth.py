@@ -1,6 +1,7 @@
+
 # =========================================================
 # USANEX — AUTH ROUTES
-# backend/routes/auth.py
+# File: backend/routes/auth.py
 # =========================================================
 
 import secrets
@@ -17,46 +18,24 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..database.database import get_db
-from ..database.models import (
-    User,
-    UserSession,
-)
+from ..database.models import User, UserSession
 from ..services.auth_service import (
     generate_user_id,
     generate_username,
     hash_password,
     verify_password,
 )
-from ..services.otp_service import (
-    create_otp,
-    verify_otp,
-)
+from ..services.otp_service import create_otp, verify_otp
 
-
-# =========================================================
-# ROUTER
-# =========================================================
 
 router = APIRouter(
     prefix="/api/auth",
     tags=["Authentication"],
 )
 
-
-# =========================================================
-# SESSION SETTINGS
-# =========================================================
-
 SESSION_COOKIE_NAME = "usanex_session"
-
 SESSION_DURATION_DAYS = 30
-
-SESSION_DURATION_SECONDS = (
-    SESSION_DURATION_DAYS
-    * 24
-    * 60
-    * 60
-)
+SESSION_DURATION_SECONDS = SESSION_DURATION_DAYS * 24 * 60 * 60
 
 
 # =========================================================
@@ -64,76 +43,37 @@ SESSION_DURATION_SECONDS = (
 # =========================================================
 
 def utc_now():
-    """
-    Current UTC time as naive datetime.
-
-    Database models use SQLAlchemy DateTime
-    without timezone.
-    """
-
-    return datetime.now(
-        timezone.utc
-    ).replace(
-        tzinfo=None
-    )
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # =========================================================
-# SESSION CREATION
+# SESSION HELPERS
 # =========================================================
 
-def create_user_session(
-    db: Session,
-    user_id: int,
-) -> str:
-
-    session_token = secrets.token_urlsafe(
-        48
-    )
-
+def create_user_session(db: Session, user_id: int) -> str:
+    session_token = secrets.token_urlsafe(48)
     now = utc_now()
-
-    expires_at = (
-        now
-        + timedelta(
-            days=SESSION_DURATION_DAYS
-        )
-    )
 
     new_session = UserSession(
         session_token=session_token,
         user_id=user_id,
-        expires_at=expires_at,
+        expires_at=now + timedelta(days=SESSION_DURATION_DAYS),
         created_at=now,
     )
 
-    db.add(
-        new_session
-    )
-
+    db.add(new_session)
     db.commit()
 
     return session_token
 
 
-# =========================================================
-# VALIDATE SESSION
-# =========================================================
-
-def get_valid_session(
-    db: Session,
-    session_token: str | None,
-):
-
+def get_valid_session(db: Session, session_token: str | None):
     if not session_token:
         return None
 
     session = (
         db.query(UserSession)
-        .filter(
-            UserSession.session_token
-            == session_token
-        )
+        .filter(UserSession.session_token == session_token)
         .first()
     )
 
@@ -143,42 +83,21 @@ def get_valid_session(
     expires_at = session.expires_at
 
     if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
 
-        expires_at = expires_at.replace(
-            tzinfo=timezone.utc
-        )
-
-    now = datetime.now(
-        timezone.utc
-    )
-
-    if now >= expires_at:
-
-        db.delete(
-            session
-        )
-
+    if datetime.now(timezone.utc) >= expires_at:
+        db.delete(session)
         db.commit()
-
         return None
 
     return session
 
 
-# =========================================================
-# CURRENT USER FROM REQUEST
-# =========================================================
-
 def get_current_user_from_request(
     request: Request,
-    db: Session,
+    db: Session = Depends(get_db),
 ):
-
-    session_token = (
-        request.cookies.get(
-            SESSION_COOKIE_NAME
-        )
-    )
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
 
     session = get_valid_session(
         db=db,
@@ -190,33 +109,23 @@ def get_current_user_from_request(
 
     user = (
         db.query(User)
-        .filter(
-            User.id
-            == session.user_id
-        )
+        .filter(User.id == session.user_id)
         .first()
     )
 
     if user is None:
-
-        db.delete(
-            session
-        )
-
+        db.delete(session)
         db.commit()
-
         return None
 
     return user
 
 
 # =========================================================
-# USER RESPONSE
+# USER SERIALIZATION
 # =========================================================
 
-def serialize_user(
-    user: User,
-):
+def serialize_user(user: User):
     return {
         "id": user.id,
         "username": user.username,
@@ -231,74 +140,33 @@ def serialize_user(
 # REGISTER — SEND OTP
 # =========================================================
 
-class RegisterOTPRequest(
-    BaseModel
-):
-
-    name: str = Field(
-        min_length=1,
-        max_length=100,
-    )
-
-    mobile: str = Field(
-        min_length=5,
-        max_length=20,
-    )
-
-    password: str = Field(
-        min_length=6,
-        max_length=128,
-    )
+class RegisterOTPRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    mobile: str = Field(min_length=5, max_length=20)
+    password: str = Field(min_length=6, max_length=128)
 
 
-@router.post(
-    "/register/send-otp"
-)
+@router.post("/register/send-otp")
 def register_send_otp(
     request: RegisterOTPRequest,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
-
     name = request.name.strip()
-
     mobile = request.mobile.strip()
 
-    password = request.password
-
-    if not name:
-
+    if not name or not mobile:
         raise HTTPException(
             status_code=400,
-            detail="Name is required",
-        )
-
-    if not mobile:
-
-        raise HTTPException(
-            status_code=400,
-            detail="Mobile number is required",
-        )
-
-    if not password:
-
-        raise HTTPException(
-            status_code=400,
-            detail="Password is required",
+            detail="Name and mobile are required",
         )
 
     existing_user = (
         db.query(User)
-        .filter(
-            User.mobile
-            == mobile
-        )
+        .filter(User.mobile == mobile)
         .first()
     )
 
     if existing_user:
-
         raise HTTPException(
             status_code=409,
             detail="Mobile number is already registered",
@@ -321,72 +189,39 @@ def register_send_otp(
 # REGISTER — VERIFY OTP
 # =========================================================
 
-class RegisterVerifyRequest(
-    BaseModel
-):
-
-    name: str = Field(
-        min_length=1,
-        max_length=100,
-    )
-
-    mobile: str = Field(
-        min_length=5,
-        max_length=20,
-    )
-
-    password: str = Field(
-        min_length=6,
-        max_length=128,
-    )
-
-    otp: str = Field(
-        min_length=6,
-        max_length=6,
-    )
+class RegisterVerifyRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    mobile: str = Field(min_length=5, max_length=20)
+    password: str = Field(min_length=6, max_length=128)
+    otp: str = Field(min_length=6, max_length=6)
 
 
-@router.post(
-    "/register/verify"
-)
+@router.post("/register/verify")
 def register_verify(
     request: RegisterVerifyRequest,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
-
     name = request.name.strip()
-
     mobile = request.mobile.strip()
-
-    password = request.password
-
     otp = request.otp.strip()
 
-    # -----------------------------------------------------
-    # CHECK MOBILE
-    # -----------------------------------------------------
+    if not name or not mobile:
+        raise HTTPException(
+            status_code=400,
+            detail="Name and mobile are required",
+        )
 
     existing_user = (
         db.query(User)
-        .filter(
-            User.mobile
-            == mobile
-        )
+        .filter(User.mobile == mobile)
         .first()
     )
 
     if existing_user:
-
         raise HTTPException(
             status_code=409,
             detail="Mobile number is already registered",
         )
-
-    # -----------------------------------------------------
-    # VERIFY OTP
-    # -----------------------------------------------------
 
     verified = verify_otp(
         db=db,
@@ -396,82 +231,46 @@ def register_verify(
     )
 
     if not verified:
-
         raise HTTPException(
             status_code=400,
             detail="Invalid or expired OTP",
         )
 
-    # -----------------------------------------------------
-    # GENERATE USERNAME
-    # -----------------------------------------------------
-
-    username = generate_username(
-        name=name,
-        db=db,
-    )
-
-    # -----------------------------------------------------
-    # GENERATE UNIQUE USER ID
-    # -----------------------------------------------------
+    username = generate_username(name=name, db=db)
 
     while True:
-
         user_id = generate_user_id()
 
         existing_user_id = (
             db.query(User)
-            .filter(
-                User.user_id
-                == user_id
-            )
+            .filter(User.user_id == user_id)
             .first()
         )
 
         if existing_user_id is None:
-
             break
-
-    # -----------------------------------------------------
-    # CREATE USER
-    # -----------------------------------------------------
 
     new_user = User(
         username=username,
         user_id=user_id,
         name=name,
         mobile=mobile,
-        password_hash=hash_password(
-            password
-        ),
+        password_hash=hash_password(request.password),
         profile_photo=None,
     )
 
-    db.add(
-        new_user
-    )
-
+    db.add(new_user)
     db.commit()
-
-    db.refresh(
-        new_user
-    )
+    db.refresh(new_user)
 
     return {
         "success": True,
         "message": "Account created successfully",
         "user": {
-            "username":
-                new_user.username,
-
-            "user_id":
-                new_user.user_id,
-
-            "name":
-                new_user.name,
-
-            "mobile":
-                new_user.mobile,
+            "username": new_user.username,
+            "user_id": new_user.user_id,
+            "name": new_user.name,
+            "mobile": new_user.mobile,
         },
     }
 
@@ -480,113 +279,47 @@ def register_verify(
 # LOGIN
 # =========================================================
 
-class LoginRequest(
-    BaseModel
-):
-
-    identifier: str = Field(
-        min_length=1,
-        max_length=100,
-    )
-
-    password: str = Field(
-        min_length=1,
-        max_length=128,
-    )
+class LoginRequest(BaseModel):
+    identifier: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=1, max_length=128)
 
 
-@router.post(
-    "/login"
-)
+@router.post("/login")
 def login(
     request: LoginRequest,
     response: Response,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
-
-    identifier = (
-        request.identifier.strip()
-    )
-
-    password = request.password
-
-    # -----------------------------------------------------
-    # FIND USER
-    #
-    # Login supports:
-    # username OR mobile
-    # -----------------------------------------------------
+    identifier = request.identifier.strip()
 
     user = (
         db.query(User)
         .filter(
-            (
-                User.username
-                == identifier
-            )
-            |
-            (
-                User.mobile
-                == identifier
-            )
+            (User.username == identifier)
+            | (User.mobile == identifier)
         )
         .first()
     )
 
-    if user is None:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid username/mobile or password",
-        )
-
-    # -----------------------------------------------------
-    # VERIFY PASSWORD
-    # -----------------------------------------------------
-
-    password_valid = verify_password(
-        password=password,
+    if user is None or not verify_password(
+        password=request.password,
         password_hash=user.password_hash,
-    )
-
-    if not password_valid:
-
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid username/mobile or password",
         )
 
-    # -----------------------------------------------------
-    # REMOVE OLD SESSIONS
-    #
-    # Keeps the current account clean.
-    # -----------------------------------------------------
-
-    db.query(
-        UserSession
-    ).filter(
-        UserSession.user_id
-        == user.id
-    ).delete(
-        synchronize_session=False
-    )
+    db.query(UserSession).filter(
+        UserSession.user_id == user.id
+    ).delete(synchronize_session=False)
 
     db.commit()
-
-    # -----------------------------------------------------
-    # CREATE NEW SESSION
-    # -----------------------------------------------------
 
     session_token = create_user_session(
         db=db,
         user_id=user.id,
     )
-
-    # -----------------------------------------------------
-    # CREATE HTTP-ONLY COOKIE
-    # -----------------------------------------------------
 
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
@@ -598,46 +331,28 @@ def login(
         path="/",
     )
 
-    # -----------------------------------------------------
-    # RESPONSE
-    # -----------------------------------------------------
-
     return {
         "success": True,
         "message": "Login successful",
-        "user": serialize_user(
-            user
-        ),
+        "user": serialize_user(user),
     }
 
 
 # =========================================================
 # CURRENT USER
 # =========================================================
-#
-# GET /api/auth/me
-#
-# =========================================================
 
-@router.get(
-    "/me"
-)
+@router.get("/me")
 def get_current_user(
     request: Request,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
-
-    user = (
-        get_current_user_from_request(
-            request=request,
-            db=db,
-        )
+    user = get_current_user_from_request(
+        request=request,
+        db=db,
     )
 
     if user is None:
-
         raise HTTPException(
             status_code=401,
             detail="Not authenticated",
@@ -645,9 +360,7 @@ def get_current_user(
 
     return {
         "success": True,
-        "user": serialize_user(
-            user
-        ),
+        "user": serialize_user(user),
     }
 
 
@@ -655,51 +368,31 @@ def get_current_user(
 # LOGOUT
 # =========================================================
 
-@router.post(
-    "/logout"
-)
+@router.post("/logout")
 def logout(
     request: Request,
     response: Response,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
-
-    session_token = (
-        request.cookies.get(
-            SESSION_COOKIE_NAME
-        )
-    )
+    session_token = request.cookies.get(SESSION_COOKIE_NAME)
 
     if session_token:
-
         session = (
-            db.query(
-                UserSession
-            )
-            .filter(
-                UserSession.session_token
-                == session_token
-            )
+            db.query(UserSession)
+            .filter(UserSession.session_token == session_token)
             .first()
         )
 
         if session:
-
-            db.delete(
-                session
-            )
-
+            db.delete(session)
             db.commit()
-
-    # -----------------------------------------------------
-    # DELETE COOKIE
-    # -----------------------------------------------------
 
     response.delete_cookie(
         key=SESSION_COOKIE_NAME,
         path="/",
+        secure=True,
+        httponly=True,
+        samesite="lax",
     )
 
     return {
@@ -712,67 +405,31 @@ def logout(
 # FORGOT PASSWORD — SEND OTP
 # =========================================================
 
-class ForgotPasswordOTPRequest(
-    BaseModel
-):
-
-    identifier: str = Field(
-        min_length=1,
-        max_length=100,
-    )
+class ForgotPasswordOTPRequest(BaseModel):
+    identifier: str = Field(min_length=1, max_length=100)
 
 
-@router.post(
-    "/forgot-password/send-otp"
-)
+@router.post("/forgot-password/send-otp")
 def forgot_password_send_otp(
     request: ForgotPasswordOTPRequest,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
-
-    identifier = (
-        request.identifier.strip()
-    )
-
-    if not identifier:
-
-        raise HTTPException(
-            status_code=400,
-            detail="Username or mobile is required",
-        )
-
-    # -----------------------------------------------------
-    # FIND ACCOUNT
-    # -----------------------------------------------------
+    identifier = request.identifier.strip()
 
     user = (
         db.query(User)
         .filter(
-            (
-                User.username
-                == identifier
-            )
-            |
-            (
-                User.mobile
-                == identifier
-            )
+            (User.username == identifier)
+            | (User.mobile == identifier)
         )
         .first()
     )
 
     if user is None:
-
         raise HTTPException(
             status_code=404,
             detail="Account not found",
         )
-
-    # -----------------------------------------------------
-    # CREATE OTP
-    # -----------------------------------------------------
 
     otp = create_otp(
         db=db,
@@ -782,11 +439,8 @@ def forgot_password_send_otp(
 
     return {
         "success": True,
-        "message":
-            "Password reset OTP generated successfully",
-
-        "development_otp":
-            otp,
+        "message": "Password reset OTP generated successfully",
+        "development_otp": otp,
     }
 
 
@@ -794,139 +448,63 @@ def forgot_password_send_otp(
 # FORGOT PASSWORD — RESET
 # =========================================================
 
-class ForgotPasswordResetRequest(
-    BaseModel
-):
-
-    identifier: str = Field(
-        min_length=1,
-        max_length=100,
-    )
-
-    otp: str = Field(
-        min_length=6,
-        max_length=6,
-    )
-
-    new_password: str = Field(
-        min_length=6,
-        max_length=128,
-    )
-
-    confirm_password: str = Field(
-        min_length=6,
-        max_length=128,
-    )
+class ForgotPasswordResetRequest(BaseModel):
+    identifier: str = Field(min_length=1, max_length=100)
+    otp: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=6, max_length=128)
+    confirm_password: str = Field(min_length=6, max_length=128)
 
 
-@router.post(
-    "/forgot-password/reset"
-)
+@router.post("/forgot-password/reset")
 def forgot_password_reset(
     request: ForgotPasswordResetRequest,
-    db: Session = Depends(
-        get_db
-    ),
+    db: Session = Depends(get_db),
 ):
+    identifier = request.identifier.strip()
 
-    identifier = (
-        request.identifier.strip()
-    )
-
-    otp = request.otp.strip()
-
-    new_password = (
-        request.new_password
-    )
-
-    confirm_password = (
-        request.confirm_password
-    )
-
-    # -----------------------------------------------------
-    # PASSWORD MATCH
-    # -----------------------------------------------------
-
-    if (
-        new_password
-        != confirm_password
-    ):
-
+    if request.new_password != request.confirm_password:
         raise HTTPException(
             status_code=400,
             detail="Passwords do not match",
         )
 
-    # -----------------------------------------------------
-    # FIND USER
-    # -----------------------------------------------------
-
     user = (
         db.query(User)
         .filter(
-            (
-                User.username
-                == identifier
-            )
-            |
-            (
-                User.mobile
-                == identifier
-            )
+            (User.username == identifier)
+            | (User.mobile == identifier)
         )
         .first()
     )
 
     if user is None:
-
         raise HTTPException(
             status_code=404,
             detail="Account not found",
         )
 
-    # -----------------------------------------------------
-    # VERIFY OTP
-    # -----------------------------------------------------
-
     verified = verify_otp(
         db=db,
         identifier=identifier,
-        otp=otp,
+        otp=request.otp.strip(),
         purpose="forgot_password",
     )
 
     if not verified:
-
         raise HTTPException(
             status_code=400,
             detail="Invalid or expired OTP",
         )
 
-    # -----------------------------------------------------
-    # CHANGE PASSWORD
-    # -----------------------------------------------------
+    user.password_hash = hash_password(request.new_password)
 
-    user.password_hash = hash_password(
-        new_password
-    )
-
-    # -----------------------------------------------------
-    # INVALIDATE ALL OLD SESSIONS
-    # -----------------------------------------------------
-
-    db.query(
-        UserSession
-    ).filter(
-        UserSession.user_id
-        == user.id
-    ).delete(
-        synchronize_session=False
-    )
+    db.query(UserSession).filter(
+        UserSession.user_id == user.id
+    ).delete(synchronize_session=False)
 
     db.commit()
 
     return {
         "success": True,
-        "message":
-            "Password reset successfully",
+        "message": "Password reset successfully",
     }
