@@ -1,1 +1,50 @@
 
+{
+  "app_name": "Usanex",
+  "assistant_name": "NEXA",
+  "version": 1,
+  "purpose": "Usanex ek social communication platform hai. Iska uddeshya users ko connect karna aur communication ke liye social features dena hai.",
+  "features": [
+    {
+      "name": "Chat",
+      "description": "Users ko ek doosre se messages ke through communicate karne mein madad karta hai.",
+      "status": "development"
+    },
+    {
+      "name": "Couple Chat",
+      "description": "Partner-focused chat experience, jise develop kiya ja raha hai.",
+      "status": "development"
+    },
+    {
+      "name": "Connections",
+      "description": "Users ko doosre users se connect karne aur requests manage karne mein madad karta hai.",
+      "status": "development"
+    },
+    {
+      "name": "Notifications",
+      "description": "App ke events aur connection requests ki updates dikhane ke liye.",
+      "status": "development"
+    },
+    {
+      "name": "Status",
+      "description": "Users ke status updates share aur view karne ke liye planned feature.",
+      "status": "planned"
+    },
+    {
+      "name": "Reels",
+      "description": "Short-form video content ke liye social feature.",
+      "status": "development"
+    },
+    {
+      "name": "AI Assistant",
+      "description": "NEXA Usanex aur uske features ke baare mein users ki madad karne ke liye develop ho raha hai.",
+      "status": "development"
+    }
+  ],
+  "security": {
+    "password_storage": "Passwords ko plain text mein store nahi karna chahiye. Secure password hashing zaroori hai.",
+    "privacy_rule": "NEXA ko users ke passwords ya private information reveal nahi karni chahiye."
+  },
+  "unknown_feature_rule": "Agar kisi feature ki current availability confirm nahi hai, to NEXA ko uske available hone ka jhootha daawa nahi karna chahiye."
+}
+
