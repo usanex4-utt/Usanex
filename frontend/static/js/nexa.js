@@ -1,533 +1,1132 @@
+
+/* =========================================================
+   NEXA — CHAT + DIGITAL CLASSROOM
+   Complete replacement: static/js/nexa.js
+   Keeps chat API, Hindi voice input, menu and quick actions.
+========================================================= */
+
 (() => {
-    "use strict";
+  "use strict";
 
-    const $ = (id) => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
-    const form = $("chatForm");
-    const input = $("messageInput");
-    const conversation = $("conversation");
-    const welcome = $("welcome");
-    const chatArea = $("chatArea");
-    const sendBtn = $("sendBtn");
-    const micBtn = $("micBtn");
-    const voiceStatus = $("voiceStatus");
-    const menuBtn = $("menuBtn");
-    const dropdown = $("dropdown");
-    const plusBtn = $("plusBtn");
-    const sheetBackdrop = $("sheetBackdrop");
-    const sheetContent = $("sheetContent");
-    const sheetTitle = $("sheetTitle");
+  const el = {
+    chatForm: $("chatForm"),
+    messageInput: $("messageInput"),
+    conversation: $("conversation"),
+    welcome: $("welcome"),
+    chatArea: $("chatArea"),
+    sendBtn: $("sendBtn"),
+    micBtn: $("micBtn"),
+    voiceStatus: $("voiceStatus"),
+    menuBtn: $("menuBtn"),
+    dropdown: $("dropdown"),
+    plusBtn: $("plusBtn"),
+    sheetBackdrop: $("sheetBackdrop"),
+    sheetContent: $("sheetContent"),
+    sheetTitle: $("sheetTitle"),
 
-    let busy = false;
-    let recognition = null;
-    let isListening = false;
-    let finalTranscript = "";
-    let interimTranscript = "";
-    let savedInput = "";
-    let manualStop = false;
+    classroom: $("digitalClassroom"),
+    boardCanvas: $("boardCanvas"),
+    boardQuestion: $("boardQuestion"),
+    boardWork: $("boardWork"),
+    boardAnswer: $("boardAnswer"),
+    digitalPen: $("digitalPen"),
+    replayBoard: $("replayBoard"),
+    closeClassroom: $("closeClassroom"),
 
-    // New screen = fresh conversation.
-    // Messages are not persisted by this frontend.
-    conversation.replaceChildren();
-    welcome.hidden = false;
-    input.value = "";
+    teacherAvatar: $("teacherAvatar"),
+    teacherSpeech: $("teacherSpeech"),
+    teacherSpeak: $("teacherSpeak"),
+    teacherNext: $("teacherNext"),
 
-    function setStatus(message) {
-        voiceStatus.textContent = message || "";
+    classProgress: $("classProgress"),
+    yourScore: $("yourScore"),
+    answerForm: $("classroomAnswerForm"),
+    classroomAnswer: $("classroomAnswer"),
+    classroomFeedback: $("classroomFeedback"),
+    studentQuestion: $("studentQuestion"),
+    studentHint: $("studentHint")
+  };
+
+  const API = {
+    chat: "/api/ai-assistant/chat"
+  };
+
+  let recognition = null;
+  let isListening = false;
+  let isSending = false;
+  let classroomOpen = false;
+  let writingTimer = null;
+  let currentLessonStep = 0;
+  let currentQuiz = null;
+  let score = 0;
+  let answeredQuestions = 0;
+  let speechUtterance = null;
+
+  /* =====================================================
+     INITIAL STATE
+  ====================================================== */
+
+  if (el.conversation) {
+    // Keep the current screen fresh, as the earlier script did.
+    el.conversation.innerHTML = "";
+  }
+
+  updateWelcome();
+  setupSpeechRecognition();
+  setupEventListeners();
+  setupMenu();
+  setupQuickActions();
+
+  /* =====================================================
+     CHAT UI
+  ====================================================== */
+
+  function updateWelcome() {
+    const hasMessages =
+      el.conversation && el.conversation.children.length > 0;
+
+    if (el.welcome) {
+      el.welcome.hidden = Boolean(hasMessages) || classroomOpen;
+    }
+  }
+
+  function scrollChatToBottom() {
+    if (!el.chatArea) return;
+    el.chatArea.scrollTop = el.chatArea.scrollHeight;
+  }
+
+  function makeMessage(role, text) {
+    const message = document.createElement("div");
+    message.className = `message message-${role}`;
+    message.setAttribute("role", role === "assistant" ? "status" : "listitem");
+
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble";
+    bubble.textContent = text;
+
+    message.appendChild(bubble);
+    return { message, bubble };
+  }
+
+  function addMessage(role, text) {
+    if (!el.conversation) return null;
+
+    const item = makeMessage(role, text);
+    el.conversation.appendChild(item.message);
+
+    updateWelcome();
+    scrollChatToBottom();
+
+    return item;
+  }
+
+  function setSendingState(sending) {
+    isSending = sending;
+
+    if (el.sendBtn) {
+      el.sendBtn.disabled = sending;
+      el.sendBtn.classList.toggle("is-loading", sending);
+      el.sendBtn.setAttribute("aria-busy", String(sending));
     }
 
-    function scrollToBottom() {
-        chatArea.scrollTop = chatArea.scrollHeight;
+    if (el.messageInput) {
+      el.messageInput.disabled = sending;
+    }
+  }
+
+  async function sendMessage(rawText) {
+    const messageText = String(rawText || "").trim();
+
+    if (!messageText || isSending) return;
+
+    if (el.messageInput) {
+      el.messageInput.value = "";
+      el.messageInput.style.height = "";
     }
 
-    function updateWelcome() {
-        welcome.hidden = conversation.children.length > 0;
-    }
+    addMessage("user", messageText);
 
-    function addMessage(text, role, extraClass = "") {
-        const message = document.createElement("div");
-        message.className =
-            `message ${role} ${extraClass}`.trim();
+    const pending = addMessage("assistant", "Soch raha hoon…");
+    if (pending) pending.message.classList.add("message-pending");
 
-        if (role === "assistant") {
-            const label = document.createElement("span");
-            label.className = "message-label";
-            label.textContent = "NEXA";
-            message.appendChild(label);
-        }
+    setSendingState(true);
 
-        const content = document.createElement("span");
-        content.textContent = text;
-        message.appendChild(content);
+    try {
+      const response = await fetch(API.chat, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ message: messageText })
+      });
 
-        conversation.appendChild(message);
-        updateWelcome();
-        scrollToBottom();
+      let data = {};
+      const responseText = await response.text();
 
-        return { element: message, content };
-    }
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { reply: responseText };
+      }
 
-    function autoResizeInput() {
-        input.style.height = "auto";
-        input.style.height =
-            Math.min(input.scrollHeight, 120) + "px";
-    }
-
-    input.addEventListener("input", autoResizeInput);
-
-    input.addEventListener("keydown", (event) => {
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey &&
-            !event.isComposing
-        ) {
-            event.preventDefault();
-            form.requestSubmit();
-        }
-    });
-
-    async function sendMessage(text) {
-        const messageText = String(text || "").trim();
-
-        if (!messageText || busy) return;
-
-        if (isListening) {
-            stopListening();
-        }
-
-        busy = true;
-        sendBtn.disabled = true;
-        input.value = "";
-        autoResizeInput();
-        setStatus("");
-
-        addMessage(messageText, "user");
-
-        const pending = addMessage(
-            "Soch raha hoon...",
-            "assistant",
-            "pending"
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+          data.error ||
+          data.message ||
+          `Request failed (${response.status})`
         );
+      }
 
-        try {
-            const response = await fetch(
-                "/api/ai-assistant/chat",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    credentials: "same-origin",
-                    body: JSON.stringify({
-                        message: messageText
-                    })
-                }
-            );
+      const reply =
+        data.reply ??
+        data.response ??
+        data.answer ??
+        data.message ??
+        data.text ??
+        "Mujhe abhi iska jawab nahi mila. Dobara try karo.";
 
-            const data = await response.json().catch(() => ({}));
+      if (pending) {
+        pending.bubble.textContent = String(reply);
+        pending.message.classList.remove("message-pending");
+      } else {
+        addMessage("assistant", String(reply));
+      }
+    } catch (error) {
+      const errorMessage =
+        error && error.message
+          ? error.message
+          : "Connection mein problem aa gayi.";
 
-            if (!response.ok) {
-                throw new Error(
-                    data.detail ||
-                    data.message ||
-                    `Request failed (${response.status})`
-                );
-            }
+      const friendlyMessage =
+        "NEXA se connect nahi ho paaya. Internet aur backend check karke dobara try karo.";
 
-            const reply =
-                data.reply ??
-                data.response ??
-                data.answer ??
-                data.message ??
-                data.text;
+      if (pending) {
+        pending.bubble.textContent = friendlyMessage;
+        pending.message.classList.remove("message-pending");
+        pending.message.classList.add("message-error");
+        pending.message.title = errorMessage;
+      } else {
+        addMessage("assistant", friendlyMessage);
+      }
 
-            if (
-                typeof reply === "string" &&
-                reply.trim()
-            ) {
-                pending.content.textContent = reply;
-                pending.element.classList.remove("pending");
-            } else {
-                pending.content.textContent =
-                    "Server se reply format nahi mila. " +
-                    "Backend response check karein.";
+      console.error("NEXA chat error:", error);
+    } finally {
+      setSendingState(false);
+      updateWelcome();
 
-                pending.element.classList.remove("pending");
-                pending.element.classList.add("error");
-            }
-        } catch (error) {
-            console.error("NEXA chat error:", error);
+      if (el.messageInput) {
+        el.messageInput.focus();
+      }
+    }
+  }
 
-            pending.content.textContent =
-                "NEXA se connect nahi ho paaya. Internet, login " +
-                "aur /api/ai-assistant/chat endpoint check karein.";
+  /* =====================================================
+     DIGITAL CLASSROOM LESSON DATA
+  ====================================================== */
 
-            pending.element.classList.remove("pending");
-            pending.element.classList.add("error");
-        } finally {
-            busy = false;
-            sendBtn.disabled = false;
-            input.focus();
-            scrollToBottom();
+  const lessons = [
+    {
+      title: "23 × 4",
+      steps: [
+        {
+          work: "Step 1: 23 ko 20 + 3 mein baantte hain.",
+          speech: "Chalo, 23 guna 4 ko aasaan banate hain. Sabse pehle 23 ko 20 aur 3 mein baantenge."
+        },
+        {
+          work: "Step 2: 20 × 4 = 80",
+          speech: "Ab 20 ko 4 se multiply karo. 20 guna 4, barabar 80 hota hai."
+        },
+        {
+          work: "Step 3: 3 × 4 = 12",
+          speech: "Ab bache hue 3 ko 4 se multiply karenge. 3 guna 4, barabar 12."
+        },
+        {
+          work: "Step 4: 80 + 12 = 92",
+          speech: "Ab dono results jod do. 80 plus 12 barabar 92. Isliye 23 guna 4 ka answer 92 hai."
         }
+      ],
+      answer: "92",
+      quiz: {
+        question: "Ab tumhari baari: 12 × 3 = ?",
+        hint: "12 ko 10 + 2 mein baanto. Phir 10 × 3 aur 2 × 3 ko jodo.",
+        answer: 36,
+        explanation: "12 × 3 = 10 × 3 + 2 × 3 = 30 + 6 = 36."
+      }
+    },
+    {
+      title: "Addition: 28 + 15",
+      steps: [
+        {
+          work: "Step 1: 28 + 15",
+          speech: "Aaj hum 28 plus 15 solve karenge."
+        },
+        {
+          work: "Step 2: 28 + 10 = 38",
+          speech: "Pehle 15 mein se 10 jodo. 28 plus 10, barabar 38."
+        },
+        {
+          work: "Step 3: 38 + 5 = 43",
+          speech: "Ab bache hue 5 jodo. 38 plus 5, barabar 43."
+        }
+      ],
+      answer: "43",
+      quiz: {
+        question: "Ab solve karo: 34 + 8 = ?",
+        hint: "34 mein pehle 6 jodo, phir bache hue 2.",
+        answer: 42,
+        explanation: "34 + 8 = 34 + 6 + 2 = 40 + 2 = 42."
+      }
+    },
+    {
+      title: "Subtraction: 52 − 18",
+      steps: [
+        {
+          work: "Step 1: 52 − 18",
+          speech: "Chalo 52 mein se 18 ghataate hain."
+        },
+        {
+          work: "Step 2: 52 − 10 = 42",
+          speech: "Pehle 10 ghatao. 52 minus 10, barabar 42."
+        },
+        {
+          work: "Step 3: 42 − 8 = 34",
+          speech: "Ab 8 aur ghatao. 42 minus 8, barabar 34."
+        }
+      ],
+      answer: "34",
+      quiz: {
+        question: "Ab solve karo: 65 − 27 = ?",
+        hint: "65 − 20 karo, phir 7 aur ghatao.",
+        answer: 38,
+        explanation: "65 − 27 = 65 − 20 − 7 = 45 − 7 = 38."
+      }
+    }
+  ];
+
+  let activeLesson = lessons[0];
+
+  /* =====================================================
+     BOARD WRITING ANIMATION
+  ====================================================== */
+
+  function stopBoardAnimation() {
+    if (writingTimer) {
+      clearInterval(writingTimer);
+      writingTimer = null;
     }
 
-    form.addEventListener("submit", (event) => {
+    if (el.boardCanvas) {
+      el.boardCanvas.classList.remove("writing");
+    }
+  }
+
+  function animateText(target, text, speed = 24) {
+    if (!target) return;
+
+    stopBoardAnimation();
+
+    target.textContent = "";
+
+    if (el.boardCanvas) {
+      el.boardCanvas.classList.add("writing");
+    }
+
+    let index = 0;
+    const content = String(text);
+
+    writingTimer = setInterval(() => {
+      target.textContent += content.charAt(index);
+      index += 1;
+
+      if (el.digitalPen) {
+        const progress = Math.min(index / Math.max(content.length, 1), 1);
+        el.digitalPen.style.left = `${8 + progress * 82}%`;
+      }
+
+      if (index >= content.length) {
+        stopBoardAnimation();
+      }
+    }, speed);
+  }
+
+  function renderBoardStep(stepIndex, shouldSpeak = true) {
+    stopBoardAnimation();
+
+    if (!activeLesson) return;
+
+    currentLessonStep = Math.max(
+      0,
+      Math.min(stepIndex, activeLesson.steps.length - 1)
+    );
+
+    if (el.boardQuestion) {
+      el.boardQuestion.textContent = activeLesson.title;
+    }
+
+    if (el.boardAnswer) {
+      el.boardAnswer.textContent = "";
+    }
+
+    const step = activeLesson.steps[currentLessonStep];
+
+    animateText(el.boardWork, step.work);
+
+    if (el.teacherSpeech) {
+      el.teacherSpeech.textContent = step.speech;
+    }
+
+    if (el.teacherNext) {
+      el.teacherNext.textContent =
+        currentLessonStep >= activeLesson.steps.length - 1
+          ? "Quiz shuru karo"
+          : "Next Step";
+    }
+
+    if (shouldSpeak) {
+      speakTeacher(step.speech);
+    }
+
+    updateProgress();
+  }
+
+  function replayBoard() {
+    renderBoardStep(currentLessonStep, true);
+  }
+
+  /* =====================================================
+     TEACHER SPEECH
+  ====================================================== */
+
+  function stopTeacherSpeech() {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    speechUtterance = null;
+
+    if (el.teacherAvatar) {
+      el.teacherAvatar.classList.remove("speaking");
+    }
+  }
+
+  function speakTeacher(text) {
+    if (!text) return;
+
+    if (!("speechSynthesis" in window) ||
+        typeof SpeechSynthesisUtterance === "undefined") {
+      if (el.teacherSpeech) {
+        el.teacherSpeech.textContent = `${text} (Is browser mein voice available nahi hai.)`;
+      }
+      return;
+    }
+
+    stopTeacherSpeech();
+
+    speechUtterance = new SpeechSynthesisUtterance(String(text));
+    speechUtterance.lang = "hi-IN";
+    speechUtterance.rate = 0.9;
+    speechUtterance.pitch = 1.0;
+
+    speechUtterance.onstart = () => {
+      if (el.teacherAvatar) {
+        el.teacherAvatar.classList.add("speaking");
+      }
+    };
+
+    speechUtterance.onend = () => {
+      if (el.teacherAvatar) {
+        el.teacherAvatar.classList.remove("speaking");
+      }
+    };
+
+    speechUtterance.onerror = () => {
+      if (el.teacherAvatar) {
+        el.teacherAvatar.classList.remove("speaking");
+      }
+    };
+
+    window.speechSynthesis.speak(speechUtterance);
+  }
+
+  /* =====================================================
+     CLASSROOM OPEN / CLOSE
+  ====================================================== */
+
+  function openClassroom() {
+    if (!el.classroom) {
+      addMessage(
+        "assistant",
+        "Digital Classroom ka HTML section nahi mila. Nayi nexa.html file save hui hai ya nahi, check karo."
+      );
+      return;
+    }
+
+    classroomOpen = true;
+    el.classroom.hidden = false;
+
+    if (el.welcome) el.welcome.hidden = true;
+    if (el.conversation) el.conversation.hidden = true;
+
+    if (el.dropdown) el.dropdown.hidden = true;
+    closeQuickActions();
+
+    activeLesson = lessons[0];
+    score = 0;
+    answeredQuestions = 0;
+    currentQuiz = null;
+
+    if (el.classroomAnswer) el.classroomAnswer.value = "";
+    if (el.classroomFeedback) el.classroomFeedback.textContent = "";
+    if (el.studentHint) el.studentHint.textContent = "";
+
+    renderBoardStep(0, false);
+    updateProgress();
+
+    if (el.studentQuestion) {
+      el.studentQuestion.textContent =
+        "Pehle example dekho, phir apna answer do.";
+    }
+
+    if (el.teacherSpeech) {
+      el.teacherSpeech.textContent =
+        "Namaste! Aaj hum maths ko step-by-step seekhenge. Dhyaan se dekho, aur jab ready ho to Next Step dabao.";
+    }
+
+    speakTeacher(
+      "Namaste! Aaj hum maths ko step by step seekhenge. Dhyaan se dekho, aur jab ready ho to next step dabao."
+    );
+
+    if (el.chatArea) {
+      el.chatArea.scrollTop = 0;
+    }
+  }
+
+  function closeClassroom() {
+    stopBoardAnimation();
+    stopTeacherSpeech();
+
+    classroomOpen = false;
+
+    if (el.classroom) el.classroom.hidden = true;
+    if (el.conversation) el.conversation.hidden = false;
+
+    updateWelcome();
+  }
+
+  /* =====================================================
+     CLASSROOM PROGRESS + QUIZ
+  ====================================================== */
+
+  function updateProgress() {
+    if (el.classProgress) {
+      const total = activeLesson ? activeLesson.steps.length : 1;
+      const step = currentLessonStep + 1;
+      el.classProgress.textContent = `Lesson step ${step}/${total}`;
+    }
+
+    if (el.yourScore) {
+      el.yourScore.textContent = `Tumhara score: ${score}/${answeredQuestions}`;
+    }
+  }
+
+  function showQuiz() {
+    if (!activeLesson || !activeLesson.quiz) return;
+
+    currentQuiz = activeLesson.quiz;
+
+    if (el.boardQuestion) {
+      el.boardQuestion.textContent = "Your Turn!";
+    }
+
+    if (el.boardWork) {
+      el.boardWork.textContent = "Apna answer neeche likho.";
+    }
+
+    if (el.boardAnswer) {
+      el.boardAnswer.textContent = "";
+    }
+
+    if (el.studentQuestion) {
+      el.studentQuestion.textContent = currentQuiz.question;
+    }
+
+    if (el.studentHint) {
+      el.studentHint.textContent = "Hint: " + currentQuiz.hint;
+    }
+
+    if (el.classroomFeedback) {
+      el.classroomFeedback.textContent = "";
+      el.classroomFeedback.className = "classroom-feedback";
+    }
+
+    if (el.classroomAnswer) {
+      el.classroomAnswer.value = "";
+      el.classroomAnswer.focus();
+    }
+
+    if (el.teacherSpeech) {
+      el.teacherSpeech.textContent =
+        "Ab tum solve karo. Jaldi karne ki zaroorat nahi hai. Soch kar answer do.";
+    }
+
+    if (el.teacherNext) {
+      el.teacherNext.textContent = "Next Lesson";
+    }
+
+    speakTeacher(
+      "Ab tum solve karo. Jaldi karne ki zaroorat nahi hai. Soch kar answer do."
+    );
+
+    updateProgress();
+  }
+
+  function checkQuizAnswer(rawAnswer) {
+    if (!currentQuiz) {
+      if (el.classroomFeedback) {
+        el.classroomFeedback.textContent =
+          "Pehle lesson ke steps complete karo, phir quiz do.";
+      }
+      return;
+    }
+
+    const answerText = String(rawAnswer || "").trim();
+    if (!answerText) return;
+
+    const numericAnswer = Number(
+      answerText.replace(/,/g, "").replace(/[₹%]/g, "").trim()
+    );
+
+    answeredQuestions += 1;
+
+    if (Number.isFinite(numericAnswer) &&
+        numericAnswer === Number(currentQuiz.answer)) {
+      score += 1;
+
+      const feedback =
+        "Bilkul sahi! 🎉 Shabash. " + currentQuiz.explanation;
+
+      if (el.classroomFeedback) {
+        el.classroomFeedback.textContent = feedback;
+        el.classroomFeedback.className =
+          "classroom-feedback feedback-correct";
+      }
+
+      if (el.teacherSpeech) {
+        el.teacherSpeech.textContent =
+          "Bahut achha! Tumhara answer sahi hai. Chalo, solution bhi dekh lete hain.";
+      }
+
+      if (el.boardAnswer) {
+        el.boardAnswer.textContent = `Correct answer: ${currentQuiz.answer}`;
+      }
+
+      speakTeacher(
+        "Bahut achha! Tumhara answer sahi hai. " + currentQuiz.explanation
+      );
+    } else {
+      const feedback =
+        "Koi baat nahi 🙂 Galti se seekhte hain. " +
+        currentQuiz.explanation +
+        " Ek baar phir try kar sakte ho.";
+
+      if (el.classroomFeedback) {
+        el.classroomFeedback.textContent = feedback;
+        el.classroomFeedback.className =
+          "classroom-feedback feedback-try-again";
+      }
+
+      if (el.teacherSpeech) {
+        el.teacherSpeech.textContent =
+          "Koi baat nahi. Galti se seekhte hain. Chalo, solution ko saath mein samajhte hain.";
+      }
+
+      if (el.boardWork) {
+        animateText(el.boardWork, currentQuiz.explanation, 20);
+      }
+
+      speakTeacher(
+        "Koi baat nahi. Galti se seekhte hain. " + currentQuiz.explanation
+      );
+    }
+
+    updateProgress();
+  }
+
+  function nextClassroomStep() {
+    if (currentQuiz) {
+      const nextIndex = (lessons.indexOf(activeLesson) + 1) % lessons.length;
+      activeLesson = lessons[nextIndex];
+      currentQuiz = null;
+
+      if (el.classroomFeedback) {
+        el.classroomFeedback.textContent = "";
+      }
+
+      if (el.studentHint) {
+        el.studentHint.textContent = "";
+      }
+
+      if (el.studentQuestion) {
+        el.studentQuestion.textContent =
+          "Pehle example dekho, phir apna answer do.";
+      }
+
+      renderBoardStep(0, true);
+      return;
+    }
+
+    if (currentLessonStep < activeLesson.steps.length - 1) {
+      renderBoardStep(currentLessonStep + 1, true);
+    } else {
+      showQuiz();
+    }
+  }
+
+  function handleConfusion() {
+    const explanation =
+      "Koi baat nahi. Chalo aur aasaan tareeke se samajhte hain. " +
+      "23 × 4 ka matlab hai 23 ko chaar baar jodna: " +
+      "23 + 23 + 23 + 23 = 92. " +
+      "Ab hum ise dheere-dheere dobara dekhenge.";
+
+    if (el.teacherSpeech) {
+      el.teacherSpeech.textContent = explanation;
+    }
+
+    if (el.boardQuestion) {
+      el.boardQuestion.textContent = "Easy Example";
+    }
+
+    if (el.boardWork) {
+      animateText(
+        el.boardWork,
+        "23 + 23 + 23 + 23 = 92",
+        34
+      );
+    }
+
+    if (el.classroomFeedback) {
+      el.classroomFeedback.textContent =
+        "Koi tension nahi. Aaraam se seekhenge. " + explanation;
+      el.classroomFeedback.className =
+        "classroom-feedback feedback-try-again";
+    }
+
+    speakTeacher(explanation);
+  }
+
+  /* =====================================================
+     EVENT LISTENERS
+  ====================================================== */
+
+  function setupEventListeners() {
+    if (el.chatForm) {
+      el.chatForm.addEventListener("submit", (event) => {
         event.preventDefault();
-        sendMessage(input.value);
-    });
 
-    // Suggestions
-    document.querySelectorAll("[data-prompt]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const prompt = button.dataset.prompt || "";
-            input.value = prompt;
-            autoResizeInput();
-            sendMessage(prompt);
-        });
-    });
+        if (classroomOpen) return;
 
-    // Back button
-    $("backBtn").addEventListener("click", () => {
-        if (isListening) stopListening();
+        sendMessage(el.messageInput ? el.messageInput.value : "");
+      });
+    }
 
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = "/home";
+    if (el.messageInput) {
+      el.messageInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          if (el.chatForm) {
+            el.chatForm.requestSubmit();
+          }
         }
+      });
+
+      el.messageInput.addEventListener("input", () => {
+        el.messageInput.style.height = "auto";
+        el.messageInput.style.height =
+          `${Math.min(el.messageInput.scrollHeight, 140)}px`;
+      });
+    }
+
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const prompt = button.getAttribute("data-prompt") || "";
+        if (prompt.toLowerCase().includes("digital classroom")) {
+          openClassroom();
+        } else {
+          sendMessage(prompt);
+        }
+      });
     });
 
-    // Menu
-    menuBtn.addEventListener("click", (event) => {
+    if (el.menuBtn) {
+      el.menuBtn.addEventListener("click", (event) => {
         event.stopPropagation();
-        dropdown.hidden = !dropdown.hidden;
-    });
+
+        if (!el.dropdown) return;
+
+        el.dropdown.hidden = !el.dropdown.hidden;
+      });
+    }
 
     document.addEventListener("click", (event) => {
-        if (
-            !dropdown.contains(event.target) &&
-            !menuBtn.contains(event.target)
-        ) {
-            dropdown.hidden = true;
-        }
+      if (
+        el.dropdown &&
+        !el.dropdown.hidden &&
+        !el.dropdown.contains(event.target) &&
+        event.target !== el.menuBtn
+      ) {
+        el.dropdown.hidden = true;
+      }
     });
 
-    function openSheet(title, actions) {
-        sheetTitle.textContent = title;
-        sheetContent.replaceChildren();
+    document.querySelectorAll("[data-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.getAttribute("data-action");
 
-        actions.forEach((action) => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "sheet-action";
+        if (el.dropdown) el.dropdown.hidden = true;
 
-            const heading = document.createElement("span");
-            heading.textContent = action.title;
-            button.appendChild(heading);
+        switch (action) {
+          case "quick-actions":
+            openQuickActions();
+            break;
 
-            if (action.description) {
-                const small = document.createElement("small");
-                small.textContent = action.description;
-                button.appendChild(small);
-            }
+          case "memory":
+            sendMessage("Mujhe batao NEXA mein memory feature kaise kaam karta hai.");
+            break;
 
-            button.addEventListener("click", () => {
-                sheetBackdrop.hidden = true;
+          case "private-chat":
+            sendMessage("Private chat ke liye safety aur privacy tips batao.");
+            break;
 
-                if (action.prompt) {
-                    input.value = action.prompt;
-                    autoResizeInput();
-                    sendMessage(action.prompt);
-                } else if (action.run) {
-                    action.run();
-                }
-            });
+          case "settings":
+            sendMessage("NEXA ke available settings aur features batao.");
+            break;
 
-            sheetContent.appendChild(button);
-        });
+          case "digital-classroom":
+            openClassroom();
+            break;
 
-        sheetBackdrop.hidden = false;
-        dropdown.hidden = true;
+          default:
+            break;
+        }
+      });
+    });
+
+    if (el.plusBtn) {
+      el.plusBtn.addEventListener("click", openQuickActions);
     }
 
-    $("closeSheet").addEventListener("click", () => {
-        sheetBackdrop.hidden = true;
-    });
-
-    sheetBackdrop.addEventListener("click", (event) => {
-        if (event.target === sheetBackdrop) {
-            sheetBackdrop.hidden = true;
-        }
-    });
-
-    function clearConversation() {
-        if (isListening) stopListening();
-
-        conversation.replaceChildren();
-        welcome.hidden = false;
-        input.value = "";
-        autoResizeInput();
-        setStatus("");
-        input.focus();
+    if (el.sheetBackdrop) {
+      el.sheetBackdrop.addEventListener("click", closeQuickActions);
     }
 
-    // Plus menu
-    plusBtn.addEventListener("click", () => {
-        openSheet("Quick actions", [
-            {
-                title: "Usanex help",
-                description: "Usanex ke features",
-                prompt:
-                    "Mujhe Usanex ke features aur unka use samjhao."
-            },
-            {
-                title: "Study assistant",
-                description: "Study aur AI learning",
-                prompt:
-                    "Meri padhai aur AI learning ke liye ek practical plan banao."
-            },
-            {
-                title: "New chat",
-                description: "Current screen clear karein",
-                run: clearConversation
-            }
-        ]);
-    });
-
-    // Menu actions
-    dropdown.querySelectorAll("[data-action]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const action = button.dataset.action;
-
-            if (action === "memory") {
-                openSheet("Memory", [
-                    {
-                        title: "Ask about memory",
-                        description: "NEXA se available memory poochhein",
-                        prompt:
-                            "Tumhe meri kaun si baatein yaad hain? " +
-                            "Sirf available memory ke baare mein batao."
-                    },
-                    {
-                        title: "Memory feature",
-                        description: "Personal memory ke baare mein",
-                        prompt:
-                            "Usanex mein private memory feature kaise design karein?"
-                    }
-                ]);
-            }
-
-            if (action === "private-chat") {
-                openSheet("Private Chat", [
-                    {
-                        title: "Private chat",
-                        description: "Usanex private conversation",
-                        prompt:
-                            "Usanex ke private chat feature ke baare mein batao."
-                    },
-                    {
-                        title: "Privacy",
-                        description: "Privacy aur data security",
-                        prompt:
-                            "Usanex chat ko secure banane ke liye kya features chahiye?"
-                    }
-                ]);
-            }
-
-            if (action === "quick-actions") {
-                openSheet("Quick actions", [
-                    {
-                        title: "Usanex help",
-                        description: "App ke features",
-                        prompt: "Usanex ke features samjhao."
-                    },
-                    {
-                        title: "Study help",
-                        description: "AI aur programming",
-                        prompt: "Mujhe AI seekhne mein help karo."
-                    },
-                    {
-                        title: "New chat",
-                        description: "Current conversation clear karein",
-                        run: clearConversation
-                    }
-                ]);
-            }
-
-            if (action === "settings") {
-                openSheet("Settings", [
-                    {
-                        title: "Voice input help",
-                        description: "Hindi speech recognition",
-                        prompt:
-                            "NEXA voice input ko Hindi aur Hinglish ke liye kaise improve karein?"
-                    },
-                    {
-                        title: "Clear conversation",
-                        description: "Screen se current messages hatayein",
-                        run: clearConversation
-                    }
-                ]);
-            }
-        });
-    });
-
-    // Voice recognition
-    const SpeechRecognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
-
-    function showVoiceError(error) {
-        const messages = {
-            "not-allowed":
-                "Microphone permission allow karein.",
-            "service-not-allowed":
-                "Browser speech service allow nahi hai.",
-            "network":
-                "Speech recognition network error. Internet check karein.",
-            "no-speech":
-                "Awaaz detect nahi hui. Dobara bolkar try karein.",
-            "audio-capture":
-                "Microphone nahi mil raha. Device mic check karein.",
-            "aborted":
-                "Voice input rok diya gaya."
-        };
-
-        setStatus(
-            messages[error] || `Voice error: ${error}`
-        );
+    if (el.closeClassroom) {
+      el.closeClassroom.addEventListener("click", closeClassroom);
     }
 
-    function startListening() {
-        if (!SpeechRecognition) {
-            setStatus(
-                "Is browser mein voice recognition available nahi hai. " +
-                "Android Chrome mein try karein."
-            );
-            return;
-        }
-
-        if (isListening) {
-            stopListening();
-            return;
-        }
-
-        try {
-            recognition = new SpeechRecognition();
-            recognition.lang = "hi-IN";
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.maxAlternatives = 1;
-
-            finalTranscript = "";
-            interimTranscript = "";
-            savedInput = input.value.trim();
-            manualStop = false;
-
-            recognition.onstart = () => {
-                isListening = true;
-                micBtn.classList.add("listening");
-                micBtn.setAttribute("aria-pressed", "true");
-                setStatus("Sun raha hoon... Ab boliye.");
-            };
-
-            recognition.onresult = (event) => {
-                interimTranscript = "";
-
-                for (
-                    let i = event.resultIndex;
-                    i < event.results.length;
-                    i++
-                ) {
-                    const result = event.results[i];
-                    const transcript = result[0].transcript;
-
-                    if (result.isFinal) {
-                        finalTranscript += transcript + " ";
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
-
-                const liveText =
-                    (savedInput ? savedInput + " " : "") +
-                    finalTranscript +
-                    interimTranscript;
-
-                // Live text while speaking
-                input.value = liveText;
-                autoResizeInput();
-
-                if (interimTranscript.trim()) {
-                    setStatus("Aapki baat text mein likh raha hoon...");
-                } else if (finalTranscript.trim()) {
-                    setStatus("Text likh diya. Send dabakar bhejein.");
-                }
-
-                input.focus();
-            };
-
-            recognition.onerror = (event) => {
-                console.error("NEXA voice error:", event.error);
-                showVoiceError(event.error);
-            };
-
-            recognition.onend = () => {
-                isListening = false;
-                micBtn.classList.remove("listening");
-                micBtn.setAttribute("aria-pressed", "false");
-
-                if (
-                    finalTranscript.trim() ||
-                    interimTranscript.trim()
-                ) {
-                    setStatus(
-                        "Voice band. Text check karke Send dabayein."
-                    );
-                } else if (!manualStop) {
-                    setStatus(
-                        "Voice input band ho gaya. Dobara try karein."
-                    );
-                }
-
-                recognition = null;
-            };
-
-            recognition.start();
-        } catch (error) {
-            isListening = false;
-            micBtn.classList.remove("listening");
-            console.error("Could not start voice recognition:", error);
-            setStatus(
-                "Mic start nahi hua. Browser permission check karein."
-            );
-        }
+    if (el.replayBoard) {
+      el.replayBoard.addEventListener("click", replayBoard);
     }
 
-    function stopListening() {
-        manualStop = true;
+    if (el.teacherSpeak) {
+      el.teacherSpeak.addEventListener("click", () => {
+        const text = el.teacherSpeech
+          ? el.teacherSpeech.textContent
+          : "";
 
-        if (recognition && isListening) {
-            recognition.stop();
-        } else {
-            isListening = false;
-            micBtn.classList.remove("listening");
-            micBtn.setAttribute("aria-pressed", "false");
-        }
+        speakTeacher(text);
+      });
     }
 
-    micBtn.addEventListener("click", () => {
-        if (isListening) {
-            stopListening();
-        } else {
-            startListening();
+    if (el.teacherNext) {
+      el.teacherNext.addEventListener("click", nextClassroomStep);
+    }
+
+    if (el.answerForm) {
+      el.answerForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const answer = el.classroomAnswer
+          ? el.classroomAnswer.value
+          : "";
+
+        if (/samajh nahi|samajh nhi|understand nahi|don't understand/i.test(answer)) {
+          handleConfusion();
+          return;
         }
-    });
+
+        if (/break|thak gaya|thak gayi|tired/i.test(answer)) {
+          const message =
+            "Theek hai, 2–5 minute ka chhota break le lo. Paani piyo, phir ready hone par continue karna.";
+
+          if (el.classroomFeedback) {
+            el.classroomFeedback.textContent = message;
+            el.classroomFeedback.className = "classroom-feedback";
+          }
+
+          if (el.teacherSpeech) {
+            el.teacherSpeech.textContent = message;
+          }
+
+          speakTeacher(message);
+          return;
+        }
+
+        checkQuizAnswer(answer);
+      });
+    }
 
     document.addEventListener("visibilitychange", () => {
-        if (document.hidden && isListening) {
-            stopListening();
-        }
+      if (document.hidden) {
+        stopListening();
+        stopTeacherSpeech();
+      }
     });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeQuickActions();
+
+        if (el.dropdown) el.dropdown.hidden = true;
+        if (classroomOpen) closeClassroom();
+      }
+    });
+
+    const backButton = $("backBtn");
+    if (backButton) {
+      backButton.addEventListener("click", () => {
+        if (classroomOpen) {
+          closeClassroom();
+          return;
+        }
+
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = "/home";
+        }
+      });
+    }
+
+    if (el.micBtn) {
+      el.micBtn.addEventListener("click", toggleListening);
+    }
+  }
+
+  /* =====================================================
+     QUICK ACTION SHEET
+  ====================================================== */
+
+  function openQuickActions() {
+    if (!el.sheetBackdrop || !el.sheetContent) {
+      openClassroom();
+      return;
+    }
+
+    el.sheetBackdrop.hidden = false;
+    el.sheetContent.hidden = false;
+
+    if (el.sheetTitle) {
+      el.sheetTitle.textContent = "Quick actions";
+    }
+
+    el.sheetContent.innerHTML = "";
+
+    const actions = [
+      {
+        title: "Digital Classroom",
+        description: "Smart board, teacher aur maths quiz",
+        run: openClassroom
+      },
+      {
+        title: "Ask NEXA",
+        description: "AI se koi bhi sawaal poochho",
+        run: () => {
+          closeQuickActions();
+
+          if (el.messageInput) {
+            el.messageInput.focus();
+            el.messageInput.placeholder = "NEXA se kuch poochho…";
+          }
+        }
+      },
+      {
+        title: "Clear chat",
+        description: "Is screen ki conversation clear karo",
+        run: clearConversation
+      }
+    ];
+
+    actions.forEach((action) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "sheet-action";
+
+      const title = document.createElement("strong");
+      title.textContent = action.title;
+
+      const description = document.createElement("span");
+      description.textContent = action.description;
+
+      button.append(title, description);
+
+      button.addEventListener("click", () => {
+        closeQuickActions();
+        action.run();
+      });
+
+      el.sheetContent.appendChild(button);
+    });
+  }
+
+  function closeQuickActions() {
+    if (el.sheetBackdrop) el.sheetBackdrop.hidden = true;
+    if (el.sheetContent) el.sheetContent.hidden = true;
+  }
+
+  function clearConversation() {
+    if (el.conversation) {
+      el.conversation.innerHTML = "";
+      el.conversation.hidden = false;
+    }
+
+    closeClassroom();
+    updateWelcome();
+  }
+
+  function setupQuickActions() {
+    // Quick actions are created when the plus button is pressed.
+  }
+
+  function setupMenu() {
+    // Existing [data-action] menu items are wired in setupEventListeners().
+  }
+
+  /* =====================================================
+     HINDI VOICE INPUT
+  ====================================================== */
+
+  function setupSpeechRecognition() {
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      if (el.micBtn) {
+        el.micBtn.title = "Is browser mein voice input supported nahi hai";
+        el.micBtn.setAttribute("aria-label", "Voice input unsupported");
+      }
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.lang = "hi-IN";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => {
+      isListening = true;
+
+      if (el.micBtn) {
+        el.micBtn.classList.add("is-listening");
+        el.micBtn.setAttribute("aria-pressed", "true");
+      }
+
+      if (el.voiceStatus) {
+        el.voiceStatus.hidden = false;
+        el.voiceStatus.textContent = "Sun raha hoon… bolo";
+      }
+    };
+
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      if (el.messageInput) {
+        const currentValue = el.messageInput.value.trim();
+
+        if (finalTranscript.trim()) {
+          el.messageInput.value =
+            `${currentValue} ${finalTranscript}`.trim();
+        }
+
+        if (el.voiceStatus) {
+          el.voiceStatus.textContent =
+            interimTranscript || "Sun raha hoon…";
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.warn("Voice recognition error:", event.error);
+
+      if (el.voiceStatus) {
+        el.voiceStatus.hidden = false;
+        el.voiceStatus.textContent =
+          event.error === "not-allowed"
+            ? "Microphone permission allow karo."
+            : "Voice input mein problem. Dobara try karo.";
+      }
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+
+      if (el.micBtn) {
+        el.micBtn.classList.remove("is-listening");
+        el.micBtn.setAttribute("aria-pressed", "false");
+      }
+
+      if (el.voiceStatus) {
+        el.voiceStatus.hidden = true;
+      }
+    };
+  }
+
+  function toggleListening() {
+    if (!recognition) {
+      if (el.voiceStatus) {
+        el.voiceStatus.hidden = false;
+        el.voiceStatus.textContent =
+          "Voice input supported browser mein open karo, ya typing use karo.";
+      }
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+      return;
+    }
+
+    try {
+      recognition.start();
+    } catch (error) {
+      console.warn("Could not start voice recognition:", error);
+    }
+  }
+
+  function stopListening() {
+    if (!recognition || !isListening) return;
+
+    try {
+      recognition.stop();
+    } catch (error) {
+      console.warn("Could not stop voice recognition:", error);
+    }
+  }
 })();
