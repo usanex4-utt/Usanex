@@ -1,7 +1,7 @@
 
 # =====================================================
-# USANEX - NEXA AI ENGINE
-# Knowledge-based local response engine
+# USANEX - NEXA BRAIN v0.15
+# Local responses from NEXA Brain ZIP data
 # =====================================================
 
 import json
@@ -9,7 +9,10 @@ import re
 from pathlib import Path
 from difflib import SequenceMatcher
 
-KNOWLEDGE_FILE = Path(__file__).with_name("usanex_knowledge.json")
+BRAIN_DIR = Path(__file__).with_name("nexa_brain")
+DATA_FILE = BRAIN_DIR / "nexa_data_v0_15.json"
+
+_data_cache = None
 
 
 def normalize_text(text: str) -> str:
@@ -18,126 +21,105 @@ def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def tokenize(text: str) -> set:
-    return set(normalize_text(text).split())
+def load_brain_data() -> list:
+    global _data_cache
 
+    if _data_cache is not None:
+        return _data_cache
 
-def load_knowledge() -> dict:
     try:
-        with KNOWLEDGE_FILE.open("r", encoding="utf-8") as file:
+        with DATA_FILE.open("r", encoding="utf-8") as file:
             data = json.load(file)
-        return data if isinstance(data, dict) else {}
-    except (OSError, json.JSONDecodeError):
-        return {}
+
+        if not isinstance(data, list):
+            raise ValueError("NEXA Brain data must be a list")
+
+        pairs = []
+
+        for item in data:
+            if (
+                isinstance(item, (list, tuple))
+                and len(item) >= 2
+                and isinstance(item[0], str)
+                and isinstance(item[1], str)
+            ):
+                question = item[0].strip()
+                answer = item[1].strip()
+
+                if question and answer:
+                    pairs.append((question, answer))
+
+        _data_cache = pairs
+        print(f"[NEXA] Loaded {len(pairs)} Brain Q&A pairs")
+        return _data_cache
+
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        print(f"[NEXA] Brain data loading failed: {exc}")
+        return []
 
 
-def find_knowledge_reply(message: str) -> str | None:
-    data = load_knowledge()
-    features = data.get("features", [])
+def find_brain_reply(message: str) -> str | None:
     question = normalize_text(message)
-    question_words = tokenize(question)
 
-    if not question_words:
+    if not question:
         return None
 
-    # Direct answers about Usanex and NEXA
-    if any(term in question for term in (
-        "nexa kya hai", "what is nexa", "tum kaun ho",
-        "aap kaun ho", "your name", "tumhara naam"
-    )):
-        return (
-            f"NEXA {data.get('assistant_name', 'NEXA')} hai. "
-            + data.get("purpose", "")
-        )
+    pairs = load_brain_data()
+    if not pairs:
+        return None
 
-    if any(term in question for term in (
-        "usanex kya hai", "what is usanex",
-        "usanex ka purpose", "usanex ka main purpose"
-    )):
-        return data.get(
-            "purpose",
-            "Usanex ek social communication platform hai."
-        )
-
-    # Search feature names and descriptions
-    best_feature = None
+    best_answer = None
     best_score = 0.0
 
-    for feature in features:
-        name = normalize_text(feature.get("name", ""))
-        description = normalize_text(feature.get("description", ""))
-        searchable_words = tokenize(name + " " + description)
+    question_words = set(question.split())
 
-        overlap = len(question_words & searchable_words)
-        coverage = overlap / len(question_words) if question_words else 0
+    for stored_question, answer in pairs:
+        candidate = normalize_text(stored_question)
+
+        if not candidate:
+            continue
+
+        if question == candidate:
+            return answer
+
+        candidate_words = set(candidate.split())
+        union = question_words | candidate_words
+
+        overlap_score = (
+            len(question_words & candidate_words) / len(union)
+            if union else 0.0
+        )
+
         similarity = SequenceMatcher(
-            None, question, name
-        ).ratio() if name else 0
+            None, question, candidate
+        ).ratio()
 
-        score = max(coverage, similarity * 0.75)
+        score = max(similarity, overlap_score)
 
         if score > best_score:
             best_score = score
-            best_feature = feature
+            best_answer = answer
 
-    # Require a reasonable match to avoid random answers.
-    if best_feature and best_score >= 0.30:
-        feature_status = best_feature.get("status", "unknown")
-        return (
-            f"{best_feature.get('name', 'Feature')}: "
-            f"{best_feature.get('description', '')} "
-            f"Status: {feature_status}."
-        )
+    # Avoid returning an unrelated answer for an unmatched question.
+    if best_score >= 0.55:
+        return best_answer
 
     return None
 
 
-def generate_reply(message: str, user_name: str) -> str:
-    """Generate a response using local knowledge and basic rules."""
+def generate_reply(message: str, user_name: str = "User") -> str:
+    """Find a relevant response in the local NEXA Brain dataset."""
 
-    text = normalize_text(message)
-    name = (user_name or "").strip() or "Sir"
+    if not (message or "").strip():
+        return "Please enter a question."
 
-    if not text:
-        return "Apna sawal dobara likhiye."
+    reply = find_brain_reply(message)
 
-    # Greetings
-    if text in ("hi", "hello", "hey", "hii", "namaste", "namaskar"):
-        return (
-            f"Hello {name}! Main NEXA hoon. "
-            "Bataiye, main aapki kya help karun?"
-        )
-
-    # Thanks
-    if any(term in text for term in ("thank you", "thanks", "shukriya")):
-        return "Welcome! 💙 Bataiye, aur kya help chahiye?"
-
-    # Knowledge base lookup
-    knowledge_reply = find_knowledge_reply(message)
-    if knowledge_reply:
-        return knowledge_reply
-
-    # AI learning
-    if any(term in text for term in (
-        "artificial intelligence", "machine learning",
-        "deep learning", "apna ai", "own ai"
-    )):
-        return (
-            "AI banane ke liye data, model, training aur testing "
-            "ki zarurat hoti hai. Hum NEXA ko step-by-step develop karenge."
-        )
-
-    # Coding
-    if any(term in text for term in (
-        "python", "coding", "programming",
-        "fastapi", "javascript", "error", "bug"
-    )):
-        return (
-            "Apna code ya error bhejiye. Main use samajhne "
-            "aur solve karne mein madad karunga."
-        )
+    if reply:
+        return reply
 
     return (
-        "Mujhe is sawal ka sahi jawab abhi knowledge base mein nahi mila. "
-        "Aap sawal ko thoda alag tarike se pooch sakte hain."
+        "Mujhe NEXA Brain v0.15 ke available data mein "
+        "is sawal ka matching jawab nahi mila. "
+        "Aap sawal ko doosre tarike se pooch sakte hain."
     )
