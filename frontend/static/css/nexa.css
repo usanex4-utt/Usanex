@@ -1,3 +1,4 @@
+
 :root {
     color-scheme: dark;
     --bg: #080d18;
@@ -6,14 +7,13 @@
     --text: #f4f7ff;
     --muted: #8999b6;
     --blue: #4388ff;
+    --cyan: #5df4ff;
+    --green: #68edb0;
 }
 
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html,
-body {
+html, body {
     margin: 0;
     width: 100%;
     height: 100%;
@@ -27,22 +27,18 @@ body {
                  "Segoe UI", sans-serif;
 }
 
-button,
-textarea {
-    font: inherit;
-}
-
+button, textarea, input { font: inherit; }
 button {
     color: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
-
-button:focus-visible,
-textarea:focus-visible {
+button:focus-visible, textarea:focus-visible, input:focus-visible {
     outline: 2px solid #62a3ff;
     outline-offset: 3px;
 }
+
+[hidden] { display: none !important; }
 
 .app {
     height: 100vh;
@@ -53,11 +49,8 @@ textarea:focus-visible {
     position: relative;
     overflow: hidden;
     background:
-        radial-gradient(
-            ellipse at 50% 30%,
-            rgba(34, 85, 170, .09),
-            transparent 48%
-        ),
+        radial-gradient(ellipse at 50% 30%,
+        rgba(34, 85, 170, .09), transparent 48%),
         var(--bg);
 }
 
@@ -96,25 +89,10 @@ textarea:focus-visible {
     border-radius: 13px;
     background: transparent;
     color: #dbe5fa;
+    font-size: 20px;
 }
 
-.icon-btn:hover {
-    background: rgba(120, 150, 200, .12);
-}
-
-.icon-btn svg,
-.composer-btn svg,
-.send-btn svg {
-    width: 22px;
-    height: 22px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-/* MINU MENU */
+.icon-btn:hover { background: rgba(120, 150, 200, .12); }
 
 .menu-panel {
     position: absolute;
@@ -128,54 +106,16 @@ textarea:focus-visible {
     box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
 }
 
-.menu-panel[hidden],
-.sheet-backdrop[hidden] {
-    display: none;
-}
-
 .menu-item {
     width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 12px;
     padding: 12px;
     border: 0;
     border-radius: 11px;
     background: transparent;
     text-align: left;
+    color: #dbe5fa;
 }
-
-.menu-item:hover {
-    background: #1a2740;
-}
-
-.menu-icon {
-    width: 35px;
-    height: 35px;
-    flex-shrink: 0;
-    display: grid;
-    place-items: center;
-    border-radius: 11px;
-    background: #1c3153;
-    color: #8fc3ff;
-    font-size: 18px;
-}
-
-.menu-item strong,
-.menu-item small {
-    display: block;
-}
-
-.menu-item strong {
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.menu-item small {
-    margin-top: 3px;
-    font-size: 11px;
-    color: var(--muted);
-}
+.menu-item:hover { background: #1a2740; }
 
 /* CHAT AREA */
 
@@ -204,12 +144,7 @@ textarea:focus-visible {
     text-align: center;
     padding: 20px 0;
 }
-
-.welcome[hidden] {
-    display: none;
-}
-
-/* 3D ASSISTANT ORB */
+.welcome[hidden] { display: none; }
 
 .nexa-orb {
     width: 106px;
@@ -221,7 +156,6 @@ textarea:focus-visible {
     isolation: isolate;
     animation: orbFloat 4s ease-in-out infinite;
 }
-
 .orb-halo {
     position: absolute;
     z-index: -2;
@@ -232,17 +166,17 @@ textarea:focus-visible {
     opacity: .52;
     animation: haloPulse 3s ease-in-out infinite;
 }
-
-.orb-svg {
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-    filter:
-        drop-shadow(0 0 7px rgba(72, 140, 255, .65))
-        drop-shadow(0 0 20px rgba(81, 90, 255, .3));
-    animation: orbTurn 14s linear infinite;
+.orb-core {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 44px;
+    color: white;
+    background: linear-gradient(135deg, #9bf3ff, #4388ff 45%, #934dff);
+    box-shadow: 0 0 32px #4388ff88;
 }
-
 .orb-ring {
     position: absolute;
     inset: 7%;
@@ -250,26 +184,18 @@ textarea:focus-visible {
     border-radius: 50%;
     pointer-events: none;
 }
-
-.ring-one {
-    transform: rotateX(65deg) rotate(-25deg);
-    animation: ringSpin 8s linear infinite;
-}
-
+.ring-one { transform: rotateX(65deg) rotate(-25deg); }
 .ring-two {
     inset: 0;
     border-color: rgba(156, 106, 255, .24);
     transform: rotateX(68deg) rotate(45deg);
-    animation: ringSpin 11s linear infinite reverse;
 }
 
 .welcome-subtitle {
     margin: 6px 0 0;
     color: #8bb8ff;
     font-size: 13px;
-    letter-spacing: .2px;
 }
-
 .welcome-text {
     max-width: 320px;
     margin: 20px 0 0;
@@ -277,8 +203,6 @@ textarea:focus-visible {
     line-height: 1.7;
     font-size: 14px;
 }
-
-/* SUGGESTIONS */
 
 .suggestions {
     width: 100%;
@@ -289,7 +213,6 @@ textarea:focus-visible {
     gap: 8px;
     margin-top: 24px;
 }
-
 .suggestion {
     padding: 10px 13px;
     border: 1px solid #263653;
@@ -298,13 +221,12 @@ textarea:focus-visible {
     color: #c7d8f4;
     font-size: 12px;
 }
-
 .suggestion:hover {
     border-color: #4c83d8;
     background: #152541;
 }
 
-/* SIMPLE TEXT MESSAGES */
+/* CHAT MESSAGES */
 
 .conversation {
     display: flex;
@@ -313,7 +235,6 @@ textarea:focus-visible {
     width: 100%;
     padding: 8px 0 22px;
 }
-
 .message {
     width: 100%;
     line-height: 1.75;
@@ -321,7 +242,6 @@ textarea:focus-visible {
     overflow-wrap: anywhere;
     white-space: pre-wrap;
 }
-
 .message.user {
     align-self: flex-end;
     max-width: 88%;
@@ -331,12 +251,10 @@ textarea:focus-visible {
     background: #17253b;
     color: #f2f6ff;
 }
-
 .message.assistant {
     align-self: flex-start;
     color: #e2e9f6;
 }
-
 .message-label {
     display: block;
     margin-bottom: 5px;
@@ -345,14 +263,395 @@ textarea:focus-visible {
     font-weight: 700;
     letter-spacing: .5px;
 }
+.message.pending { color: #8da4c7; }
+.message.error { color: #ffb6b6; }
 
-.message.pending {
-    color: #8da4c7;
+/* DIGITAL CLASSROOM */
+
+.digital-classroom {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 4px 0 24px;
+    animation: classroomIn .35s ease both;
 }
 
-.message.error {
-    color: #ffb6b6;
+.classroom-toolbar,
+.student-heading,
+.board-top,
+.board-footer,
+.lesson-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
+
+.classroom-eyebrow {
+    color: var(--cyan);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+.classroom-toolbar h2 {
+    margin: 4px 0 0;
+    font-size: 22px;
+}
+.classroom-close {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #111b2c;
+}
+.lesson-meta {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    color: #91b9f6;
+    font-size: 12px;
+}
+.lesson-meta span {
+    padding: 6px 10px;
+    border: 1px solid #253b5c;
+    border-radius: 20px;
+    background: #101b2d;
+}
+
+/* SMART DIGITAL BOARD */
+
+.smart-board {
+    padding: 9px;
+    border: 1px solid #354964;
+    border-radius: 17px;
+    background: linear-gradient(145deg, #17263b, #0b111d);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .3);
+}
+.board-top {
+    min-height: 29px;
+    padding: 0 4px 8px;
+    color: #a4b8d7;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.board-light {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green);
+}
+.board-live {
+    color: #77edba;
+    white-space: nowrap;
+}
+
+.board-canvas {
+    position: relative;
+    min-height: 235px;
+    padding: 22px 18px;
+    overflow: hidden;
+    border: 2px solid #263b51;
+    border-radius: 8px;
+    background:
+        linear-gradient(rgba(66, 112, 155, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(66, 112, 155, .045) 1px, transparent 1px),
+        #03070c;
+    background-size: 24px 24px;
+    box-shadow: inset 0 0 30px #000a;
+}
+.board-question {
+    margin-bottom: 22px;
+    color: #9ef7ff;
+    font-size: clamp(20px, 5vw, 30px);
+    font-weight: 750;
+    text-shadow: 0 0 12px #50eaff88;
+    overflow-wrap: anywhere;
+}
+.board-work {
+    color: #f1f7ff;
+    font-size: clamp(16px, 4vw, 21px);
+    line-height: 1.9;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-shadow: 0 0 8px #8ccfff44;
+}
+.board-answer {
+    margin-top: 16px;
+    color: #76ffb8;
+    font-size: clamp(21px, 5vw, 29px);
+    font-weight: 800;
+    text-shadow: 0 0 14px #54ffae77;
+    overflow-wrap: anywhere;
+}
+.digital-pen {
+    position: absolute;
+    top: 20px;
+    left: 18px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #a8ffff;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: 0 0 8px 3px #42efff, 0 0 20px 6px #42efff88;
+}
+.board-canvas.writing .digital-pen {
+    opacity: 1;
+    animation: penGlow 1s ease-in-out infinite alternate;
+}
+.board-footer {
+    padding: 9px 3px 1px;
+    color: #879bb9;
+    font-size: 10px;
+}
+.board-footer button {
+    border: 1px solid #2c4768;
+    border-radius: 9px;
+    padding: 7px 10px;
+    background: #13233a;
+    color: #b9ddff;
+    font-size: 11px;
+}
+
+/* TEACHER PANEL */
+
+.teacher-panel {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr);
+    gap: 13px;
+    align-items: center;
+    padding: 13px;
+    border: 1px solid #263a56;
+    border-radius: 17px;
+    background: linear-gradient(135deg, #14223a, #0e1625);
+}
+.teacher-avatar {
+    height: 125px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    animation: teacherIdle 3s ease-in-out infinite;
+}
+.teacher-head {
+    width: 56px;
+    height: 62px;
+    position: relative;
+    z-index: 2;
+}
+.teacher-face {
+    position: absolute;
+    inset: 8px 2px 0;
+    border-radius: 46% 46% 43% 43%;
+    background: linear-gradient(120deg, #f6c6a1, #ce8e67);
+    box-shadow: inset -5px -3px 9px #8d503b55;
+}
+.teacher-hair {
+    position: absolute;
+    z-index: 3;
+    top: 1px;
+    left: 2px;
+    width: 53px;
+    height: 25px;
+    border-radius: 50% 50% 28% 28%;
+    background: #29212b;
+    transform: rotate(-3deg);
+}
+.teacher-eye {
+    position: absolute;
+    top: 27px;
+    left: 13px;
+    width: 5px;
+    height: 4px;
+    border-radius: 50%;
+    background: #24202a;
+}
+.teacher-eye + .teacher-eye {
+    left: auto;
+    right: 13px;
+}
+.teacher-smile {
+    position: absolute;
+    left: 21px;
+    top: 39px;
+    width: 13px;
+    height: 6px;
+    border-bottom: 2px solid #8e463b;
+    border-radius: 50%;
+}
+.teacher-body {
+    width: 79px;
+    height: 53px;
+    position: relative;
+    margin-top: -3px;
+    border-radius: 24px 24px 5px 5px;
+    background: linear-gradient(100deg, #477dca, #234477);
+    box-shadow: inset -9px 0 12px #101e37;
+}
+.teacher-tie {
+    position: absolute;
+    top: 4px;
+    left: 35px;
+    width: 10px;
+    height: 36px;
+    background: #58f1ed;
+    clip-path: polygon(20% 0, 80% 0, 100% 20%, 65% 100%, 35% 100%, 0 20%);
+}
+.teacher-arm {
+    position: absolute;
+    top: 11px;
+    left: -9px;
+    width: 24px;
+    height: 10px;
+    border-radius: 8px;
+    background: #dba07c;
+    transform: rotate(-25deg);
+    transform-origin: right center;
+    animation: teacherGesture 2.5s ease-in-out infinite;
+}
+.teacher-speech { min-width: 0; }
+.teacher-speech strong {
+    color: #9dc9ff;
+    font-size: 12px;
+}
+.teacher-speech p {
+    min-height: 42px;
+    margin: 8px 0 12px;
+    color: #e1eafa;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.teacher-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+.teacher-controls button {
+    padding: 8px 10px;
+    border: 1px solid #30496a;
+    border-radius: 10px;
+    background: #172943;
+    color: #cce6ff;
+    font-size: 11px;
+}
+.teacher-controls button:hover { background: #213c60; }
+.teacher-avatar.speaking .teacher-arm {
+    animation: teacherGesture .45s ease-in-out infinite alternate;
+}
+.teacher-avatar.speaking .teacher-smile {
+    animation: teacherTalk .2s ease-in-out infinite alternate;
+}
+
+/* STUDENTS AND COMPARISON */
+
+.student-section {
+    padding: 14px;
+    border: 1px solid #263750;
+    border-radius: 16px;
+    background: #0e1726;
+}
+.student-heading h3 {
+    margin: 0;
+    font-size: 15px;
+}
+.student-heading p {
+    margin: 5px 0 0;
+    color: #8c9fbb;
+    font-size: 11px;
+}
+.student-heading > span {
+    color: #83f4c2;
+    font-size: 10px;
+    white-space: nowrap;
+}
+.student-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+}
+.student-card {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 5px;
+    border: 1px solid #263b57;
+    border-radius: 13px;
+    background: linear-gradient(160deg, #17243a, #101827);
+    text-align: center;
+}
+.student-avatar { font-size: 29px; }
+.student-card strong {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.student-card > span:last-child {
+    color: #9eb1cc;
+    font-size: 10px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.student-card:first-child { border-color: #3a6ca4; }
+.demo-note {
+    margin: 10px 0 0;
+    color: #788ba7;
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+/* QUIZ */
+
+.classroom-question {
+    padding: 15px;
+    border: 1px solid #28405d;
+    border-radius: 16px;
+    background: #111d30;
+}
+.classroom-question h3 {
+    margin: 0;
+    font-size: 16px;
+}
+.classroom-question > p {
+    color: #9aacc7;
+    font-size: 12px;
+    line-height: 1.6;
+}
+#classroomAnswerForm {
+    display: flex;
+    gap: 8px;
+}
+#classroomAnswer {
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #304563;
+    border-radius: 11px;
+    background: #080f1b;
+    color: white;
+}
+#classroomAnswerForm button {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 11px;
+    background: linear-gradient(110deg, #4388ff, #6466ff);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+}
+#classroomFeedback {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+#classroomFeedback.correct { color: #74f3b3; }
+#classroomFeedback.incorrect { color: #ffc18e; }
 
 /* INPUT AREA */
 
@@ -362,19 +661,16 @@ textarea:focus-visible {
     padding: 8px 18px calc(12px + env(safe-area-inset-bottom));
     margin: 0 auto;
 }
-
 .voice-status {
     min-height: 0;
     padding: 0 8px;
     color: #8fbaff;
     font-size: 12px;
 }
-
 .voice-status:not(:empty) {
     padding-top: 6px;
     padding-bottom: 8px;
 }
-
 .composer {
     width: 100%;
     display: flex;
@@ -384,13 +680,8 @@ textarea:focus-visible {
     background: #101827;
     border: 1px solid #29374e;
     border-radius: 23px;
-    transition: border-color .15s ease;
 }
-
-.composer:focus-within {
-    border-color: #456fae;
-}
-
+.composer:focus-within { border-color: #456fae; }
 .composer-btn {
     width: 40px;
     height: 40px;
@@ -401,13 +692,9 @@ textarea:focus-visible {
     border-radius: 15px;
     background: transparent;
     color: #9caec9;
+    font-size: 20px;
 }
-
-.composer-btn:hover {
-    background: #1b2940;
-    color: white;
-}
-
+.composer-btn:hover { background: #1b2940; color: white; }
 .composer textarea {
     flex: 1;
     width: 100%;
@@ -424,11 +711,7 @@ textarea:focus-visible {
     font-size: 14px;
     line-height: 20px;
 }
-
-.composer textarea::placeholder {
-    color: #7e8ca5;
-}
-
+.composer textarea::placeholder { color: #7e8ca5; }
 .send-btn {
     width: 40px;
     height: 40px;
@@ -439,23 +722,14 @@ textarea:focus-visible {
     border-radius: 15px;
     background: var(--blue);
     color: white;
+    font-size: 22px;
 }
-
-.send-btn:hover {
-    background: #5a98ff;
-}
-
-.send-btn:disabled {
-    opacity: .5;
-    cursor: wait;
-}
-
+.send-btn:disabled { opacity: .5; cursor: wait; }
 .mic-btn.listening {
     color: #ff8b9b;
     background: rgba(255, 80, 110, .12);
     animation: micPulse 1.2s infinite;
 }
-
 .disclaimer {
     margin: 9px 4px 0;
     color: #64738d;
@@ -475,7 +749,6 @@ textarea:focus-visible {
     justify-content: center;
     background: rgba(0, 0, 0, .55);
 }
-
 .option-sheet {
     width: 100%;
     max-width: 520px;
@@ -487,7 +760,6 @@ textarea:focus-visible {
     border-radius: 24px 24px 0 0;
     background: #101827;
 }
-
 .sheet-handle {
     width: 38px;
     height: 4px;
@@ -495,24 +767,13 @@ textarea:focus-visible {
     border-radius: 9px;
     background: #43516a;
 }
-
 .sheet-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-
-.sheet-heading h2 {
-    margin: 0;
-    font-size: 17px;
-}
-
-.sheet-content {
-    display: grid;
-    gap: 8px;
-    margin-top: 15px;
-}
-
+.sheet-heading h2 { margin: 0; font-size: 17px; }
+.sheet-content { display: grid; gap: 8px; margin-top: 15px; }
 .sheet-action {
     width: 100%;
     padding: 13px;
@@ -522,11 +783,7 @@ textarea:focus-visible {
     background: #141f32;
     color: #dbe6fa;
 }
-
-.sheet-action:hover {
-    background: #1b2b46;
-}
-
+.sheet-action:hover { background: #1b2b46; }
 .sheet-action small {
     display: block;
     margin-top: 4px;
@@ -537,106 +794,67 @@ textarea:focus-visible {
 /* ANIMATIONS */
 
 @keyframes orbFloat {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-7px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
 }
-
 @keyframes haloPulse {
-    0%, 100% {
-        opacity: .38;
-        transform: scale(.9);
-    }
-    50% {
-        opacity: .72;
-        transform: scale(1.13);
-    }
+    0%, 100% { opacity: .38; transform: scale(.9); }
+    50% { opacity: .72; transform: scale(1.13); }
 }
-
-@keyframes orbTurn {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+@keyframes classroomIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes ringSpin {
-    0% {
-        transform: rotateX(65deg) rotate(0deg);
-    }
-    100% {
-        transform: rotateX(65deg) rotate(360deg);
-    }
+@keyframes penGlow {
+    from { box-shadow: 0 0 7px 2px #42efff; }
+    to { box-shadow: 0 0 12px 5px #42efff, 0 0 25px 7px #42efff77; }
 }
-
+@keyframes teacherIdle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+@keyframes teacherGesture {
+    0%, 100% { transform: rotate(-25deg); }
+    50% { transform: rotate(-52deg) translateY(-3px); }
+}
+@keyframes teacherTalk {
+    from { height: 4px; }
+    to { height: 8px; }
+}
 @keyframes micPulse {
-    50% {
-        box-shadow: 0 0 0 5px rgba(255, 80, 110, .08);
-    }
+    50% { box-shadow: 0 0 0 5px rgba(255, 80, 110, .08); }
 }
 
 /* RESPONSIVE */
 
 @media (max-width: 480px) {
-    .topbar {
-        height: 56px;
-        min-height: 56px;
-        padding: 0 10px;
-    }
-
-    .chat-area {
-        padding: 12px 16px 6px;
-    }
-
-    .welcome {
-        min-height: 280px;
-    }
-
-    .nexa-orb {
-        width: 94px;
-        height: 94px;
-    }
-
-    .suggestions {
-        gap: 7px;
-        margin-top: 18px;
-    }
-
-    .suggestion {
-        padding: 9px 11px;
-    }
-
-    .composer-wrap {
-        padding-left: 10px;
-        padding-right: 10px;
-    }
-
-    .composer {
-        gap: 2px;
-        padding: 5px;
-    }
-
-    .composer-btn,
-    .send-btn {
-        width: 36px;
-        height: 38px;
-        flex-basis: 36px;
-    }
-
-    .message {
-        font-size: 14px;
-    }
+    .topbar { height: 56px; min-height: 56px; padding: 0 10px; }
+    .chat-area { padding: 12px 12px 6px; }
+    .welcome { min-height: 280px; }
+    .nexa-orb { width: 94px; height: 94px; }
+    .suggestions { gap: 7px; margin-top: 18px; }
+    .suggestion { padding: 9px 11px; }
+    .composer-wrap { padding-left: 10px; padding-right: 10px; }
+    .composer { gap: 2px; padding: 5px; }
+    .composer-btn, .send-btn { width: 36px; height: 38px; flex-basis: 36px; }
+    .message { font-size: 14px; }
+    .classroom-toolbar h2 { font-size: 19px; }
+    .board-canvas { min-height: 205px; padding: 17px 13px; }
+    .teacher-panel { grid-template-columns: 80px minmax(0, 1fr); gap: 9px; padding: 10px; }
+    .teacher-avatar { transform: scale(.88); transform-origin: center bottom; }
+    .teacher-speech p { font-size: 12px; }
+    .student-section, .classroom-question { padding: 11px; }
+    .student-grid { gap: 5px; }
+    .student-card { padding: 10px 3px; }
+    .student-card strong { font-size: 11px; }
+    .student-card > span:last-child { font-size: 9px; }
+    #classroomAnswerForm { flex-direction: column; }
+    #classroomAnswerForm button { min-height: 42px; }
+    .board-footer { align-items: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
         animation: none !important;
         transition: none !important;
     }
