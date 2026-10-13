@@ -1754,3 +1754,108 @@ svg {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ==========================================
+   UTANEXA CHAT — FIXED MOBILE CHAT LAYOUT
+   Header fixed, only messages scroll
+========================================== */
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+
+body {
+    position: fixed;
+    inset: 0;
+}
+
+/* Main chat page */
+.chat-page,
+.chat-container,
+#chatPage {
+    height: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Header stays at the top */
+.chat-header,
+header.chat-header,
+#chatHeader {
+    position: relative;
+    top: auto;
+    z-index: 50;
+    flex-shrink: 0;
+}
+
+/* Main conversation layout */
+.conversation,
+.chat-main,
+#conversation {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Only this section scrolls */
+#messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* Composer stays below the messages */
+#composer {
+    position: relative;
+    z-index: 40;
+    flex-shrink: 0;
+    margin-bottom: 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+/* Keep message input usable */
+#messageInput {
+    min-height: 42px;
+    max-height: 120px;
+    overflow-y: auto;
+    resize: none;
+    font-size: 16px;
+}
+
+/* Do not allow decorative elements to move the page */
+#typingIndicator {
+    flex-shrink: 0;
+}
+
+/* Small-screen layout */
+@media (max-width: 600px) {
+    .chat-page,
+    .chat-container,
+    #chatPage {
+        width: 100%;
+        height: 100dvh;
+        height: 100vh;
+    }
+
+    #messages {
+        scroll-padding-bottom: 12px;
+    }
+
+    #composer {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
