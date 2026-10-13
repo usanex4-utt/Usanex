@@ -1859,3 +1859,32 @@ header.chat-header,
         box-sizing: border-box;
     }
 }
+/* Message composer compact fix */
+#composer {
+    padding: 6px 10px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    gap: 6px !important;
+}
+
+#messageInput {
+    min-height: 38px !important;
+    height: 38px !important;
+    max-height: 80px !important;
+    padding: 9px 12px !important;
+    line-height: 20px !important;
+    box-sizing: border-box !important;
+}
+
+#composer button {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+#composer textarea {
+    flex: 1;
+    min-width: 0;
+}
