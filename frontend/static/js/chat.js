@@ -1,2488 +1,1774 @@
 /* =========================================================
-   USANEX — CHAT PAGE
-   Text + HD Image Messaging
-   DIRECT PHOTO SEND VERSION
-   COUPLE CHAT NAVIGATION ENABLED
+   UTANEXA — CHAT ENGINE
+   File: frontend/static/js/chat.js
+   Version: 6
+
+   Features:
+   - Existing authentication and chat API integration
+   - Text messages
+   - Image attachment and camera
+   - Emoji picker and searchable emojis
+   - Speech-to-text where browser supports it
+   - Voice message recording UI
+   - Couple Chat navigation
+   - Call option UI
+   - Message search
+   - Image viewer
+   - Responsive mobile interaction
+
+   Note:
+   Real-time delivery, GIF provider integration, and
+   WebRTC calls require corresponding backend support.
 ========================================================= */
 
-"use strict";
+(() => {
+    "use strict";
 
+    /* =====================================================
+       CONFIGURATION
+    ===================================================== */
 
-/* =========================================================
-   STATE
-========================================================= */
+    const API = {
+        me: "/api/auth/me",
+        profile: (id) => `/api/profile/${encodeURIComponent(id)}`,
+        messages: (id) => `/api/chat/${encodeURIComponent(id)}`,
+        send: "/api/chat/send"
+    };
 
-const chatState = {
+    const MAX_IMAGE_SIZE = 25 * 1024 * 1024;
+    const IMAGE_COMPRESS_THRESHOLD = 2 * 1024 * 1024;
+    const MAX_MESSAGE_LENGTH = 10000;
 
-    currentUser: null,
+    const state = {
+        currentUser: null,
+        selectedUser: null,
+        selectedUserId: null,
 
-    selectedUser: null,
+        messages: [],
 
-    selectedUserId: null,
+        loading: false,
+        sending: false,
 
-    messages: [],
+        recognition: null,
+        isRecognizing: false,
 
-    sending: false,
+        mediaRecorder: null,
+        audioStream: null,
+        audioChunks: [],
+        recordedAudioBlob: null,
 
-    typingTimer: null,
+        recordingStartedAt: 0,
+        recordingTimer: null,
 
-    search: "",
+        activeExpressionTab: "emoji",
+        activeEmojiCategory: "smileys",
 
-    filter: "all",
+        recentEmojis: [],
 
-    selectedFile: null
+        toastTimer: null,
+        searchQuery: "",
 
-};
+        messageObjectUrls: new Set()
+    };
 
+    const $ = (id) => document.getElementById(id);
 
-/* =========================================================
-   START
-========================================================= */
+    /* =====================================================
+       DOM HELPERS
+    ===================================================== */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        initChatPage();
-
-    }
-);
-
-
-/* =========================================================
-   INIT
-========================================================= */
-
-async function initChatPage() {
-
-    setupBackButton();
-
-    setupComposer();
-
-    setupEmoji();
-
-    setupAttachment();
-
-    setupCamera();
-
-    setupHeaderButtons();
-
-    setupNavigation();
-
-    setupSearch();
-
-    setupFilters();
-
-    await loadCurrentUser();
-
-    const userId =
-        getUserIdFromURL();
-
-    if (userId) {
-
-        chatState.selectedUserId =
-            userId;
-
-        await loadSelectedUser(
-            userId
-        );
-
-        await loadMessages(
-            userId
-        );
-
-    } else {
-
-        showEmptyConversation();
-
+    function on(element, event, handler, options) {
+        if (element) {
+            element.addEventListener(event, handler, options);
+        }
     }
 
-}
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-function $(id) {
-
-    return document.getElementById(id);
-
-}
-
-
-function safeText(
-    value,
-    fallback = ""
-) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
-        return fallback;
-
+    function show(element) {
+        if (element) element.hidden = false;
     }
 
-    return String(value);
+    function hide(element) {
+        if (element) element.hidden = true;
+    }
 
-}
+    function setText(element, value) {
+        if (element) {
+            element.textContent = value ?? "";
+        }
+    }
 
+    function safeString(value) {
+        return value == null ? "" : String(value);
+    }
 
-function escapeHtml(value) {
+    function getUserId(user) {
+        if (!user || typeof user !== "object") return "";
 
-    return safeText(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
-}
-
-
-function getAvatar(photo) {
-
-    return photo ||
-        "/static/images/default-profile.png";
-
-}
-
-
-/* =========================================================
-   GET USER ID
-========================================================= */
-
-function getUserIdFromURL() {
-
-    const params =
-        new URLSearchParams(
-            window.location.search
+        return safeString(
+            user.user_id ??
+            user.id ??
+            user.username ??
+            user.mobile ??
+            ""
         );
+    }
 
-    return (
-        params.get("user_id") ||
-        params.get("id") ||
-        ""
-    );
-
-}
-
-
-/* =========================================================
-   CURRENT USER
-========================================================= */
-
-async function loadCurrentUser() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/auth/me",
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.href =
-                "/login";
-
-            return;
-
+    function getDisplayName(user) {
+        if (!user || typeof user !== "object") {
+            return "User";
         }
 
-
-        if (!response.ok) {
-
-            return;
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (data?.user) {
-
-            chatState.currentUser =
-                data.user;
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Current user error:",
-            error
+        return safeString(
+            user.name ??
+            user.full_name ??
+            user.username ??
+            user.user_id ??
+            "User"
         );
-
     }
 
-}
+    function getAvatarUrl(user) {
+        if (!user || typeof user !== "object") return "";
 
-
-/* =========================================================
-   LOAD SELECTED USER
-========================================================= */
-
-async function loadSelectedUser(
-    userId
-) {
-
-    setHeaderLoading();
-
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/profile/${encodeURIComponent(userId)}`,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.href =
-                "/login";
-
-            return;
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                "User profile unavailable"
-            );
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        const user =
-            data?.user ||
-            data?.profile ||
-            data;
-
-
-        if (!user) {
-
-            throw new Error(
-                "User not found"
-            );
-
-        }
-
-
-        chatState.selectedUser =
-            user;
-
-
-        updateChatHeader(user);
-
-
-    } catch (error) {
-
-        console.error(
-            "Selected user error:",
-            error
+        return safeString(
+            user.profile_photo ??
+            user.profile_picture ??
+            user.avatar ??
+            user.photo ??
+            ""
         );
+    }
 
+    function getCurrentPageUserId() {
+        const params = new URLSearchParams(window.location.search);
 
-        chatState.selectedUser = {
-
-            user_id: userId,
-
-            name: "Usanex User",
-
-            username: "",
-
-            profile_photo: "",
-
-            online: false
-
-        };
-
-
-        updateChatHeader(
-            chatState.selectedUser
+        return (
+            params.get("user_id") ||
+            params.get("partner_id") ||
+            params.get("receiver_id") ||
+            params.get("id") ||
+            ""
         );
-
     }
 
-}
-
-
-/* =========================================================
-   HEADER LOADING
-========================================================= */
-
-function setHeaderLoading() {
-
-    const name =
-        $("selectedName");
-
-    const status =
-        $("selectedStatus");
-
-
-    if (name) {
-
-        name.textContent =
-            "Loading...";
-
-    }
-
-
-    if (status) {
-
-        status.textContent =
-            "Connecting...";
-
-    }
-
-}
-
-
-/* =========================================================
-   HEADER
-========================================================= */
-
-function updateChatHeader(
-    user
-) {
-
-    const avatar =
-        $("selectedAvatar");
-
-    const name =
-        $("selectedName");
-
-    const status =
-        $("selectedStatus");
-
-    const onlineDot =
-        $("headerOnlineDot");
-
-
-    const photo =
-        user.profile_photo ||
-        user.avatar ||
-        user.photo ||
-        "";
-
-
-    const userName =
-        user.name ||
-        user.full_name ||
-        user.username ||
-        "Usanex User";
-
-
-    if (avatar) {
-
-        avatar.src =
-            getAvatar(photo);
-
-        avatar.alt =
-            userName;
-
-    }
-
-
-    if (name) {
-
-        name.textContent =
-            userName;
-
-    }
-
-
-    if (status) {
-
-        status.textContent =
-            getUserStatus(user);
-
-    }
-
-
-    if (onlineDot) {
-
-        const online =
-            user.online === true ||
-            user.is_online === true;
-
-        onlineDot.hidden =
-            !online;
-
-    }
-
-}
-
-
-/* =========================================================
-   USER STATUS
-========================================================= */
-
-function getUserStatus(
-    user
-) {
-
-    if (
-        user.online === true ||
-        user.is_online === true
-    ) {
-
-        return "Online";
-
-    }
-
-
-    if (
-        user.last_seen ||
-        user.last_seen_at
-    ) {
-
-        return formatLastSeen(
-            user.last_seen ||
-            user.last_seen_at
-        );
-
-    }
-
-
-    return "Offline";
-
-}
-
-
-/* =========================================================
-   LAST SEEN
-========================================================= */
-
-function formatLastSeen(
-    value
-) {
-
-    if (!value) {
-
-        return "Offline";
-
-    }
-
-
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return "Offline";
-
-    }
-
-
-    return (
-        "last seen " +
-        date.toLocaleString(
-            [],
-            {
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit"
+    /* =====================================================
+       FETCH HELPERS
+    ===================================================== */
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            credentials: "include",
+            ...options,
+            headers: {
+                ...(options.headers || {})
             }
-        )
-    );
+        });
 
-}
-
-
-/* =========================================================
-   LOAD MESSAGES
-========================================================= */
-
-async function loadMessages(
-    userId
-) {
-
-    const container =
-        $("messages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    container.innerHTML = `
-        <div class="messages-loading">
-            Loading messages...
-        </div>
-    `;
-
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/chat/${encodeURIComponent(userId)}`,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
-
-
-        if (
-            response.status === 401
-        ) {
-
-            window.location.href =
-                "/login";
-
-            return;
-
+        if (response.status === 401) {
+            window.location.href = "/login";
+            throw new Error("Your session has expired. Please log in again.");
         }
 
+        return response;
+    }
+
+    async function requestJSON(url, options = {}) {
+        const response = await request(url, options);
 
         if (!response.ok) {
+            const message = await readErrorMessage(response);
 
-            throw new Error(
-                "Messages unavailable"
-            );
-
+            throw new Error(message || `Request failed (${response.status})`);
         }
 
+        const contentType = response.headers.get("content-type") || "";
 
-        const data =
-            await response.json();
+        if (!contentType.includes("application/json")) {
+            return {};
+        }
 
+        return response.json();
+    }
 
-        chatState.messages =
-            Array.isArray(
-                data.messages
-            )
-                ? data.messages
-                : [];
+    async function readErrorMessage(response) {
+        try {
+            const data = await response.clone().json();
 
+            return (
+                data.detail ||
+                data.message ||
+                data.error ||
+                ""
+            );
+        } catch {
+            return "";
+        }
+    }
 
-        renderMessages();
+    /* =====================================================
+       TOAST
+    ===================================================== */
 
-    } catch (error) {
+    function toast(message, duration = 2600) {
+        const element = $("chatToast");
 
-        console.error(
-            "Load messages error:",
-            error
+        if (!element) {
+            console.log("[UtaNexa]", message);
+            return;
+        }
+
+        setText(element, message);
+        show(element);
+
+        clearTimeout(state.toastTimer);
+
+        state.toastTimer = setTimeout(() => {
+            hide(element);
+        }, duration);
+    }
+
+    /* =====================================================
+       USER LOADING
+    ===================================================== */
+
+    async function loadCurrentUser() {
+        try {
+            const data = await requestJSON(API.me);
+
+            state.currentUser =
+                data.user ||
+                data.current_user ||
+                data.profile ||
+                data;
+
+            return state.currentUser;
+        } catch (error) {
+            console.error("Could not load current user:", error);
+            return null;
+        }
+    }
+
+    async function loadSelectedUser(userId) {
+        if (!userId) {
+            state.selectedUser = null;
+            showEmptyConversation(true);
+            setText($("selectedName"), "Select a conversation");
+            setText($("selectedStatus"), "No conversation selected");
+            return null;
+        }
+
+        state.selectedUserId = userId;
+
+        try {
+            const data = await requestJSON(API.profile(userId));
+
+            state.selectedUser =
+                data.user ||
+                data.profile ||
+                data;
+
+            updateHeader();
+
+            return state.selectedUser;
+        } catch (error) {
+            console.error("Could not load chat profile:", error);
+
+            state.selectedUser = {
+                user_id: userId,
+                name: "User"
+            };
+
+            updateHeader();
+
+            return state.selectedUser;
+        }
+    }
+
+    function updateHeader() {
+        const user = state.selectedUser;
+
+        if (!user) return;
+
+        setText($("selectedName"), getDisplayName(user));
+
+        const statusElement = $("selectedStatus");
+
+        if (statusElement) {
+            const online =
+                user.is_online === true ||
+                user.online === true ||
+                user.status === "online";
+
+            statusElement.textContent = online ? "Online" : "UtaNexa Chat";
+
+            statusElement.classList.toggle("online-status", online);
+        }
+
+        const avatar = $("selectedAvatar");
+        const avatarUrl = getAvatarUrl(user);
+
+        if (avatar && avatarUrl) {
+            avatar.src = avatarUrl;
+        }
+
+        if (avatar) {
+            avatar.onerror = () => {
+                avatar.onerror = null;
+                avatar.removeAttribute("src");
+                avatar.alt = getDisplayName(user);
+            };
+        }
+
+        const onlineDot = $("headerOnlineDot");
+
+        if (onlineDot) {
+            const online =
+                user.is_online === true ||
+                user.online === true ||
+                user.status === "online";
+
+            onlineDot.classList.toggle("online", online);
+            onlineDot.setAttribute("aria-label", online ? "Online" : "Offline");
+        }
+    }
+
+    /* =====================================================
+       MESSAGE NORMALIZATION
+    ===================================================== */
+
+    function normalizeMessages(data) {
+        if (Array.isArray(data)) return data;
+
+        if (!data || typeof data !== "object") return [];
+
+        if (Array.isArray(data.messages)) return data.messages;
+        if (Array.isArray(data.items)) return data.items;
+        if (Array.isArray(data.results)) return data.results;
+
+        return [];
+    }
+
+    async function loadMessages() {
+        if (!state.selectedUserId || state.loading) return;
+
+        state.loading = true;
+
+        try {
+            const data = await requestJSON(
+                API.messages(state.selectedUserId)
+            );
+
+            state.messages = normalizeMessages(data);
+
+            renderMessages();
+            showEmptyConversation(state.messages.length === 0);
+            scrollMessages(false);
+        } catch (error) {
+            console.error("Could not load messages:", error);
+
+            toast("Messages could not be loaded.");
+        } finally {
+            state.loading = false;
+        }
+    }
+
+    /* =====================================================
+       MESSAGE HELPERS
+    ===================================================== */
+
+    function getMessageSenderId(message) {
+        return safeString(
+            message.sender_id ??
+            message.sender_user_id ??
+            message.from_user_id ??
+            message.user_id ??
+            message.sender?.user_id ??
+            message.sender?.id ??
+            ""
         );
-
-
-        chatState.messages = [];
-
-        renderMessages();
-
     }
 
-}
-
-
-/* =========================================================
-   RENDER MESSAGES
-========================================================= */
-
-function renderMessages() {
-
-    const container =
-        $("messages");
-
-
-    if (!container) {
-
-        return;
-
+    function getMessageContent(message) {
+        return safeString(
+            message.content ??
+            message.message ??
+            message.text ??
+            ""
+        );
     }
 
-
-    container.innerHTML = "";
-
-
-    if (
-        chatState.messages.length === 0
-    ) {
-
-        container.innerHTML = `
-
-            <div class="empty-chat">
-
-                <div class="empty-chat-icon">
-                    💬
-                </div>
-
-                <strong>
-                    Start a conversation
-                </strong>
-
-                <span>
-                    Send a message to start chatting.
-                </span>
-
-            </div>
-
-        `;
-
-        return;
-
+    function getMessageImage(message) {
+        return safeString(
+            message.image_url ??
+            message.file_url ??
+            message.media_url ??
+            message.attachment_url ??
+            message.image ??
+            ""
+        );
     }
 
+    function getMessageDate(message) {
+        const value =
+            message.created_at ??
+            message.timestamp ??
+            message.sent_at ??
+            message.time ??
+            "";
 
-    let lastDate = "";
+        if (!value) return null;
 
+        const date = new Date(value);
 
-    chatState.messages.forEach(
-        message => {
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
 
-            const date =
-                formatDate(
-                    message.created_at
-                );
+    function isOwnMessage(message) {
+        const senderId = getMessageSenderId(message);
 
+        const currentId = getUserId(state.currentUser);
+
+        return Boolean(
+            senderId &&
+            currentId &&
+            senderId === currentId
+        );
+    }
+
+    function formatTime(message) {
+        const date = getMessageDate(message);
+
+        if (!date) return "";
+
+        return date.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    /* =====================================================
+       MESSAGE RENDERING
+    ===================================================== */
+
+    function renderMessages() {
+        const container = $("messages");
+
+        if (!container) return;
+
+        const fragment = document.createDocumentFragment();
+
+        const filtered = state.searchQuery
+            ? state.messages.filter((message) =>
+                getMessageContent(message)
+                    .toLowerCase()
+                    .includes(state.searchQuery.toLowerCase())
+            )
+            : state.messages;
+
+        for (const message of filtered) {
+            const row = createMessageElement(message);
+
+            if (row) fragment.appendChild(row);
+        }
+
+        container.replaceChildren(fragment);
+
+        showEmptyConversation(
+            filtered.length === 0 && !state.searchQuery
+        );
+    }
+
+    function createMessageElement(message) {
+        const row = document.createElement("div");
+
+        row.className = "message-row";
+
+        const own = isOwnMessage(message);
+
+        row.classList.add(own ? "sent" : "received");
+
+        const bubble = document.createElement("div");
+
+        bubble.className = "message-bubble";
+
+        const content = getMessageContent(message);
+        const imageUrl = getMessageImage(message);
+
+        if (imageUrl) {
+            const image = document.createElement("img");
+
+            image.src = imageUrl;
+            image.alt = "Shared image";
+            image.loading = "lazy";
+            image.decoding = "async";
+
+            image.addEventListener("click", () => {
+                openImageViewer(imageUrl);
+            });
+
+            bubble.appendChild(image);
+        }
+
+        if (content) {
+            const text = document.createElement("div");
+
+            text.className = "message-text";
+            text.textContent = content;
+
+            bubble.appendChild(text);
+        }
+
+        if (!content && !imageUrl) {
+            const fallback = document.createElement("div");
+
+            fallback.className = "message-text";
+            fallback.textContent = "Unsupported message";
+
+            bubble.appendChild(fallback);
+        }
+
+        const meta = document.createElement("div");
+
+        meta.className = "message-meta";
+
+        const time = document.createElement("span");
+
+        time.className = "message-time";
+        time.textContent = formatTime(message);
+
+        meta.appendChild(time);
+
+        if (own) {
+            const status = document.createElement("span");
+
+            status.className = "message-status";
+
+            const read =
+                message.is_read === true ||
+                message.read === true ||
+                message.status === "read";
+
+            status.textContent = read ? "✓✓" : "✓";
+
+            meta.appendChild(status);
+        }
+
+        bubble.appendChild(meta);
+        row.appendChild(bubble);
+
+        return row;
+    }
+
+    function showEmptyConversation(empty) {
+        const element = $("emptyConversation");
+
+        if (!element) return;
+
+        element.hidden = !empty;
+    }
+
+    function scrollMessages(smooth = true) {
+        const container = $("messages");
+
+        if (!container) return;
+
+        container.scrollTo({
+            top: container.scrollHeight,
+            behavior: smooth ? "smooth" : "auto"
+        });
+    }
+
+    /* =====================================================
+       SEND TEXT MESSAGE
+    ===================================================== */
+
+    async function sendMessage() {
+        const input = $("messageInput");
+
+        if (!input || state.sending) return;
+
+        const content = input.value.trim();
+
+        if (!content) return;
+
+        if (!state.selectedUserId) {
+            toast("Please open a conversation first.");
+            return;
+        }
+
+        if (content.length > MAX_MESSAGE_LENGTH) {
+            toast("Message is too long.");
+            return;
+        }
+
+        state.sending = true;
+
+        const sendButton = $("sendButton");
+
+        if (sendButton) sendButton.disabled = true;
+
+        const formData = new FormData();
+
+        formData.append("receiver_id", state.selectedUserId);
+        formData.append("content", content);
+
+        try {
+            await requestJSON(API.send, {
+                method: "POST",
+                body: formData
+            });
+
+            input.value = "";
+            autoResizeInput();
+
+            await loadMessages();
+            scrollMessages(true);
+        } catch (error) {
+            console.error("Message sending failed:", error);
+
+            toast(error.message || "Message could not be sent.");
+        } finally {
+            state.sending = false;
+
+            if (sendButton) sendButton.disabled = false;
+
+            input.focus({ preventScroll: true });
+        }
+    }
+
+    /* =====================================================
+       COMPOSER
+    ===================================================== */
+
+    function setupComposer() {
+        const form = $("composer");
+        const input = $("messageInput");
+
+        on(form, "submit", (event) => {
+            event.preventDefault();
+            sendMessage();
+        });
+
+        on(input, "input", autoResizeInput);
+
+        on(input, "keydown", (event) => {
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.isComposing
+            ) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+
+    function autoResizeInput() {
+        const input = $("messageInput");
+
+        if (!input) return;
+
+        input.style.height = "auto";
+
+        input.style.height = Math.min(
+            input.scrollHeight,
+            130
+        ) + "px";
+    }
+
+    /* =====================================================
+       IMAGE COMPRESSION
+    ===================================================== */
+
+    async function compressImage(file) {
+        if (
+            !file ||
+            !file.type.startsWith("image/") ||
+            file.size <= IMAGE_COMPRESS_THRESHOLD
+        ) {
+            return file;
+        }
+
+        if (!("createImageBitmap" in window)) {
+            return file;
+        }
+
+        try {
+            const bitmap = await createImageBitmap(file);
+
+            const maxDimension = 1920;
+
+            const ratio = Math.min(
+                1,
+                maxDimension / Math.max(bitmap.width, bitmap.height)
+            );
+
+            const canvas = document.createElement("canvas");
+
+            canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+            canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+
+            const context = canvas.getContext("2d", {
+                alpha: false
+            });
+
+            if (!context) {
+                bitmap.close?.();
+                return file;
+            }
+
+            context.drawImage(
+                bitmap,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+            bitmap.close?.();
+
+            const blob = await new Promise((resolve) => {
+                canvas.toBlob(resolve, "image/jpeg", 0.86);
+            });
+
+            if (!blob || blob.size >= file.size) {
+                return file;
+            }
+
+            const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+
+            return new File([blob], name, {
+                type: "image/jpeg",
+                lastModified: Date.now()
+            });
+        } catch (error) {
+            console.warn("Image compression skipped:", error);
+            return file;
+        }
+    }
+
+    /* =====================================================
+       SEND IMAGE
+    ===================================================== */
+
+    async function sendImage(file) {
+        if (!file) return;
+
+        if (!state.selectedUserId) {
+            toast("Please open a conversation first.");
+            return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+            toast("Please select an image.");
+            return;
+        }
+
+        if (file.size > MAX_IMAGE_SIZE) {
+            toast("Image is too large. Maximum size is 25 MB.");
+            return;
+        }
+
+        toast("Preparing image...");
+
+        try {
+            const optimized = await compressImage(file);
+
+            const formData = new FormData();
+
+            formData.append("receiver_id", state.selectedUserId);
+            formData.append("content", "");
+            formData.append("file", optimized);
+
+            await requestJSON(API.send, {
+                method: "POST",
+                body: formData
+            });
+
+            await loadMessages();
+            scrollMessages(true);
+
+            toast("Image sent.");
+        } catch (error) {
+            console.error("Image sending failed:", error);
+
+            toast(error.message || "Image could not be sent.");
+        }
+    }
+
+    /* =====================================================
+       ATTACHMENT / CAMERA
+    ===================================================== */
+
+    function setupAttachment() {
+        on($("attachButton"), "click", () => {
+            $("fileInput")?.click();
+        });
+
+        on($("fileInput"), "change", async (event) => {
+            const files = Array.from(event.target.files || []);
+
+            event.target.value = "";
+
+            for (const file of files) {
+                await sendImage(file);
+            }
+        });
+    }
+
+    function setupCamera() {
+        on($("cameraButton"), "click", () => {
+            $("cameraInput")?.click();
+        });
+
+        on($("cameraInput"), "change", async (event) => {
+            const file = event.target.files?.[0];
+
+            event.target.value = "";
+
+            if (file) {
+                await sendImage(file);
+            }
+        });
+    }
+
+    /* =====================================================
+       IMAGE VIEWER
+    ===================================================== */
+
+    function openImageViewer(src) {
+        const viewer = $("imageViewer");
+        const image = $("viewerImage");
+
+        if (!viewer || !image || !src) return;
+
+        image.src = src;
+
+        show(viewer);
+    }
+
+    function closeImageViewer() {
+        const viewer = $("imageViewer");
+        const image = $("viewerImage");
+
+        hide(viewer);
+
+        if (image) image.removeAttribute("src");
+    }
+
+    function setupImageViewer() {
+        on($("closeImageViewer"), "click", closeImageViewer);
+
+        on($("imageViewer"), "click", (event) => {
+            if (event.target === $("imageViewer")) {
+                closeImageViewer();
+            }
+        });
+    }
+
+    /* =====================================================
+       EMOJI DATA
+    ===================================================== */
+
+    const EMOJI_DATA = {
+        smileys: [
+            "😀","😃","😄","😁","😆","😅","🤣","😂",
+            "🙂","🙃","😉","😊","😇","🥰","😍","🤩",
+            "😘","😗","☺️","😚","😙","🥲","😋","😛",
+            "😜","🤪","😝","🤑","🤗","🤭","🫢","🫣",
+            "🤫","🤔","🫡","🤐","🤨","😐","😑","😶",
+            "🫥","😏","😒","🙄","😬","😮‍💨","🤥","😌",
+            "😔","😪","🤤","😴","😷","🤒","🤕","🤢",
+            "🤮","🥵","🥶","🥴","😵","🤯","🥳","🥸",
+            "😎","🤓","🧐","😕","🫤","😟","🙁","☹️",
+            "😮","😯","😲","😳","🥺","🥹","😦","😧",
+            "😨","😰","😥","😢","😭","😱","😖","😣",
+            "😞","😓","😩","😫","🥱","😤","😡","😠",
+            "🤬","😈","👿","💀","☠️","💩","🤡","👻",
+            "👽","👾","🤖","🎃","😺","😸","😹","😻",
+            "😼","😽","🙀","😿","😾"
+        ],
+
+        people: [
+            "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏",
+            "✌️","🤞","🫰","🤟","🤘","🤙","👈","👉",
+            "👆","👇","☝️","🫵","👍","👎","✊","👊",
+            "🤛","🤜","👏","🙌","🫶","👐","🤲","🤝",
+            "🙏","✍️","💅","🤳","💪","🦾","🦿","🦵",
+            "🦶","👂","🦻","👃","🧠","🫀","🫁","🦷",
+            "🦴","👀","👁️","👅","👄","🫦","👶","🧒",
+            "👦","👧","🧑","👨","👩","🧔","👵","👴",
+            "🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇",
+            "🤦","🤷","👮","🕵️","💂","🥷","👷","🫅",
+            "🤴","👸","👳","👲","🧕","🤵","👰","🤰",
+            "🫃","🫄","🤱","👼","🎅","🤶","🦸","🦹"
+        ],
+
+        nature: [
+            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼",
+            "🐻‍❄️","🐨","🐯","🦁","🐮","🐷","🐸","🐵",
+            "🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤",
+            "🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄",
+            "🐝","🪱","🐛","🦋","🐌","🐞","🐜","🪰",
+            "🦟","🦗","🕷️","🦂","🐢","🐍","🦎","🦖",
+            "🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠",
+            "🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆",
+            "🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪",
+            "🐫","🦒","🦘","🦬","🐃","🐂","🐄","🐎",
+            "🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩",
+            "🦮","🐈","🐈‍⬛","🐓","🦃","🦚","🦜","🦢",
+            "🦩","🕊️","🐇","🦝","🦨","🦡","🦫","🦦",
+            "🌵","🌲","🌳","🌴","🌱","🌿","☘️","🍀",
+            "🎍","🪴","🎋","🍃","🍂","🍁","🌾","🌺",
+            "🌻","🌹","🌷","🌼","🌸","💐","🌞","🌝",
+            "🌛","🌜","🌚","🌕","🌙","⭐","🌟","✨",
+            "⚡","☄️","💥","🔥","🌪️","🌈","☀️","🌤️",
+            "⛅","🌧️","⛈️","❄️","☃️","🌊"
+        ],
+
+        food: [
+            "🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇",
+            "🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥",
+            "🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶️",
+            "🫑","🌽","🥕","🫒","🧄","🧅","🥔","🍠",
+            "🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳",
+            "🧈","🥞","🧇","🥓","🥩","🍗","🍖","🌭",
+            "🍔","🍟","🍕","🫓","🥪","🥙","🧆","🌮",
+            "🌯","🫔","🥗","🥘","🫕","🥫","🍝","🍜",
+            "🍲","🍛","🍣","🍱","🥟","🦪","🍤","🍙",
+            "🍚","🍘","🍥","🥠","🥮","🍢","🍡","🍧",
+            "🍨","🍦","🥧","🧁","🍰","🎂","🍮","🍭",
+            "🍬","🍫","🍿","🍩","🍪","🌰","🥜","🍯",
+            "🥛","🍼","☕","🫖","🍵","🧃","🥤","🧋",
+            "🍶","🍺","🍻","🥂","🍷","🥃","🍸","🍹",
+            "🧉","🍾"
+        ],
+
+        activities: [
+            "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉",
+            "🥏","🎱","🪀","🏓","🏸","🏒","🏑","🥍",
+            "🏏","🪃","🥅","⛳","🪁","🏹","🎣","🤿",
+            "🥊","🥋","🎽","🛹","🛼","🛷","⛸️","🥌",
+            "🎿","⛷️","🏂","🪂","🏋️","🤼","🤸","⛹️",
+            "🤺","🤾","🏌️","🏇","🧘","🏄","🏊","🤽",
+            "🚣","🧗","🚵","🚴","🏆","🥇","🥈","🥉",
+            "🏅","🎖️","🏵️","🎗️","🎫","🎟️","🎪","🤹",
+            "🎭","🩰","🎨","🎬","🎤","🎧","🎼","🎹",
+            "🥁","🪘","🎷","🎺","🪗","🎸","🪕","🎻",
+            "🎲","♟️","🎯","🎳","🎮","🕹️","🎰","🧩",
+            "🎊","🎉","🎈","🎁","🎀","🎂","🎆","🎇",
+            "🧨","✨","🎄","🎃","🎋","🎍"
+        ],
+
+        travel: [
+            "🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑",
+            "🚒","🚐","🛻","🚚","🚛","🚜","🛵","🏍️",
+            "🛺","🚲","🛴","🛹","🚏","🛣️","🛤️","🛢️",
+            "⛽","🛞","🚨","🚥","🚦","🛑","🚧","⚓",
+            "⛵","🛶","🚤","🛳️","⛴️","🚢","✈️","🛩️",
+            "🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡",
+            "🛰️","🚀","🛸","🌍","🌎","🌏","🌐","🗺️",
+            "🗾","🧭","🏔️","⛰️","🌋","🗻","🏕️","🏖️",
+            "🏜️","🏝️","🏞️","🏟️","🏛️","🏗️","🧱","🪨",
+            "🪵","🛖","🏘️","🏚️","🏠","🏡","🏢","🏣",
+            "🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬",
+            "🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌",
+            "🛕","🕍","⛩️","🕋","⛲","⛺","🌁","🌃",
+            "🌆","🌇","🌉","🎠","🛝","🎡","🎢","💈"
+        ],
+
+        objects: [
+            "⌚","📱","📲","💻","⌨️","🖥️","🖨️","🖱️",
+            "🖲️","🕹️","💽","💾","💿","📀","📼","📷",
+            "📸","📹","🎥","📽️","🎞️","📞","☎️","📟",
+            "📠","📺","📻","🎙️","🎚️","🎛️","🧭","⏱️",
+            "⏰","🕰️","⌛","⏳","📡","🔋","🪫","🔌",
+            "💡","🔦","🕯️","🪔","🧯","🛢️","💸","💵",
+            "💴","💶","💷","💰","💳","🪙","💎","⚖️",
+            "🪜","🧰","🔧","🔨","⚒️","🛠️","⛏️","🪚",
+            "🔩","⚙️","🪤","🧲","🪝","🧪","🧫","🧬",
+            "🔬","🔭","📡","💊","🩹","🩺","🩻","🩼",
+            "🚪","🛏️","🛋️","🪑","🚽","🚿","🛁","🪥",
+            "🧴","🧻","🧼","🪒","🧽","🧹","🧺","🧷",
+            "🧵","🪡","🧶","🪢","🧳","🌂","☂️","🧸",
+            "🪆","🖼️","🪞","🪟","🛍️","🎒","👓","🕶️"
+        ],
+
+        symbols: [
+            "❤️","🧡","💛","💚","💙","💜","🖤","🤍",
+            "🤎","🩷","🩵","🩶","💔","❣️","💕","💞",
+            "💓","💗","💖","💘","💝","💟","♥️","💌",
+            "💋","💯","💢","💥","💫","💦","💨","🕳️",
+            "💬","👁️‍🗨️","🗨️","🗯️","💭","💤","♨️","💣",
+            "💬","🌀","💠","🔔","🔕","🎵","🎶","🏧",
+            "🚮","🚰","♿","🚹","🚺","🚻","🚼","🚾",
+            "⚠️","🚸","⛔","🚫","🚳","🚭","🚯","🚱",
+            "🚷","📵","🔞","☢️","☣️","⬆️","↗️","➡️",
+            "↘️","⬇️","↙️","⬅️","↖️","↕️","↔️","↩️",
+            "↪️","⤴️","⤵️","🔃","🔄","🔙","🔚","🔛",
+            "🔜","🔝","🛐","⚛️","🕉️","✡️","☸️","☯️",
+            "✝️","☦️","☪️","☮️","🕎","🔯","♈","♉",
+            "♊","♋","♌","♍","♎","♏","♐","♑",
+            "♒","♓","⏭️","⏮️","⏯️","🔀","🔁","🔂",
+            "▶️","⏩","⏪","⏫","⏬","⏹️","⏺️","⏏️",
+            "🎦","🔅","🔆","📶","🛜","📳","📴","✖️",
+            "➕","➖","➗","🟰","♾️","‼️","⁉️","❓",
+            "❔","❕","❗","〰️","➰","➿","✔️","☑️",
+            "🔘","⚪","⚫","🔴","🟠","🟡","🟢","🔵",
+            "🟣","🟤","🔺","🔻","🔸","🔹","🔶","🔷",
+            "▪️","▫️","◾","◽","◼️","◻️","⬛","⬜",
+            "⭐","🌟","✨","💫","🔥","🎉","🎊","🏆"
+        ]
+    };
+
+    /* =====================================================
+       EMOJI PICKER
+    ===================================================== */
+
+    function setupEmoji() {
+        on($("emojiButton"), "click", toggleExpressionPanel);
+
+        on($("closeExpressionPanel"), "click", closeExpressionPanel);
+
+        on($("emojiTab"), "click", () => {
+            switchExpressionTab("emoji");
+        });
+
+        on($("gifTab"), "click", () => {
+            switchExpressionTab("gif");
+        });
+
+        on($("emojiCategories"), "click", (event) => {
+            const button = event.target.closest("[data-emoji-category]");
+
+            if (!button) return;
+
+            const category = button.dataset.emojiCategory;
+
+            state.activeEmojiCategory =
+                EMOJI_DATA[category] ? category : "smileys";
+
+            $("emojiCategories")
+                ?.querySelectorAll("[data-emoji-category]")
+                .forEach((item) => {
+                    item.classList.toggle(
+                        "active",
+                        item.dataset.emojiCategory === state.activeEmojiCategory
+                    );
+                });
+
+            renderEmojiGrid();
+        });
+
+        on($("emojiGrid"), "click", (event) => {
+            const button = event.target.closest("[data-emoji]");
+
+            if (!button) return;
+
+            insertEmoji(button.dataset.emoji);
+        });
+
+        on($("expressionSearch"), "input", () => {
+            if (state.activeExpressionTab === "emoji") {
+                renderEmojiGrid();
+            } else {
+                renderGifPlaceholder();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            const panel = $("expressionPanel");
+
+            if (!panel || panel.hidden) return;
 
             if (
-                date !== lastDate
+                panel.contains(event.target) ||
+                $("emojiButton")?.contains(event.target)
             ) {
-
-                const day =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                day.className =
-                    "day-label";
-
-
-                day.textContent =
-                    date;
-
-
-                container.appendChild(
-                    day
-                );
-
-
-                lastDate =
-                    date;
-
+                return;
             }
 
-
-            container.appendChild(
-                createMessageBubble(
-                    message
-                )
-            );
-
-        }
-    );
-
-
-    scrollMessages();
-
-}
-
-
-/* =========================================================
-   MESSAGE BUBBLE
-========================================================= */
-
-function createMessageBubble(
-    message
-) {
-
-    const wrapper =
-        document.createElement(
-            "div"
-        );
-
-
-    const senderId =
-        String(
-            message.sender_id ||
-            message.sender_user_id ||
-            ""
-        );
-
-
-    const currentId =
-        String(
-            chatState.currentUser?.id ||
-            chatState.currentUser?.user_id ||
-            ""
-        );
-
-
-    const isMine =
-        senderId &&
-        currentId &&
-        senderId === currentId;
-
-
-    wrapper.className =
-        isMine
-            ? "message-row mine"
-            : "message-row received";
-
-
-    const bubble =
-        document.createElement(
-            "div"
-        );
-
-
-    bubble.className =
-        "message-bubble";
-
-
-    /* =====================================================
-       IMAGE
-    ===================================================== */
-
-    if (
-        message.media_url
-    ) {
-
-        bubble.classList.add(
-            "has-image"
-        );
-
-
-        const image =
-            document.createElement(
-                "img"
-            );
-
-
-        image.src =
-            message.media_url;
-
-        image.alt =
-            "Photo";
-
-        image.loading =
-            "lazy";
-
-        image.decoding =
-            "async";
-
-        image.className =
-            "chat-message-image";
-
-
-        image.addEventListener(
-            "click",
-            () => {
-
-                openImageViewer(
-                    message.media_url
-                );
-
-            }
-        );
-
-
-        image.addEventListener(
-            "error",
-            () => {
-
-                console.error(
-                    "Chat image failed to load:",
-                    message.media_url
-                );
-
-            }
-        );
-
-
-        bubble.appendChild(
-            image
-        );
-
+            closeExpressionPanel();
+        });
     }
 
+    function toggleExpressionPanel() {
+        const panel = $("expressionPanel");
 
-    /* =====================================================
-       TEXT
-    ===================================================== */
+        if (!panel) return;
 
-    const messageText =
-        message.message ||
-        message.content ||
-        "";
-
-
-    if (
-        safeText(
-            messageText
-        ).trim()
-    ) {
-
-        const text =
-            document.createElement(
-                "div"
-            );
-
-
-        text.className =
-            "message-text";
-
-
-        text.textContent =
-            safeText(
-                messageText
-            );
-
-
-        bubble.appendChild(
-            text
-        );
-
-    }
-
-
-    /* =====================================================
-       META
-    ===================================================== */
-
-    const meta =
-        document.createElement(
-            "div"
-        );
-
-
-    meta.className =
-        "message-meta";
-
-
-    const time =
-        document.createElement(
-            "span"
-        );
-
-
-    time.textContent =
-        formatTime(
-            message.created_at
-        );
-
-
-    meta.appendChild(
-        time
-    );
-
-
-    if (isMine) {
-
-        const ticks =
-            document.createElement(
-                "span"
-            );
-
-
-        ticks.className =
-            "message-ticks";
-
-
-        ticks.textContent =
-            message.read ||
-            message.is_read
-                ? "✓✓"
-                : "✓";
-
-
-        meta.appendChild(
-            ticks
-        );
-
-    }
-
-
-    bubble.appendChild(
-        meta
-    );
-
-
-    wrapper.appendChild(
-        bubble
-    );
-
-
-    return wrapper;
-
-}
-
-
-/* =========================================================
-   IMAGE VIEWER
-========================================================= */
-
-function openImageViewer(
-    url
-) {
-
-    const viewer =
-        document.createElement(
-            "div"
-        );
-
-
-    viewer.style.position =
-        "fixed";
-
-    viewer.style.inset =
-        "0";
-
-    viewer.style.zIndex =
-        "99999";
-
-    viewer.style.background =
-        "rgba(0,0,0,0.94)";
-
-    viewer.style.display =
-        "flex";
-
-    viewer.style.alignItems =
-        "center";
-
-    viewer.style.justifyContent =
-        "center";
-
-    viewer.style.padding =
-        "20px";
-
-
-    const image =
-        document.createElement(
-            "img"
-        );
-
-
-    image.src =
-        url;
-
-    image.alt =
-        "Photo";
-
-
-    image.style.maxWidth =
-        "100%";
-
-    image.style.maxHeight =
-        "100%";
-
-    image.style.objectFit =
-        "contain";
-
-
-    viewer.appendChild(
-        image
-    );
-
-
-    viewer.addEventListener(
-        "click",
-        () => {
-
-            viewer.remove();
-
-        }
-    );
-
-
-    document.body.appendChild(
-        viewer
-    );
-
-}
-
-
-/* =========================================================
-   SEND MESSAGE
-========================================================= */
-
-async function sendMessage() {
-
-    if (chatState.sending) {
-
-        return;
-
-    }
-
-
-    const input =
-        $("messageInput");
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    const text =
-        input.value.trim();
-
-
-    const file =
-        chatState.selectedFile;
-
-
-    if (
-        !text &&
-        !file
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !chatState.selectedUserId
-    ) {
-
-        alert(
-            "Please select a user first."
-        );
-
-        return;
-
-    }
-
-
-    chatState.sending =
-        true;
-
-
-    const sendButton =
-        $("sendButton");
-
-
-    if (sendButton) {
-
-        sendButton.disabled =
-            true;
-
-        sendButton.textContent =
-            "…";
-
-    }
-
-
-    try {
-
-        /* =================================================
-           FORM DATA
-        ================================================= */
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            "receiver_id",
-            chatState.selectedUserId
-        );
-
-
-        formData.append(
-            "content",
-            text
-        );
-
-
-        /* =================================================
-           IMAGE
-        ================================================= */
-
-        if (file) {
-
-            const optimizedFile =
-                await prepareImageForUpload(
-                    file
-                );
-
-
-            formData.append(
-                "file",
-                optimizedFile,
-                optimizedFile.name
-            );
-
+        if (!panel.hidden) {
+            closeExpressionPanel();
+            return;
         }
 
+        show(panel);
 
-        /* =================================================
-           BACKEND
-        ================================================= */
+        switchExpressionTab("emoji");
 
-        const response =
-            await fetch(
-                "/api/chat/send",
-                {
-                    method: "POST",
+        renderEmojiGrid();
+    }
 
-                    credentials: "include",
+    function closeExpressionPanel() {
+        hide($("expressionPanel"));
+    }
 
-                    body: formData
-                }
+    function switchExpressionTab(tab) {
+        state.activeExpressionTab = tab;
+
+        const emojiTab = $("emojiTab");
+        const gifTab = $("gifTab");
+
+        emojiTab?.classList.toggle("active", tab === "emoji");
+        gifTab?.classList.toggle("active", tab === "gif");
+
+        emojiTab?.setAttribute(
+            "aria-selected",
+            String(tab === "emoji")
+        );
+
+        gifTab?.setAttribute(
+            "aria-selected",
+            String(tab === "gif")
+        );
+
+        const emojiGrid = $("emojiGrid");
+        const categories = $("emojiCategories");
+        const gifGrid = $("gifGrid");
+        const search = $("expressionSearch");
+
+        if (tab === "emoji") {
+            show(emojiGrid);
+            show(categories);
+            hide(gifGrid);
+
+            if (search) search.placeholder = "Search emoji...";
+
+            renderEmojiGrid();
+        } else {
+            hide(emojiGrid);
+            hide(categories);
+            show(gifGrid);
+
+            if (search) search.placeholder = "Search GIFs...";
+
+            renderGifPlaceholder();
+        }
+    }
+
+    function renderEmojiGrid() {
+        const grid = $("emojiGrid");
+
+        if (!grid) return;
+
+        const query = ($("expressionSearch")?.value || "")
+            .trim()
+            .toLowerCase();
+
+        let emojis = EMOJI_DATA[state.activeEmojiCategory] || EMOJI_DATA.smileys;
+
+        if (query) {
+            const allEmojis = Object.values(EMOJI_DATA).flat();
+
+            emojis = [...new Set(allEmojis)].filter((emoji) =>
+                emoji.includes(query)
             );
+        }
 
+        const fragment = document.createDocumentFragment();
 
-        if (
-            response.status === 401
-        ) {
+        for (const emoji of emojis) {
+            const button = document.createElement("button");
 
-            window.location.href =
-                "/login";
+            button.type = "button";
+            button.className = "emoji-item";
+            button.dataset.emoji = emoji;
+
+            button.textContent = emoji;
+            button.setAttribute("aria-label", emoji);
+
+            fragment.appendChild(button);
+        }
+
+        grid.replaceChildren(fragment);
+    }
+
+    function insertEmoji(emoji) {
+        const input = $("messageInput");
+
+        if (!input) return;
+
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
+
+        input.value =
+            input.value.slice(0, start) +
+            emoji +
+            input.value.slice(end);
+
+        const position = start + emoji.length;
+
+        input.focus({ preventScroll: true });
+        input.setSelectionRange(position, position);
+
+        autoResizeInput();
+
+        closeExpressionPanel();
+
+        state.recentEmojis = [
+            emoji,
+            ...state.recentEmojis.filter((item) => item !== emoji)
+        ].slice(0, 20);
+    }
+
+    /* =====================================================
+       GIF PLACEHOLDER
+    ===================================================== */
+
+    function renderGifPlaceholder() {
+        const grid = $("gifGrid");
+
+        if (!grid) return;
+
+        grid.replaceChildren();
+
+        const note = document.createElement("p");
+
+        note.className = "expression-note";
+
+        note.textContent =
+            "GIF search needs a GIF provider and a server endpoint. " +
+            "Connect a provider before GIFs can be searched and sent.";
+
+        grid.appendChild(note);
+    }
+
+    /* =====================================================
+       SPEECH TO TEXT
+    ===================================================== */
+
+    function setupSpeechToText() {
+        const button = $("micButton");
+
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+        if (!button) return;
+
+        if (!SpeechRecognition) {
+            button.addEventListener("click", () => {
+                toast("Speech-to-text is not supported in this browser.");
+            });
 
             return;
-
         }
 
+        const recognition = new SpeechRecognition();
 
-        const data =
-            await response.json()
-                .catch(
-                    () => null
-                );
+        recognition.lang = "hi-IN";
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
+        state.recognition = recognition;
 
-        if (!response.ok) {
+        let finalTranscript = "";
 
-            throw new Error(
-                data?.detail ||
-                "Message could not be sent."
-            );
+        recognition.onstart = () => {
+            state.isRecognizing = true;
 
-        }
+            button.style.color = "var(--success)";
 
+            toast("Listening... Speak now.");
+        };
 
-        /* =================================================
-           SERVER MESSAGE
-        ================================================= */
+        recognition.onresult = (event) => {
+            let interim = "";
 
-        if (
-            data?.message
-        ) {
+            for (
+                let index = event.resultIndex;
+                index < event.results.length;
+                index++
+            ) {
+                const result = event.results[index];
 
-            chatState.messages.push(
-                data.message
-            );
-
-        }
-
-
-        /* =================================================
-           CLEAR INPUT + PHOTO
-        ================================================= */
-
-        input.value = "";
-
-        clearSelectedFile();
-
-        renderMessages();
-
-        scrollMessages();
-
-        input.focus();
-
-
-    } catch (error) {
-
-        console.error(
-            "Send message error:",
-            error
-        );
-
-
-        alert(
-            error.message ||
-            "Unable to send message."
-        );
-
-    } finally {
-
-        chatState.sending =
-            false;
-
-
-        if (sendButton) {
-
-            sendButton.disabled =
-                false;
-
-            sendButton.textContent =
-                "➤";
-
-        }
-
-    }
-
-}
-
-
-/* =========================================================
-   IMAGE OPTIMIZATION
-========================================================= */
-
-async function prepareImageForUpload(
-    file
-) {
-
-    /*
-     * 2 MB se chhoti photo ko
-     * original form me bhejenge.
-     */
-
-    if (
-        file.size <=
-        2 * 1024 * 1024
-    ) {
-
-        return file;
-
-    }
-
-
-    /*
-     * Browser image decode.
-     */
-
-    let bitmap;
-
-
-    try {
-
-        bitmap =
-            await createImageBitmap(
-                file
-            );
-
-    } catch (error) {
-
-        console.warn(
-            "Image compression unavailable. Sending original.",
-            error
-        );
-
-        return file;
-
-    }
-
-
-    const maxWidth =
-        1920;
-
-    const maxHeight =
-        1920;
-
-
-    let width =
-        bitmap.width;
-
-    let height =
-        bitmap.height;
-
-
-    /* =====================================================
-       KEEP ASPECT RATIO
-    ===================================================== */
-
-    if (
-        width > maxWidth ||
-        height > maxHeight
-    ) {
-
-        const ratio =
-            Math.min(
-                maxWidth / width,
-                maxHeight / height
-            );
-
-
-        width =
-            Math.round(
-                width * ratio
-            );
-
-
-        height =
-            Math.round(
-                height * ratio
-            );
-
-    }
-
-
-    const canvas =
-        document.createElement(
-            "canvas"
-        );
-
-
-    canvas.width =
-        width;
-
-    canvas.height =
-        height;
-
-
-    const context =
-        canvas.getContext(
-            "2d",
-            {
-                alpha: false
-            }
-        );
-
-
-    if (!context) {
-
-        bitmap.close();
-
-        return file;
-
-    }
-
-
-    context.imageSmoothingEnabled =
-        true;
-
-    context.imageSmoothingQuality =
-        "high";
-
-
-    context.drawImage(
-        bitmap,
-        0,
-        0,
-        width,
-        height
-    );
-
-
-    bitmap.close();
-
-
-    /* =====================================================
-       JPEG
-    ===================================================== */
-
-    const blob =
-        await new Promise(
-            resolve => {
-
-                canvas.toBlob(
-                    resolve,
-                    "image/jpeg",
-                    0.88
-                );
-
-            }
-        );
-
-
-    if (!blob) {
-
-        return file;
-
-    }
-
-
-    /*
-     * Agar compressed file original se
-     * badi ho gayi to original bhejo.
-     */
-
-    if (
-        blob.size >= file.size
-    ) {
-
-        return file;
-
-    }
-
-
-    return new File(
-        [blob],
-        "usanex_" +
-            Date.now() +
-            ".jpg",
-        {
-            type:
-                "image/jpeg",
-
-            lastModified:
-                Date.now()
-        }
-    );
-
-}
-
-
-/* =========================================================
-   COMPOSER
-========================================================= */
-
-function setupComposer() {
-
-    const composer =
-        $("composer");
-
-
-    const input =
-        $("messageInput");
-
-
-    if (composer) {
-
-        composer.addEventListener(
-            "submit",
-            event => {
-
-                event.preventDefault();
-
-                sendMessage();
-
-            }
-        );
-
-    }
-
-
-    if (input) {
-
-        input.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key === "Enter" &&
-                    !event.shiftKey
-                ) {
-
-                    event.preventDefault();
-
-                    sendMessage();
-
+                if (result.isFinal) {
+                    finalTranscript += result[0].transcript + " ";
+                } else {
+                    interim += result[0].transcript;
                 }
-
             }
-        );
 
+            const input = $("messageInput");
 
-        input.addEventListener(
-            "input",
-            () => {
+            if (!input) return;
 
-                handleTyping();
+            const combined = (finalTranscript + interim).trim();
 
+            input.value = combined;
+
+            autoResizeInput();
+        };
+
+        recognition.onerror = (event) => {
+            console.warn("Speech recognition error:", event.error);
+
+            if (event.error === "not-allowed") {
+                toast("Please allow microphone access.");
+            } else if (event.error !== "no-speech") {
+                toast("Speech recognition stopped.");
             }
-        );
+        };
 
+        recognition.onend = () => {
+            state.isRecognizing = false;
+
+            button.style.color = "";
+
+            finalTranscript = "";
+        };
+
+        on(button, "click", () => {
+            if (state.isRecognizing) {
+                recognition.stop();
+                return;
+            }
+
+            finalTranscript = "";
+
+            try {
+                recognition.lang = "hi-IN";
+                recognition.start();
+            } catch (error) {
+                console.warn(error);
+                toast("Unable to start speech recognition.");
+            }
+        });
     }
-
-}
-
-
-/* =========================================================
-   TYPING
-========================================================= */
-
-function handleTyping() {
-
-    clearTimeout(
-        chatState.typingTimer
-    );
-
-
-    chatState.typingTimer =
-        setTimeout(
-            () => {},
-            1200
-        );
-
-}
-
-
-/* =========================================================
-   EMOJI
-========================================================= */
-
-function setupEmoji() {
-
-    const button =
-        $("emojiButton");
-
-    const input =
-        $("messageInput");
-
-
-    if (
-        !button ||
-        !input
-    ) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            input.value +=
-                "😊";
-
-            input.focus();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   ATTACHMENT — GALLERY
-========================================================= */
-
-function setupAttachment() {
-
-    const button =
-        $("attachButton");
-
-
-    const fileInput =
-        $("fileInput");
-
-
-    if (
-        !button ||
-        !fileInput
-    ) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            /*
-             * Gallery mode
-             */
-
-            fileInput.accept =
-                "image/*";
-
-
-            fileInput.removeAttribute(
-                "capture"
-            );
-
-
-            /*
-             * Reset value so same photo
-             * can be selected again.
-             */
-
-            fileInput.value =
-                "";
-
-
-            fileInput.click();
-
-        }
-    );
-
-
-    fileInput.addEventListener(
-        "change",
-        () => {
-
-            handleSelectedFile(
-                fileInput
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-function setupCamera() {
-
-    const button =
-        $("cameraButton");
-
-
-    const fileInput =
-        $("fileInput");
-
-
-    if (
-        !button ||
-        !fileInput
-    ) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            /*
-             * Camera mode
-             */
-
-            fileInput.accept =
-                "image/*";
-
-
-            fileInput.setAttribute(
-                "capture",
-                "environment"
-            );
-
-
-            fileInput.value =
-                "";
-
-
-            fileInput.click();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SELECTED FILE
-   IMPORTANT:
-   Photo select hote hi DIRECT SEND
-========================================================= */
-
-function handleSelectedFile(
-    fileInput
-) {
-
-    if (
-        !fileInput.files ||
-        !fileInput.files.length
-    ) {
-
-        return;
-
-    }
-
-
-    const file =
-        fileInput.files[0];
-
 
     /* =====================================================
-       IMAGE CHECK
+       VOICE MESSAGE RECORDING
     ===================================================== */
 
-    if (
-        !file.type.startsWith(
-            "image/"
-        )
-    ) {
+    function setupVoiceRecording() {
+        const sendButton = $("sendButton");
 
-        alert(
-            "Please select an image."
-        );
+        if (!sendButton) return;
 
+        on(sendButton, "contextmenu", (event) => {
+            event.preventDefault();
+            startVoiceRecording();
+        });
 
-        fileInput.value =
-            "";
+        let holdTimer = null;
+        let holdStarted = false;
 
+        on(sendButton, "pointerdown", (event) => {
+            if (event.pointerType === "mouse") return;
 
-        return;
+            holdStarted = false;
 
+            holdTimer = setTimeout(() => {
+                holdStarted = true;
+                startVoiceRecording();
+            }, 500);
+        });
+
+        const stopHold = () => {
+            clearTimeout(holdTimer);
+        };
+
+        on(sendButton, "pointerup", stopHold);
+        on(sendButton, "pointercancel", stopHold);
+        on(sendButton, "pointerleave", stopHold);
+
+        on($("cancelRecordingButton"), "click", cancelVoiceRecording);
+        on($("sendRecordingButton"), "click", sendVoiceRecording);
     }
 
+    async function startVoiceRecording() {
+        if (state.mediaRecorder) return;
 
-    /* =====================================================
-       SIZE CHECK
-    ===================================================== */
+        if (!navigator.mediaDevices?.getUserMedia) {
+            toast("Voice recording is not supported by this browser.");
+            return;
+        }
 
-    if (
-        file.size >
-        25 * 1024 * 1024
-    ) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true
+            });
 
-        alert(
-            "Photo must be 25 MB or smaller."
-        );
+            state.audioStream = stream;
+            state.audioChunks = [];
 
+            let options = {};
 
-        fileInput.value =
-            "";
-
-
-        return;
-
-    }
-
-
-    /* =====================================================
-       STORE FILE
-    ===================================================== */
-
-    chatState.selectedFile =
-        file;
-
-
-    /*
-     * IMPORTANT:
-     *
-     * Preview create nahi hoga.
-     *
-     * Photo directly send hogi.
-     */
-
-    sendMessage();
-
-}
-
-
-/* =========================================================
-   CLEAR FILE
-========================================================= */
-
-function clearSelectedFile() {
-
-    chatState.selectedFile =
-        null;
-
-
-    const fileInput =
-        $("fileInput");
-
-
-    if (fileInput) {
-
-        fileInput.value =
-            "";
-
-    }
-
-
-    /*
-     * Agar old preview DOM me ho,
-     * usko bhi remove kar do.
-     */
-
-    const preview =
-        $("chatFilePreview");
-
-
-    if (preview) {
-
-        preview.remove();
-
-    }
-
-}
-
-
-/* =========================================================
-   HEADER BUTTONS
-========================================================= */
-
-function setupHeaderButtons() {
-
-    const menu =
-        $("conversationMenu");
-
-
-    if (menu) {
-
-        menu.addEventListener(
-            "click",
-            () => {
-
-                showConversationMenu();
-
+            if (
+                window.MediaRecorder &&
+                MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ) {
+                options.mimeType = "audio/webm;codecs=opus";
             }
-        );
 
-    }
+            state.mediaRecorder = new MediaRecorder(stream, options);
 
-
-    const video =
-        $("videoCallButton");
-
-
-    if (video) {
-
-        video.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Video call will be available soon."
-                );
-
-            }
-        );
-
-    }
-
-
-    const voice =
-        $("voiceCallButton");
-
-
-    if (voice) {
-
-        voice.addEventListener(
-            "click",
-            () => {
-
-                alert(
-                    "Voice call will be available soon."
-                );
-
-            }
-        );
-
-    }
-
-
-    const avatar =
-        $("selectedAvatarButton");
-
-
-    if (avatar) {
-
-        avatar.addEventListener(
-            "click",
-            () => {
-
-                if (
-                    chatState.selectedUserId
-                ) {
-
-                    window.location.href =
-                        "/profile?user_id=" +
-                        encodeURIComponent(
-                            chatState.selectedUserId
-                        );
-
+            state.mediaRecorder.ondataavailable = (event) => {
+                if (event.data?.size) {
+                    state.audioChunks.push(event.data);
                 }
+            };
 
-            }
-        );
+            state.mediaRecorder.onstop = () => {
+                const mimeType =
+                    state.mediaRecorder?.mimeType ||
+                    "audio/webm";
 
+                state.recordedAudioBlob = new Blob(
+                    state.audioChunks,
+                    { type: mimeType }
+                );
+
+                stopAudioStream();
+
+                state.mediaRecorder = null;
+            };
+
+            state.mediaRecorder.start();
+
+            state.recordingStartedAt = Date.now();
+
+            show($("recordingStatus"));
+
+            updateRecordingTimer();
+
+            state.recordingTimer = setInterval(
+                updateRecordingTimer,
+                500
+            );
+
+            toast("Recording started. Tap Send to finish.");
+        } catch (error) {
+            console.error("Microphone error:", error);
+
+            toast("Microphone permission is required.");
+        }
     }
 
+    function updateRecordingTimer() {
+        const elapsed = Math.max(
+            0,
+            Math.floor((Date.now() - state.recordingStartedAt) / 1000)
+        );
+
+        const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
+        const seconds = String(elapsed % 60).padStart(2, "0");
+
+        setText(
+            $("recordingTime"),
+            `Recording ${minutes}:${seconds}`
+        );
+    }
+
+    function stopAudioStream() {
+        if (state.audioStream) {
+            state.audioStream.getTracks().forEach((track) => track.stop());
+            state.audioStream = null;
+        }
+
+        clearInterval(state.recordingTimer);
+        state.recordingTimer = null;
+    }
+
+    function cancelVoiceRecording() {
+        if (state.mediaRecorder?.state !== "inactive") {
+            try {
+                state.mediaRecorder.stop();
+            } catch (error) {
+                console.warn(error);
+            }
+        }
+
+        state.audioChunks = [];
+        state.recordedAudioBlob = null;
+
+        stopAudioStream();
+
+        hide($("recordingStatus"));
+
+        toast("Recording cancelled.");
+    }
+
+    async function sendVoiceRecording() {
+        if (state.mediaRecorder?.state === "recording") {
+            state.mediaRecorder.stop();
+        }
+
+        /*
+         * MediaRecorder fires its final data and stop events
+         * asynchronously. Wait briefly for the final Blob.
+         */
+        await new Promise((resolve) => setTimeout(resolve, 250));
+
+        const blob = state.recordedAudioBlob;
+
+        if (!blob || !blob.size) {
+            toast("No voice recording available.");
+            return;
+        }
+
+        if (!state.selectedUserId) {
+            toast("Please open a conversation first.");
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("receiver_id", state.selectedUserId);
+        formData.append("content", "");
+        formData.append("file", blob, "voice-message.webm");
+
+        try {
+            await requestJSON(API.send, {
+                method: "POST",
+                body: formData
+            });
+
+            state.recordedAudioBlob = null;
+            state.audioChunks = [];
+
+            hide($("recordingStatus"));
+
+            await loadMessages();
+
+            toast("Voice message uploaded.");
+        } catch (error) {
+            console.error("Voice message upload failed:", error);
+
+            toast(
+                "Voice upload failed. Your server must support audio attachments."
+            );
+        } finally {
+            stopAudioStream();
+        }
+    }
 
     /* =====================================================
        COUPLE CHAT
-       Chat → Couple Chat
     ===================================================== */
 
-    const coupleChatButton =
-        $("coupleChatButton");
-
-
-    if (coupleChatButton) {
-
-        coupleChatButton.addEventListener(
-            "click",
-            () => {
-
-                /*
-                 * Partner ID
-                 */
-
-                const partnerId =
-                    chatState.selectedUserId;
-
-
-                /*
-                 * Partner name
-                 */
-
-                const partnerName =
-                    chatState.selectedUser?.name ||
-                    chatState.selectedUser?.full_name ||
-                    chatState.selectedUser?.username ||
-                    $("selectedName")?.textContent?.trim() ||
-                    "";
-
-
-                /*
-                 * Partner avatar
-                 */
-
-                const partnerAvatar =
-                    chatState.selectedUser?.profile_photo ||
-                    chatState.selectedUser?.avatar ||
-                    chatState.selectedUser?.photo ||
-                    $("selectedAvatar")?.src ||
-                    "";
-
-
-                /*
-                 * URL parameters
-                 */
-
-                const params =
-                    new URLSearchParams();
-
-
-                if (partnerId) {
-
-                    params.set(
-                        "partner_id",
-                        partnerId
-                    );
-
-                }
-
-
-                if (
-                    partnerName &&
-                    partnerName !== "Loading..." &&
-                    partnerName !== "Select a chat"
-                ) {
-
-                    params.set(
-                        "name",
-                        partnerName
-                    );
-
-                }
-
-
-                if (partnerAvatar) {
-
-                    params.set(
-                        "avatar",
-                        partnerAvatar
-                    );
-
-                }
-
-
-                /*
-                 * Open Couple Chat
-                 */
-
-                const query =
-                    params.toString();
-
-
-                window.location.href =
-                    query
-                        ? `/couple-chat?${query}`
-                        : "/couple-chat";
-
+    function setupNavigation() {
+        on($("coupleChatButton"), "click", () => {
+            if (!state.selectedUserId) {
+                toast("Please select a conversation first.");
+                return;
             }
-        );
 
-    }
+            const user = state.selectedUser || {};
 
-}
+            const params = new URLSearchParams({
+                partner_id: state.selectedUserId,
+                name: getDisplayName(user),
+                avatar: getAvatarUrl(user)
+            });
 
+            window.location.href = `/couple-chat?${params.toString()}`;
+        });
 
-/* =========================================================
-   MENU
-========================================================= */
+        on($("backButton"), "click", () => {
+            window.location.href = "/home";
+        });
 
-function showConversationMenu() {
-
-    const menu =
-        document.createElement(
-            "div"
-        );
-
-
-    menu.className =
-        "chat-popup-menu";
-
-
-    menu.innerHTML = `
-
-        <button type="button">
-            Search messages
-        </button>
-
-        <button type="button">
-            Media
-        </button>
-
-        <button type="button">
-            Clear chat
-        </button>
-
-        <button type="button">
-            Block
-        </button>
-
-        <button type="button">
-            Cancel
-        </button>
-
-    `;
-
-
-    document.body.appendChild(
-        menu
-    );
-
-
-    const cancel =
-        menu.querySelector(
-            "button:last-child"
-        );
-
-
-    cancel?.addEventListener(
-        "click",
-        () => {
-
-            menu.remove();
-
-        }
-    );
-
-
-    setTimeout(
-        () => {
-
-            document.addEventListener(
-                "click",
-                function closeMenu(
-                    event
-                ) {
-
-                    if (
-                        !menu.contains(
-                            event.target
-                        )
-                    ) {
-
-                        menu.remove();
-
-                        document.removeEventListener(
-                            "click",
-                            closeMenu
-                        );
-
-                    }
-
-                }
-            );
-
-        },
-        0
-    );
-
-}
-
-
-/* =========================================================
-   BACK
-========================================================= */
-
-function setupBackButton() {
-
-    const button =
-        $("backButton");
-
-
-    if (!button) {
-
-        return;
-
-    }
-
-
-    button.addEventListener(
-        "click",
-        () => {
+        on($("selectedAvatarButton"), "click", () => {
+            if (!state.selectedUserId) return;
 
             window.location.href =
-                "/home";
+                `/profile?user_id=${encodeURIComponent(state.selectedUserId)}`;
+        });
 
-        }
-    );
+        document.querySelectorAll(".bottom-nav button[data-page]")
+            .forEach((button) => {
+                on(button, "click", () => {
+                    const page = button.dataset.page;
 
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function setupNavigation() {
-
-    document
-        .querySelectorAll(
-            ".bottom-nav button[data-page]"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        const page =
-                            button.dataset.page;
-
-
-                        if (page) {
-
-                            window.location.href =
-                                page;
-
-                        }
-
+                    if (page) {
+                        window.location.href = `/${encodeURIComponent(page)}`;
                     }
-                );
+                });
+            });
+    }
 
+    /* =====================================================
+       CALL OPTIONS
+    ===================================================== */
+
+    function setupCallOptions() {
+        on($("voiceCallButton"), "click", () => {
+            if (!state.selectedUserId) {
+                toast("Please select a conversation first.");
+                return;
             }
-        );
 
-}
+            show($("callOptionsModal"));
+        });
 
+        on($("closeCallOptions"), "click", () => {
+            hide($("callOptionsModal"));
+        });
 
-/* =========================================================
-   SEARCH
-========================================================= */
-
-function setupSearch() {
-
-    const input =
-        $("chatSearch");
-
-
-    if (!input) {
-
-        return;
-
-    }
-
-
-    input.addEventListener(
-        "input",
-        () => {
-
-            chatState.search =
-                input.value.trim();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   FILTERS
-========================================================= */
-
-function setupFilters() {
-
-    document
-        .querySelectorAll(
-            ".filter"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        document
-                            .querySelectorAll(
-                                ".filter"
-                            )
-                            .forEach(
-                                item => {
-
-                                    item.classList.remove(
-                                        "active"
-                                    );
-
-                                }
-                            );
-
-
-                        button.classList.add(
-                            "active"
-                        );
-
-
-                        chatState.filter =
-                            button.dataset.filter ||
-                            "all";
-
-                    }
-                );
-
+        on($("callOptionsModal"), "click", (event) => {
+            if (event.target === $("callOptionsModal")) {
+                hide($("callOptionsModal"));
             }
-        );
+        });
 
-}
+        on($("startVoiceCall"), "click", () => {
+            hide($("callOptionsModal"));
 
+            toast(
+                "Voice calling requires WebRTC and call-signaling support on the server.",
+                4000
+            );
+        });
 
-/* =========================================================
-   EMPTY CONVERSATION
-========================================================= */
+        on($("startVideoCall"), "click", () => {
+            hide($("callOptionsModal"));
 
-function showEmptyConversation() {
-
-    const name =
-        $("selectedName");
-
-
-    const status =
-        $("selectedStatus");
-
-
-    if (name) {
-
-        name.textContent =
-            "Select a chat";
-
+            toast(
+                "Video calling requires WebRTC and call-signaling support on the server.",
+                4000
+            );
+        });
     }
 
+    /* =====================================================
+       CONVERSATION MENU
+    ===================================================== */
 
-    if (status) {
+    function setupConversationMenu() {
+        on($("conversationMenu"), "click", () => {
+            show($("conversationMenuModal"));
+        });
 
-        status.textContent =
-            "Usanex";
+        on($("closeConversationMenu"), "click", () => {
+            hide($("conversationMenuModal"));
+        });
 
+        on($("conversationMenuModal"), "click", (event) => {
+            if (event.target === $("conversationMenuModal")) {
+                hide($("conversationMenuModal"));
+            }
+        });
+
+        on($("menuSearchMessages"), "click", () => {
+            hide($("conversationMenuModal"));
+
+            show($("chatSearchSection"));
+
+            $("chatSearch")?.focus();
+        });
+
+        on($("menuViewMedia"), "click", () => {
+            hide($("conversationMenuModal"));
+
+            const hasMedia = state.messages.some(
+                (message) => Boolean(getMessageImage(message))
+            );
+
+            toast(
+                hasMedia
+                    ? "Scroll through the conversation to view shared images."
+                    : "No shared images found."
+            );
+        });
+
+        on($("menuClearChat"), "click", () => {
+            hide($("conversationMenuModal"));
+
+            toast(
+                "Clear chat is not enabled. A backend endpoint is required.",
+                3500
+            );
+        });
     }
 
+    /* =====================================================
+       MESSAGE SEARCH
+    ===================================================== */
 
-    const messages =
-        $("messages");
+    function setupSearch() {
+        on($("chatSearch"), "input", (event) => {
+            state.searchQuery = event.target.value.trim();
 
+            renderMessages();
+        });
 
-    if (messages) {
+        on($("closeChatSearch"), "click", () => {
+            state.searchQuery = "";
 
-        messages.innerHTML = `
+            if ($("chatSearch")) {
+                $("chatSearch").value = "";
+            }
 
-            <div class="empty-chat">
+            hide($("chatSearchSection"));
 
-                <div class="empty-chat-icon">
-                    💬
-                </div>
-
-                <strong>
-                    Select a person to chat
-                </strong>
-
-                <span>
-                    Open a connected user's card from Home.
-                </span>
-
-            </div>
-
-        `;
-
+            renderMessages();
+        });
     }
 
-}
+    /* =====================================================
+       KEYBOARD SHORTCUTS
+    ===================================================== */
 
-
-/* =========================================================
-   TIME
-========================================================= */
-
-function formatTime(
-    value
-) {
-
-    if (!value) {
-
-        return "";
-
+    function setupKeyboard() {
+        on(document, "keydown", (event) => {
+            if (event.key === "Escape") {
+                closeExpressionPanel();
+                hide($("callOptionsModal"));
+                hide($("conversationMenuModal"));
+                closeImageViewer();
+            }
+        });
     }
 
+    /* =====================================================
+       PAGE INITIALIZATION
+    ===================================================== */
 
-    const date =
-        new Date(value);
+    async function initChatPage() {
+        setupComposer();
+        setupEmoji();
+        setupAttachment();
+        setupCamera();
+        setupNavigation();
+        setupCallOptions();
+        setupConversationMenu();
+        setupSearch();
+        setupImageViewer();
+        setupSpeechToText();
+        setupVoiceRecording();
+        setupKeyboard();
 
+        renderEmojiGrid();
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+        const userId = getCurrentPageUserId();
 
-        return "";
+        if (!userId) {
+            await loadCurrentUser();
 
-    }
+            setText($("selectedName"), "Select a conversation");
+            setText($("selectedStatus"), "Open a chat from your connections");
 
+            showEmptyConversation(true);
 
-    return date.toLocaleTimeString(
-        [],
-        {
-            hour: "2-digit",
-            minute: "2-digit"
+            return;
         }
-    );
 
-}
-
-
-/* =========================================================
-   DATE
-========================================================= */
-
-function formatDate(
-    value
-) {
-
-    if (!value) {
-
-        return "Today";
-
+        await loadCurrentUser();
+        await loadSelectedUser(userId);
+        await loadMessages();
     }
 
+    document.addEventListener("DOMContentLoaded", initChatPage);
 
-    const date =
-        new Date(value);
-
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return "Today";
-
-    }
-
-
-    const today =
-        new Date();
-
-
-    if (
-        date.toDateString() ===
-        today.toDateString()
-    ) {
-
-        return "Today";
-
-    }
-
-
-    return date.toLocaleDateString(
-        [],
-        {
-            day: "numeric",
-            month: "short",
-            year: "numeric"
-        }
-    );
-
-}
-
-
-/* =========================================================
-   SCROLL
-========================================================= */
-
-function scrollMessages() {
-
-    const container =
-        $("messages");
-
-
-    if (!container) {
-
-        return;
-
-    }
-
-
-    requestAnimationFrame(
-        () => {
-
-            container.scrollTop =
-                container.scrollHeight;
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   DEBUG
-========================================================= */
-
-console.log(
-    "Usanex Chat JS loaded — DIRECT IMAGE SEND + COUPLE CHAT enabled."
-);
+})();
