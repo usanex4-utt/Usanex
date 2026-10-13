@@ -1,276 +1,639 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     >
 
-    <meta
-        name="theme-color"
-        content="#071322"
-    >
+    <meta name="theme-color" content="#0b1020">
 
-    <title>Chat | Usanex</title>
+    <title>Chat | UtaNexa</title>
 
     <link
         rel="stylesheet"
-        href="/static/css/chat.css?v=4"
+        href="/static/css/chat.css?v=6"
     >
+
+    <script src="/static/js/chat.js?v=6" defer></script>
 </head>
 
 <body>
-
 <div class="chat-app">
 
-    <!-- =====================================================
-         CHAT HEADER
-    ====================================================== -->
+    <!-- ================= HEADER ================= -->
 
-    <header class="conversation-header">
-
-        <!-- BACK -->
+    <header class="chat-header">
 
         <button
             type="button"
-            class="back-button"
+            class="icon-button back-button"
             id="backButton"
-            aria-label="Back"
+            aria-label="Go back"
+            title="Go back"
         >
-            ‹
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 18l-6-6 6-6"/>
+            </svg>
         </button>
 
-
-        <!-- USER DP -->
-
         <button
             type="button"
-            class="selected-avatar-wrap"
+            class="profile-button"
             id="selectedAvatarButton"
             aria-label="Open profile"
         >
+            <span class="avatar-wrap">
+                <img
+                    id="selectedAvatar"
+                    class="user-avatar"
+                    src="/static/images/default-avatar.png"
+                    alt="Profile"
+                    loading="eager"
+                    decoding="async"
+                >
 
-            <img
-                id="selectedAvatar"
-                src="/static/images/default-profile.png"
-                alt="Profile"
-            >
-
-            <span
-                class="online-dot"
-                id="headerOnlineDot"
-                hidden
-            ></span>
-
+                <span
+                    id="headerOnlineDot"
+                    class="online-dot"
+                    aria-label="Online status"
+                ></span>
+            </span>
         </button>
 
-
-        <!-- USER INFORMATION -->
-
-        <div class="selected-info">
-
-            <strong id="selectedName">
-                Loading...
-            </strong>
-
-            <span id="selectedStatus">
-                Offline
-            </span>
-
+        <div class="header-user-info">
+            <h1 id="selectedName">Chat</h1>
+            <p id="selectedStatus">Connecting...</p>
         </div>
 
+        <div class="header-actions">
 
-        <!-- =================================================
-             COUPLE CHAT
-             Small clickable option
-        ================================================== -->
-
-        <button
-            type="button"
-            class="couple-chat-button"
-            id="coupleChatButton"
-            aria-label="Join Couple Chat"
-        >
-            ♡ Couple
-        </button>
-
-
-        <!-- HEADER ACTIONS -->
-
-        <div class="conversation-actions">
-
-            <!-- CALL -->
+            <!-- Couple Chat -->
 
             <button
                 type="button"
-                id="voiceCallButton"
-                aria-label="Voice call"
+                class="couple-chat-button"
+                id="coupleChatButton"
+                title="Open Couple Chat"
+                aria-label="Open Couple Chat"
             >
-                ☎
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 20.2S3.2 15 3.2 8.9a4.6 4.6 0 0 1 8.8-1.8 4.6 4.6 0 0 1 8.8 1.8c0 6.1-8.8 11.3-8.8 11.3Z"/>
+                </svg>
+
+                <span>Couple</span>
             </button>
 
-
-            <!-- MENU -->
+            <!-- Call options -->
 
             <button
                 type="button"
+                class="icon-button"
+                id="voiceCallButton"
+                title="Call options"
+                aria-label="Call options"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.8 2.1Z"/>
+                </svg>
+            </button>
+
+            <!-- Conversation menu -->
+
+            <button
+                type="button"
+                class="icon-button"
                 id="conversationMenu"
+                title="More options"
                 aria-label="More options"
             >
-                ⋮
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="5" r="1.5"/>
+                    <circle cx="12" cy="12" r="1.5"/>
+                    <circle cx="12" cy="19" r="1.5"/>
+                </svg>
             </button>
 
         </div>
-
     </header>
 
 
-    <!-- =====================================================
-         CHAT BODY
-    ====================================================== -->
+    <!-- ================= SEARCH BAR ================= -->
 
-    <main
-        class="conversation"
-        id="conversation"
-    >
+    <section class="chat-search-section" id="chatSearchSection" hidden>
 
-        <!-- WATERMARK -->
+        <div class="chat-search-box">
 
-        <div
-            class="watermark"
-            aria-hidden="true"
-        >
-            Usanex
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m16 16 4 4"/>
+            </svg>
+
+            <input
+                type="search"
+                id="chatSearch"
+                placeholder="Search messages..."
+                autocomplete="off"
+                aria-label="Search messages"
+            >
+
+            <button
+                type="button"
+                id="closeChatSearch"
+                class="search-close-button"
+                aria-label="Close search"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m18 6-12 12M6 6l12 12"/>
+                </svg>
+            </button>
+
+        </div>
+    </section>
+
+
+    <!-- ================= CONVERSATION ================= -->
+
+    <main class="conversation" id="conversation">
+
+        <div class="conversation-watermark" aria-hidden="true">
+            <span>U</span>
         </div>
 
-
-        <!-- MESSAGES -->
-
-        <section
+        <div
             class="messages"
             id="messages"
+            role="log"
             aria-live="polite"
+            aria-relevant="additions text"
+            aria-label="Chat messages"
         >
+            <!-- Messages are rendered by chat.js -->
+        </div>
 
-            <div class="day-label">
-                Today
+        <!-- Empty state -->
+
+        <section class="empty-conversation" id="emptyConversation" hidden>
+
+            <div class="empty-conversation-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/>
+                </svg>
             </div>
+
+            <h2>Start a conversation</h2>
+
+            <p>
+                Send a message and make the conversation special.
+            </p>
 
         </section>
 
-    </main>
-
-
-    <!-- =====================================================
-         TYPING / MESSAGE COMPOSER
-    ====================================================== -->
-
-    <div class="chat-bottom">
-
-        <!-- TYPING INDICATOR -->
+        <!-- Typing indicator -->
 
         <div
             class="typing-indicator"
             id="typingIndicator"
             hidden
+            aria-live="polite"
         >
-            typing...
+            <span></span>
+            <span></span>
+            <span></span>
+            <span class="typing-text">Typing...</span>
         </div>
 
+    </main>
 
-        <!-- COMPOSER -->
 
-        <form
-            class="composer"
-            id="composer"
-        >
+    <!-- ================= EMOJI / GIF PANEL ================= -->
 
-            <!-- EMOJI -->
+    <section
+        class="expression-panel"
+        id="expressionPanel"
+        aria-label="Emoji and GIF picker"
+        hidden
+    >
+
+        <div class="expression-header">
+
+            <div class="expression-tabs" role="tablist">
+
+                <button
+                    type="button"
+                    class="expression-tab active"
+                    id="emojiTab"
+                    role="tab"
+                    aria-selected="true"
+                    data-expression-tab="emoji"
+                >
+                    Emoji
+                </button>
+
+                <button
+                    type="button"
+                    class="expression-tab"
+                    id="gifTab"
+                    role="tab"
+                    aria-selected="false"
+                    data-expression-tab="gif"
+                >
+                    GIFs
+                </button>
+
+            </div>
 
             <button
                 type="button"
-                id="emojiButton"
-                aria-label="Emoji"
+                class="icon-button expression-close"
+                id="closeExpressionPanel"
+                aria-label="Close picker"
             >
-                😊
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m18 6-12 12M6 6l12 12"/>
+                </svg>
             </button>
 
+        </div>
 
-            <!-- MESSAGE -->
+        <div class="expression-search">
+
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m16 16 4 4"/>
+            </svg>
 
             <input
-                type="text"
-                id="messageInput"
-                placeholder="Message"
-                maxlength="4000"
+                type="search"
+                id="expressionSearch"
+                placeholder="Search emoji..."
                 autocomplete="off"
+                aria-label="Search expressions"
             >
 
+        </div>
 
-            <!-- ATTACHMENT -->
+        <!-- Emoji categories -->
+
+        <div
+            class="emoji-categories"
+            id="emojiCategories"
+            aria-label="Emoji categories"
+        >
+            <button type="button" data-emoji-category="recent" aria-label="Recent">Recent</button>
+            <button type="button" data-emoji-category="smileys" aria-label="Smileys">Smileys</button>
+            <button type="button" data-emoji-category="people" aria-label="People">People</button>
+            <button type="button" data-emoji-category="nature" aria-label="Nature">Nature</button>
+            <button type="button" data-emoji-category="food" aria-label="Food">Food</button>
+            <button type="button" data-emoji-category="activities" aria-label="Activities">Activities</button>
+            <button type="button" data-emoji-category="travel" aria-label="Travel">Travel</button>
+            <button type="button" data-emoji-category="objects" aria-label="Objects">Objects</button>
+            <button type="button" data-emoji-category="symbols" aria-label="Symbols">Symbols</button>
+        </div>
+
+        <!-- Emoji items are created by chat.js -->
+
+        <div
+            class="emoji-grid"
+            id="emojiGrid"
+            role="tabpanel"
+            aria-label="Choose an emoji"
+        ></div>
+
+        <!-- GIF items are created by chat.js -->
+
+        <div
+            class="gif-grid"
+            id="gifGrid"
+            role="tabpanel"
+            aria-label="Choose a GIF"
+            hidden
+        ></div>
+
+        <p class="expression-note" id="expressionNote" hidden></p>
+
+    </section>
+
+
+    <!-- ================= MESSAGE COMPOSER ================= -->
+
+    <footer class="chat-composer-area">
+
+        <form class="composer" id="composer" autocomplete="off">
+
+            <!-- Emoji / GIF picker -->
 
             <button
                 type="button"
+                class="composer-icon-button"
+                id="emojiButton"
+                title="Emoji and GIFs"
+                aria-label="Open emoji and GIF picker"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M8 14s1.3 2 4 2 4-2 4-2"/>
+                    <path d="M9 9h.01M15 9h.01"/>
+                </svg>
+            </button>
+
+            <!-- Message input -->
+
+            <div class="message-input-wrap">
+
+                <textarea
+                    id="messageInput"
+                    name="message"
+                    rows="1"
+                    maxlength="10000"
+                    placeholder="Type a message..."
+                    aria-label="Type a message"
+                    enterkeyhint="send"
+                ></textarea>
+
+            </div>
+
+            <!-- Voice input -->
+
+            <button
+                type="button"
+                class="composer-icon-button"
+                id="micButton"
+                title="Speak to type"
+                aria-label="Speak to type"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="2" width="6" height="12" rx="3"/>
+                    <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>
+                </svg>
+            </button>
+
+            <!-- Attach image -->
+
+            <button
+                type="button"
+                class="composer-icon-button"
                 id="attachButton"
-                aria-label="Attach file"
+                title="Attach image"
+                aria-label="Attach image"
             >
-                📎
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m21.4 11.1-8.9 8.9a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>
+                </svg>
             </button>
 
-
-            <!-- CAMERA -->
+            <!-- Camera -->
 
             <button
                 type="button"
+                class="composer-icon-button"
                 id="cameraButton"
-                aria-label="Camera"
+                title="Take a photo"
+                aria-label="Take a photo"
             >
-                📷
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
             </button>
 
-
-            <!-- SEND -->
+            <!-- Send / voice message -->
 
             <button
                 type="submit"
                 class="send-button"
                 id="sendButton"
-                aria-label="Send"
+                title="Send message"
+                aria-label="Send message"
             >
-                ➤
+                <svg
+                    class="send-icon"
+                    id="sendIcon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path d="M22 2 11 13"/>
+                    <path d="m22 2-7 20-4-9-9-4 20-7Z"/>
+                </svg>
+
+                <svg
+                    class="record-icon"
+                    id="recordIcon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    hidden
+                >
+                    <rect x="7" y="7" width="10" height="10" rx="2"/>
+                </svg>
             </button>
 
         </form>
 
+        <!-- Recording status -->
+
+        <div
+            class="recording-status"
+            id="recordingStatus"
+            hidden
+            aria-live="polite"
+        >
+            <span class="recording-indicator"></span>
+            <span id="recordingTime">Recording voice message...</span>
+
+            <button
+                type="button"
+                id="cancelRecordingButton"
+                aria-label="Cancel recording"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                id="sendRecordingButton"
+                aria-label="Send voice message"
+            >
+                Send
+            </button>
+        </div>
+
+    </footer>
+
+
+    <!-- ================= CALL OPTIONS ================= -->
+
+    <div
+        class="modal-backdrop"
+        id="callOptionsModal"
+        hidden
+    >
+        <section
+            class="options-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="callOptionsTitle"
+        >
+
+            <div class="modal-handle"></div>
+
+            <h2 id="callOptionsTitle">Start a call</h2>
+
+            <p>Choose how you want to connect.</p>
+
+            <button
+                type="button"
+                class="call-option"
+                id="startVoiceCall"
+            >
+                <span class="call-option-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.8 2.1Z"/>
+                    </svg>
+                </span>
+
+                <span>
+                    <strong>Voice Call</strong>
+                    <small>Talk using your microphone</small>
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="call-option"
+                id="startVideoCall"
+            >
+                <span class="call-option-icon">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="6" width="13" height="12" rx="2"/>
+                        <path d="m16 10 5-3v10l-5-3"/>
+                    </svg>
+                </span>
+
+                <span>
+                    <strong>Video Call</strong>
+                    <small>Connect with camera and audio</small>
+                </span>
+            </button>
+
+            <button
+                type="button"
+                class="modal-cancel-button"
+                id="closeCallOptions"
+            >
+                Cancel
+            </button>
+
+        </section>
     </div>
 
+
+    <!-- ================= CONVERSATION MENU ================= -->
+
+    <div
+        class="modal-backdrop"
+        id="conversationMenuModal"
+        hidden
+    >
+        <section
+            class="options-modal menu-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="conversationMenuTitle"
+        >
+
+            <div class="modal-handle"></div>
+
+            <h2 id="conversationMenuTitle">Conversation</h2>
+
+            <button
+                type="button"
+                class="menu-option"
+                id="menuSearchMessages"
+            >
+                Search messages
+            </button>
+
+            <button
+                type="button"
+                class="menu-option"
+                id="menuViewMedia"
+            >
+                View shared media
+            </button>
+
+            <button
+                type="button"
+                class="menu-option danger-option"
+                id="menuClearChat"
+            >
+                Clear conversation
+            </button>
+
+            <button
+                type="button"
+                class="modal-cancel-button"
+                id="closeConversationMenu"
+            >
+                Close
+            </button>
+
+        </section>
+    </div>
+
+
+    <!-- ================= IMAGE VIEWER ================= -->
+
+    <div
+        class="image-viewer"
+        id="imageViewer"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-label="Image viewer"
+    >
+        <button
+            type="button"
+            class="image-viewer-close"
+            id="closeImageViewer"
+            aria-label="Close image"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m18 6-12 12M6 6l12 12"/>
+            </svg>
+        </button>
+
+        <img id="viewerImage" src="" alt="Shared image">
+    </div>
+
+
+    <!-- ================= FILE INPUTS ================= -->
+
+    <input
+        type="file"
+        id="fileInput"
+        accept="image/*"
+        hidden
+    >
+
+    <input
+        type="file"
+        id="cameraInput"
+        accept="image/*"
+        capture="environment"
+        hidden
+    >
+
+    <audio id="audioPreview" hidden></audio>
+
+    <div
+        class="chat-toast"
+        id="chatToast"
+        role="status"
+        aria-live="polite"
+        hidden
+    ></div>
+
 </div>
-
-
-<!-- =====================================================
-     FILE INPUT
-====================================================== -->
-
-<input
-    type="file"
-    id="fileInput"
-    hidden
-    multiple
->
-
-
-<!-- =====================================================
-     CHAT JAVASCRIPT
-====================================================== -->
-
-<script
-    src="/static/js/chat.js?v=5"
-    defer
-></script>
-
 </body>
-
 </html>
