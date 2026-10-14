@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -21,7 +22,6 @@ from ..services.couple_message_service import (
     get_or_create_couple_room,
     create_couple_message,
     get_couple_messages,
-    get_message,
     mark_message_delivered,
     mark_message_seen,
     serialize_message,
@@ -32,6 +32,13 @@ from ..websocket.couple_manager import couple_manager
 
 
 router = APIRouter(tags=["Couple Realtime"])
+
+logger = logging.getLogger(__name__)
+
+MAX_MESSAGE_LENGTH = 4000
+MAX_MEDIA_URL_LENGTH = 2048
+MAX_MEDIA_TYPE_LENGTH = 100
+MAX_MESSAGE_TYPE_LENGTH = 50
 
 
 # =========================================================
@@ -55,13 +62,26 @@ def to_utc_iso(value):
 
 
 # =========================================================
-# USER
+# USER HELPERS
 # =========================================================
 
 def get_user(db: Session, user_id: int):
+    """Find a user by internal database ID."""
     return (
         db.query(User)
         .filter(User.id == user_id)
+        .first()
+    )
+
+
+def get_user_by_public_id(db: Session, public_user_id: str):
+    """Find a user by public ID such as u_fqrfx8zd."""
+    if not public_user_id:
+        return None
+
+    return (
+        db.query(User)
+        .filter(User.user_id == public_user_id)
         .first()
     )
 
@@ -84,9 +104,25 @@ def get_or_create_presence(db: Session, user_id: int):
             last_seen_at=None,
             last_online_at=None,
         )
+
         db.add(presence)
-        db.commit()
-        db.refresh(presence)
+
+        try:
+            db.commit()
+            db.refresh(presence)
+        except Exception:
+            db.rollback()
+
+            # Handle a concurrent insert without exposing
+            # database details to the WebSocket client.
+            presence = (
+                db.query(CouplePresence)
+                .filter(CouplePresence.user_id == user_id)
+                .first()
+            )
+
+            if presence is None:
+                raise
 
     return presence
 
@@ -126,19 +162,34 @@ def get_presence_payload(db: Session, user_id: int):
         .first()
     )
 
-    # Runtime WebSocket status is authoritative for online state.
+    # Live connections determine the runtime online status.
     is_online = couple_manager.is_online(user_id)
 
-    if presence is None:
+    if is_online:
         return {
-            "is_online": is_online,
+            "is_online": True,
             "last_seen": None,
         }
 
     return {
-        "is_online": is_online,
-        "last_seen": to_utc_iso(presence.last_seen_at),
+        "is_online": False,
+        "last_seen": (
+            to_utc_iso(presence.last_seen_at)
+            if presence is not None
+            else None
+        ),
     }
+
+
+# =========================================================
+# SAFE ERROR RESPONSE
+# =========================================================
+
+async def send_error(websocket: WebSocket, message: str):
+    await websocket.send_json({
+        "type": "error",
+        "message": message,
+    })
 
 
 # =========================================================
@@ -148,9 +199,9 @@ def get_presence_payload(db: Session, user_id: int):
 @router.websocket("/ws/couple/{partner_user_id}")
 async def couple_realtime(
     websocket: WebSocket,
-    partner_user_id: int,
+    partner_user_id: str,
 ):
-    db = SessionLocal()
+    db: Session = SessionLocal()
 
     current_user = None
     partner = None
@@ -159,9 +210,23 @@ async def couple_realtime(
 
     try:
         # -------------------------------------------------
+        # BASIC INPUT VALIDATION
+        # -------------------------------------------------
+        partner_user_id = partner_user_id.strip()
+
+        if not partner_user_id or len(partner_user_id) > 100:
+            await websocket.close(
+                code=1008,
+                reason="Invalid partner ID",
+            )
+            return
+
+        # -------------------------------------------------
         # AUTHENTICATION
         # -------------------------------------------------
-        session_token = websocket.cookies.get(SESSION_COOKIE_NAME)
+        session_token = websocket.cookies.get(
+            SESSION_COOKIE_NAME
+        )
 
         session = get_valid_session(
             db=db,
@@ -175,7 +240,10 @@ async def couple_realtime(
             )
             return
 
-        current_user = get_user(db, session.user_id)
+        current_user = get_user(
+            db=db,
+            user_id=session.user_id,
+        )
 
         if current_user is None:
             await websocket.close(
@@ -184,7 +252,23 @@ async def couple_realtime(
             )
             return
 
-        partner = get_user(db, partner_user_id)
+        # -------------------------------------------------
+        # PARTNER LOOKUP
+        # Public ID: u_fqrfx8zd
+        # Internal DB ID remains an integer.
+        # -------------------------------------------------
+        partner = get_user_by_public_id(
+            db=db,
+            public_user_id=partner_user_id,
+        )
+
+        # Backward compatibility for URLs that use an
+        # internal numeric database ID.
+        if partner is None and partner_user_id.isdigit():
+            partner = get_user(
+                db=db,
+                user_id=int(partner_user_id),
+            )
 
         if partner is None:
             await websocket.close(
@@ -216,9 +300,9 @@ async def couple_realtime(
             user_id=current_user.id,
             websocket=websocket,
         )
+
         connected = True
 
-        # Save online status.
         save_user_online(
             db=db,
             user_id=current_user.id,
@@ -245,7 +329,9 @@ async def couple_realtime(
                 "username": partner.username,
                 "name": partner.name,
             },
-            "room": {"id": room.id},
+            "room": {
+                "id": room.id,
+            },
             "room_id": room.id,
             "partner_online": partner_presence["is_online"],
             "partner_last_seen": partner_presence["last_seen"],
@@ -289,30 +375,34 @@ async def couple_realtime(
 
             try:
                 data = json.loads(raw_data)
-            except json.JSONDecodeError:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Invalid JSON",
-                })
+            except (json.JSONDecodeError, TypeError):
+                await send_error(
+                    websocket,
+                    "Invalid JSON",
+                )
                 continue
 
             if not isinstance(data, dict):
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Invalid event",
-                })
+                await send_error(
+                    websocket,
+                    "Invalid event",
+                )
                 continue
 
             event_type = data.get("type")
 
-            if not event_type:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": "Event type is required",
-                })
+            if not isinstance(event_type, str):
+                await send_error(
+                    websocket,
+                    "Event type is required",
+                )
                 continue
 
+            event_type = event_type.strip()
+
+            # ---------------------------------------------
             # TYPING START
+            # ---------------------------------------------
             if event_type == "typing_start":
                 await couple_manager.send_typing(
                     sender_id=current_user.id,
@@ -321,7 +411,9 @@ async def couple_realtime(
                 )
                 continue
 
+            # ---------------------------------------------
             # TYPING STOP
+            # ---------------------------------------------
             if event_type == "typing_stop":
                 await couple_manager.send_typing(
                     sender_id=current_user.id,
@@ -330,7 +422,9 @@ async def couple_realtime(
                 )
                 continue
 
+            # ---------------------------------------------
             # NEW MESSAGE
+            # ---------------------------------------------
             if event_type == "message":
                 client_message_id = (
                     data.get("client_message_id")
@@ -341,8 +435,64 @@ async def couple_realtime(
                 content = data.get("content")
                 media_url = data.get("media_url")
                 media_type = data.get("media_type")
-                message_type = data.get("message_type", "text")
-                reply_to_message_id = data.get("reply_to_message_id")
+                message_type = data.get(
+                    "message_type",
+                    "text",
+                )
+                reply_to_message_id = data.get(
+                    "reply_to_message_id"
+                )
+
+                if content is not None and not isinstance(
+                    content, str
+                ):
+                    await send_error(
+                        websocket,
+                        "Invalid message content",
+                    )
+                    continue
+
+                if media_url is not None:
+                    if not isinstance(media_url, str):
+                        await send_error(
+                            websocket,
+                            "Invalid media URL",
+                        )
+                        continue
+
+                    media_url = media_url.strip()
+
+                    if (
+                        not media_url
+                        or len(media_url) > MAX_MEDIA_URL_LENGTH
+                    ):
+                        await send_error(
+                            websocket,
+                            "Invalid media URL",
+                        )
+                        continue
+
+                if media_type is not None:
+                    if (
+                        not isinstance(media_type, str)
+                        or len(media_type) > MAX_MEDIA_TYPE_LENGTH
+                    ):
+                        await send_error(
+                            websocket,
+                            "Invalid media type",
+                        )
+                        continue
+
+                if (
+                    not isinstance(message_type, str)
+                    or not message_type
+                    or len(message_type) > MAX_MESSAGE_TYPE_LENGTH
+                ):
+                    await send_error(
+                        websocket,
+                        "Invalid message type",
+                    )
+                    continue
 
                 if not content and not media_url:
                     await websocket.send_json({
@@ -353,17 +503,34 @@ async def couple_realtime(
                     continue
 
                 if content is not None:
-                    content = str(content).strip()
+                    content = content.strip()
 
                     if not content:
                         content = None
 
-                    if content and len(content) > 4000:
+                    if (
+                        content is not None
+                        and len(content) > MAX_MESSAGE_LENGTH
+                    ):
                         await websocket.send_json({
                             "type": "error",
                             "message": "Message is too long",
                             "client_message_id": client_message_id,
                         })
+                        continue
+
+                # Validate reply ID before passing it to
+                # the message service.
+                if reply_to_message_id is not None:
+                    try:
+                        reply_to_message_id = int(
+                            reply_to_message_id
+                        )
+                    except (TypeError, ValueError):
+                        await send_error(
+                            websocket,
+                            "Invalid reply message ID",
+                        )
                         continue
 
                 message = create_couple_message(
@@ -390,7 +557,9 @@ async def couple_realtime(
                     "media_url": message.media_url,
                     "media_type": message.media_type,
                     "message_type": message.message_type,
-                    "timestamp": to_utc_iso(message.created_at),
+                    "timestamp": to_utc_iso(
+                        message.created_at
+                    ),
                 }
 
                 delivered = await couple_manager.send_to_user(
@@ -398,7 +567,6 @@ async def couple_realtime(
                     event=message_payload,
                 )
 
-                # Echo back to sender for optimistic reconciliation.
                 await websocket.send_json(message_payload)
 
                 if delivered:
@@ -409,14 +577,20 @@ async def couple_realtime(
                     )
 
                     if receipt:
-                        receipt_payload = serialize_receipt(receipt)
+                        receipt_payload = serialize_receipt(
+                            receipt
+                        )
+
                         receipt_payload.update({
                             "type": "message_receipt",
                             "client_message_id": client_message_id,
                             "message_id": message.id,
                             "status": "delivered",
                         })
-                        await websocket.send_json(receipt_payload)
+
+                        await websocket.send_json(
+                            receipt_payload
+                        )
                 else:
                     await websocket.send_json({
                         "type": "message_receipt",
@@ -428,11 +602,17 @@ async def couple_realtime(
 
                 continue
 
+            # ---------------------------------------------
             # MESSAGE DELIVERED
+            # ---------------------------------------------
             if event_type == "message_delivered":
                 try:
                     message_id = int(data.get("message_id"))
                 except (TypeError, ValueError):
+                    await send_error(
+                        websocket,
+                        "Invalid message ID",
+                    )
                     continue
 
                 receipt = mark_message_delivered(
@@ -451,13 +631,20 @@ async def couple_realtime(
                             "timestamp": utc_now_iso(),
                         },
                     )
+
                 continue
 
+            # ---------------------------------------------
             # MESSAGE READ
+            # ---------------------------------------------
             if event_type == "message_read":
                 try:
                     message_id = int(data.get("message_id"))
                 except (TypeError, ValueError):
+                    await send_error(
+                        websocket,
+                        "Invalid message ID",
+                    )
                     continue
 
                 receipt = mark_message_seen(
@@ -476,9 +663,12 @@ async def couple_realtime(
                             "timestamp": utc_now_iso(),
                         },
                     )
+
                 continue
 
+            # ---------------------------------------------
             # PING
+            # ---------------------------------------------
             if event_type == "ping":
                 await websocket.send_json({
                     "type": "pong",
@@ -486,16 +676,22 @@ async def couple_realtime(
                 })
                 continue
 
-            await websocket.send_json({
-                "type": "error",
-                "message": f"Unknown event: {event_type}",
-            })
+            await send_error(
+                websocket,
+                "Unknown event",
+            )
 
     except WebSocketDisconnect:
-        print("[UtaNexa Couple] WebSocket disconnected.")
+        logger.info(
+            "Couple WebSocket disconnected."
+        )
 
-    except Exception as exc:
-        print("[UtaNexa Couple WebSocket] ERROR:", repr(exc))
+    except Exception:
+        # Do not expose session tokens, message contents,
+        # database URLs, or internal errors to clients.
+        logger.exception(
+            "Couple WebSocket processing failed."
+        )
 
     finally:
         if current_user is not None and connected:
@@ -505,9 +701,11 @@ async def couple_realtime(
                     websocket=websocket,
                 )
 
-                # Only mark offline when the user has no other
-                # active connections left.
-                if not couple_manager.is_online(current_user.id):
+                # A user may have several active connections.
+                # Only mark offline after the final connection.
+                if not couple_manager.is_online(
+                    current_user.id
+                ):
                     save_user_offline(
                         db=db,
                         user_id=current_user.id,
@@ -517,7 +715,8 @@ async def couple_realtime(
                         presence = (
                             db.query(CouplePresence)
                             .filter(
-                                CouplePresence.user_id == current_user.id
+                                CouplePresence.user_id
+                                == current_user.id
                             )
                             .first()
                         )
@@ -527,13 +726,17 @@ async def couple_realtime(
                             user_id=current_user.id,
                             is_online=False,
                             last_seen=(
-                                to_utc_iso(presence.last_seen_at)
+                                to_utc_iso(
+                                    presence.last_seen_at
+                                )
                                 if presence
                                 else utc_now_iso()
                             ),
                         )
 
-            except Exception as exc:
-                print("[UtaNexa Couple] Disconnect error:", repr(exc))
+            except Exception:
+                logger.exception(
+                    "Couple WebSocket disconnect handling failed."
+                )
 
         db.close()
