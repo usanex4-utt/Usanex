@@ -133,47 +133,56 @@
     /* =====================================================
        ONLINE / LAST SEEN
     ===================================================== */
-
-    function formatLastSeen(value) {
-        if (!value) return "";
-
-        const date = new Date(value);
-
-        if (Number.isNaN(date.getTime())) {
-            return "";
-        }
-
-        const seconds = Math.max(
-            0,
-            Math.floor((Date.now() - date.getTime()) / 1000)
-        );
-
-        if (seconds < 60) {
-            return "Last seen just now";
-        }
-
-        const minutes = Math.floor(seconds / 60);
-
-        if (minutes < 60) {
-            return `Last seen ${minutes} min ago`;
-        }
-
-        const hours = Math.floor(minutes / 60);
-
-        if (hours < 24) {
-            return `Last seen ${hours} ${
-                hours === 1 ? "hour" : "hours"
-            } ago`;
-        }
-
-        const days = Math.floor(hours / 24);
-
-        if (days === 1) {
-            return "Last seen yesterday";
-        }
-
-        return `Last seen ${days} days ago`;
+function formatLastSeen(value) {
+    if (!value) {
+        return "Last seen time unavailable";
     }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return "Last seen time unavailable";
+    }
+
+    // Convert the timestamp to Indian Standard Time.
+    const time = date.toLocaleTimeString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+    }).toLowerCase();
+
+    const today = new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata"
+    });
+
+    const seenDate = date.toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata"
+    });
+
+    const yesterdayDate = new Date(
+        Date.now() - 24 * 60 * 60 * 1000
+    ).toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata"
+    });
+
+    if (seenDate === today) {
+        return `Last seen today at ${time}`;
+    }
+
+    if (seenDate === yesterdayDate) {
+        return `Last seen yesterday at ${time}`;
+    }
+
+    const dateText = date.toLocaleDateString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    });
+
+    return `Last seen on ${dateText} at ${time}`;
+}
 
     function updateCouplePartnerStatus(isOnline, lastSeen) {
         const statusElement = $("couplePartnerStatus");
