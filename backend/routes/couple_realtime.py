@@ -1,10 +1,11 @@
 # =========================================================
 # UTANEXA — COUPLE REALTIME + LAST SEEN
-# backend/routes/couple_realtime.py
+# File: backend/routes/couple_realtime.py
 # =========================================================
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timezone
@@ -39,11 +40,11 @@ MAX_MESSAGE_LENGTH = 4000
 MAX_MEDIA_URL_LENGTH = 2048
 MAX_MEDIA_TYPE_LENGTH = 100
 MAX_MESSAGE_TYPE_LENGTH = 50
-# =========================================================
-# PRESENCE HEARTBEAT SETTINGS
-# =========================================================
 
+# Heartbeat configuration.
+# Frontend sends ping every 25 seconds.
 HEARTBEAT_TIMEOUT_SECONDS = 75
+HEARTBEAT_CHECK_INTERVAL_SECONDS = 15
 
 
 # =========================================================
@@ -71,7 +72,6 @@ def to_utc_iso(value):
 # =========================================================
 
 def get_user(db: Session, user_id: int):
-    """Find a user by internal database ID."""
     return (
         db.query(User)
         .filter(User.id == user_id)
@@ -80,7 +80,6 @@ def get_user(db: Session, user_id: int):
 
 
 def get_user_by_public_id(db: Session, public_user_id: str):
-    """Find a user by public ID such as u_fqrfx8zd."""
     if not public_user_id:
         return None
 
@@ -118,8 +117,6 @@ def get_or_create_presence(db: Session, user_id: int):
         except Exception:
             db.rollback()
 
-            # Handle a concurrent insert without exposing
-            # database details to the WebSocket client.
             presence = (
                 db.query(CouplePresence)
                 .filter(CouplePresence.user_id == user_id)
@@ -167,7 +164,7 @@ def get_presence_payload(db: Session, user_id: int):
         .first()
     )
 
-    # Live connections determine the runtime online status.
+    # Runtime connections are the source of online truth.
     is_online = couple_manager.is_online(user_id)
 
     if is_online:
@@ -184,6 +181,57 @@ def get_presence_payload(db: Session, user_id: int):
             else None
         ),
     }
+
+
+# =========================================================
+# HEARTBEAT MONITOR
+# =========================================================
+
+async def monitor_heartbeat(
+    websocket: WebSocket,
+    user_id: int,
+):
+    """
+    Monitor heartbeat for this WebSocket.
+
+    If no heartbeat arrives within the timeout, close this
+    socket so the normal disconnect cleanup can run.
+    """
+    try:
+        while True:
+            await asyncio.sleep(
+                HEARTBEAT_CHECK_INTERVAL_SECONDS
+            )
+
+            age = couple_manager.heartbeat_age(websocket)
+
+            # Connection may already have been removed.
+            if age is None:
+                return
+
+            if age >= HEARTBEAT_TIMEOUT_SECONDS:
+                logger.info(
+                    "Couple heartbeat timed out for user %s",
+                    user_id,
+                )
+
+                try:
+                    await websocket.close(
+                        code=1001,
+                        reason="Heartbeat timeout",
+                    )
+                except Exception:
+                    pass
+
+                return
+
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception(
+            "Couple heartbeat monitor failed for user %s",
+            user_id,
+        )
 
 
 # =========================================================
@@ -212,10 +260,11 @@ async def couple_realtime(
     partner = None
     room = None
     connected = False
+    heartbeat_task = None
 
     try:
         # -------------------------------------------------
-        # BASIC INPUT VALIDATION
+        # INPUT VALIDATION
         # -------------------------------------------------
         partner_user_id = partner_user_id.strip()
 
@@ -259,16 +308,12 @@ async def couple_realtime(
 
         # -------------------------------------------------
         # PARTNER LOOKUP
-        # Public ID: u_fqrfx8zd
-        # Internal DB ID remains an integer.
         # -------------------------------------------------
         partner = get_user_by_public_id(
             db=db,
             public_user_id=partner_user_id,
         )
 
-        # Backward compatibility for URLs that use an
-        # internal numeric database ID.
         if partner is None and partner_user_id.isdigit():
             partner = get_user(
                 db=db,
@@ -312,6 +357,14 @@ async def couple_realtime(
             db=db,
             user_id=current_user.id,
             room_id=room.id,
+        )
+
+        # Start heartbeat monitor after registration.
+        heartbeat_task = asyncio.create_task(
+            monitor_heartbeat(
+                websocket=websocket,
+                user_id=current_user.id,
+            )
         )
 
         partner_presence = get_presence_payload(
@@ -381,17 +434,11 @@ async def couple_realtime(
             try:
                 data = json.loads(raw_data)
             except (json.JSONDecodeError, TypeError):
-                await send_error(
-                    websocket,
-                    "Invalid JSON",
-                )
+                await send_error(websocket, "Invalid JSON")
                 continue
 
             if not isinstance(data, dict):
-                await send_error(
-                    websocket,
-                    "Invalid event",
-                )
+                await send_error(websocket, "Invalid event")
                 continue
 
             event_type = data.get("type")
@@ -440,10 +487,7 @@ async def couple_realtime(
                 content = data.get("content")
                 media_url = data.get("media_url")
                 media_type = data.get("media_type")
-                message_type = data.get(
-                    "message_type",
-                    "text",
-                )
+                message_type = data.get("message_type", "text")
                 reply_to_message_id = data.get(
                     "reply_to_message_id"
                 )
@@ -524,8 +568,6 @@ async def couple_realtime(
                         })
                         continue
 
-                # Validate reply ID before passing it to
-                # the message service.
                 if reply_to_message_id is not None:
                     try:
                         reply_to_message_id = int(
@@ -672,9 +714,11 @@ async def couple_realtime(
                 continue
 
             # ---------------------------------------------
-            # PING
+            # PING — HEARTBEAT
             # ---------------------------------------------
             if event_type == "ping":
+                await couple_manager.touch(websocket)
+
                 await websocket.send_json({
                     "type": "pong",
                     "timestamp": utc_now_iso(),
@@ -687,18 +731,25 @@ async def couple_realtime(
             )
 
     except WebSocketDisconnect:
-        logger.info(
-            "Couple WebSocket disconnected."
-        )
+        logger.info("Couple WebSocket disconnected.")
 
     except Exception:
-        # Do not expose session tokens, message contents,
-        # database URLs, or internal errors to clients.
         logger.exception(
             "Couple WebSocket processing failed."
         )
 
     finally:
+        # Stop the heartbeat monitor first.
+        if heartbeat_task is not None:
+            heartbeat_task.cancel()
+
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                pass
+
         if current_user is not None and connected:
             try:
                 await couple_manager.disconnect(
@@ -706,11 +757,8 @@ async def couple_realtime(
                     websocket=websocket,
                 )
 
-                # A user may have several active connections.
-                # Only mark offline after the final connection.
-                if not couple_manager.is_online(
-                    current_user.id
-                ):
+                # Only mark offline when the last connection ends.
+                if not couple_manager.is_online(current_user.id):
                     save_user_offline(
                         db=db,
                         user_id=current_user.id,
@@ -731,9 +779,7 @@ async def couple_realtime(
                             user_id=current_user.id,
                             is_online=False,
                             last_seen=(
-                                to_utc_iso(
-                                    presence.last_seen_at
-                                )
+                                to_utc_iso(presence.last_seen_at)
                                 if presence
                                 else utc_now_iso()
                             ),
