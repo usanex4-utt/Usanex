@@ -111,7 +111,13 @@ class User(Base):
         DateTime,
         nullable=False,
         default=utcnow,
-        onupdate=utcnow,
+        onupdate=utcnow, 
+    )
+    
+    last_seen_at = Column(
+        DateTime,
+        nullable=True,
+        index=True,
     )
 
     is_active = Column(
