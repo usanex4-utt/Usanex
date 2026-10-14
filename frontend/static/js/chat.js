@@ -1,20 +1,21 @@
 /* =========================================================
    UTANEXA — CHAT ENGINE
    File: frontend/static/js/chat.js
-   Version: 6
+   Version: 7
 
    Features:
    - Existing authentication and chat API integration
    - Text messages
    - Image attachment and camera
    - Emoji picker and searchable emojis
-   - Speech-to-text where browser supports it
+   - Speech-to-text
    - Voice message recording UI
    - Couple Chat navigation
    - Call option UI
    - Message search
    - Image viewer
    - Responsive mobile interaction
+   - Online status and accurate IST last-seen display
 
    Note:
    Real-time delivery, GIF provider integration, and
@@ -38,6 +39,8 @@
     const MAX_IMAGE_SIZE = 25 * 1024 * 1024;
     const IMAGE_COMPRESS_THRESHOLD = 2 * 1024 * 1024;
     const MAX_MESSAGE_LENGTH = 10000;
+
+    const TIME_ZONE = "Asia/Kolkata";
 
     const state = {
         currentUser: null,
@@ -84,11 +87,15 @@
     }
 
     function show(element) {
-        if (element) element.hidden = false;
+        if (element) {
+            element.hidden = false;
+        }
     }
 
     function hide(element) {
-        if (element) element.hidden = true;
+        if (element) {
+            element.hidden = true;
+        }
     }
 
     function setText(element, value) {
@@ -102,7 +109,9 @@
     }
 
     function getUserId(user) {
-        if (!user || typeof user !== "object") return "";
+        if (!user || typeof user !== "object") {
+            return "";
+        }
 
         return safeString(
             user.user_id ??
@@ -128,7 +137,9 @@
     }
 
     function getAvatarUrl(user) {
-        if (!user || typeof user !== "object") return "";
+        if (!user || typeof user !== "object") {
+            return "";
+        }
 
         return safeString(
             user.profile_photo ??
@@ -140,7 +151,9 @@
     }
 
     function getCurrentPageUserId() {
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(
+            window.location.search
+        );
 
         return (
             params.get("user_id") ||
@@ -149,6 +162,172 @@
             params.get("id") ||
             ""
         );
+    }
+
+    /* =====================================================
+       DATE AND TIME HELPERS
+    ===================================================== */
+
+    function parseDate(value) {
+        if (value == null || value === "") {
+            return null;
+        }
+
+        let date;
+
+        if (value instanceof Date) {
+            date = new Date(value.getTime());
+        } else if (typeof value === "number") {
+            date = new Date(value);
+        } else {
+            const text = String(value).trim();
+
+            if (!text) {
+                return null;
+            }
+
+            /*
+             * If the backend returns an ISO timestamp without
+             * a timezone, interpret it as UTC.
+             *
+             * Recommended backend format:
+             * 2026-10-14T15:10:00Z
+             *
+             * If the backend returns an explicit +05:30
+             * offset, that offset is respected automatically.
+             */
+            const hasTimezone =
+                /(?:Z|[+-]\d{2}:\d{2})$/i.test(text);
+
+            const normalized =
+                !hasTimezone &&
+                /^\d{4}-\d{2}-\d{2}T/.test(text)
+                    ? `${text}Z`
+                    : text;
+
+            date = new Date(normalized);
+        }
+
+        if (Number.isNaN(date.getTime())) {
+            return null;
+        }
+
+        return date;
+    }
+
+    function getISTDateParts(date) {
+        const parts = new Intl.DateTimeFormat("en-GB", {
+            timeZone: TIME_ZONE,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }).formatToParts(date);
+
+        const result = {};
+
+        for (const part of parts) {
+            if (part.type !== "literal") {
+                result[part.type] = part.value;
+            }
+        }
+
+        return {
+            year: Number(result.year),
+            month: Number(result.month),
+            day: Number(result.day)
+        };
+    }
+
+    function getISTClockParts(date) {
+        const parts = new Intl.DateTimeFormat("en-IN", {
+            timeZone: TIME_ZONE,
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+        }).formatToParts(date);
+
+        const result = {};
+
+        for (const part of parts) {
+            if (part.type !== "literal") {
+                result[part.type] = part.value;
+            }
+        }
+
+        let hour = result.hour || "12";
+        let minute = result.minute || "00";
+        let period = (result.dayPeriod || "").toLowerCase();
+
+        if (period === "am") {
+            period = "am";
+        } else if (period === "pm") {
+            period = "pm";
+        }
+
+        hour = String(hour).replace(/[^\d]/g, "");
+        minute = String(minute).replace(/[^\d]/g, "");
+
+        return {
+            hour: hour || "12",
+            minute: (minute || "00").padStart(2, "0"),
+            period
+        };
+    }
+
+    function formatISTTime(date) {
+        if (!(date instanceof Date)) {
+            return "";
+        }
+
+        const parts = getISTClockParts(date);
+
+        return `${parts.hour}:${parts.minute} ${parts.period}`.trim();
+    }
+
+    function getISTCalendarDayNumber(date) {
+        const parts = getISTDateParts(date);
+
+        return Math.floor(
+            Date.UTC(
+                parts.year,
+                parts.month - 1,
+                parts.day
+            ) / 86400000
+        );
+    }
+
+    function formatISTDate(date) {
+        return new Intl.DateTimeFormat("en-IN", {
+            timeZone: TIME_ZONE,
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }).format(date);
+    }
+
+    function formatLastSeen(value) {
+        const date = parseDate(value);
+
+        if (!date) {
+            return "Offline";
+        }
+
+        const now = new Date();
+
+        const todayNumber = getISTCalendarDayNumber(now);
+        const seenNumber = getISTCalendarDayNumber(date);
+
+        const time = formatISTTime(date);
+
+        if (seenNumber === todayNumber) {
+            return `Last seen today at ${time}`;
+        }
+
+        if (seenNumber === todayNumber - 1) {
+            return `Last seen yesterday at ${time}`;
+        }
+
+        return `Last seen on ${formatISTDate(date)} at ${time}`;
     }
 
     /* =====================================================
@@ -166,7 +345,10 @@
 
         if (response.status === 401) {
             window.location.href = "/login";
-            throw new Error("Your session has expired. Please log in again.");
+
+            throw new Error(
+                "Your session has expired. Please log in again."
+            );
         }
 
         return response;
@@ -178,10 +360,13 @@
         if (!response.ok) {
             const message = await readErrorMessage(response);
 
-            throw new Error(message || `Request failed (${response.status})`);
+            throw new Error(
+                message || `Request failed (${response.status})`
+            );
         }
 
-        const contentType = response.headers.get("content-type") || "";
+        const contentType =
+            response.headers.get("content-type") || "";
 
         if (!contentType.includes("application/json")) {
             return {};
@@ -218,6 +403,7 @@
         }
 
         setText(element, message);
+
         show(element);
 
         clearTimeout(state.toastTimer);
@@ -243,7 +429,11 @@
 
             return state.currentUser;
         } catch (error) {
-            console.error("Could not load current user:", error);
+            console.error(
+                "Could not load current user:",
+                error
+            );
+
             return null;
         }
     }
@@ -251,16 +441,36 @@
     async function loadSelectedUser(userId) {
         if (!userId) {
             state.selectedUser = null;
+            state.selectedUserId = null;
+
             showEmptyConversation(true);
-            setText($("selectedName"), "Select a conversation");
-            setText($("selectedStatus"), "No conversation selected");
+
+            setText(
+                $("selectedName"),
+                "Select a conversation"
+            );
+
+            setText(
+                $("selectedStatus"),
+                "No conversation selected"
+            );
+
+            const avatar = $("selectedAvatar");
+
+            if (avatar) {
+                avatar.removeAttribute("src");
+                avatar.alt = "";
+            }
+
             return null;
         }
 
         state.selectedUserId = userId;
 
         try {
-            const data = await requestJSON(API.profile(userId));
+            const data = await requestJSON(
+                API.profile(userId)
+            );
 
             state.selectedUser =
                 data.user ||
@@ -271,7 +481,10 @@
 
             return state.selectedUser;
         } catch (error) {
-            console.error("Could not load chat profile:", error);
+            console.error(
+                "Could not load chat profile:",
+                error
+            );
 
             state.selectedUser = {
                 user_id: userId,
@@ -284,63 +497,103 @@
         }
     }
 
-    function updateHeader() {
-    const user = state.selectedUser;
+    /* =====================================================
+       ONLINE STATUS AND LAST SEEN
+    ===================================================== */
 
-    if (!user) return;
-
-    setText($("selectedName"), getDisplayName(user));
-
-    const statusElement = $("selectedStatus");
-
-    const online =
-        user.is_online === true ||
-        user.online === true ||
-        String(user.status || "").toLowerCase() === "online";
-
-    if (statusElement) {
-        if (online) {
-            statusElement.textContent = "Online";
-            statusElement.classList.add("online-status");
-        } else {
-            const lastSeen =
-                user.last_seen_at ??
-                user.last_seen ??
-                user.last_seen_time ??
-                user.last_active_at ??
-                null;
-
-            statusElement.textContent = formatLastSeen(lastSeen);
-            statusElement.classList.remove("online-status");
+    function isUserOnline(user) {
+        if (!user || typeof user !== "object") {
+            return false;
         }
+
+        if (user.is_online === true || user.online === true) {
+            return true;
+        }
+
+        const status = String(
+            user.status ??
+            user.presence ??
+            ""
+        ).toLowerCase().trim();
+
+        return [
+            "online",
+            "active",
+            "available"
+        ].includes(status);
     }
 
-    const avatar = $("selectedAvatar");
-    const avatarUrl = getAvatarUrl(user);
+    function getLastSeenValue(user) {
+        if (!user || typeof user !== "object") {
+            return null;
+        }
 
-    if (avatar && avatarUrl) {
-        avatar.src = avatarUrl;
+        return (
+            user.last_seen_at ??
+            user.last_seen ??
+            user.last_seen_time ??
+            user.last_active_at ??
+            user.last_activity_at ??
+            user.last_online_at ??
+            user.last_activity ??
+            null
+        );
     }
 
-    if (avatar) {
-        avatar.onerror = () => {
-            avatar.onerror = null;
-            avatar.removeAttribute("src");
+    function updateHeader() {
+        const user = state.selectedUser;
+
+        if (!user) {
+            return;
+        }
+
+        setText(
+            $("selectedName"),
+            getDisplayName(user)
+        );
+
+        const statusElement = $("selectedStatus");
+        const online = isUserOnline(user);
+
+        if (statusElement) {
+            if (online) {
+                statusElement.textContent = "Online";
+                statusElement.classList.add("online-status");
+                statusElement.dataset.presence = "online";
+            } else {
+                const lastSeen = getLastSeenValue(user);
+
+                statusElement.textContent =
+                    formatLastSeen(lastSeen);
+
+                statusElement.classList.remove("online-status");
+
+                statusElement.dataset.presence = "offline";
+            }
+        }
+
+        /*
+         * The green online dot has intentionally been removed.
+         * Presence is shown as text beside the user's name.
+         */
+
+        const avatar = $("selectedAvatar");
+        const avatarUrl = getAvatarUrl(user);
+
+        if (avatar) {
+            if (avatarUrl) {
+                avatar.src = avatarUrl;
+            } else {
+                avatar.removeAttribute("src");
+            }
+
             avatar.alt = getDisplayName(user);
-        };
-    }
-    }
 
-        const onlineDot = $("headerOnlineDot");
-
-        if (onlineDot) {
-            const online =
-                user.is_online === true ||
-                user.online === true ||
-                user.status === "online";
-
-            onlineDot.classList.toggle("online", online);
-            onlineDot.setAttribute("aria-label", online ? "Online" : "Offline");
+            avatar.onerror = () => {
+                avatar.onerror = null;
+                avatar.removeAttribute("src");
+                avatar.alt = getDisplayName(user);
+            };
         }
     }
 
@@ -349,19 +602,33 @@
     ===================================================== */
 
     function normalizeMessages(data) {
-        if (Array.isArray(data)) return data;
+        if (Array.isArray(data)) {
+            return data;
+        }
 
-        if (!data || typeof data !== "object") return [];
+        if (!data || typeof data !== "object") {
+            return [];
+        }
 
-        if (Array.isArray(data.messages)) return data.messages;
-        if (Array.isArray(data.items)) return data.items;
-        if (Array.isArray(data.results)) return data.results;
+        if (Array.isArray(data.messages)) {
+            return data.messages;
+        }
+
+        if (Array.isArray(data.items)) {
+            return data.items;
+        }
+
+        if (Array.isArray(data.results)) {
+            return data.results;
+        }
 
         return [];
     }
 
     async function loadMessages() {
-        if (!state.selectedUserId || state.loading) return;
+        if (!state.selectedUserId || state.loading) {
+            return;
+        }
 
         state.loading = true;
 
@@ -373,10 +640,17 @@
             state.messages = normalizeMessages(data);
 
             renderMessages();
-            showEmptyConversation(state.messages.length === 0);
+
+            showEmptyConversation(
+                state.messages.length === 0
+            );
+
             scrollMessages(false);
         } catch (error) {
-            console.error("Could not load messages:", error);
+            console.error(
+                "Could not load messages:",
+                error
+            );
 
             toast("Messages could not be loaded.");
         } finally {
@@ -428,16 +702,11 @@
             message.time ??
             "";
 
-        if (!value) return null;
-
-        const date = new Date(value);
-
-        return Number.isNaN(date.getTime()) ? null : date;
+        return parseDate(value);
     }
 
     function isOwnMessage(message) {
         const senderId = getMessageSenderId(message);
-
         const currentId = getUserId(state.currentUser);
 
         return Boolean(
@@ -450,12 +719,11 @@
     function formatTime(message) {
         const date = getMessageDate(message);
 
-        if (!date) return "";
+        if (!date) {
+            return "";
+        }
 
-        return date.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit"
-        });
+        return formatISTTime(date);
     }
 
     /* =====================================================
@@ -465,7 +733,9 @@
     function renderMessages() {
         const container = $("messages");
 
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         const fragment = document.createDocumentFragment();
 
@@ -480,13 +750,16 @@
         for (const message of filtered) {
             const row = createMessageElement(message);
 
-            if (row) fragment.appendChild(row);
+            if (row) {
+                fragment.appendChild(row);
+            }
         }
 
         container.replaceChildren(fragment);
 
         showEmptyConversation(
-            filtered.length === 0 && !state.searchQuery
+            filtered.length === 0 &&
+            !state.searchQuery
         );
     }
 
@@ -497,7 +770,9 @@
 
         const own = isOwnMessage(message);
 
-        row.classList.add(own ? "sent" : "received");
+        row.classList.add(
+            own ? "sent" : "received"
+        );
 
         const bubble = document.createElement("div");
 
@@ -574,7 +849,9 @@
     function showEmptyConversation(empty) {
         const element = $("emptyConversation");
 
-        if (!element) return;
+        if (!element) {
+            return;
+        }
 
         element.hidden = !empty;
     }
@@ -582,7 +859,9 @@
     function scrollMessages(smooth = true) {
         const container = $("messages");
 
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         container.scrollTo({
             top: container.scrollHeight,
@@ -597,11 +876,15 @@
     async function sendMessage() {
         const input = $("messageInput");
 
-        if (!input || state.sending) return;
+        if (!input || state.sending) {
+            return;
+        }
 
         const content = input.value.trim();
 
-        if (!content) return;
+        if (!content) {
+            return;
+        }
 
         if (!state.selectedUserId) {
             toast("Please open a conversation first.");
@@ -617,11 +900,17 @@
 
         const sendButton = $("sendButton");
 
-        if (sendButton) sendButton.disabled = true;
+        if (sendButton) {
+            sendButton.disabled = true;
+        }
 
         const formData = new FormData();
 
-        formData.append("receiver_id", state.selectedUserId);
+        formData.append(
+            "receiver_id",
+            state.selectedUserId
+        );
+
         formData.append("content", content);
 
         try {
@@ -631,20 +920,32 @@
             });
 
             input.value = "";
+
             autoResizeInput();
 
             await loadMessages();
+
             scrollMessages(true);
         } catch (error) {
-            console.error("Message sending failed:", error);
+            console.error(
+                "Message sending failed:",
+                error
+            );
 
-            toast(error.message || "Message could not be sent.");
+            toast(
+                error.message ||
+                "Message could not be sent."
+            );
         } finally {
             state.sending = false;
 
-            if (sendButton) sendButton.disabled = false;
+            if (sendButton) {
+                sendButton.disabled = false;
+            }
 
-            input.focus({ preventScroll: true });
+            input.focus({
+                preventScroll: true
+            });
         }
     }
 
@@ -678,14 +979,14 @@
     function autoResizeInput() {
         const input = $("messageInput");
 
-        if (!input) return;
+        if (!input) {
+            return;
+        }
 
         input.style.height = "auto";
 
-        input.style.height = Math.min(
-            input.scrollHeight,
-            130
-        ) + "px";
+        input.style.height =
+            Math.min(input.scrollHeight, 130) + "px";
     }
 
     /* =====================================================
@@ -712,13 +1013,21 @@
 
             const ratio = Math.min(
                 1,
-                maxDimension / Math.max(bitmap.width, bitmap.height)
+                maxDimension /
+                    Math.max(bitmap.width, bitmap.height)
             );
 
             const canvas = document.createElement("canvas");
 
-            canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
-            canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+            canvas.width = Math.max(
+                1,
+                Math.round(bitmap.width * ratio)
+            );
+
+            canvas.height = Math.max(
+                1,
+                Math.round(bitmap.height * ratio)
+            );
 
             const context = canvas.getContext("2d", {
                 alpha: false
@@ -740,21 +1049,30 @@
             bitmap.close?.();
 
             const blob = await new Promise((resolve) => {
-                canvas.toBlob(resolve, "image/jpeg", 0.86);
+                canvas.toBlob(
+                    resolve,
+                    "image/jpeg",
+                    0.86
+                );
             });
 
             if (!blob || blob.size >= file.size) {
                 return file;
             }
 
-            const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+            const name =
+                file.name.replace(/\.[^.]+$/, "") + ".jpg";
 
             return new File([blob], name, {
                 type: "image/jpeg",
                 lastModified: Date.now()
             });
         } catch (error) {
-            console.warn("Image compression skipped:", error);
+            console.warn(
+                "Image compression skipped:",
+                error
+            );
+
             return file;
         }
     }
@@ -764,7 +1082,9 @@
     ===================================================== */
 
     async function sendImage(file) {
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         if (!state.selectedUserId) {
             toast("Please open a conversation first.");
@@ -777,7 +1097,10 @@
         }
 
         if (file.size > MAX_IMAGE_SIZE) {
-            toast("Image is too large. Maximum size is 25 MB.");
+            toast(
+                "Image is too large. Maximum size is 25 MB."
+            );
+
             return;
         }
 
@@ -788,7 +1111,11 @@
 
             const formData = new FormData();
 
-            formData.append("receiver_id", state.selectedUserId);
+            formData.append(
+                "receiver_id",
+                state.selectedUserId
+            );
+
             formData.append("content", "");
             formData.append("file", optimized);
 
@@ -798,13 +1125,20 @@
             });
 
             await loadMessages();
+
             scrollMessages(true);
 
             toast("Image sent.");
         } catch (error) {
-            console.error("Image sending failed:", error);
+            console.error(
+                "Image sending failed:",
+                error
+            );
 
-            toast(error.message || "Image could not be sent.");
+            toast(
+                error.message ||
+                "Image could not be sent."
+            );
         }
     }
 
@@ -818,7 +1152,9 @@
         });
 
         on($("fileInput"), "change", async (event) => {
-            const files = Array.from(event.target.files || []);
+            const files = Array.from(
+                event.target.files || []
+            );
 
             event.target.value = "";
 
@@ -852,7 +1188,9 @@
         const viewer = $("imageViewer");
         const image = $("viewerImage");
 
-        if (!viewer || !image || !src) return;
+        if (!viewer || !image || !src) {
+            return;
+        }
 
         image.src = src;
 
@@ -865,11 +1203,17 @@
 
         hide(viewer);
 
-        if (image) image.removeAttribute("src");
+        if (image) {
+            image.removeAttribute("src");
+        }
     }
 
     function setupImageViewer() {
-        on($("closeImageViewer"), "click", closeImageViewer);
+        on(
+            $("closeImageViewer"),
+            "click",
+            closeImageViewer
+        );
 
         on($("imageViewer"), "click", (event) => {
             if (event.target === $("imageViewer")) {
@@ -1040,7 +1384,11 @@
     function setupEmoji() {
         on($("emojiButton"), "click", toggleExpressionPanel);
 
-        on($("closeExpressionPanel"), "click", closeExpressionPanel);
+        on(
+            $("closeExpressionPanel"),
+            "click",
+            closeExpressionPanel
+        );
 
         on($("emojiTab"), "click", () => {
             switchExpressionTab("emoji");
@@ -1051,9 +1399,13 @@
         });
 
         on($("emojiCategories"), "click", (event) => {
-            const button = event.target.closest("[data-emoji-category]");
+            const button = event.target.closest(
+                "[data-emoji-category]"
+            );
 
-            if (!button) return;
+            if (!button) {
+                return;
+            }
 
             const category = button.dataset.emojiCategory;
 
@@ -1065,7 +1417,8 @@
                 .forEach((item) => {
                     item.classList.toggle(
                         "active",
-                        item.dataset.emojiCategory === state.activeEmojiCategory
+                        item.dataset.emojiCategory ===
+                            state.activeEmojiCategory
                     );
                 });
 
@@ -1075,7 +1428,9 @@
         on($("emojiGrid"), "click", (event) => {
             const button = event.target.closest("[data-emoji]");
 
-            if (!button) return;
+            if (!button) {
+                return;
+            }
 
             insertEmoji(button.dataset.emoji);
         });
@@ -1091,7 +1446,9 @@
         document.addEventListener("click", (event) => {
             const panel = $("expressionPanel");
 
-            if (!panel || panel.hidden) return;
+            if (!panel || panel.hidden) {
+                return;
+            }
 
             if (
                 panel.contains(event.target) ||
@@ -1107,7 +1464,9 @@
     function toggleExpressionPanel() {
         const panel = $("expressionPanel");
 
-        if (!panel) return;
+        if (!panel) {
+            return;
+        }
 
         if (!panel.hidden) {
             closeExpressionPanel();
@@ -1131,8 +1490,15 @@
         const emojiTab = $("emojiTab");
         const gifTab = $("gifTab");
 
-        emojiTab?.classList.toggle("active", tab === "emoji");
-        gifTab?.classList.toggle("active", tab === "gif");
+        emojiTab?.classList.toggle(
+            "active",
+            tab === "emoji"
+        );
+
+        gifTab?.classList.toggle(
+            "active",
+            tab === "gif"
+        );
 
         emojiTab?.setAttribute(
             "aria-selected",
@@ -1154,7 +1520,9 @@
             show(categories);
             hide(gifGrid);
 
-            if (search) search.placeholder = "Search emoji...";
+            if (search) {
+                search.placeholder = "Search emoji...";
+            }
 
             renderEmojiGrid();
         } else {
@@ -1162,7 +1530,9 @@
             hide(categories);
             show(gifGrid);
 
-            if (search) search.placeholder = "Search GIFs...";
+            if (search) {
+                search.placeholder = "Search GIFs...";
+            }
 
             renderGifPlaceholder();
         }
@@ -1171,19 +1541,25 @@
     function renderEmojiGrid() {
         const grid = $("emojiGrid");
 
-        if (!grid) return;
+        if (!grid) {
+            return;
+        }
 
-        const query = ($("expressionSearch")?.value || "")
-            .trim()
-            .toLowerCase();
+        const query = (
+            $("expressionSearch")?.value || ""
+        ).trim().toLowerCase();
 
-        let emojis = EMOJI_DATA[state.activeEmojiCategory] || EMOJI_DATA.smileys;
+        let emojis =
+            EMOJI_DATA[state.activeEmojiCategory] ||
+            EMOJI_DATA.smileys;
 
         if (query) {
-            const allEmojis = Object.values(EMOJI_DATA).flat();
+            const allEmojis = Object.values(
+                EMOJI_DATA
+            ).flat();
 
-            emojis = [...new Set(allEmojis)].filter((emoji) =>
-                emoji.includes(query)
+            emojis = [...new Set(allEmojis)].filter(
+                (emoji) => emoji.includes(query)
             );
         }
 
@@ -1195,8 +1571,8 @@
             button.type = "button";
             button.className = "emoji-item";
             button.dataset.emoji = emoji;
-
             button.textContent = emoji;
+
             button.setAttribute("aria-label", emoji);
 
             fragment.appendChild(button);
@@ -1208,10 +1584,15 @@
     function insertEmoji(emoji) {
         const input = $("messageInput");
 
-        if (!input) return;
+        if (!input) {
+            return;
+        }
 
-        const start = input.selectionStart ?? input.value.length;
-        const end = input.selectionEnd ?? input.value.length;
+        const start =
+            input.selectionStart ?? input.value.length;
+
+        const end =
+            input.selectionEnd ?? input.value.length;
 
         input.value =
             input.value.slice(0, start) +
@@ -1220,7 +1601,10 @@
 
         const position = start + emoji.length;
 
-        input.focus({ preventScroll: true });
+        input.focus({
+            preventScroll: true
+        });
+
         input.setSelectionRange(position, position);
 
         autoResizeInput();
@@ -1229,7 +1613,9 @@
 
         state.recentEmojis = [
             emoji,
-            ...state.recentEmojis.filter((item) => item !== emoji)
+            ...state.recentEmojis.filter(
+                (item) => item !== emoji
+            )
         ].slice(0, 20);
     }
 
@@ -1240,7 +1626,9 @@
     function renderGifPlaceholder() {
         const grid = $("gifGrid");
 
-        if (!grid) return;
+        if (!grid) {
+            return;
+        }
 
         grid.replaceChildren();
 
@@ -1266,11 +1654,15 @@
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
 
-        if (!button) return;
+        if (!button) {
+            return;
+        }
 
         if (!SpeechRecognition) {
-            button.addEventListener("click", () => {
-                toast("Speech-to-text is not supported in this browser.");
+            on(button, "click", () => {
+                toast(
+                    "Speech-to-text is not supported in this browser."
+                );
             });
 
             return;
@@ -1305,7 +1697,8 @@
                 const result = event.results[index];
 
                 if (result.isFinal) {
-                    finalTranscript += result[0].transcript + " ";
+                    finalTranscript +=
+                        result[0].transcript + " ";
                 } else {
                     interim += result[0].transcript;
                 }
@@ -1313,17 +1706,22 @@
 
             const input = $("messageInput");
 
-            if (!input) return;
+            if (!input) {
+                return;
+            }
 
-            const combined = (finalTranscript + interim).trim();
-
-            input.value = combined;
+            input.value = (
+                finalTranscript + interim
+            ).trim();
 
             autoResizeInput();
         };
 
         recognition.onerror = (event) => {
-            console.warn("Speech recognition error:", event.error);
+            console.warn(
+                "Speech recognition error:",
+                event.error
+            );
 
             if (event.error === "not-allowed") {
                 toast("Please allow microphone access.");
@@ -1353,7 +1751,10 @@
                 recognition.start();
             } catch (error) {
                 console.warn(error);
-                toast("Unable to start speech recognition.");
+
+                toast(
+                    "Unable to start speech recognition."
+                );
             }
         });
     }
@@ -1365,7 +1766,9 @@
     function setupVoiceRecording() {
         const sendButton = $("sendButton");
 
-        if (!sendButton) return;
+        if (!sendButton) {
+            return;
+        }
 
         on(sendButton, "contextmenu", (event) => {
             event.preventDefault();
@@ -1373,15 +1776,13 @@
         });
 
         let holdTimer = null;
-        let holdStarted = false;
 
         on(sendButton, "pointerdown", (event) => {
-            if (event.pointerType === "mouse") return;
-
-            holdStarted = false;
+            if (event.pointerType === "mouse") {
+                return;
+            }
 
             holdTimer = setTimeout(() => {
-                holdStarted = true;
                 startVoiceRecording();
             }, 500);
         });
@@ -1394,22 +1795,37 @@
         on(sendButton, "pointercancel", stopHold);
         on(sendButton, "pointerleave", stopHold);
 
-        on($("cancelRecordingButton"), "click", cancelVoiceRecording);
-        on($("sendRecordingButton"), "click", sendVoiceRecording);
+        on(
+            $("cancelRecordingButton"),
+            "click",
+            cancelVoiceRecording
+        );
+
+        on(
+            $("sendRecordingButton"),
+            "click",
+            sendVoiceRecording
+        );
     }
 
     async function startVoiceRecording() {
-        if (state.mediaRecorder) return;
+        if (state.mediaRecorder) {
+            return;
+        }
 
         if (!navigator.mediaDevices?.getUserMedia) {
-            toast("Voice recording is not supported by this browser.");
+            toast(
+                "Voice recording is not supported by this browser."
+            );
+
             return;
         }
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true
-            });
+            const stream =
+                await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                });
 
             state.audioStream = stream;
             state.audioChunks = [];
@@ -1418,12 +1834,17 @@
 
             if (
                 window.MediaRecorder &&
-                MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+                MediaRecorder.isTypeSupported(
+                    "audio/webm;codecs=opus"
+                )
             ) {
                 options.mimeType = "audio/webm;codecs=opus";
             }
 
-            state.mediaRecorder = new MediaRecorder(stream, options);
+            state.mediaRecorder = new MediaRecorder(
+                stream,
+                options
+            );
 
             state.mediaRecorder.ondataavailable = (event) => {
                 if (event.data?.size) {
@@ -1438,7 +1859,9 @@
 
                 state.recordedAudioBlob = new Blob(
                     state.audioChunks,
-                    { type: mimeType }
+                    {
+                        type: mimeType
+                    }
                 );
 
                 stopAudioStream();
@@ -1459,7 +1882,9 @@
                 500
             );
 
-            toast("Recording started. Tap Send to finish.");
+            toast(
+                "Recording started. Tap Send to finish."
+            );
         } catch (error) {
             console.error("Microphone error:", error);
 
@@ -1470,11 +1895,18 @@
     function updateRecordingTimer() {
         const elapsed = Math.max(
             0,
-            Math.floor((Date.now() - state.recordingStartedAt) / 1000)
+            Math.floor(
+                (Date.now() - state.recordingStartedAt) / 1000
+            )
         );
 
-        const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
-        const seconds = String(elapsed % 60).padStart(2, "0");
+        const minutes = String(
+            Math.floor(elapsed / 60)
+        ).padStart(2, "0");
+
+        const seconds = String(
+            elapsed % 60
+        ).padStart(2, "0");
 
         setText(
             $("recordingTime"),
@@ -1484,16 +1916,23 @@
 
     function stopAudioStream() {
         if (state.audioStream) {
-            state.audioStream.getTracks().forEach((track) => track.stop());
+            state.audioStream
+                .getTracks()
+                .forEach((track) => track.stop());
+
             state.audioStream = null;
         }
 
         clearInterval(state.recordingTimer);
+
         state.recordingTimer = null;
     }
 
     function cancelVoiceRecording() {
-        if (state.mediaRecorder?.state !== "inactive") {
+        if (
+            state.mediaRecorder &&
+            state.mediaRecorder.state !== "inactive"
+        ) {
             try {
                 state.mediaRecorder.stop();
             } catch (error) {
@@ -1517,10 +1956,11 @@
         }
 
         /*
-         * MediaRecorder fires its final data and stop events
-         * asynchronously. Wait briefly for the final Blob.
+         * Wait for MediaRecorder to emit its final data.
          */
-        await new Promise((resolve) => setTimeout(resolve, 250));
+        await new Promise((resolve) => {
+            setTimeout(resolve, 350);
+        });
 
         const blob = state.recordedAudioBlob;
 
@@ -1536,9 +1976,18 @@
 
         const formData = new FormData();
 
-        formData.append("receiver_id", state.selectedUserId);
+        formData.append(
+            "receiver_id",
+            state.selectedUserId
+        );
+
         formData.append("content", "");
-        formData.append("file", blob, "voice-message.webm");
+
+        formData.append(
+            "file",
+            blob,
+            "voice-message.webm"
+        );
 
         try {
             await requestJSON(API.send, {
@@ -1555,7 +2004,10 @@
 
             toast("Voice message uploaded.");
         } catch (error) {
-            console.error("Voice message upload failed:", error);
+            console.error(
+                "Voice message upload failed:",
+                error
+            );
 
             toast(
                 "Voice upload failed. Your server must support audio attachments."
@@ -1572,7 +2024,10 @@
     function setupNavigation() {
         on($("coupleChatButton"), "click", () => {
             if (!state.selectedUserId) {
-                toast("Please select a conversation first.");
+                toast(
+                    "Please select a conversation first."
+                );
+
                 return;
             }
 
@@ -1584,7 +2039,8 @@
                 avatar: getAvatarUrl(user)
             });
 
-            window.location.href = `/couple-chat?${params.toString()}`;
+            window.location.href =
+                `/couple-chat?${params.toString()}`;
         });
 
         on($("backButton"), "click", () => {
@@ -1592,19 +2048,25 @@
         });
 
         on($("selectedAvatarButton"), "click", () => {
-            if (!state.selectedUserId) return;
+            if (!state.selectedUserId) {
+                return;
+            }
 
             window.location.href =
-                `/profile?user_id=${encodeURIComponent(state.selectedUserId)}`;
+                `/profile?user_id=${encodeURIComponent(
+                    state.selectedUserId
+                )}`;
         });
 
-        document.querySelectorAll(".bottom-nav button[data-page]")
+        document
+            .querySelectorAll(".bottom-nav button[data-page]")
             .forEach((button) => {
                 on(button, "click", () => {
                     const page = button.dataset.page;
 
                     if (page) {
-                        window.location.href = `/${encodeURIComponent(page)}`;
+                        window.location.href =
+                            `/${encodeURIComponent(page)}`;
                     }
                 });
             });
@@ -1617,7 +2079,10 @@
     function setupCallOptions() {
         on($("voiceCallButton"), "click", () => {
             if (!state.selectedUserId) {
-                toast("Please select a conversation first.");
+                toast(
+                    "Please select a conversation first."
+                );
+
                 return;
             }
 
@@ -1666,11 +2131,17 @@
             hide($("conversationMenuModal"));
         });
 
-        on($("conversationMenuModal"), "click", (event) => {
-            if (event.target === $("conversationMenuModal")) {
-                hide($("conversationMenuModal"));
+        on(
+            $("conversationMenuModal"),
+            "click",
+            (event) => {
+                if (
+                    event.target === $("conversationMenuModal")
+                ) {
+                    hide($("conversationMenuModal"));
+                }
             }
-        });
+        );
 
         on($("menuSearchMessages"), "click", () => {
             hide($("conversationMenuModal"));
@@ -1684,7 +2155,8 @@
             hide($("conversationMenuModal"));
 
             const hasMedia = state.messages.some(
-                (message) => Boolean(getMessageImage(message))
+                (message) =>
+                    Boolean(getMessageImage(message))
             );
 
             toast(
@@ -1736,8 +2208,11 @@
         on(document, "keydown", (event) => {
             if (event.key === "Escape") {
                 closeExpressionPanel();
+
                 hide($("callOptionsModal"));
+
                 hide($("conversationMenuModal"));
+
                 closeImageViewer();
             }
         });
@@ -1765,22 +2240,32 @@
 
         const userId = getCurrentPageUserId();
 
-        if (!userId) {
-            await loadCurrentUser();
+        await loadCurrentUser();
 
-            setText($("selectedName"), "Select a conversation");
-            setText($("selectedStatus"), "Open a chat from your connections");
+        if (!userId) {
+            setText(
+                $("selectedName"),
+                "Select a conversation"
+            );
+
+            setText(
+                $("selectedStatus"),
+                "Open a chat from your connections"
+            );
 
             showEmptyConversation(true);
 
             return;
         }
 
-        await loadCurrentUser();
         await loadSelectedUser(userId);
+
         await loadMessages();
     }
 
-    document.addEventListener("DOMContentLoaded", initChatPage);
+    document.addEventListener(
+        "DOMContentLoaded",
+        initChatPage
+    );
 
 })();
