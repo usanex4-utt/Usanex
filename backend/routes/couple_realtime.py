@@ -39,6 +39,11 @@ MAX_MESSAGE_LENGTH = 4000
 MAX_MEDIA_URL_LENGTH = 2048
 MAX_MEDIA_TYPE_LENGTH = 100
 MAX_MESSAGE_TYPE_LENGTH = 50
+# =========================================================
+# PRESENCE HEARTBEAT SETTINGS
+# =========================================================
+
+HEARTBEAT_TIMEOUT_SECONDS = 75
 
 
 # =========================================================
