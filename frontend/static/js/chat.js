@@ -285,39 +285,51 @@
     }
 
     function updateHeader() {
-        const user = state.selectedUser;
+    const user = state.selectedUser;
 
-        if (!user) return;
+    if (!user) return;
 
-        setText($("selectedName"), getDisplayName(user));
+    setText($("selectedName"), getDisplayName(user));
 
-        const statusElement = $("selectedStatus");
+    const statusElement = $("selectedStatus");
 
-        if (statusElement) {
-            const online =
-                user.is_online === true ||
-                user.online === true ||
-                user.status === "online";
+    const online =
+        user.is_online === true ||
+        user.online === true ||
+        String(user.status || "").toLowerCase() === "online";
 
-            statusElement.textContent = online ? "Online" : "UtaNexa Chat";
+    if (statusElement) {
+        if (online) {
+            statusElement.textContent = "Online";
+            statusElement.classList.add("online-status");
+        } else {
+            const lastSeen =
+                user.last_seen_at ??
+                user.last_seen ??
+                user.last_seen_time ??
+                user.last_active_at ??
+                null;
 
-            statusElement.classList.toggle("online-status", online);
+            statusElement.textContent = formatLastSeen(lastSeen);
+            statusElement.classList.remove("online-status");
         }
+    }
 
-        const avatar = $("selectedAvatar");
-        const avatarUrl = getAvatarUrl(user);
+    const avatar = $("selectedAvatar");
+    const avatarUrl = getAvatarUrl(user);
 
-        if (avatar && avatarUrl) {
-            avatar.src = avatarUrl;
-        }
+    if (avatar && avatarUrl) {
+        avatar.src = avatarUrl;
+    }
 
-        if (avatar) {
-            avatar.onerror = () => {
-                avatar.onerror = null;
-                avatar.removeAttribute("src");
-                avatar.alt = getDisplayName(user);
-            };
-        }
+    if (avatar) {
+        avatar.onerror = () => {
+            avatar.onerror = null;
+            avatar.removeAttribute("src");
+            avatar.alt = getDisplayName(user);
+        };
+    }
+    }
 
         const onlineDot = $("headerOnlineDot");
 
