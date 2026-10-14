@@ -751,6 +751,520 @@ function formatLastSeen(value) {
         }
     }
 
+   // ======================================================
+// UTANEXA AI — 60 AUTOMATIC COUPLE CHAT MOODS
+// ======================================================
+
+const UTANEXA_AI_MOODS = {
+    deep_love: {
+        keywords: ["deep love", "soulmate", "meri jaan", "jaan ho",
+            "forever", "hamesha tumhara", "dil se pyaar"],
+        colors: ["#321044", "#d63384", "#ff75b5"],
+        emoji: "❤️"
+    },
+
+    romantic: {
+        keywords: ["romantic", "romance", "kiss", "pyaar", "love you",
+            "i love you", "jaan", "baby", "darling"],
+        colors: ["#351044", "#c21870", "#ff8fb8"],
+        emoji: "💕"
+    },
+
+    first_love: {
+        keywords: ["first love", "pehli baar pyaar", "pehla pyaar"],
+        colors: ["#44204c", "#ed8cb8", "#ffc5de"],
+        emoji: "🥰"
+    },
+
+    crush: {
+        keywords: ["crush", "pasand ho", "like you", "tum achhe lagte"],
+        colors: ["#49304e", "#ef75ae", "#ffbad7"],
+        emoji: "💘"
+    },
+
+    flirting: {
+        keywords: ["flirt", "hot lag rahe", "handsome", "beautiful",
+            "cute lag", "kya ada"],
+        colors: ["#42113b", "#d946a6", "#ffa0d0"],
+        emoji: "😉"
+    },
+
+    shy_love: {
+        keywords: ["sharma", "sharam aa", "blush", "laaj", "shy"],
+        colors: ["#563047", "#e99ab8", "#ffd0dc"],
+        emoji: "☺️"
+    },
+
+    passionate_love: {
+        keywords: ["passionate", "beinteha pyaar", "deewana",
+            "deewani", "pagal hoon tumhare"],
+        colors: ["#421020", "#c62850", "#ff7185"],
+        emoji: "🔥"
+    },
+
+    soulmate: {
+        keywords: ["soulmate", "meri duniya", "sirf tum",
+            "ek dusre ke liye", "made for each other"],
+        colors: ["#29204f", "#8966cb", "#ff9dcf"],
+        emoji: "💞"
+    },
+
+    forever_together: {
+        keywords: ["forever together", "saath rahenge",
+            "zindagi bhar", "hamesha saath", "kabhi nahi chhodunga"],
+        colors: ["#27234f", "#745ac8", "#f4a6d7"],
+        emoji: "♾️"
+    },
+
+    confession: {
+        keywords: ["confess", "ek baat kahun", "i love you",
+            "pyaar karta hoon", "pyaar karti hoon"],
+        colors: ["#4c1c45", "#e05b9b", "#ffc2dc"],
+        emoji: "💌"
+    },
+
+    caring: {
+        keywords: ["khana khaya", "apna khayal", "care",
+            "dawai li", "aaram karna", "dhyan rakhna"],
+        colors: ["#183c50", "#468da7", "#f2a9cf"],
+        emoji: "🤗"
+    },
+
+    missing_you: {
+        keywords: ["miss you", "yaad aa rahi", "yaad aate",
+            "tumhari yaad", "miss kar raha", "miss kar rahi"],
+        colors: ["#182747", "#6655a6", "#d58abf"],
+        emoji: "🥺"
+    },
+
+    emotional_bond: {
+        keywords: ["samajhte ho mujhe", "mere liye ho",
+            "apnapan", "dil ka rishta", "connection"],
+        colors: ["#25334e", "#8069b5", "#e6a6cf"],
+        emoji: "🫂"
+    },
+
+    protective_love: {
+        keywords: ["safe raho", "tumhari fikr", "protect",
+            "tumhe kuch na ho", "main hoon na"],
+        colors: ["#20364c", "#5489a7", "#e5b1d1"],
+        emoji: "🛡️"
+    },
+
+    appreciation: {
+        keywords: ["proud of you", "tum best ho", "thank you",
+            "shukriya", "tum bahut achhe ho"],
+        colors: ["#34405a", "#8b79bc", "#ffc7db"],
+        emoji: "🌸"
+    },
+
+    gratitude: {
+        keywords: ["thankful", "grateful", "shukriya",
+            "thanks for everything", "ehsaan"],
+        colors: ["#284b59", "#75a7ad", "#e5c0da"],
+        emoji: "💝"
+    },
+
+    reassurance: {
+        keywords: ["bharosa rakho", "main saath hoon",
+            "sab theek hoga", "tension mat lo", "don't worry"],
+        colors: ["#233e57", "#678fb8", "#d6b9e8"],
+        emoji: "🫶"
+    },
+
+    comfort: {
+        keywords: ["ro mat", "main hoon na", "sab theek hoga",
+            "tum akele nahi", "it is okay"],
+        colors: ["#243a59", "#718ec1", "#c7b8ed"],
+        emoji: "🤍"
+    },
+
+    special_feeling: {
+        keywords: ["special", "sabse alag", "mere liye khaas",
+            "important ho", "proud of you"],
+        colors: ["#37244f", "#a075c4", "#ffbfdc"],
+        emoji: "✨"
+    },
+
+    happy: {
+        keywords: ["happy", "khush hoon", "bahut achha",
+            "maza aa gaya", "yay", "great"],
+        colors: ["#27466a", "#438fc0", "#ffd07f"],
+        emoji: "😊"
+    },
+
+    excited: {
+        keywords: ["excited", "can't wait", "bahut excited",
+            "jaldi milenge", "woohoo"],
+        colors: ["#3a3068", "#8b70d7", "#ffbc79"],
+        emoji: "🤩"
+    },
+
+    funny: {
+        keywords: ["hahaha", "lol", "joke", "has raha",
+            "has rahi", "bahut funny"],
+        colors: ["#31516b", "#57b7c1", "#ffce78"],
+        emoji: "😂"
+    },
+
+    playful: {
+        keywords: ["masti", "mazak", "chhedna", "pagal ho",
+            "hehe", "hehehe"],
+        colors: ["#4a326b", "#bb76d1", "#ffb5b5"],
+        emoji: "😜"
+    },
+
+    teasing: {
+        keywords: ["chidhana", "tease", "pakad ke dikhao",
+            "achha ji", "bade aaye"],
+        colors: ["#49305c", "#d37bb4", "#ffc28d"],
+        emoji: "😏"
+    },
+
+    cute_moments: {
+        keywords: ["cutie", "so cute", "pyaru", "golu",
+            "aww", "kitne cute"],
+        colors: ["#56304e", "#ed9fc7", "#ffe0eb"],
+        emoji: "🧸"
+    },
+
+    celebration: {
+        keywords: ["congratulations", "congrats", "party",
+            "celebrate", "birthday", "success"],
+        colors: ["#342b66", "#9275d6", "#ffd27c"],
+        emoji: "🎉"
+    },
+
+    naughty_fun: {
+        keywords: ["naughty", "badmash", "shararti",
+            "mischief", "bade shararti"],
+        colors: ["#402747", "#a45bb6", "#f6a5c7"],
+        emoji: "😈"
+    },
+
+    crazy_together: {
+        keywords: ["crazy", "pagalpan", "hum dono pagal",
+            "full pagal", "kya jodi hai"],
+        colors: ["#34305e", "#9b72ce", "#ffb77d"],
+        emoji: "🤪"
+    },
+
+    sweet_surprise: {
+        keywords: ["surprise", "guess what", "gift",
+            "tumhare liye kuch", "surprise hai"],
+        colors: ["#392653", "#ad73cb", "#ffd18d"],
+        emoji: "🎁"
+    },
+
+    sad: {
+        keywords: ["sad", "dukhi", "udaas", "rona aa raha",
+            "mann nahi lag raha"],
+        colors: ["#172b46", "#425c89", "#8e9ac5"],
+        emoji: "💔"
+    },
+
+    missing_someone: {
+        keywords: ["akela lag raha", "tum nahi ho",
+            "tumhare bina", "kisi ki yaad", "lonely"],
+        colors: ["#1c2945", "#555b92", "#a68bbd"],
+        emoji: "🌧️"
+    },
+
+    lonely: {
+        keywords: ["lonely", "akela hoon", "koi nahi hai",
+            "bahut akela", "alone"],
+        colors: ["#18253b", "#45516d", "#858fa9"],
+        emoji: "🥀"
+    },
+
+    heartbroken: {
+        keywords: ["heartbroken", "dil toot gaya",
+            "dil tod diya", "breakup", "rishta khatam"],
+        colors: ["#291b34", "#68405f", "#b37b99"],
+        emoji: "💔"
+    },
+
+    emotional: {
+        keywords: ["emotional ho gaya", "aankhon mein aansu",
+            "dil bhar aaya", "rona aa gaya"],
+        colors: ["#222a4a", "#666da4", "#c0a2cf"],
+        emoji: "😢"
+    },
+
+    feeling_low: {
+        keywords: ["low feel", "mann udaas", "energy nahi",
+            "thak gaya hoon", "kuch achha nahi lagta"],
+        colors: ["#202b40", "#59677e", "#9ca8bf"],
+        emoji: "🌫️"
+    },
+
+    need_support: {
+        keywords: ["help chahiye", "support chahiye",
+            "mujhe sambhalo", "baat karni hai", "pareshan hoon"],
+        colors: ["#24344f", "#637ba5", "#b6addd"],
+        emoji: "🫂"
+    },
+
+    disappointed: {
+        keywords: ["disappointed", "nirash", "ummeed nahi thi",
+            "dil dukha diya", "expect nahi kiya"],
+        colors: ["#30283d", "#76617d", "#c4a0b5"],
+        emoji: "😞"
+    },
+
+    nostalgic: {
+        keywords: ["purani yaadein", "yaad hai jab",
+            "pehle hum", "woh din", "memories"],
+        colors: ["#3b2b48", "#92749e", "#d9b6bb"],
+        emoji: "🕰️"
+    },
+
+    healing: {
+        keywords: ["heal", "aage badhna", "nayi shuruaat",
+            "ab behtar hoon", "move on"],
+        colors: ["#23464b", "#65a8a0", "#d5d7b2"],
+        emoji: "❤️‍🩹"
+    },
+
+    angry: {
+        keywords: ["gussa", "angry", "bahut gussa",
+            "naraz hoon", "irritated"],
+        colors: ["#36232b", "#914c50", "#d99a7b"],
+        emoji: "😠"
+    },
+
+    annoyed: {
+        keywords: ["pareshan kar rahe", "annoying",
+            "dimag mat khao", "chidh gaya", "chidh gayi"],
+        colors: ["#39303a", "#916879", "#d4a5a0"],
+        emoji: "😒"
+    },
+
+    jealous: {
+        keywords: ["jealous", "jalan", "kiske saath",
+            "mujhe achha nahi laga", "possessive"],
+        colors: ["#302541", "#795b87", "#d49ab7"],
+        emoji: "😶"
+    },
+
+    misunderstood: {
+        keywords: ["samjhe nahi", "galat samjha",
+            "meri baat samjho", "misunderstand", "meri baat suno"],
+        colors: ["#303047", "#73739b", "#c0b2d0"],
+        emoji: "🥹"
+    },
+
+    serious_talk: {
+        keywords: ["serious baat", "ek zaroori baat",
+            "seriously", "future ke baare", "baat karni hai"],
+        colors: ["#202c42", "#536987", "#9baac3"],
+        emoji: "💬"
+    },
+
+    apologetic: {
+        keywords: ["sorry", "maaf kar do", "meri galti",
+            "mujhse galti hui", "forgive me"],
+        colors: ["#343047", "#88759f", "#d9b9cb"],
+        emoji: "🙏"
+    },
+
+    forgiveness: {
+        keywords: ["maaf kiya", "maaf kar diya",
+            "it's okay", "koi baat nahi", "forgive"],
+        colors: ["#254b4b", "#70a9a0", "#d4d9b7"],
+        emoji: "🕊️"
+    },
+
+    making_up: {
+        keywords: ["ab naraz nahi", "phir se saath",
+            "maan jao", "sab bhool jao", "patch up"],
+        colors: ["#3e2949", "#b26e9d", "#ffc0d5"],
+        emoji: "❤️‍🩹"
+    },
+
+    trust_building: {
+        keywords: ["trust", "bharosa", "vishwas",
+            "sach bol raha", "sach bol rahi"],
+        colors: ["#254052", "#5e8c9d", "#c5b9d7"],
+        emoji: "🤝"
+    },
+
+    peaceful_resolution: {
+        keywords: ["ab sab theek", "suljha lete",
+            "shanti se", "milkar solve", "no problem"],
+        colors: ["#24464d", "#6ba9a0", "#d5d9b5"],
+        emoji: "🕊️"
+    },
+
+    good_morning: {
+        keywords: ["good morning", "suprabhat",
+            "uth gaye", "subah ho gayi", "morning jaan"],
+        colors: ["#614b45", "#e9a56e", "#ffe2a1"],
+        emoji: "☀️"
+    },
+
+    good_night: {
+        keywords: ["good night", "shubh ratri",
+            "so jao", "sweet dreams", "gn jaan"],
+        colors: ["#121d3c", "#343e79", "#8f8dd0"],
+        emoji: "🌙"
+    },
+
+    midnight_talks: {
+        keywords: ["raat bhar", "midnight", "neend nahi",
+            "raat ko baat", "late night"],
+        colors: ["#10172f", "#34365f", "#9b83be"],
+        emoji: "🌌"
+    },
+
+    rainy_romance: {
+        keywords: ["baarish", "rain", "bheeg", "mausam romantic",
+            "rainy day"],
+        colors: ["#1b344c", "#547d9c", "#d4a6c9"],
+        emoji: "🌧️"
+    },
+
+    dreamy: {
+        keywords: ["dream", "sapna", "khwaab",
+            "fairy tale", "dreamy"],
+        colors: ["#31254f", "#8b76c7", "#eab3d9"],
+        emoji: "✨"
+    },
+
+    calm: {
+        keywords: ["calm", "peaceful", "sukoon",
+            "relax", "shanti", "aaraam"],
+        colors: ["#1d3c4b", "#639caa", "#c2d9d6"],
+        emoji: "🪷"
+    },
+
+    deep_conversation: {
+        keywords: ["dil ki baat", "deep talk",
+            "andar ki baat", "life ke baare", "samjho mujhe"],
+        colors: ["#1b2949", "#596da0", "#c5a9d6"],
+        emoji: "🌊"
+    },
+
+    future_dreams: {
+        keywords: ["future", "sapne poore", "ghar banayenge",
+            "shaadi karenge", "future plan"],
+        colors: ["#2e2b58", "#8b80c9", "#e6c0d9"],
+        emoji: "🌠"
+    },
+
+    long_distance: {
+        keywords: ["long distance", "door ho tum",
+            "dooriyan", "online relationship", "kab miloge"],
+        colors: ["#1b2d4c", "#6667a8", "#df9dc7"],
+        emoji: "🌍"
+    },
+
+    together_forever: {
+        keywords: ["shaadi", "life partner", "hamesha tumhare",
+            "budhape tak", "saath nibhana"],
+        colors: ["#38264c", "#9a6fba", "#ffd0dd"],
+        emoji: "💍"
+    }
+};
+
+
+// ------------------------------------------------------
+// MOOD DETECTION
+// Latest messages ko analyze karta hai.
+// Yeh lightweight keyword-based detection hai, full AI model nahi.
+// ------------------------------------------------------
+
+function detectUtaNexaMood(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return null;
+    }
+
+    const recentMessages = messages.slice(-8);
+
+    const text = recentMessages
+        .map(message => String(message.content || message.text || ""))
+        .join(" ")
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s']/gu, " ");
+
+    let bestMood = null;
+    let bestScore = 0;
+
+    for (const [mood, config] of Object.entries(UTANEXA_AI_MOODS)) {
+        let score = 0;
+
+        for (const keyword of config.keywords) {
+            if (text.includes(keyword.toLowerCase())) {
+                score += keyword.includes(" ") ? 2 : 1;
+            }
+        }
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMood = mood;
+        }
+    }
+
+    // Weak evidence par theme ko forcefully change mat karo.
+    return bestScore >= 2 ? bestMood : null;
+}
+
+
+// ------------------------------------------------------
+// AUTOMATIC MOOD CONTROLLER
+// Har 10 seconds mein conversation mood check karega.
+// ------------------------------------------------------
+
+let utanexaAutoMoodTimer = null;
+let utanexaLastAutoMood = null;
+let utanexaManualMoodUntil = 0;
+
+function startUtaNexaAutoMood() {
+    if (utanexaAutoMoodTimer) {
+        clearInterval(utanexaAutoMoodTimer);
+    }
+
+    utanexaAutoMoodTimer = setInterval(() => {
+        try {
+            // Existing chat state se messages leta hai.
+            if (typeof state === "undefined" || !Array.isArray(state.messages)) {
+                return;
+            }
+
+            // Manual mood select kiya hai toh use respect karo.
+            if (Date.now() < utanexaManualMoodUntil) {
+                return;
+            }
+
+            const detectedMood = detectUtaNexaMood(state.messages);
+
+            if (!detectedMood || detectedMood === utanexaLastAutoMood) {
+                return;
+            }
+
+            // Current app ke mood function ko use karo.
+            if (typeof setMood === "function") {
+                setMood(detectedMood);
+                utanexaLastAutoMood = detectedMood;
+            }
+
+        } catch (error) {
+            console.warn("[UtaNexa AI Mood]", error);
+        }
+    }, 10000);
+}
+
+
+// ------------------------------------------------------
+// OPTIONAL: Manual mood select karne par auto mood pause.
+// Agar user 2 minute tak manually selected mood rakhe,
+// automatic detection us dauran theme change nahi karega.
+// ------------------------------------------------------
+
+function pauseUtaNexaAutoMoodForManualSelection() {
+    utanexaManualMoodUntil = Date.now() + 120000;
+}
+
     function initializeMood() {
         let savedMood = null;
 
