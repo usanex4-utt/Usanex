@@ -517,9 +517,33 @@
 
     const name = $("couplePartnerName");
 
-    if (name) {
-      name.textContent = state.partnerName;
-    }
+if (name) {
+  name.textContent = state.partnerName;
+}
+
+const avatar = $("couplePartnerAvatar");
+
+if (avatar) {
+  const avatarUrl =
+    partner.avatar_url ||
+    partner.profile_image ||
+    partner.profile_picture ||
+    partner.avatar ||
+    "";
+
+  if (avatarUrl) {
+    avatar.src = avatarUrl;
+    avatar.hidden = false;
+  } else {
+    avatar.removeAttribute("src");
+    avatar.alt = state.partnerName;
+  }
+
+  avatar.onerror = () => {
+    avatar.removeAttribute("src");
+    avatar.alt = state.partnerName;
+  };
+}
 
     setPartnerPresence(
       payload.partner_online ?? partner.is_online ?? false,
@@ -1006,3 +1030,203 @@
     })
   };
 })();
+/* =========================================
+   UTANEXA — FIX FOR ACTUAL JAVASCRIPT CLASSES
+   ========================================= */
+
+/* Message list */
+#coupleMessages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 13px 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Empty chat */
+.empty-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  margin: auto;
+  color: #927f90;
+  text-align: center;
+}
+
+.empty-chat > span {
+  margin-bottom: 10px;
+  font-size: 38px;
+}
+
+.empty-chat strong {
+  color: #5b4057;
+  font-size: 15px;
+}
+
+.empty-chat p {
+  font-size: 12px;
+}
+
+/* Message bubble */
+.message-bubble {
+  position: relative;
+  width: fit-content;
+  max-width: 82%;
+  min-width: 55px;
+  padding: 10px 12px 7px;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(160, 120, 155, .12);
+  border-radius: 18px 18px 18px 5px;
+  background: #ffffff;
+  color: #352535;
+  box-shadow: 0 3px 12px rgba(80, 45, 75, .06);
+  animation: coupleMessageIn .22s ease both;
+}
+
+/* My messages on right */
+.message-bubble.own {
+  align-self: flex-end;
+  margin-left: auto;
+  color: #ffffff;
+  border: none;
+  border-radius: 18px 18px 5px 18px;
+  background: linear-gradient(135deg, #ff7eb6, #bd8cff);
+  box-shadow: 0 5px 16px rgba(239, 109, 168, .20);
+}
+
+/* Partner messages on left */
+.message-bubble.received {
+  align-self: flex-start;
+  margin-right: auto;
+  color: #352535;
+  border-radius: 18px 18px 18px 5px;
+  background: rgba(255, 255, 255, .96);
+}
+
+/* Message content */
+.message-content {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  color: #927f90;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.message-bubble.own .message-meta {
+  color: rgba(255, 255, 255, .85);
+}
+
+/* Delivery ticks */
+.message-ticks {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+
+.message-ticks.seen {
+  color: #b8f1ff;
+}
+
+.message-pending {
+  font-size: 9px;
+  opacity: .8;
+}
+
+/* Shared image */
+.message-image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 280px;
+  margin-top: 5px;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+/* Quick reply buttons */
+.suggestion-chip {
+  flex: 0 0 auto;
+  max-width: 240px;
+  padding: 8px 12px;
+  color: #c45591;
+  font-size: 11px;
+  border: 1px solid rgba(239, 109, 168, .25);
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Mood particles created by JavaScript */
+.mood-particle {
+  position: absolute;
+  left: 70%;
+  bottom: 0;
+  z-index: 2;
+  font-size: 23px;
+  pointer-events: none;
+  animation: coupleMoodParticle 1.8s ease-out forwards;
+}
+
+@keyframes coupleMoodParticle {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(.7);
+  }
+
+  20% {
+    opacity: .9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-180px) rotate(25deg) scale(1.2);
+  }
+}
+
+/* Fix toast visibility */
+#coupleToast {
+  display: none;
+}
+
+#coupleToast.show {
+  display: block;
+}
+
+/* Fix emoji picker hidden state */
+#couplePickerBackdrop[hidden],
+#coupleEmojiPicker[hidden],
+#coupleRecordingBar[hidden],
+#coupleSuggestions[hidden],
+#coupleTyping[hidden] {
+  display: none !important;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  #coupleMessages {
+    gap: 10px;
+    padding: 12px 12px 18px;
+  }
+
+  .message-bubble {
+    max-width: 84%;
+    padding: 9px 11px 7px;
+  }
+
+  .message-content {
+    font-size: 14px;
+  }
+    }
