@@ -1,1158 +1,1156 @@
-/* UtaNexa Couple Chat
- * Mood effects, messages, emoji picker, suggestions and realtime support.
- * Keeps the existing UsanexCoupleRealtime interface.
- */
-(() => {
-"use strict";
+(function () {
+  "use strict";
 
-const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
-const API = {
-  analyze: "/api/couple-chat/analyze",
-  mood: "/api/couple-chat/mood"
-};
+  const state = {
+    partnerId: null,
+    currentUserId: null,
+    partnerName: "Your Partner",
+    partnerOnline: false,
+    messages: [],
+    mode: "romantic",
+    realtime: null,
+    typingTimer: null,
+    sending: false,
+    selectedFile: null,
+    clientMessageIds: new Set()
+  };
 
-const MODES = [
-  ["calm","Calm"],
-  ["romantic","Romantic"],
-  ["deep_love","Deep Love"],
-  ["happy","Happy"],
-  ["funny","Funny"],
-  ["sad","Sad"],
-  ["emotional","Emotional"],
-  ["angry","Angry"],
-  ["frustrated","Frustrated"],
-  ["caring","Caring"],
-  ["comfort","Comfort"],
-  ["flirty","Flirty"],
-  ["passionate","Passionate"],
-  ["good_night","Good Night"],
-  ["good_morning","Good Morning"],
-  ["memory","Memory"],
-  ["celebration","Celebration"],
-  ["birthday","Birthday"],
-  ["future_marriage","Future"],
-  ["missing_you","Missing You"],
-  ["apology","Apology"],
-  ["appreciation","Appreciation"],
-  ["game","Game"],
-  ["photo_memory","Photo Memory"],
-  ["serious_talk","Serious Talk"],
-  ["deep_conversation","Deep Talk"]
-];
+  const MOODS = {
+    romantic: {
+      label: "Romantic",
+      emoji: "❤️",
+      title: "Romantic Vibes",
+      suggestions: ["I love you ❤️", "You make me smile", "Miss you jaan"],
+      effect: "romantic"
+    },
+    deep_love: {
+      label: "Deep Love",
+      emoji: "💗",
+      title: "Deep Love",
+      suggestions: ["You mean everything to me", "I choose you, always", "You are my home"],
+      effect: "deep-love"
+    },
+    happy: {
+      label: "Happy",
+      emoji: "😊",
+      title: "Happy Moments",
+      suggestions: ["You made my day!", "Let's make more memories", "I'm so happy with you"],
+      effect: "happy"
+    },
+    funny: {
+      label: "Funny",
+      emoji: "😂",
+      title: "Fun Together",
+      suggestions: ["You are so silly 😂", "Tell me a joke", "Let's tease each other"],
+      effect: "funny"
+    },
+    sad: {
+      label: "Sad",
+      emoji: "🥺",
+      title: "A Little Sad",
+      suggestions: ["I'm feeling low", "Please talk to me", "I need a little comfort"],
+      effect: "sad"
+    },
+    emotional: {
+      label: "Emotional",
+      emoji: "🥹",
+      title: "From the Heart",
+      suggestions: ["You matter so much to me", "I don't want to lose you", "Stay with me"],
+      effect: "emotional"
+    },
+    angry: {
+      label: "Angry",
+      emoji: "😠",
+      title: "Angry Mood",
+      suggestions: ["I'm upset right now", "Let's talk calmly", "Give me a little time"],
+      effect: "angry"
+    },
+    frustrated: {
+      label: "Frustrated",
+      emoji: "😤",
+      title: "Feeling Frustrated",
+      suggestions: ["Today has been difficult", "Please listen to me", "Let's solve this together"],
+      effect: "frustrated"
+    },
+    caring: {
+      label: "Caring",
+      emoji: "🤗",
+      title: "Care & Support",
+      suggestions: ["Have you eaten?", "Take care of yourself", "I'm always here for you"],
+      effect: "caring"
+    },
+    comfort: {
+      label: "Comfort",
+      emoji: "🫂",
+      title: "A Safe Space",
+      suggestions: ["It's okay, I'm here", "You don't have to face this alone", "Take your time"],
+      effect: "comfort"
+    },
+    flirty: {
+      label: "Flirty",
+      emoji: "😉",
+      title: "Flirty Vibes",
+      suggestions: ["Guess what I'm thinking 😉", "You're looking cute", "Come a little closer"],
+      effect: "flirty"
+    },
+    passionate: {
+      label: "Passionate",
+      emoji: "🔥",
+      title: "Passionate Moments",
+      suggestions: ["You drive me crazy ❤️", "I can't stop thinking about you", "You're my favourite person"],
+      effect: "passionate"
+    },
+    good_night: {
+      label: "Good Night",
+      emoji: "🌙",
+      title: "Sweet Dreams",
+      suggestions: ["Good night, jaan 🌙", "Dream of us", "Sleep well, my love"],
+      effect: "good-night"
+    },
+    good_morning: {
+      label: "Good Morning",
+      emoji: "🌅",
+      title: "A Beautiful Morning",
+      suggestions: ["Good morning ❤️", "Have a lovely day", "You were my first thought"],
+      effect: "good-morning"
+    },
+    memory: {
+      label: "Memories",
+      emoji: "📸",
+      title: "Our Memories",
+      suggestions: ["Remember our first chat?", "That day was special", "Let's make a new memory"],
+      effect: "memory"
+    },
+    celebration: {
+      label: "Celebration",
+      emoji: "🎉",
+      title: "Let's Celebrate",
+      suggestions: ["We did it!", "Here's to us 🥂", "More happiness ahead"],
+      effect: "celebration"
+    },
+    birthday: {
+      label: "Birthday",
+      emoji: "🎂",
+      title: "Birthday Wishes",
+      suggestions: ["Happy birthday, my favourite person 🎂", "You deserve all the happiness", "Make a wish ❤️"],
+      effect: "birthday"
+    },
+    future_marriage: {
+      label: "Our Future",
+      emoji: "💍",
+      title: "Dreaming Together",
+      suggestions: ["Imagine our future home", "Let's grow together", "One day, all these dreams"],
+      effect: "future"
+    },
+    missing_you: {
+      label: "Missing You",
+      emoji: "💌",
+      title: "Missing You",
+      suggestions: ["I miss you so much", "Wish you were here", "Counting moments until we meet"],
+      effect: "missing"
+    },
+    apology: {
+      label: "Sorry",
+      emoji: "🙏",
+      title: "Making Things Right",
+      suggestions: ["I'm sorry", "Can we talk?", "I want to understand your feelings"],
+      effect: "apology"
+    },
+    appreciation: {
+      label: "Appreciation",
+      emoji: "🌷",
+      title: "You Are Appreciated",
+      suggestions: ["Thank you for being you", "I appreciate everything you do", "You're special to me"],
+      effect: "appreciation"
+    },
+    game: {
+      label: "Games",
+      emoji: "🎮",
+      title: "Let's Play",
+      suggestions: ["Truth or dare?", "Ask me anything", "Let's play a quick game"],
+      effect: "game"
+    },
+    photo_memory: {
+      label: "Photo Memory",
+      emoji: "🖼️",
+      title: "Picture Perfect",
+      suggestions: ["This reminds me of us", "Let's take a picture together", "Our best moment ❤️"],
+      effect: "photo-memory"
+    },
+    serious_talk: {
+      label: "Serious Talk",
+      emoji: "💬",
+      title: "Let's Talk Honestly",
+      suggestions: ["Can we talk about something?", "I want to be honest", "Please hear me out"],
+      effect: "serious"
+    },
+    deep_conversation: {
+      label: "Deep Conversation",
+      emoji: "🌌",
+      title: "Beyond Small Talk",
+      suggestions: ["What makes you feel loved?", "What's your biggest dream?", "What does happiness mean to you?"],
+      effect: "deep-conversation"
+    },
+    calm: {
+      label: "Calm",
+      emoji: "🕊️",
+      title: "Peaceful Moments",
+      suggestions: ["Let's take it slowly", "I'm listening", "Everything can wait for a moment"],
+      effect: "calm"
+    }
+  };
 
-const EFFECTS = [
-  "Soft Hearts","Heart Glow","Heartbeat","Connecting Hearts",
-  "Rose Petals","Love Sparkles","Romantic Aura","Blush Glow",
-  "Deep Love Pulse","Tiny Heart Trail","Missing You","Gentle Hug",
-  "Comfort Glow","Heart-to-Heart","Emotional Reveal","Healing Particles",
-  "Care Aura","Together Hearts","Distance Love","Memory Glow",
-  "Kiss Sparkle","Blushing Face","Cute Hearts","Playful Wink",
-  "Love Pop","Heart Bounce","Sweet Reveal","Couple Sparkles",
-  "Tiny Confetti","Smile Glow","Sunrise","Moonlight","Twinkling Stars",
-  "Sunset","Rainy Calm","Night Sky","Anniversary","Birthday Sparkles",
-  "Special Date","Midnight Romance","Calm Apology","Make-Up Glow",
-  "Sorry Transition","Thank-You Gold","Appreciation Aura",
-  "Excitement Pop","Shy Pink","Deep Talk Purple","Peaceful Glow",
-  "Reconciliation","Love Letter","Heart Trail","Breathing Glow",
-  "Message Spotlight","Memory Transition","Virtual Hug","Love Mode",
-  "Mood Transition","Arrival Glow","Usanex Love"
-];
-
-const REPLIES = {
-  love: [
-    "I feel lucky to have you in my life. ❤️",
-    "You make ordinary moments special.",
-    "I wish I could give you a hug right now. 🫂"
-  ],
-  question: [
-    "What is one little thing I do that makes you smile?",
-    "What would our perfect day together look like?",
-    "What is a memory of us you never want to forget?"
-  ],
-  game: [
-    "Describe our relationship in three words.",
-    "Sunset walk or cozy movie night?",
-    "What little thing should we do together soon?"
-  ],
-  memory: [
-    "What is your favourite memory of us so far?",
-    "Let’s make another memory worth keeping.",
-    "I was just thinking about one of our good moments."
-  ],
-  romantic: [
-    "I wish I could be right beside you. ❤️",
-    "You make my days feel warmer.",
-    "If I could choose again, I’d still choose you."
-  ]
-};
-
-const partnerId = (() => {
-  const p = new URLSearchParams(location.search);
-  return p.get("partner_id") || p.get("user_id") || p.get("id") || "unknown";
-})();
-
-const storageKey = "utanexa_couple_chat_messages_v13_" + partnerId;
-const modeKey = "utanexa_couple_chat_mode_v13_" + partnerId;
-
-let currentUserId = null;
-let currentMode = localStorage.getItem(modeKey) || "calm";
-let manualMood = false;
-let messages = [];
-let realtime = null;
-let toastTimer = null;
-let aiTimer = null;
-let recorder = null;
-let recordChunks = [];
-let recordInterval = null;
-let recordStarted = 0;
-
-const state = {
-  partnerOnline: false,
-  connected: false
-};
-
-function toast(message) {
-  const el = $("coupleToast");
-  if (!el) return;
-
-  el.textContent = message;
-  el.classList.add("show");
-
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    el.classList.remove("show");
-  }, 2400);
-}
-
-function persist() {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(messages.slice(-500)));
-  } catch (error) {
-    console.warn("Could not save chat locally.", error);
+  function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]);
   }
-}
 
-function time(value) {
-  try {
-    return new Date(value || Date.now()).toLocaleTimeString([], {
+  function getQueryParam(...names) {
+    const params = new URLSearchParams(window.location.search);
+
+    for (const name of names) {
+      const value = params.get(name);
+      if (value) return value;
+    }
+
+    return null;
+  }
+
+  function getPartnerId() {
+    return (
+      getQueryParam("partner_id", "partner", "user_id") ||
+      document.body?.dataset?.partnerId ||
+      $("coupleChat")?.dataset?.partnerId ||
+      $("coupleMessages")?.dataset?.partnerId ||
+      null
+    );
+  }
+
+  function getStorageKey(suffix) {
+    return `utanexa_couple_${state.partnerId || "unknown"}_${suffix}`;
+  }
+
+  function getSavedMessages() {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(getStorageKey("messages")) || "[]"
+      );
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveMessages() {
+    try {
+      // Keep local cache limited.
+      localStorage.setItem(
+        getStorageKey("messages"),
+        JSON.stringify(state.messages.slice(-150))
+      );
+    } catch (error) {
+      console.warn("Could not save local chat cache:", error);
+    }
+  }
+
+  function getSavedMode() {
+    try {
+      const saved = localStorage.getItem(getStorageKey("mode"));
+      return MOODS[saved] ? saved : "romantic";
+    } catch {
+      return "romantic";
+    }
+  }
+
+  function setText(id, value) {
+    const element = $(id);
+    if (element) element.textContent = value;
+  }
+
+  function showToast(message) {
+    const existing = $("coupleToast");
+
+    if (existing) {
+      existing.textContent = message;
+      existing.classList.add("show");
+
+      clearTimeout(existing._hideTimer);
+      existing._hideTimer = setTimeout(() => {
+        existing.classList.remove("show");
+      }, 2400);
+
+      return;
+    }
+
+    const toast = document.createElement("div");
+    toast.id = "coupleToast";
+    toast.className = "couple-toast show";
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.remove("show"), 2400);
+  }
+
+  function setConnectionStatus(status) {
+    const normalized = String(status || "").toLowerCase();
+
+    const connected = [
+      "connected",
+      "online",
+      "open"
+    ].includes(normalized);
+
+    const connecting = [
+      "connecting",
+      "reconnecting"
+    ].includes(normalized);
+
+    const label = connected
+      ? (state.partnerOnline ? "Online" : "Connected")
+      : connecting
+        ? "Connecting…"
+        : "Reconnecting…";
+
+    setText("coupleConnectionStatus", label);
+
+    const statusElement = $("coupleConnectionStatus");
+    if (statusElement) {
+      statusElement.dataset.status = connected
+        ? "connected"
+        : connecting
+          ? "connecting"
+          : "disconnected";
+    }
+
+    const dot = $("coupleOnlineDot");
+    if (dot) {
+      dot.classList.toggle("is-online", state.partnerOnline);
+      dot.classList.toggle("online", state.partnerOnline);
+    }
+  }
+
+  function setPartnerOnline(isOnline, lastSeen) {
+    state.partnerOnline = Boolean(isOnline);
+
+    const status = $("couplePartnerStatus");
+    if (status) {
+      status.textContent = state.partnerOnline
+        ? "Online"
+        : formatLastSeen(lastSeen);
+    }
+
+    const dot = $("coupleOnlineDot");
+    if (dot) {
+      dot.classList.toggle("is-online", state.partnerOnline);
+      dot.classList.toggle("online", state.partnerOnline);
+    }
+  }
+
+  function formatLastSeen(value) {
+    if (!value) return "Offline";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Offline";
+
+    return `Last seen ${date.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    })}`;
+  }
+
+  function normalizeMessage(raw = {}) {
+    const senderId =
+      raw.sender_id ??
+      raw.senderId ??
+      raw.user_id ??
+      raw.userId ??
+      null;
+
+    const id =
+      raw.id ??
+      raw.message_id ??
+      raw.messageId ??
+      raw.client_message_id ??
+      `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    return {
+      id: String(id),
+      messageId: raw.message_id ?? raw.id ?? null,
+      clientMessageId: raw.client_message_id ?? null,
+      senderId: senderId == null ? null : String(senderId),
+      receiverId: raw.receiver_id ?? raw.receiverId ?? null,
+      content: raw.content ?? raw.message ?? raw.text ?? "",
+      mediaUrl: raw.media_url ?? raw.mediaUrl ?? null,
+      mediaType: raw.media_type ?? raw.mediaType ?? null,
+      messageType: raw.message_type ?? raw.messageType ?? "text",
+      timestamp: raw.timestamp ?? raw.created_at ?? new Date().toISOString(),
+      status: raw.status ?? raw.delivery_status ?? "sent",
+      isOwn: raw.isOwn,
+      pending: Boolean(raw.pending),
+      failed: Boolean(raw.failed)
+    };
+  }
+
+  function isOwnMessage(message) {
+    if (typeof message.isOwn === "boolean") {
+      return message.isOwn;
+    }
+
+    if (state.currentUserId == null || message.senderId == null) {
+      return false;
+    }
+
+    return String(message.senderId) === String(state.currentUserId);
+  }
+
+  function formatTime(timestamp) {
+    const date = new Date(timestamp || Date.now());
+
+    if (Number.isNaN(date.getTime())) return "";
+
+    return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit"
     });
-  } catch {
-    return "";
   }
-}
 
-function scroll() {
-  const el = $("coupleConversation");
-  if (el) el.scrollTop = el.scrollHeight;
-}
+  function receiptMarkup(message) {
+    if (!isOwnMessage(message)) return "";
 
-function normalize(message) {
-  return {
-    ...message,
-    content: message.content ?? message.text ?? "",
-    is_mine: !!(
-      message.is_mine ||
-      message.isMine ||
-      (
-        currentUserId != null &&
-        String(message.sender_id ?? message.senderId) === String(currentUserId)
-      )
-    )
-  };
-}
+    const status = message.status || "sent";
+    const ticks = status === "seen"
+      ? "✓✓"
+      : status === "delivered"
+        ? "✓✓"
+        : "✓";
 
-function render() {
-  const box = $("coupleMessages");
-  if (!box) return;
+    const className = status === "seen" ? "is-seen" : "";
 
-  box.replaceChildren();
+    return `<span class="couple-message-ticks ${className}" aria-label="${escapeHTML(status)}">${ticks}</span>`;
+  }
 
-  messages.forEach(message => {
-    const mine = !!(
-      message.is_mine ||
-      message.isMine ||
-      (
-        currentUserId != null &&
-        String(message.sender_id ?? message.senderId) === String(currentUserId)
-      )
+  function messageMarkup(message) {
+    const own = isOwnMessage(message);
+    const content = escapeHTML(message.content);
+    const media = message.mediaUrl
+      ? `<a class="couple-media-link" href="${escapeHTML(message.mediaUrl)}" target="_blank" rel="noopener noreferrer">Open attachment</a>`
+      : "";
+
+    const failed = message.failed
+      ? `<button type="button" class="couple-retry-message" data-retry-id="${escapeHTML(message.id)}">Retry</button>`
+      : "";
+
+    return `
+      <article class="couple-message ${own ? "own" : "received"} ${message.pending ? "is-pending" : ""}"
+               data-message-id="${escapeHTML(message.id)}">
+        <div class="couple-message-bubble">
+          ${content ? `<div class="couple-message-text">${content.replace(/\n/g, "<br>")}</div>` : ""}
+          ${media}
+          <div class="couple-message-meta">
+            <time>${escapeHTML(formatTime(message.timestamp))}</time>
+            ${receiptMarkup(message)}
+            ${failed}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function scrollMessagesToBottom() {
+    const box = $("coupleMessages");
+    if (!box) return;
+
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function renderMessages() {
+    const box = $("coupleMessages");
+    if (!box) return;
+
+    if (state.messages.length === 0) {
+      box.innerHTML = `
+        <div class="couple-empty-state">
+          <div class="couple-empty-emoji">💙</div>
+          <h3>Start your conversation</h3>
+          <p>Send a message and make this moment yours.</p>
+        </div>
+      `;
+      return;
+    }
+
+    box.innerHTML = state.messages.map(messageMarkup).join("");
+    scrollMessagesToBottom();
+  }
+
+  function addMessage(rawMessage, options = {}) {
+    const message = normalizeMessage(rawMessage);
+
+    if (message.clientMessageId) {
+      const duplicate = state.messages.find(
+        (item) => item.clientMessageId === message.clientMessageId
+      );
+
+      if (duplicate) {
+        Object.assign(duplicate, message, {
+          pending: false,
+          failed: false
+        });
+        renderMessages();
+        saveMessages();
+        return duplicate;
+      }
+    }
+
+    const duplicateById = state.messages.find(
+      (item) => item.id === message.id
     );
 
-    const row = document.createElement("article");
-    row.className = "message-row" + (mine ? " mine" : "");
-
-    const bubble = document.createElement("div");
-    bubble.className = "message-bubble";
-
-    if (
-      message.media_url &&
-      String(message.media_type || "").startsWith("image")
-    ) {
-      const image = document.createElement("img");
-      image.className = "message-media";
-      image.src = message.media_url;
-      image.alt = "Shared image";
-      image.loading = "lazy";
-      bubble.append(image);
-
-    } else if (
-      message.media_url &&
-      String(message.media_type || "").startsWith("video")
-    ) {
-      const video = document.createElement("video");
-      video.className = "message-media";
-      video.src = message.media_url;
-      video.controls = true;
-      video.playsInline = true;
-      bubble.append(video);
-
-    } else if (
-      message.media_url &&
-      String(message.media_type || "").startsWith("audio")
-    ) {
-      const audio = document.createElement("audio");
-      audio.controls = true;
-      audio.src = message.media_url;
-      bubble.append(audio);
+    if (duplicateById) {
+      Object.assign(duplicateById, message);
+      renderMessages();
+      saveMessages();
+      return duplicateById;
     }
 
-    const text = String(message.content ?? message.text ?? "");
+    state.messages.push(message);
 
-    if (text) {
-      const content = document.createElement("div");
-      content.className = "message-text";
-      content.textContent = text;
-      bubble.append(content);
+    if (state.messages.length > 150) {
+      state.messages = state.messages.slice(-150);
     }
 
-    if (message.file_name && !message.media_url) {
-      const file = document.createElement("div");
-      file.className = "message-file";
-      file.textContent = "File: " + message.file_name;
-      bubble.append(file);
+    renderMessages();
+    saveMessages();
+
+    if (!options.silent && !isOwnMessage(message)) {
+      playIncomingEffect();
     }
 
-    const meta = document.createElement("div");
-    meta.className = "message-meta";
-    meta.textContent = time(
-      message.created_at || message.timestamp || message.sent_at
-    );
-
-    if (mine) {
-      const receipt = document.createElement("span");
-      receipt.className = "message-status";
-
-      receipt.textContent =
-        message.read_at || message.seen
-          ? "Seen"
-          : message.delivered_at || message.delivered
-            ? "Delivered"
-            : message.pending
-              ? "Sending…"
-              : "Sent";
-
-      meta.append(receipt);
-    }
-
-    bubble.append(meta);
-    row.append(bubble);
-    box.append(row);
-  });
-
-  scroll();
-}
-
-function add(message, mine) {
-  if (!message) return;
-
-  const id = message.message_id || message.id || message.client_id;
-
-  if (
-    id &&
-    messages.some(item =>
-      String(item.message_id || item.id || item.client_id) === String(id)
-    )
-  ) {
-    return;
+    return message;
   }
 
-  messages.push({
-    ...message,
-    message_id: id || "local-" + Date.now(),
-    created_at:
-      message.created_at ||
-      message.timestamp ||
-      new Date().toISOString(),
-    is_mine: !!(mine || message.is_mine || message.isMine)
-  });
+  function playIncomingEffect() {
+    const layer = $("coupleEffectsLayer");
+    if (!layer) return;
 
-  persist();
-  render();
-}
-
-function status(text, online) {
-  const label = $("couplePartnerStatus");
-  if (label) label.textContent = text;
-
-  if (online !== undefined) {
-    state.partnerOnline = !!online;
-
-    const dot = $("coupleOnlineDot");
-    if (dot) dot.hidden = !online;
-  }
-}
-
-function detectMood(text) {
-  const value = String(text || "").toLowerCase();
-
-  const tests = [
-    ["good_night", /good night|sweet dreams|shubh ratri|शुभ रात्रि|सो जाओ/],
-    ["good_morning", /good morning|suprabhat|शुभ प्रभात/],
-    ["apology", /sorry|maaf|माफ़|माफी|गलती/],
-    ["angry", /gussa|naraz|angry|fight|jhagda|गुस्सा|नाराज़/],
-    ["sad", /sad|dukhi|udaas|pareshan|cry|lonely|दुखी|उदास|परेशान/],
-    ["missing_you", /miss you|yaad aa|tumhari yaad|याद आ/],
-    ["comfort", /tension|stress|hurt|pareshani|तनाव/],
-    ["appreciation", /thank you|thanks|shukriya|धन्यवाद|शुक्रिया/],
-    ["deep_love", /hamesha saath|forever|zindagi bhar|meri jaan|हमेशा साथ|मेरी जान/],
-    ["romantic", /love you|pyaar|pyar|mohabbat|kiss|jaan|❤️|💕|💋|🥰|😘/],
-    ["happy", /happy|khush|awesome|haha|😂|😄|😊|खुश/]
-  ];
-
-  for (const [mood, regex] of tests) {
-    if (regex.test(value)) return mood;
-  }
-
-  return "calm";
-}
-
-function setMode(mode, manual = true) {
-  if (!MODES.some(item => item[0] === mode)) mode = "calm";
-
-  currentMode = mode;
-  if (manual) manualMood = true;
-
-  try {
-    localStorage.setItem(modeKey, mode);
-  } catch (error) {
-    console.warn("Could not save mood.", error);
-  }
-
-  document.body.dataset.coupleMode = mode;
-
-  const header = $("coupleHeaderMood");
-  if (header) {
-    const selected = MODES.find(item => item[0] === mode);
-    header.title = "Current mood: " + (selected ? selected[1] : "Calm");
-  }
-
-  const grid = $("coupleMoodGrid");
-  if (grid) {
-    grid.querySelectorAll("[data-mode]").forEach(button => {
-      button.classList.toggle("active", button.dataset.mode === mode);
-    });
-  }
-
-  effects();
-
-  fetch(API.mood, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      partner_id: partnerId,
-      mood: mode,
-      mode
-    })
-  }).catch(() => {});
-
-  suggestions();
-}
-
-function effects() {
-  const layer = $("coupleEffectsLayer");
-  if (!layer) return;
-
-  layer.replaceChildren();
-
-  const romantic = [
-    "romantic","deep_love","missing_you","appreciation",
-    "flirty","passionate"
-  ].includes(currentMode);
-
-  const gold = [
-    "happy","celebration","birthday","good_morning"
-  ].includes(currentMode);
-
-  const blue = [
-    "sad","comfort","good_night","emotional"
-  ].includes(currentMode);
-
-  if (!romantic && !gold && !blue) return;
-
-  const reduced = window.matchMedia &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const count = reduced ? 2 : 7;
-
-  for (let i = 0; i < count; i++) {
+    const mood = MOODS[state.mode] || MOODS.romantic;
     const particle = document.createElement("span");
 
-    particle.className = "mood-particle" + (romantic ? " heart" : "");
+    particle.className = `couple-floating-effect effect-${mood.effect}`;
+    particle.textContent = mood.emoji;
+    particle.setAttribute("aria-hidden", "true");
 
-    particle.style.setProperty("--x", Math.random() * 100 + "%");
-    particle.style.setProperty(
-      "--size",
-      (romantic ? 8 + Math.random() * 7 : 3 + Math.random() * 4) + "px"
-    );
-    particle.style.setProperty(
-      "--duration",
-      (13 + Math.random() * 9) + "s"
-    );
-    particle.style.setProperty(
-      "--particle-color",
-      gold ? "#e9c783" : blue ? "#8ca9d6" : "#d98aaa"
-    );
+    layer.appendChild(particle);
 
-    particle.style.animationDelay = (-Math.random() * 10) + "s";
-    layer.append(particle);
-  }
-}
-
-function suggestions(list) {
-  const section = $("coupleSuggestions");
-  const box = $("coupleSuggestionList");
-
-  if (!section || !box) return;
-
-  const items = (
-    Array.isArray(list) && list.length
-      ? list
-      : REPLIES[currentMode] || REPLIES.romantic
-  ).slice(0, 8);
-
-  box.replaceChildren();
-
-  items.forEach(text => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "suggestion-chip";
-    button.textContent = text;
-
-    button.onclick = () => {
-      const input = $("coupleMessageInput");
-
-      if (input) {
-        input.value = text;
-        input.focus();
-      }
-
-      section.hidden = true;
-    };
-
-    box.append(button);
-  });
-
-  section.hidden = false;
-}
-
-async function analyze(text) {
-  const label = $("coupleAiStatus");
-
-  if (label) label.textContent = "Understanding your conversation…";
-
-  if (!manualMood) {
-    setMode(detectMood(text), false);
+    setTimeout(() => particle.remove(), 1800);
   }
 
-  clearTimeout(aiTimer);
+  function setMoodVisual(mode) {
+    const mood = MOODS[mode] || MOODS.romantic;
+    const root = document.documentElement;
 
-  aiTimer = setTimeout(() => {
-    if (label) label.textContent = "Here to help you connect";
-  }, 3500);
+    root.dataset.coupleMood = mode;
+    root.style.setProperty("--couple-mood-emoji", `"${mood.emoji}"`);
 
-  try {
-    const response = await fetch(API.analyze, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        partner_id: partnerId,
-        message: text,
-        text,
-        mode: currentMode
-      })
+    const layer = $("coupleEffectsLayer");
+    if (layer) {
+      layer.dataset.mood = mode;
+      layer.className = `couple-effects-layer mood-${mood.effect}`;
+    }
+
+    setText("coupleMoodTitle", mood.title);
+    setText("coupleCurrentMood", `${mood.emoji} ${mood.label}`);
+
+    document.querySelectorAll("[data-couple-mood]").forEach((button) => {
+      const active = button.dataset.coupleMood === mode;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
     });
 
-    if (!response.ok) return;
-
-    const data = await response.json();
-
-    if ((data.mood || data.mode) && !manualMood) {
-      setMode(data.mood || data.mode, false);
-    }
-
-    if (Array.isArray(data.suggestions)) {
-      suggestions(data.suggestions);
-    }
-
-    if (label) {
-      label.textContent =
-        data.status || "Conversation mood: " + currentMode.replaceAll("_", " ");
-    }
-
-  } catch {
-    if (label) label.textContent = "Your private conversation companion";
-  }
-}
-
-function sendRealtime(item) {
-  try {
-    if (realtime?.sendMessage) {
-      realtime.sendMessage(item);
-      return true;
-    }
-
-    if (realtime?.send) {
-      realtime.send({ type: "message", ...item });
-      return true;
-    }
-  } catch (error) {
-    console.warn(error);
+    renderMoodSuggestions();
   }
 
-  toast("Realtime connection unavailable; message saved on this device.");
-  return false;
-}
+  function setMode(mode, save = true) {
+    if (!MOODS[mode]) return;
 
-function sendText(text) {
-  text = String(text || "").trim();
-  if (!text) return;
+    state.mode = mode;
+    setMoodVisual(mode);
 
-  const message = {
-    message_id: "client-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
-    client_id: "client-" + Date.now(),
-    content: text,
-    created_at: new Date().toISOString(),
-    is_mine: true,
-    pending: true
-  };
+    if (save) {
+      try {
+        localStorage.setItem(getStorageKey("mode"), mode);
+      } catch {}
 
-  messages.push(message);
-  persist();
-  render();
-
-  const input = $("coupleMessageInput");
-  if (input) input.value = "";
-
-  const sent = sendRealtime(message);
-
-  if (!sent) {
-    const item = messages.find(m => m.message_id === message.message_id);
-    if (item) {
-      item.pending = false;
-      item.local_only = true;
-      persist();
-      render();
-    }
-  } else {
-    const item = messages.find(m => m.message_id === message.message_id);
-    if (item) {
-      item.pending = false;
-      persist();
-      render();
+      saveMoodToServer(mode);
     }
   }
 
-  analyze(text);
-}
-
-function setupEmoji() {
-  const categories = $("coupleEmojiCategories");
-  const grid = $("coupleEmojiGrid");
-  const search = $("coupleEmojiSearch");
-
-  if (!categories || !grid || !search) return;
-
-  const data = [
-    ["Recent","◷",[]],
-    ["Smileys","☺","😀 😃 😄 😁 😅 😂 🙂 😉 😊 🥰 😍 🤩 😘 🥲 😋 🤗 🤔 😌 😔 😴 🥳 😎".split(" ")],
-    ["Hearts","♡","❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🩷 💔 ❤️‍🔥 ❤️‍🩹 💕 💞 💓 💗 💖 💘 💝".split(" ")],
-    ["Hands","✋","👋 ✌️ 🤞 🤟 🤘 👍 👎 👏 🙌 🫶 🙏 💪".split(" ")],
-    ["Nature","❀","🐶 🐱 🐰 🦊 🐻 🦋 🌷 🌹 🌸 💐 🍀 🌈 ⭐ 🌙 ☀️ 🔥 ❄️".split(" ")],
-    ["Objects","◇","📱 📷 💌 💍 🎁 🎈 🎉 🧸".split(" ")]
-  ];
-
-  let category = "Smileys";
-  let recent = [];
-
-  try {
-    recent = JSON.parse(localStorage.getItem("utanexa_recent_emojis") || "[]");
-  } catch {}
-
-  function draw() {
-    categories.replaceChildren();
-
-    data.forEach(item => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className =
-        "emoji-category" + (category === item[0] ? " active" : "");
-      button.textContent = item[1] + " " + item[0];
-
-      button.onclick = () => {
-        category = item[0];
-        search.value = "";
-        draw();
-      };
-
-      categories.append(button);
-    });
-
-    grid.replaceChildren();
-
-    const list = search.value
-      ? data.flatMap(item => item[2]).filter(emoji => emoji.includes(search.value))
-      : category === "Recent"
-        ? recent
-        : (data.find(item => item[0] === category) || data[1])[2];
-
-    [...new Set(list)].forEach(emoji => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "emoji-cell";
-      button.textContent = emoji;
-
-      button.onclick = () => {
-        const input = $("coupleMessageInput");
-        if (!input) return;
-
-        const start = input.selectionStart ?? input.value.length;
-        const end = input.selectionEnd ?? input.value.length;
-
-        input.value =
-          input.value.slice(0, start) +
-          emoji +
-          input.value.slice(end);
-
-        input.focus();
-        input.setSelectionRange(start + emoji.length, start + emoji.length);
-
-        recent = [emoji, ...recent.filter(item => item !== emoji)].slice(0, 24);
-
-        try {
-          localStorage.setItem("utanexa_recent_emojis", JSON.stringify(recent));
-        } catch {}
-      };
-
-      grid.append(button);
-    });
-  }
-
-  draw();
-  search.addEventListener("input", draw);
-}
-
-function overlay(id, show) {
-  const element = $(id);
-  if (element) element.classList.toggle("hidden", !show);
-}
-
-function events() {
-  const bind = (id, event, handler) => {
-    $(id)?.addEventListener(event, handler);
-  };
-
-  bind("coupleBackButton", "click", () => {
-    history.length > 1 ? history.back() : location.assign("/");
-  });
-
-  bind("coupleAvatarButton", "click", () => {
-    const params = new URLSearchParams(location.search);
-    const id =
-      params.get("partner_id") ||
-      params.get("user_id") ||
-      params.get("id");
-
-    if (id) {
-      location.href = "/profile?user_id=" + encodeURIComponent(id);
-    } else {
-      toast("Partner profile unavailable");
-    }
-  });
-
-  bind("coupleCallButton", "click", () => {
-    toast("Calling needs a configured voice/video service.");
-  });
-
-  bind("coupleHeaderMood", "click", () => {
-    overlay("coupleMoodOverlay", true);
-  });
-
-  bind("coupleMenuButton", "click", () => {
-    overlay("coupleMenuOverlay", true);
-  });
-
-  bind("coupleAiButton", "click", () => {
-    overlay("coupleAiOverlay", true);
-  });
-
-  bind("closeMoodPanel", "click", () => {
-    overlay("coupleMoodOverlay", false);
-  });
-
-  bind("closeAiPanel", "click", () => {
-    overlay("coupleAiOverlay", false);
-  });
-
-  bind("closeCoupleMenu", "click", () => {
-    overlay("coupleMenuOverlay", false);
-  });
-
-  bind("closeSuggestions", "click", () => {
-    $("coupleSuggestions").hidden = true;
-  });
-
-  document.querySelectorAll(".overlay").forEach(element => {
-    element.addEventListener("click", event => {
-      if (event.target === element) element.classList.add("hidden");
-    });
-  });
-
-  bind("coupleMoodGrid", "click", event => {
-    const button = event.target.closest("[data-mode]");
-    if (!button) return;
-
-    setMode(button.dataset.mode, true);
-    overlay("coupleMoodOverlay", false);
-  });
-
-  bind("coupleQuickActions", "click", event => {
-    const button = event.target.closest("[data-action]");
-    if (!button) return;
-
-    const action = button.dataset.action;
-
-    setMode(
-      action === "love"
-        ? "romantic"
-        : action === "memory"
-          ? "memory"
-          : action === "question"
-            ? "deep_conversation"
-            : "game",
-      true
-    );
-
-    suggestions(REPLIES[action] || REPLIES.romantic);
-  });
-
-  document.querySelectorAll("[data-ai-action]").forEach(button => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.aiAction;
-
-      if (action === "mood") {
-        analyze(messages.at(-1)?.content || "");
-      } else {
-        suggestions(REPLIES[action] || REPLIES.romantic);
-      }
-
-      overlay("coupleAiOverlay", false);
-    });
-  });
-
-  document.querySelectorAll("[data-menu-action]").forEach(button => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.menuAction;
-      overlay("coupleMenuOverlay", false);
-
-      if (action === "export") {
-        const text = messages.map(message =>
-          `${time(message.created_at)} ${message.is_mine ? "Me" : "Partner"}: ${message.content || message.file_name || "[media]"}`
-        ).join("\n");
-
-        const url = URL.createObjectURL(
-          new Blob([text], { type: "text/plain" })
-        );
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "utanexa-couple-chat.txt";
-        link.click();
-
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-      } else if (
-        action === "clear" &&
-        confirm("Clear this chat only from this device?")
-      ) {
-        messages = [];
-        persist();
-        render();
-        toast("Local chat cleared");
-      }
-    });
-  });
-
-  bind("coupleComposer", "submit", event => {
-    event.preventDefault();
-    sendText($("coupleMessageInput")?.value || "");
-  });
-
-  bind("coupleMessageInput", "input", () => {
+  async function saveMoodToServer(mode) {
     try {
-      realtime?.sendTyping?.(!!$("coupleMessageInput")?.value);
-    } catch {}
-  });
+      await fetch("/api/couple-chat/mood", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          partner_id: state.partnerId,
+          mood: mode
+        })
+      });
+    } catch (error) {
+      console.debug("Mood sync unavailable:", error);
+    }
+  }
 
-  bind("coupleEmojiButton", "click", () => {
-    const picker = $("coupleEmojiPicker");
-    const backdrop = $("couplePickerBackdrop");
+  function renderMoodGrid() {
+    const grid = $("coupleMoodGrid");
+    if (!grid) return;
 
-    if (!picker || !backdrop) return;
+    grid.innerHTML = Object.entries(MOODS).map(([key, mood]) => `
+      <button type="button"
+              class="couple-mood-option ${state.mode === key ? "active" : ""}"
+              data-couple-mood="${key}"
+              aria-pressed="${state.mode === key}">
+        <span class="couple-mood-emoji">${mood.emoji}</span>
+        <span class="couple-mood-label">${escapeHTML(mood.label)}</span>
+      </button>
+    `).join("");
+  }
 
-    picker.hidden = !picker.hidden;
-    backdrop.hidden = picker.hidden;
+  function renderMoodSuggestions() {
+    const container =
+      $("coupleMoodSuggestions") ||
+      $("coupleQuickReplies");
 
-    if (!picker.hidden) $("coupleEmojiSearch")?.focus();
-  });
+    if (!container) return;
 
-  const hideEmojiPicker = () => {
-    if ($("coupleEmojiPicker")) $("coupleEmojiPicker").hidden = true;
-    if ($("couplePickerBackdrop")) $("couplePickerBackdrop").hidden = true;
-  };
+    const mood = MOODS[state.mode] || MOODS.romantic;
 
-  bind("closeEmojiPicker", "click", hideEmojiPicker);
-  bind("couplePickerBackdrop", "click", hideEmojiPicker);
+    container.innerHTML = mood.suggestions.map((suggestion) => `
+      <button type="button"
+              class="couple-suggestion"
+              data-couple-suggestion="${escapeHTML(suggestion)}">
+        ${escapeHTML(suggestion)}
+      </button>
+    `).join("");
+  }
 
-  bind("coupleAttachButton", "click", () => $("coupleFileInput")?.click());
-  bind("coupleCameraButton", "click", () => $("coupleCameraInput")?.click());
+  function openMoodPicker() {
+    const modal =
+      $("coupleMoodModal") ||
+      $("coupleMoodPicker");
 
-  bind("coupleFileInput", "change", event => files(event.target.files));
-  bind("coupleCameraInput", "change", event => files(event.target.files));
+    if (!modal) return;
 
-  bind("coupleVoiceButton", "click", record);
-  bind("coupleCancelRecording", "click", () => stopRecord(false));
-  bind("coupleStopRecording", "click", () => stopRecord(true));
-}
+    modal.hidden = false;
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    renderMoodGrid();
+  }
 
-async function files(fileList) {
-  for (const file of fileList || []) {
-    if (file.size > 25 * 1024 * 1024) {
-      toast(file.name + " is larger than 25 MB");
-      continue;
+  function closeMoodPicker() {
+    const modal =
+      $("coupleMoodModal") ||
+      $("coupleMoodPicker");
+
+    if (!modal) return;
+
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    modal.hidden = true;
+  }
+
+  function getComposerValue() {
+    const input =
+      $("coupleMessageInput") ||
+      $("coupleMessage") ||
+      $("messageInput");
+
+    return input ? input.value.trim() : "";
+  }
+
+  function clearComposer() {
+    const input =
+      $("coupleMessageInput") ||
+      $("coupleMessage") ||
+      $("messageInput");
+
+    if (input) {
+      input.value = "";
+      input.style.height = "";
+      input.focus();
+    }
+  }
+
+  function setSendButtonState(disabled) {
+    const button =
+      $("coupleSendButton") ||
+      $("sendMessageButton");
+
+    if (button) button.disabled = Boolean(disabled);
+  }
+
+  function createClientId() {
+    if (window.crypto?.randomUUID) {
+      return window.crypto.randomUUID();
     }
 
-    const url = URL.createObjectURL(file);
+    return `client_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
 
-    messages.push({
-      message_id: "local-" + Date.now(),
-      content: file.name,
-      file_name: file.name,
-      media_url: url,
-      media_type: file.type || "application/octet-stream",
-      created_at: new Date().toISOString(),
-      is_mine: true,
-      local_only: true
+  function sendMessage(textOverride = null) {
+    const text = textOverride == null
+      ? getComposerValue()
+      : String(textOverride).trim();
+
+    if (!text || state.sending) return;
+
+    if (!state.partnerId) {
+      showToast("Partner not found. Please reopen the chat.");
+      return;
+    }
+
+    if (!state.realtime) {
+      showToast("Chat is connecting. Please wait a moment.");
+      return;
+    }
+
+    const clientId = createClientId();
+
+    const optimisticMessage = {
+      id: clientId,
+      client_message_id: clientId,
+      sender_id: state.currentUserId,
+      receiver_id: state.partnerId,
+      content: text,
+      timestamp: new Date().toISOString(),
+      status: "sent",
+      isOwn: true,
+      pending: true
+    };
+
+    state.clientMessageIds.add(clientId);
+    addMessage(optimisticMessage, { silent: true });
+
+    clearComposer();
+
+    const sent = state.realtime.sendMessage({
+      content: text,
+      client_message_id: clientId,
+      message_type: "text"
     });
 
-    persist();
-    render();
+    if (!sent) {
+      const localMessage = state.messages.find(
+        (item) => item.clientMessageId === clientId || item.id === clientId
+      );
 
-    toast("Media preview only: server upload is required to deliver it.");
-  }
-
-  if ($("coupleFileInput")) $("coupleFileInput").value = "";
-  if ($("coupleCameraInput")) $("coupleCameraInput").value = "";
-}
-
-async function record() {
-  if (recorder?.state === "recording") {
-    stopRecord(true);
-    return;
-  }
-
-  if (
-    !navigator.mediaDevices?.getUserMedia ||
-    !window.MediaRecorder
-  ) {
-    toast("Voice recording is not supported.");
-    return;
-  }
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    recordChunks = [];
-    recorder = new MediaRecorder(stream);
-
-    recorder.ondataavailable = event => {
-      if (event.data.size) recordChunks.push(event.data);
-    };
-
-    recorder.onstop = () => {
-      stream.getTracks().forEach(track => track.stop());
-
-      if (window._keepVoice && recordChunks.length) {
-        const blob = new Blob(recordChunks, {
-          type: recorder.mimeType || "audio/webm"
-        });
-
-        const url = URL.createObjectURL(blob);
-
-        messages.push({
-          message_id: "voice-" + Date.now(),
-          content: "Voice message",
-          media_url: url,
-          media_type: blob.type,
-          created_at: new Date().toISOString(),
-          is_mine: true,
-          local_only: true
-        });
-
-        persist();
-        render();
-
-        toast("Voice preview only: server upload is required to send it.");
+      if (localMessage) {
+        localMessage.pending = true;
       }
 
-      window._keepVoice = false;
-    };
-
-    recorder.start();
-    recordStarted = Date.now();
-
-    if ($("coupleRecordingBar")) $("coupleRecordingBar").hidden = false;
-
-    recordInterval = setInterval(() => {
-      const seconds = Math.floor((Date.now() - recordStarted) / 1000);
-
-      if ($("coupleRecordingTime")) {
-        $("coupleRecordingTime").textContent =
-          String(Math.floor(seconds / 60)).padStart(2, "0") +
-          ":" +
-          String(seconds % 60).padStart(2, "0");
-      }
-    }, 250);
-
-  } catch {
-    toast("Microphone permission was not granted.");
+      showToast("Message queued while reconnecting.");
+    }
   }
-}
 
-function stopRecord(keep) {
-  if (!recorder || recorder.state !== "recording") return;
+  function retryMessage(id) {
+    const message = state.messages.find((item) => item.id === id);
+    if (!message || !state.realtime) return;
 
-  window._keepVoice = keep;
-  recorder.stop();
+    const clientId = message.clientMessageId || createClientId();
 
-  clearInterval(recordInterval);
+    message.failed = false;
+    message.pending = true;
+    renderMessages();
 
-  if ($("coupleRecordingBar")) $("coupleRecordingBar").hidden = true;
-}
+    state.realtime.sendMessage({
+      content: message.content,
+      media_url: message.mediaUrl,
+      media_type: message.mediaType,
+      message_type: message.messageType || "text",
+      client_message_id: clientId
+    });
+  }
 
-function mergeHistory(historyList) {
-  if (!Array.isArray(historyList)) return;
+  function setTypingIndicator(isTyping, username = null) {
+    const indicator =
+      $("coupleTypingIndicator") ||
+      $("coupleTyping");
 
-  const map = new Map(
-    messages.map(message => [
-      String(message.message_id || message.id || message.client_id),
-      message
-    ])
-  );
+    if (!indicator) return;
 
-  historyList.forEach(raw => {
-    const message = normalize(raw);
-    const id = String(
-      message.message_id ||
-      message.id ||
-      message.client_id ||
-      "hist-" + Math.random()
+    indicator.hidden = !isTyping;
+    indicator.classList.toggle("is-typing", Boolean(isTyping));
+
+    if (isTyping) {
+      indicator.textContent = username
+        ? `${username} is typing…`
+        : "Your partner is typing…";
+    }
+  }
+
+  function sendTypingState(isTyping) {
+    if (!state.realtime) return;
+
+    if (isTyping) {
+      state.realtime.startTyping();
+    } else {
+      state.realtime.stopTyping();
+    }
+  }
+
+  function handleIncomingMessage(raw) {
+    const message = addMessage(raw);
+
+    if (!isOwnMessage(message) && message.messageId && state.realtime) {
+      state.realtime.sendDelivered(message.messageId);
+      state.realtime.sendRead(message.messageId);
+    }
+  }
+
+  function handleHistory(payload) {
+    const messages = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.messages)
+        ? payload.messages
+        : [];
+
+    if (messages.length) {
+      state.messages = [];
+      messages.forEach((message) => {
+        addMessage(message, { silent: true });
+      });
+    } else {
+      renderMessages();
+    }
+
+    saveMessages();
+  }
+
+  function handleConnection(payload = {}) {
+    const user = payload.user || {};
+    const partner = payload.partner || {};
+
+    state.currentUserId =
+      user.id ??
+      user.user_id ??
+      payload.current_user_id ??
+      state.currentUserId;
+
+    state.partnerName =
+      partner.name ||
+      partner.username ||
+      state.partnerName;
+
+    if (partner.name || partner.username) {
+      setText("couplePartnerName", state.partnerName);
+    }
+
+    setPartnerOnline(
+      payload.partner_online ?? partner.is_online ?? false,
+      payload.partner_last_seen ?? partner.last_seen
     );
 
-    map.set(id, {
-      ...map.get(id),
-      ...message,
-      message_id: id
-    });
-  });
+    setConnectionStatus("connected");
 
-  messages = [...map.values()]
-    .sort((a, b) =>
-      new Date(a.created_at || a.timestamp || 0) -
-      new Date(b.created_at || b.timestamp || 0)
-    )
-    .slice(-500);
+    if (payload.room_id) {
+      document.body.dataset.coupleRoomId = payload.room_id;
+    }
 
-  persist();
-  render();
-}
-
-function initRealtime() {
-  if (typeof window.UsanexCoupleRealtime !== "function") {
-    status("Offline", false);
-    return;
+    renderMessages();
   }
 
-  try {
-    realtime = new window.UsanexCoupleRealtime(partnerId, {
-      onConnection: data => {
-        state.connected = !!data.connected;
+  function handleReceipt(payload = {}) {
+    const messageId = String(
+      payload.message_id ??
+      payload.id ??
+      payload.client_message_id ??
+      ""
+    );
 
-        if (data.user) {
-          currentUserId =
-            data.user.id ??
-            data.user.user_id ??
-            currentUserId;
-        }
+    if (!messageId) return;
 
-        if (data.partner) {
-          if ($("couplePartnerName")) {
-            $("couplePartnerName").textContent =
-              data.partner.name ||
-              data.partner.username ||
-              "Partner";
-          }
+    const status = String(payload.status || payload.receipt || "delivered");
 
-          if (
-            data.partner.profile_photo &&
-            $("couplePartnerAvatar")
-          ) {
-            $("couplePartnerAvatar").src = data.partner.profile_photo;
-          }
-        }
+    const message = state.messages.find((item) =>
+      item.id === messageId ||
+      String(item.messageId) === messageId ||
+      String(item.clientMessageId) === messageId
+    );
 
-        status(
-          data.partnerOnline
-            ? "Online"
-            : data.connected
-              ? "Connected"
-              : "Offline",
-          data.partnerOnline
+    if (!message) return;
+
+    message.status = status;
+    message.pending = false;
+
+    renderMessages();
+    saveMessages();
+  }
+
+  function handlePresence(payload = {}) {
+    const isOnline =
+      payload.is_online ??
+      payload.online ??
+      payload.partner_online ??
+      false;
+
+    setPartnerOnline(isOnline, payload.last_seen);
+  }
+
+  function initRealtime() {
+    if (!state.partnerId) {
+      setConnectionStatus("disconnected");
+      showToast("Partner ID missing in the chat URL.");
+      return;
+    }
+
+    const Realtime =
+      window.UsanexCoupleRealtime ||
+      window.UtaNexaCoupleRealtime;
+
+    if (typeof Realtime !== "function") {
+      console.error("couple-realtime.js was not loaded.");
+      setConnectionStatus("disconnected");
+      showToast("Chat connection script did not load.");
+      return;
+    }
+
+    state.realtime = new Realtime({
+      partnerId: state.partnerId,
+
+      onConnection(payload) {
+        handleConnection(payload || {});
+      },
+
+      onStatus(status) {
+        setConnectionStatus(status);
+      },
+
+      onMessage(message) {
+        handleIncomingMessage(message);
+      },
+
+      onHistory(history) {
+        handleHistory(history);
+      },
+
+      onReceipt(receipt) {
+        handleReceipt(receipt);
+      },
+
+      onPresence(presence) {
+        handlePresence(presence);
+      },
+
+      onTyping(payload) {
+        setTypingIndicator(
+          payload.is_typing ?? payload.typing ?? true,
+          payload.username || payload.name || null
         );
-
-        if (Array.isArray(data.history)) mergeHistory(data.history);
       },
 
-      onMessage: message => {
-        const normalized = normalize(message);
-        add(normalized, normalized.is_mine);
-
-        if (!normalized.is_mine) {
-          try {
-            realtime?.sendReceipt?.("message_delivered", normalized.message_id);
-            realtime?.sendReceipt?.("message_read", normalized.message_id);
-          } catch {}
-
-          if (normalized.content) analyze(normalized.content);
-        }
-      },
-
-      onHistory: mergeHistory,
-
-      onReceipt: receipt => {
-        const message = messages.find(item =>
-          String(item.message_id || item.id) ===
-          String(receipt.message_id || receipt.id)
-        );
-
-        if (message) {
-          if ((receipt.type || receipt.status || "").includes("read")) {
-            message.read_at = true;
-          } else {
-            message.delivered_at = true;
-          }
-
-          persist();
-          render();
-        }
-      },
-
-      onPresence: presence => {
-        status(presence.online ? "Online" : "Offline", presence.online);
-      },
-
-      onTyping: typing => {
-        if ($("coupleTyping")) {
-          $("coupleTyping").hidden = !(
-            typing.typing ??
-            typing.isTyping ??
-            typing.active
-          );
-        }
-
-        if ($("coupleTypingName") && $("couplePartnerName")) {
-          $("coupleTypingName").textContent =
-            $("couplePartnerName").textContent;
-        }
+      onError(error) {
+        console.warn("Couple chat realtime:", error);
       }
     });
 
-    realtime.connect?.();
-
-  } catch (error) {
-    console.warn("Realtime init error", error);
-    status("Offline", false);
-  }
-}
-
-function init() {
-  const params = new URLSearchParams(location.search);
-
-  if ($("couplePartnerName")) {
-    $("couplePartnerName").textContent =
-      params.get("partner_name") || "Partner";
+    state.realtime.connect();
   }
 
-  status("Connecting…", false);
+  function handleFileSelection(file) {
+    if (!file) return;
 
-  try {
-    messages = JSON.parse(localStorage.getItem(storageKey) || "[]");
-    if (!Array.isArray(messages)) messages = [];
-  } catch {
-    messages = [];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "video/mp4",
+      "video/webm",
+      "audio/mpeg",
+      "audio/mp4",
+      "audio/ogg"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      showToast("This file type is not supported.");
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      showToast("File must be 10 MB or smaller.");
+      return;
+    }
+
+    state.selectedFile = file;
+
+    const preview =
+      $("coupleAttachmentPreview") ||
+      $("coupleFilePreview");
+
+    if (preview) {
+      preview.hidden = false;
+      preview.textContent = `Selected: ${file.name}`;
+    }
+
+    showToast("File selected. Upload API is required to send it.");
   }
 
-  render();
-  setupEmoji();
-  events();
-  setMode(currentMode, false);
-  initRealtime();
+  function bindEvents() {
+    const sendButton =
+      $("coupleSendButton") ||
+      $("sendMessageButton");
 
-  const composer = document.querySelector(".composer-area");
-  const app = $("coupleApp");
+    const input =
+      $("coupleMessageInput") ||
+      $("coupleMessage") ||
+      $("messageInput");
 
-  if (composer && app && window.ResizeObserver) {
-    new ResizeObserver(() => {
-      const height = composer.getBoundingClientRect().height;
+    if (sendButton) {
+      sendButton.addEventListener("click", () => sendMessage());
+    }
 
-      app.style.setProperty("--composer-height", height + "px");
-      document.documentElement.style.setProperty(
-        "--composer-height",
-        height + "px"
-      );
-    }).observe(composer);
+    if (input) {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+
+      input.addEventListener("input", () => {
+        sendTypingState(true);
+
+        clearTimeout(state.typingTimer);
+        state.typingTimer = setTimeout(() => {
+          sendTypingState(false);
+        }, 1200);
+      });
+    }
+
+    document.addEventListener("click", (event) => {
+      const target = event.target.closest("button, [data-couple-mood], [data-couple-suggestion]");
+
+      if (!target) return;
+
+      if (target.matches("[data-couple-mood]")) {
+        setMode(target.dataset.coupleMood);
+        closeMoodPicker();
+        return;
+      }
+
+      if (target.matches("[data-couple-suggestion]")) {
+        sendMessage(target.dataset.coupleSuggestion);
+        return;
+      }
+
+      if (target.id === "coupleMoodButton" ||
+          target.id === "coupleMoodToggle" ||
+          target.id === "openCoupleMood") {
+        openMoodPicker();
+        return;
+      }
+
+      if (target.id === "coupleMoodClose" ||
+          target.id === "closeCoupleMood") {
+        closeMoodPicker();
+        return;
+      }
+
+      if (target.id === "coupleAttachButton" ||
+          target.id === "coupleAttachmentButton") {
+        const fileInput =
+          $("coupleFileInput") ||
+          $("coupleAttachmentInput");
+
+        if (fileInput) fileInput.click();
+        else showToast("File input is not present in the HTML.");
+        return;
+      }
+
+      if (target.matches("[data-retry-id]")) {
+        retryMessage(target.dataset.retryId);
+      }
+    });
+
+    const fileInput =
+      $("coupleFileInput") ||
+      $("coupleAttachmentInput");
+
+    if (fileInput) {
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        handleFileSelection(file);
+      });
+    }
+
+    const modal =
+      $("coupleMoodModal") ||
+      $("coupleMoodPicker");
+
+    if (modal) {
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeMoodPicker();
+      });
+    }
+
+    window.addEventListener("online", () => {
+      if (state.realtime) state.realtime.connect();
+    });
+
+    window.addEventListener("offline", () => {
+      setConnectionStatus("disconnected");
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (state.realtime) state.realtime.disconnect();
+    });
   }
 
-  setTimeout(scroll, 100);
-}
+  function init() {
+    state.partnerId = getPartnerId();
+    state.mode = getSavedMode();
+    state.messages = getSavedMessages();
 
-window.UtaNexaCoupleChat = {
-  setMode,
-  sendText,
-  getMessages: () => messages.slice(),
-  refresh: render,
-  getEffects: () => EFFECTS.slice()
-};
+    renderMoodGrid();
+    setMoodVisual(state.mode);
+    renderMessages();
+    bindEvents();
+    initRealtime();
 
-window.UsanexCoupleChat = window.UtaNexaCoupleChat;
-window.UtaNexaCoupleModes = MODES;
-window.UtaNexaCoupleEffects = EFFECTS;
+    console.info("UtaNexa Couple Chat initialized.");
+  }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
-} else {
-  init();
-}
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 
+  window.UtaNexaCoupleChat = {
+    sendMessage,
+    setMode,
+    openMoodPicker,
+    closeMoodPicker,
+    getState() {
+      return {
+        partnerId: state.partnerId,
+        partnerName: state.partnerName,
+        partnerOnline: state.partnerOnline,
+        mode: state.mode,
+        messageCount: state.messages.length
+      };
+    }
+  };
 })();
