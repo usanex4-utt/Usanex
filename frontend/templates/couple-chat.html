@@ -2,110 +2,420 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#07152f">
+
   <title>Couple Chat | UtaNexa</title>
-  <link rel="stylesheet" href="/static/css/couple-chat.css?v=13">
+
+  <link rel="stylesheet" href="/static/css/couple-chat.css?v=14">
 </head>
+
 <body data-couple-mode="calm">
+
 <div class="couple-app" id="coupleApp">
+
+  <!-- HEADER -->
   <header class="couple-header">
-    <button type="button" class="icon-button back-button" id="coupleBackButton" aria-label="Back">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+
+    <button type="button"
+            class="icon-button back-button"
+            id="coupleBackButton"
+            aria-label="Back">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
     </button>
-    <button type="button" class="avatar-button" id="coupleAvatarButton" aria-label="Open partner profile">
-      <img id="couplePartnerAvatar" src="/static/images/default-profile.png" alt="">
-      <span class="online-dot" id="coupleOnlineDot" hidden></span>
+
+    <button type="button"
+            class="avatar-button"
+            id="coupleAvatarButton"
+            aria-label="Open partner profile">
+
+      <img id="couplePartnerAvatar"
+           src="/static/images/default-profile.png"
+           alt="Partner">
+
+      <span class="online-dot"
+            id="coupleOnlineDot"
+            hidden></span>
     </button>
+
     <div class="header-info">
       <strong id="couplePartnerName">Partner</strong>
-      <span id="couplePartnerStatus">Offline</span>
+      <span id="couplePartnerStatus">Connecting...</span>
     </div>
-    <button type="button" class="mood-button" id="coupleHeaderMood">Mood</button>
-    <button type="button" class="icon-button call-button" id="coupleCallButton" aria-label="Call partner" title="Call partner">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.2 11.2 0 0 0 3.52.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.58 21 3 13.42 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.2 11.2 0 0 0 .56 3.52 1 1 0 0 1-.24 1.02z"/></svg>
+
+    <button type="button"
+            class="mood-button"
+            id="coupleHeaderMood">
+      Mood
     </button>
-    <button type="button" class="icon-button menu-button" id="coupleMenuButton" aria-label="More options">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+
+    <button type="button"
+            class="icon-button call-button"
+            id="coupleCallButton"
+            aria-label="Call partner"
+            title="Call partner">
+
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1.02-.24 11.2 11.2 0 0 0 3.52.56 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.58 21 3 13.42 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.2 11.2 0 0 0 .56 3.52 1 1 0 0 1-.24 1.02z"/>
+      </svg>
     </button>
+
+    <button type="button"
+            class="icon-button menu-button"
+            id="coupleMenuButton"
+            aria-label="More options">
+
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="5" r="1.8"/>
+        <circle cx="12" cy="12" r="1.8"/>
+        <circle cx="12" cy="19" r="1.8"/>
+      </svg>
+    </button>
+
   </header>
 
+  <!-- COUPLE AI -->
   <section class="ai-mini" id="coupleAiPanel">
-    <span class="ai-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8zM19 15l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></svg></span>
-    <div class="ai-copy"><strong>UtaNexa Couple AI</strong><span id="coupleAiStatus">Understanding your conversation…</span></div>
-    <button type="button" class="icon-button ai-open" id="coupleAiButton" aria-label="Open AI suggestions"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/></svg></button>
+
+    <span class="ai-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="m12 2 1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8zM19 15l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>
+      </svg>
+    </span>
+
+    <div class="ai-copy">
+      <strong>UtaNexa Couple AI</strong>
+      <span id="coupleAiStatus">Understanding your conversation…</span>
+    </div>
+
+    <button type="button"
+            class="icon-button ai-open"
+            id="coupleAiButton"
+            aria-label="Open AI suggestions">
+
+      <svg viewBox="0 0 24 24">
+        <path d="M4 5h16v11H8l-4 4z"/>
+      </svg>
+    </button>
+
   </section>
 
-  <section class="quick-actions" id="coupleQuickActions" aria-label="Quick actions">
-    <button type="button" class="quick-action" data-action="love"><span class="quick-icon"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/></svg></span><small>Love</small></button>
-    <button type="button" class="quick-action" data-action="memory"><span class="quick-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 3 3 3-4 5 6"/></svg></span><small>Memory</small></button>
-    <button type="button" class="quick-action" data-action="question"><span class="quick-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H9l-5 3z"/><path d="M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-1.1.9-1.7 1.2-1.7 2.7M12 16.5h.01"/></svg></span><small>Question</small></button>
-    <button type="button" class="quick-action" data-action="game"><span class="quick-icon"><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 3.8 5.2l-1 3.2a2 2 0 0 1-3.2 1l-2.1-1.6h-5l-2.1 1.6a2 2 0 0 1-3.2-1l-1-3.2A4 4 0 0 1 7 8z"/><path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/></svg></span><small>Game</small></button>
+  <!-- QUICK ACTIONS -->
+  <section class="quick-actions"
+           id="coupleQuickActions"
+           aria-label="Quick actions">
+
+    <button type="button" class="quick-action" data-action="love">
+      <span class="quick-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/>
+        </svg>
+      </span>
+      <small>Love</small>
+    </button>
+
+    <button type="button" class="quick-action" data-action="memory">
+      <span class="quick-icon">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="3"/>
+          <circle cx="8.5" cy="9" r="1.5"/>
+          <path d="m4 17 5-5 3 3 3-4 5 6"/>
+        </svg>
+      </span>
+      <small>Memory</small>
+    </button>
+
+    <button type="button" class="quick-action" data-action="question">
+      <span class="quick-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 5h16v12H9l-5 3z"/>
+          <path d="M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-1.1.9-1.7 1.2-1.7 2.7M12 16.5h.01"/>
+        </svg>
+      </span>
+      <small>Question</small>
+    </button>
+
+    <button type="button" class="quick-action" data-action="game">
+      <span class="quick-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M7 8h10a4 4 0 0 1 3.8 5.2l-1 3.2a2 2 0 0 1-3.2 1l-2.1-1.6h-5l-2.1 1.6a2 2 0 0 1-3.2-1l-1-3.2A4 4 0 0 1 7 8z"/>
+          <path d="M8 11v4M6 13h4M16 12h.01M18 14h.01"/>
+        </svg>
+      </span>
+      <small>Game</small>
+    </button>
+
   </section>
 
+  <!-- CONVERSATION -->
   <main class="conversation" id="coupleConversation">
-    <div class="mood-background" id="coupleBackgroundLayer" aria-hidden="true"></div>
-    <div class="mood-effects" id="coupleEffectsLayer" aria-hidden="true"></div>
+
+    <div class="mood-background"
+         id="coupleBackgroundLayer"
+         aria-hidden="true"></div>
+
+    <div class="mood-effects"
+         id="coupleEffectsLayer"
+         aria-hidden="true"></div>
+
     <div class="day-label" id="coupleDayLabel">Today</div>
-    <div class="typing-indicator" id="coupleTyping" hidden><span id="coupleTypingName">Partner</span><span class="typing-dots"><i></i><i></i><i></i></span><span>typing…</span></div>
-    <section class="messages" id="coupleMessages" aria-live="polite"></section>
+
+    <div class="typing-indicator"
+         id="coupleTyping"
+         hidden>
+
+      <span id="coupleTypingName">Partner</span>
+
+      <span class="typing-dots">
+        <i></i><i></i><i></i>
+      </span>
+
+      <span>typing…</span>
+    </div>
+
+    <section class="messages"
+             id="coupleMessages"
+             aria-live="polite"></section>
+
   </main>
 
-  <section class="suggestions-dock" id="coupleSuggestions" hidden>
-    <div class="suggestions-heading"><span>AI suggestions</span><button type="button" id="closeSuggestions" aria-label="Hide suggestions">×</button></div>
+  <!-- AI SUGGESTIONS -->
+  <section class="suggestions-dock"
+           id="coupleSuggestions"
+           hidden>
+
+    <div class="suggestions-heading">
+      <span>AI suggestions</span>
+      <button type="button" id="closeSuggestions" aria-label="Hide suggestions">×</button>
+    </div>
+
     <div class="suggestion-list" id="coupleSuggestionList"></div>
+
   </section>
 
+  <!-- MESSAGE COMPOSER -->
   <footer class="composer-area">
+
     <form class="composer" id="coupleComposer">
-      <button type="button" class="icon-button composer-icon" id="coupleEmojiButton" aria-label="Choose emoji"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.3 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></button>
-      <input id="coupleMessageInput" type="text" placeholder="Message your partner…" maxlength="4000" autocomplete="off">
-      <button type="button" class="icon-button composer-icon" id="coupleAttachButton" aria-label="Attach file"><svg viewBox="0 0 24 24"><path d="m8 12.5 7.8-7.8a4 4 0 0 1 5.7 5.7L10.2 21.7a6 6 0 0 1-8.5-8.5L12.3 2.6"/></svg></button>
-      <button type="button" class="icon-button composer-icon" id="coupleCameraButton" aria-label="Take or choose photo"><svg viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="14" r="4"/></svg></button>
-      <button type="button" class="icon-button composer-icon" id="coupleVoiceButton" aria-label="Record voice message"><svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4m-4 0h8"/></svg></button>
-      <button type="submit" class="send-button" id="coupleSendButton" aria-label="Send message"><svg viewBox="0 0 24 24"><path d="m3 3 18 9-18 9 3-9zM6 12h15"/></svg></button>
+
+      <button type="button"
+              class="icon-button composer-icon"
+              id="coupleEmojiButton"
+              aria-label="Choose emoji">
+
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M8 14s1.3 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>
+        </svg>
+      </button>
+
+      <input
+        id="coupleMessageInput"
+        type="text"
+        placeholder="Message your partner…"
+        maxlength="4000"
+        autocomplete="off">
+
+      <button type="button"
+              class="icon-button composer-icon"
+              id="coupleAttachButton"
+              aria-label="Attach file">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m8 12.5 7.8-7.8a4 4 0 0 1 5.7 5.7L10.2 21.7a6 6 0 0 1-8.5-8.5L12.3 2.6"/>
+        </svg>
+      </button>
+
+      <button type="button"
+              class="icon-button composer-icon"
+              id="coupleCameraButton"
+              aria-label="Take or choose photo">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M3 8h4l2-3h6l2 3h4v12H3z"/>
+          <circle cx="12" cy="14" r="4"/>
+        </svg>
+      </button>
+
+      <button type="button"
+              class="icon-button composer-icon"
+              id="coupleVoiceButton"
+              aria-label="Record voice message">
+
+        <svg viewBox="0 0 24 24">
+          <rect x="9" y="2" width="6" height="13" rx="3"/>
+          <path d="M5 11a7 7 0 0 0 14 0M12 18v4m-4 0h8"/>
+        </svg>
+      </button>
+
+      <button type="submit"
+              class="send-button"
+              id="coupleSendButton"
+              aria-label="Send message">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m3 3 18 9-18 9 3-9zM6 12h15"/>
+        </svg>
+      </button>
+
     </form>
-    <div class="recording-bar" id="coupleRecordingBar" hidden><span class="recording-dot"></span><span id="coupleRecordingTime">00:00</span><span>Recording voice message</span><button type="button" id="coupleCancelRecording">Cancel</button><button type="button" id="coupleStopRecording">Stop &amp; attach</button></div>
+
+    <div class="recording-bar" id="coupleRecordingBar" hidden>
+      <span class="recording-dot"></span>
+      <span id="coupleRecordingTime">00:00</span>
+      <span>Recording voice message</span>
+      <button type="button" id="coupleCancelRecording">Cancel</button>
+      <button type="button" id="coupleStopRecording">Stop &amp; attach</button>
+    </div>
+
   </footer>
+
 </div>
 
-<input type="file" id="coupleFileInput" hidden multiple accept="image/*,video/*,.pdf,.doc,.docx,.txt,audio/*">
-<input type="file" id="coupleCameraInput" hidden accept="image/*" capture="environment">
+<!-- FILE INPUTS -->
+<input
+  type="file"
+  id="coupleFileInput"
+  hidden
+  multiple
+  accept="image/*,video/*,.pdf,.doc,.docx,.txt,audio/*">
 
+<input
+  type="file"
+  id="coupleCameraInput"
+  hidden
+  accept="image/*"
+  capture="environment">
+
+<!-- EMOJI PICKER -->
 <div class="picker-backdrop" id="couplePickerBackdrop" hidden></div>
-<section class="emoji-picker" id="coupleEmojiPicker" hidden aria-label="Emoji picker">
-  <div class="picker-top"><strong>Emoji</strong><button type="button" id="closeEmojiPicker">×</button></div>
-  <input type="search" id="coupleEmojiSearch" placeholder="Search emoji…">
+
+<section class="emoji-picker"
+         id="coupleEmojiPicker"
+         hidden
+         aria-label="Emoji picker">
+
+  <div class="picker-top">
+    <strong>Emoji</strong>
+    <button type="button" id="closeEmojiPicker">×</button>
+  </div>
+
+  <input type="search"
+         id="coupleEmojiSearch"
+         placeholder="Search emoji…">
+
   <div class="emoji-categories" id="coupleEmojiCategories"></div>
   <div class="emoji-grid" id="coupleEmojiGrid"></div>
+
   <div class="picker-foot">Recently used emojis appear first</div>
+
 </section>
 
+<!-- MOOD SELECTOR -->
 <div class="overlay hidden" id="coupleMoodOverlay">
+
   <section class="modal-panel">
-    <div class="panel-heading"><div><small>UtaNexa Couple Chat</small><h2>Choose a mood</h2></div><button type="button" id="closeMoodPanel">×</button></div>
-    <div class="mood-grid" id="coupleMoodGrid">
-      <button data-mode="romantic"><span class="mood-symbol">♡</span><span>Romantic</span></button><button data-mode="deep_love"><span class="mood-symbol">♥</span><span>Deep Love</span></button><button data-mode="happy"><span class="mood-symbol">☼</span><span>Happy</span></button><button data-mode="funny"><span class="mood-symbol">☺</span><span>Funny</span></button><button data-mode="sad"><span class="mood-symbol">☂</span><span>Sad</span></button><button data-mode="emotional"><span class="mood-symbol">♡</span><span>Emotional</span></button><button data-mode="angry"><span class="mood-symbol">!</span><span>Angry</span></button><button data-mode="frustrated"><span class="mood-symbol">↯</span><span>Frustrated</span></button><button data-mode="caring"><span class="mood-symbol">✧</span><span>Caring</span></button><button data-mode="comfort"><span class="mood-symbol">○</span><span>Comfort</span></button><button data-mode="flirty"><span class="mood-symbol">◇</span><span>Flirty</span></button><button data-mode="passionate"><span class="mood-symbol">△</span><span>Passionate</span></button><button data-mode="good_night"><span class="mood-symbol">☾</span><span>Good Night</span></button><button data-mode="good_morning"><span class="mood-symbol">☀</span><span>Good Morning</span></button><button data-mode="memory"><span class="mood-symbol">▣</span><span>Memory</span></button><button data-mode="celebration"><span class="mood-symbol">✦</span><span>Celebration</span></button><button data-mode="birthday"><span class="mood-symbol">✧</span><span>Birthday</span></button><button data-mode="future_marriage"><span class="mood-symbol">♢</span><span>Future</span></button><button data-mode="missing_you"><span class="mood-symbol">⌁</span><span>Missing You</span></button><button data-mode="apology"><span class="mood-symbol">↺</span><span>Apology</span></button><button data-mode="appreciation"><span class="mood-symbol">✦</span><span>Appreciation</span></button><button data-mode="game"><span class="mood-symbol">▦</span><span>Game</span></button><button data-mode="photo_memory"><span class="mood-symbol">▧</span><span>Photo Memory</span></button><button data-mode="serious_talk"><span class="mood-symbol">≋</span><span>Serious Talk</span></button><button data-mode="deep_conversation"><span class="mood-symbol">∞</span><span>Deep Talk</span></button><button data-mode="calm"><span class="mood-symbol">○</span><span>Calm</span></button>
+
+    <div class="panel-heading">
+      <div>
+        <small>UtaNexa Couple Chat</small>
+        <h2>Choose a mood</h2>
+      </div>
+      <button type="button" id="closeMoodPanel">×</button>
     </div>
+
+    <div class="mood-grid" id="coupleMoodGrid">
+
+      <button type="button" data-mode="romantic"><span class="mood-symbol">♡</span><span>Romantic</span></button>
+      <button type="button" data-mode="deep_love"><span class="mood-symbol">♥</span><span>Deep Love</span></button>
+      <button type="button" data-mode="happy"><span class="mood-symbol">☼</span><span>Happy</span></button>
+      <button type="button" data-mode="funny"><span class="mood-symbol">☺</span><span>Funny</span></button>
+      <button type="button" data-mode="sad"><span class="mood-symbol">☂</span><span>Sad</span></button>
+      <button type="button" data-mode="emotional"><span class="mood-symbol">♡</span><span>Emotional</span></button>
+      <button type="button" data-mode="angry"><span class="mood-symbol">!</span><span>Angry</span></button>
+      <button type="button" data-mode="frustrated"><span class="mood-symbol">↯</span><span>Frustrated</span></button>
+      <button type="button" data-mode="caring"><span class="mood-symbol">✧</span><span>Caring</span></button>
+      <button type="button" data-mode="comfort"><span class="mood-symbol">○</span><span>Comfort</span></button>
+      <button type="button" data-mode="flirty"><span class="mood-symbol">◇</span><span>Flirty</span></button>
+      <button type="button" data-mode="passionate"><span class="mood-symbol">△</span><span>Passionate</span></button>
+      <button type="button" data-mode="good_night"><span class="mood-symbol">☾</span><span>Good Night</span></button>
+      <button type="button" data-mode="good_morning"><span class="mood-symbol">☀</span><span>Good Morning</span></button>
+      <button type="button" data-mode="memory"><span class="mood-symbol">▣</span><span>Memory</span></button>
+      <button type="button" data-mode="celebration"><span class="mood-symbol">✦</span><span>Celebration</span></button>
+      <button type="button" data-mode="birthday"><span class="mood-symbol">✧</span><span>Birthday</span></button>
+      <button type="button" data-mode="future_marriage"><span class="mood-symbol">♢</span><span>Future</span></button>
+      <button type="button" data-mode="missing_you"><span class="mood-symbol">⌁</span><span>Missing You</span></button>
+      <button type="button" data-mode="apology"><span class="mood-symbol">↺</span><span>Apology</span></button>
+      <button type="button" data-mode="appreciation"><span class="mood-symbol">✦</span><span>Appreciation</span></button>
+      <button type="button" data-mode="game"><span class="mood-symbol">▦</span><span>Game</span></button>
+      <button type="button" data-mode="photo_memory"><span class="mood-symbol">▧</span><span>Photo Memory</span></button>
+      <button type="button" data-mode="serious_talk"><span class="mood-symbol">≋</span><span>Serious Talk</span></button>
+      <button type="button" data-mode="deep_conversation"><span class="mood-symbol">∞</span><span>Deep Talk</span></button>
+      <button type="button" data-mode="calm"><span class="mood-symbol">○</span><span>Calm</span></button>
+
+    </div>
+
   </section>
+
 </div>
 
+<!-- COUPLE AI MODAL -->
 <div class="overlay hidden" id="coupleAiOverlay">
+
   <section class="modal-panel">
-    <div class="panel-heading"><div><small>UtaNexa</small><h2>Couple AI</h2></div><button type="button" id="closeAiPanel">×</button></div>
-    <div class="ai-actions"><button data-ai-action="suggest">Suggest a reply</button><button data-ai-action="mood">Understand mood</button><button data-ai-action="question">Give us a question</button><button data-ai-action="game">Couple game</button></div>
+
+    <div class="panel-heading">
+      <div>
+        <small>UtaNexa</small>
+        <h2>Couple AI</h2>
+      </div>
+      <button type="button" id="closeAiPanel">×</button>
+    </div>
+
+    <div class="ai-actions">
+      <button type="button" data-ai-action="suggest">Suggest a reply</button>
+      <button type="button" data-ai-action="mood">Understand mood</button>
+      <button type="button" data-ai-action="question">Give us a question</button>
+      <button type="button" data-ai-action="game">Couple game</button>
+    </div>
+
   </section>
+
 </div>
 
+<!-- MENU MODAL -->
 <div class="overlay hidden" id="coupleMenuOverlay">
+
   <section class="modal-panel">
-    <div class="panel-heading"><div><small>Conversation</small><h2>Options</h2></div><button type="button" id="closeCoupleMenu">×</button></div>
-    <div class="menu-actions"><button data-menu-action="export">Export chat</button><button data-menu-action="clear">Clear local chat</button></div>
+
+    <div class="panel-heading">
+      <div>
+        <small>Conversation</small>
+        <h2>Options</h2>
+      </div>
+      <button type="button" id="closeCoupleMenu">×</button>
+    </div>
+
+    <div class="menu-actions">
+      <button type="button" data-menu-action="export">Export chat</button>
+      <button type="button" data-menu-action="clear">Clear local chat</button>
+    </div>
+
   </section>
+
 </div>
 
-<div class="toast" id="coupleToast" role="status" aria-live="polite"></div>
-<script src="/static/js/couple-realtime.js?v=4"></script>
-<script src="/static/js/couple-chat.js?v=12"></script>
+<!-- TOAST -->
+<div class="toast"
+     id="coupleToast"
+     role="status"
+     aria-live="polite"></div>
+
+<!-- SCRIPTS: KEEP THIS ORDER -->
+<script src="/static/js/couple-realtime.js?v=5"></script>
+<script src="/static/js/couple-chat.js?v=13"></script>
+
 </body>
 </html>
