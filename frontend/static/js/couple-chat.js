@@ -1,7 +1,7 @@
 /* =========================================================
-   UTANEXA — COUPLE CHAT
-   55 MOODS + AUTO MOOD DETECTION + ANIMATED EFFECTS
-   Realtime endpoint support: /ws/couple/{partner_user_id}
+   UTANEXA — COUPLE CHAT (OPTIMIZED REPLACEMENT)
+   55 moods • local mood detection • safe rendering • receipts
+   Realtime contract: window.UsanexCoupleRealtime
    ========================================================= */
 (function () {
   "use strict";
@@ -435,6 +435,12 @@
       serverId: item.id ?? item.message_id ?? null,
       clientId: item.client_message_id ?? item.client_id ?? null,
       senderId: item.sender_id ?? item.senderId ?? null,
+      isOwn:
+        typeof item.isOwn === "boolean"
+          ? item.isOwn
+          : typeof item.is_own === "boolean"
+            ? item.is_own
+            : undefined,
       content: item.content ?? "",
       mediaUrl: item.media_url ?? item.mediaUrl ?? null,
       mediaType: item.media_type ?? item.mediaType ?? null,
@@ -445,24 +451,48 @@
         item.createdAt ??
         new Date().toISOString(),
       status: item.status || (item.pending ? "pending" : "sent"),
-      replyTo: item.reply_to_message_id ?? item.reply_to ?? null,
-      isOwn: Boolean(item.isOwn)
+      replyTo: item.reply_to_message_id ?? item.reply_to ?? null
     };
+  }
+
+  function isOwnMessage(message) {
+    if (
+      state.currentUserId !== null &&
+      state.currentUserId !== undefined &&
+      message.senderId !== null &&
+      message.senderId !== undefined
+    ) {
+      return String(message.senderId) === String(state.currentUserId);
+    }
+
+    return Boolean(message.isOwn);
   }
 
   function saveMessages() {
     try {
+      // Blob URLs are temporary previews and must not survive reloads.
       const safe = state.messages.filter(
-        (m) => !(m.mediaUrl && String(m.mediaUrl).startsWith("blob:"))
+        (message) =>
+          !(
+            message.mediaUrl &&
+            String(message.mediaUrl).startsWith("blob:")
+          )
       );
 
-      localStorage.setItem(storageKey(), JSON.stringify(safe.slice(-100)));
-    } catch (_) {}
+      localStorage.setItem(
+        storageKey(),
+        JSON.stringify(safe.slice(-100))
+      );
+    } catch (_) {
+      // Storage may be unavailable or full.
+    }
   }
 
   function loadMessages() {
     try {
-      const raw = JSON.parse(localStorage.getItem(storageKey()) || "[]");
+      const raw = JSON.parse(
+        localStorage.getItem(storageKey()) || "[]"
+      );
 
       state.messages = Array.isArray(raw)
         ? raw.map(normaliseMessage)
@@ -480,58 +510,71 @@
 
     if (!state.messages.length) {
       const empty = document.createElement("div");
+
       empty.className = "couple-empty-state";
       empty.innerHTML =
-        '<span aria-hidden="true">💙</span><strong>Your story starts here</strong><p>Send your first message.</p>';
+        '<span aria-hidden="true">💙</span>' +
+        "<strong>Your story starts here</strong>" +
+        "<p>Send your first message.</p>";
 
       box.appendChild(empty);
     }
 
-    state.messages.forEach((m) => {
-      const own =
-        state.currentUserId !== null && m.senderId !== null
-          ? String(m.senderId) === String(state.currentUserId)
-          : Boolean(m.isOwn);
-
+    state.messages.forEach((message) => {
+      const own = isOwnMessage(message);
       const row = document.createElement("div");
-      row.className = `couple-message-row ${own ? "is-own" : "is-partner"}`;
-      row.dataset.messageId = m.id;
+
+      row.className =
+        `couple-message-row ${own ? "is-own" : "is-partner"}`;
+
+      row.dataset.messageId = message.id;
 
       const bubble = document.createElement("div");
       bubble.className = "couple-message-bubble";
 
-      if (m.mediaUrl) {
-        const type = String(m.mediaType || "").toLowerCase();
+      if (message.mediaUrl) {
+        const type = String(message.mediaType || "").toLowerCase();
 
         if (
           type.startsWith("image/") ||
-          /\.(png|jpe?g|gif|webp)(\?|$)/i.test(m.mediaUrl)
+          /\.(png|jpe?g|gif|webp)(\?|$)/i.test(message.mediaUrl)
         ) {
           const img = document.createElement("img");
+
           img.className = "couple-message-image";
-          img.src = m.mediaUrl;
+          img.src = message.mediaUrl;
           img.alt = "Shared image";
           img.loading = "lazy";
+
           bubble.appendChild(img);
-        } else if (type.startsWith("audio/") || m.messageType === "voice") {
+        } else if (
+          type.startsWith("audio/") ||
+          message.messageType === "voice"
+        ) {
           const audio = document.createElement("audio");
+
           audio.controls = true;
-          audio.src = m.mediaUrl;
+          audio.src = message.mediaUrl;
+
           bubble.appendChild(audio);
         } else {
           const link = document.createElement("a");
-          link.href = m.mediaUrl;
+
+          link.href = message.mediaUrl;
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.textContent = "Open attachment";
+
           bubble.appendChild(link);
         }
       }
 
-      if (m.content) {
+      if (message.content) {
         const content = document.createElement("div");
+
         content.className = "couple-message-text";
-        content.textContent = m.content;
+        content.textContent = message.content;
+
         bubble.appendChild(content);
       }
 
@@ -539,20 +582,24 @@
       meta.className = "couple-message-meta";
 
       const time = document.createElement("span");
-      time.textContent = formatTime(m.timestamp);
+      time.textContent = formatTime(message.timestamp);
+
       meta.appendChild(time);
 
       if (own) {
         const receipt = document.createElement("span");
-        receipt.className = `couple-message-receipt receipt-${safeText(m.status)}`;
+
+        receipt.className =
+          `couple-message-receipt receipt-${safeText(message.status)}`;
 
         receipt.textContent =
-          m.status === "seen" ? "✓✓" :
-          m.status === "delivered" ? "✓✓" :
-          m.status === "sent" ? "✓" :
-          m.status === "pending" ? "◷" : "";
+          message.status === "seen" ? "✓✓" :
+          message.status === "delivered" ? "✓✓" :
+          message.status === "sent" ? "✓" :
+          message.status === "pending" ? "◷" : "";
 
-        receipt.setAttribute("aria-label", m.status || "sent");
+        receipt.setAttribute("aria-label", message.status || "sent");
+
         meta.appendChild(receipt);
       }
 
@@ -567,8 +614,8 @@
   function updatePartner(data) {
     const partner = data.partner || {};
     const name = partner.name || partner.username || "Partner";
-    const nameEl = $("couplePartnerName");
 
+    const nameEl = $("couplePartnerName");
     if (nameEl) nameEl.textContent = name;
 
     const avatar = $("couplePartnerAvatar");
@@ -622,8 +669,9 @@
       data.partnerLastSeen ??
       partner.last_seen;
 
-    if (online) setStatus("Online", "online");
-    else if (lastSeen) {
+    if (online) {
+      setStatus("Online", "online");
+    } else if (lastSeen) {
       setStatus(`Last seen ${formatLastSeen(lastSeen)}`, "offline");
     } else {
       setStatus("Offline", "offline");
@@ -649,387 +697,335 @@
     });
   }
 
-  function mergeIncoming(item) {
-    const incoming = normaliseMessage(item);
-
-    let existing = state.messages.find((m) =>
-      (
-        incoming.clientId &&
-        (m.clientId === incoming.clientId || m.id === incoming.clientId)
-      ) ||
-      (
-        incoming.serverId &&
-        m.serverId &&
-        String(m.serverId) === String(incoming.serverId)
-      )
-    );
-
-    if (existing) {
-      existing.serverId = incoming.serverId || existing.serverId;
-      existing.id = incoming.serverId
-        ? String(incoming.serverId)
-        : existing.id;
-
-      existing.senderId = incoming.senderId ?? existing.senderId;
-      existing.content = incoming.content || existing.content;
-      existing.mediaUrl = incoming.mediaUrl || existing.mediaUrl;
-      existing.mediaType = incoming.mediaType || existing.mediaType;
-      existing.timestamp = incoming.timestamp || existing.timestamp;
-      existing.status = incoming.status || "sent";
-    } else {
-      state.messages.push(incoming);
+   function mergeIncoming(item) {
+    const message = normaliseMessage(item);
+    if (!message.id && !message.clientId) {
+      message.id = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     }
 
-    state.messages = state.messages.slice(-100);
+    const existingIndex = state.messages.findIndex((m) =>
+      (message.id && m.id === message.id) ||
+      (message.clientId && m.clientId === message.clientId)
+    );
+
+    if (existingIndex >= 0) {
+      state.messages[existingIndex] = {
+        ...state.messages[existingIndex],
+        ...message,
+        pending: false
+      };
+    } else {
+      state.messages.push(message);
+    }
+
     saveMessages();
     render();
   }
 
   function handleHistory(messages) {
-    const localPending = state.messages.filter(
-      (m) => m.status === "pending" || m.status === "local_only"
+    if (!Array.isArray(messages)) return;
+
+    const pendingMessages = state.messages.filter(
+      (message) => message.pending || message.local_only
     );
 
-    const history = (messages || []).map(normaliseMessage);
-    const byId = new Map();
+    const serverMessages = messages.map(normaliseMessage);
+    const merged = [...serverMessages];
 
-    history.forEach((m) => {
-      byId.set(String(m.serverId || m.id), m);
+    pendingMessages.forEach((pending) => {
+      const exists = merged.some((message) =>
+        (pending.id && message.id === pending.id) ||
+        (pending.clientId && message.clientId === pending.clientId)
+      );
+
+      if (!exists) merged.push(pending);
     });
 
-    localPending.forEach((m) => {
-      if (!byId.has(String(m.serverId || m.id))) {
-        byId.set(String(m.serverId || m.id), m);
-      }
+    merged.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.timestamp || 0).getTime();
+      const timeB = new Date(b.createdAt || b.timestamp || 0).getTime();
+      return timeA - timeB;
     });
 
-    state.messages = Array.from(byId.values())
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-      .slice(-100);
-
+    state.messages = merged;
     saveMessages();
     render();
   }
 
   function renderSuggestions() {
-    const grid =
-      $("coupleSuggestionList") ||
-      $("coupleMoodSuggestions") ||
-      $("coupleMoodQuickReplies");
+    const container =
+      $("coupleSuggestions") ||
+      $("coupleQuickReplies") ||
+      $("quickReplies");
 
-    if (!grid) return;
+    if (!container) return;
 
-    grid.innerHTML = "";
+    const suggestions = SUGGESTIONS[state.mode] || SUGGESTIONS.neutral || [];
+    container.replaceChildren();
 
-    (SUGGESTIONS[state.mode] || SUGGESTIONS.romantic).forEach((text) => {
+    suggestions.forEach((suggestion) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "couple-suggestion-chip suggestion-chip";
-      button.textContent = text;
-
-      button.addEventListener("click", () => {
-        const input = $("coupleMessageInput") || $("coupleInput");
-
-        if (input) {
-          input.value = text;
-          input.focus();
-        }
-      });
-
-      grid.appendChild(button);
+      button.className = "couple-suggestion";
+      button.textContent = suggestion;
+      button.addEventListener("click", () => sendPresetText(suggestion));
+      container.appendChild(button);
     });
   }
 
   function setMode(mode, persist = true) {
-    const selected = MODES.some((m) => m[0] === mode)
-      ? mode
-      : "romantic";
+    const validMode = MODES.some((item) => item[0] === mode);
+    if (!validMode) mode = "neutral";
 
-    state.mode = selected;
+    state.mode = mode;
 
-    document.body.dataset.coupleMode = selected;
-    document.documentElement.dataset.coupleMode = selected;
+    const modeData = MODES.find((item) => item[0] === mode);
+    const emoji = modeData ? modeData[2] : "💬";
 
-    const modeData = MODES.find((m) => m[0] === selected);
+    document.documentElement.dataset.coupleMood = mode;
+    document.body.dataset.coupleMood = mode;
 
-    const modeButton =
-      $("coupleHeaderMood") ||
-      $("coupleMoodButton") ||
-      $("coupleCurrentMood");
+    const page = $("coupleChatPage") || $("coupleChat");
+    if (page) page.dataset.mood = mode;
 
-    if (modeButton && modeData) {
-      modeButton.title = `${modeData[2]} ${modeData[1]}`;
-      modeButton.setAttribute("aria-label", `Current mood: ${modeData[1]}`);
+    const moodLabel =
+      $("coupleMoodLabel") ||
+      $("currentMoodLabel") ||
+      $("coupleMoodText");
 
-      const label = modeButton.querySelector("[data-mood-label]");
-
-      if (label) label.textContent = modeData[1];
-      else if (modeButton.id === "coupleHeaderMood") {
-        modeButton.textContent = `${modeData[2]} ${modeData[1]}`;
-      }
+    if (moodLabel) {
+      moodLabel.textContent = modeData ? modeData[1] : "Neutral";
     }
 
-    document.querySelectorAll("[data-couple-mood]").forEach((btn) => {
-      const active = btn.dataset.coupleMood === selected;
+    const moodIcon =
+      $("coupleMoodIcon") ||
+      $("currentMoodIcon");
 
-      btn.classList.toggle("active", active);
-      btn.setAttribute("aria-pressed", String(active));
-    });
+    if (moodIcon) moodIcon.textContent = emoji;
+
+    const moodButton =
+      $("coupleMoodButton") ||
+      $("moodPickerButton");
+
+    if (moodButton) {
+      moodButton.setAttribute(
+        "aria-label",
+        `Current mood: ${modeData ? modeData[1] : "Neutral"}`
+      );
+    }
 
     if (persist) {
       try {
-        localStorage.setItem(modeKey(), selected);
+        localStorage.setItem(modeKey(), mode);
       } catch (_) {}
-
-      fetch("/api/couple-chat/mood", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          partner_id: state.partnerId,
-          mood: selected,
-          mode: selected
-        })
-      }).catch(() => {});
     }
 
     renderSuggestions();
-    launchMoodEffects(selected);
   }
 
   function launchMoodEffects(mode) {
-    const layer = $("coupleEffectsLayer");
+    const container =
+      $("coupleMoodEffects") ||
+      $("coupleEffects") ||
+      $("coupleChatEffects");
 
-    if (!layer) return;
+    if (!container) return;
 
-    layer.innerHTML = "";
-
-    const config = {
-      romantic: ["💗", "♥", "♡"],
-      deep_love: ["❤️", "💞", "♥"],
-      happy: ["✨", "☀️", "✦"],
-      funny: ["😂", "✦", "🎈"],
-      sad: ["💧", "⋆", "🌧️"],
-      emotional: ["💗", "✨", "🥹"],
-      angry: ["🔥", "✦", "⚡"],
-      frustrated: ["⚡", "⋆", "🔥"],
-      caring: ["💗", "✧", "🤗"],
-      comfort: ["🫧", "♡", "✧"],
-      flirty: ["😘", "💋", "♡"],
-      passionate: ["❤️", "🔥", "💋"],
-      good_night: ["🌙", "✦", "⭐"],
-      good_morning: ["☀️", "✧", "🌼"],
-      memory: ["📸", "♡", "✧"],
-      celebration: ["🎉", "✨", "🎊"],
-      birthday: ["🎂", "🎉", "✨"],
-      future_marriage: ["💍", "♡", "✨"],
-      missing_you: ["🥺", "♡", "💗"],
-      apology: ["🕊️", "♡", "✧"],
-      appreciation: ["✨", "🌟", "♡"],
-      game: ["🎮", "✦", "⭐"],
-      photo_memory: ["📸", "✧", "♡"],
-      serious_talk: ["✦", "○", "⋆"],
-      deep_conversation: ["🌌", "✦", "☾"],
-      calm: ["🍃", "🫧", "✧"],
-      excited: ["🤩", "✨", "🎉"],
-      jealous: ["💚", "♡", "✦"],
-      lonely: ["🌧️", "⋆", "💧"],
-      grateful: ["🙏", "✨", "💛"],
-      hopeful: ["🌈", "✨", "🌟"],
-      worried: ["🫧", "♡", "✧"],
-      stressed: ["🍃", "🫧", "○"],
-      confused: ["✦", "❔", "⋆"],
-      shy: ["💗", "☺️", "♡"],
-      proud: ["🏆", "✨", "🌟"],
-      supportive: ["🤝", "💙", "✨"],
-      playful: ["😜", "🎈", "✦"],
-      teasing: ["😏", "♡", "✦"],
-      peaceful: ["🕊️", "🍃", "🫧"],
-      sleepy: ["🌙", "⭐", "💤"],
-      nostalgic: ["📷", "♡", "✧"],
-      long_distance: ["🌍", "💗", "✦"],
-      trust: ["🤍", "♡", "✨"],
-      reassurance: ["🫂", "💗", "🫧"],
-      conflict_resolution: ["🕊️", "❤️‍🩹", "♡"],
-      boundaries: ["🛡️", "○", "✦"],
-      vulnerable: ["💗", "🫧", "♡"],
-      motivated: ["🚀", "✨", "⭐"],
-      bored: ["🥱", "⋆", "🎈"],
-      curious: ["🔎", "✦", "❔"],
-      surprise: ["🎁", "✨", "🎉"],
-      anniversary: ["💐", "♡", "✨"],
-      proposal: ["💍", "❤️", "✨"],
-      reconciliation: ["❤️‍🩹", "🕊️", "♡"]
+    const symbols = {
+      romantic: ["💗", "💕", "💖", "✨"],
+      deep_love: ["❤️", "💞", "💘", "✨"],
+      happy: ["😊", "💛", "✨", "🌟"],
+      excited: ["🎉", "✨", "💫", "🥳"],
+      sad: ["💧", "💙", "☁️"],
+      angry: ["💢", "🔥", "⚡"],
+      caring: ["🤗", "💗", "🌸"],
+      playful: ["😜", "✨", "💫"],
+      missing: ["💌", "💗", "🌙"],
+      neutral: ["✨", "💫"]
     };
 
-    const symbols = config[mode] || config.romantic;
+    const particles = symbols[mode] || symbols.neutral;
+    container.replaceChildren();
 
-    const reduceMotion = window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    container.classList.add("active");
 
-    const count = reduceMotion ? 3 : 16;
-
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < 12; i++) {
       const particle = document.createElement("span");
+      particle.className = `mood-particle mood-particle-${mode}`;
+      particle.textContent = particles[i % particles.length];
 
-      particle.className =
-        `mood-particle mood-particle-${mode.replace(/_/g, "-")}`;
-
-      particle.textContent = symbols[i % symbols.length];
       particle.style.left = `${Math.random() * 100}%`;
-      particle.style.setProperty("--delay", `${Math.random() * 7}s`);
-      particle.style.setProperty("--duration", `${7 + Math.random() * 9}s`);
-      particle.style.setProperty(
-        "--drift",
-        `${Math.round(Math.random() * 100 - 50)}px`
-      );
-      particle.style.setProperty("--size", `${12 + Math.random() * 15}px`);
+      particle.style.animationDelay = `${Math.random() * 1.8}s`;
+      particle.style.animationDuration = `${2.5 + Math.random() * 2.5}s`;
 
-      layer.appendChild(particle);
+      container.appendChild(particle);
     }
+
+    window.setTimeout(() => {
+      container.classList.remove("active");
+      container.replaceChildren();
+    }, 5000);
   }
 
   function openMoodPicker() {
     const modal =
-      $("coupleMoodOverlay") ||
-      $("coupleMoodModal") ||
       $("coupleMoodPicker") ||
-      $("moodModal");
+      $("moodPickerModal");
 
     if (!modal) return;
 
-    modal.classList.remove("hidden");
-    modal.classList.add("is-open", "open", "active");
-    modal.removeAttribute("hidden");
+    modal.hidden = false;
+    modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
+
+    buildMoodButtons();
   }
 
   function closeMoodPicker() {
     const modal =
-      $("coupleMoodOverlay") ||
-      $("coupleMoodModal") ||
       $("coupleMoodPicker") ||
-      $("moodModal");
+      $("moodPickerModal");
 
     if (!modal) return;
 
-    modal.classList.remove("is-open", "open", "active");
-
-    if (modal.id === "coupleMoodOverlay") {
-      modal.classList.add("hidden");
-    }
-
+    modal.classList.remove("open");
+    modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
-
-    if (modal.dataset.hideOnClose === "true") {
-      modal.hidden = true;
-    }
   }
 
   function buildMoodButtons() {
-    const grid = $("coupleMoodGrid");
+    const container =
+      $("coupleMoodOptions") ||
+      $("moodPickerOptions");
 
-    if (!grid || grid.dataset.built === "true") return;
+    if (!container) return;
 
-    grid.dataset.built = "true";
-    grid.innerHTML = "";
+    container.replaceChildren();
 
     MODES.forEach(([key, label, emoji]) => {
-      const btn = document.createElement("button");
+      const button = document.createElement("button");
 
-      btn.type = "button";
-      btn.className = "couple-mood-option";
-      btn.dataset.coupleMood = key;
+      button.type = "button";
+      button.className = "couple-mood-option";
+      button.dataset.mood = key;
+      button.setAttribute("aria-pressed", String(state.mode === key));
+      button.innerHTML = "";
 
-      btn.innerHTML =
-        `<span class="couple-mood-emoji">${emoji}</span>` +
-        `<span>${safeText(label)}</span>`;
+      const icon = document.createElement("span");
+      icon.className = "couple-mood-option-emoji";
+      icon.textContent = emoji;
 
-      btn.addEventListener("click", () => {
+      const text = document.createElement("span");
+      text.className = "couple-mood-option-label";
+      text.textContent = label;
+
+      button.append(icon, text);
+
+      button.addEventListener("click", () => {
         setMode(key);
+        launchMoodEffects(key);
         closeMoodPicker();
       });
 
-      grid.appendChild(btn);
+      container.appendChild(button);
     });
   }
 
   function inputElement() {
-    return $("coupleMessageInput") ||
+    return (
+      $("coupleMessageInput") ||
       $("coupleInput") ||
-      $("messageInput");
+      $("messageInput")
+    );
   }
 
-  // On-device keyword detection. Message text is not sent to a mood API.
   function detectMessageMood(text) {
-    const value = String(text || "").toLowerCase();
+    const value = String(text || "")
+      .toLowerCase()
+      .replace(/[’']/g, "")
+      .replace(/[^\p{L}\p{N}\s!?.,❤️💔🥺😭😊😂😍😘😡😔🙂]/gu, " ");
 
-    const rules = [
-      ["good_night", /\b(good night|gn|so ja|shubh ratri|night jaan)\b/],
-      ["good_morning", /\b(good morning|gm|suprabhat|uth jao)\b/],
-      ["apology", /\b(sorry|maaf|mafi|forgive me|galti meri)\b/],
-      ["angry", /\b(angry|gussa|ghussa|hate you|bakwas|chup raho)\b/],
-      ["sad", /\b(sad|dukhi|rona|ro raha|ro rahi|upset|low feel|udaas|akela|akeli)\b/],
-      ["comfort", /\b(akela nahi|i am here|main hoon na|tension mat|don't worry|chinta mat)\b/],
-      ["missing_you", /\b(miss you|yaad aa|yaad kar|missing you|tumhari yaad)\b/],
-      ["deep_love", /\b(love you so much|meri jaan|forever|hamesha tum|soulmate)\b/],
-      ["romantic", /\b(i love you|love you|pyaar|pyar|jaan|baby|babu|kiss|❤️|💕|💗|💖)\b/],
-      ["happy", /\b(happy|khush|yay|awesome|great|mast|maza aa|😊|😄|😁)\b/],
-      ["funny", /\b(haha|lol|funny|joke|😂|🤣|mazaak|mazak)\b/],
-      ["caring", /\b(khana khaya|take care|apna khayal|paani pi|rest kar|tabiyat)\b/],
-      ["flirty", /\b(cute|sexy|flirt|handsome|beautiful|😉|😘)\b/],
-      ["appreciation", /\b(thank you|thanks|shukriya|proud of you|best ho|special ho)\b/],
-      ["serious_talk", /\b(serious baat|baat karni|listen to me|meri baat|important baat)\b/],
-      ["game", /\b(truth or dare|game khele|game khelen|quiz|🎮)\b/],
-      ["excited", /\b(excited|super excited|can't wait|cant wait|bahut khush|🤩)\b/],
-      ["jealous", /\b(jealous|jalan|jealousy|insecure feel)\b/],
-      ["lonely", /\b(lonely|alone feel|akela feel|akeli feel|tanha)\b/],
-      ["grateful", /\b(grateful|thankful|shukr|blessed)\b/],
-      ["hopeful", /\b(hopeful|umeed|better days|sab theek hoga)\b/],
-      ["worried", /\b(worried|worry|fikar|chinta|pareshan)\b/],
-      ["stressed", /\b(stressed|stress|overwhelmed|pressure|thak gaya|thak gayi)\b/],
-      ["confused", /\b(confused|samajh nahi|confuse|uljhan)\b/],
-      ["shy", /\b(shy|sharma|sharma raha|sharma rahi|blush)\b/],
-      ["proud", /\b(proud|garv|proud of you|well done)\b/],
-      ["supportive", /\b(support|support you|saath hoon|saath hu|i got you)\b/],
-      ["playful", /\b(playful|masti|silly|😜)\b/],
-      ["teasing", /\b(tease|teasing|chidhana|chhedna|😏)\b/],
-      ["peaceful", /\b(peaceful|sukoon|peace|shanti)\b/],
-      ["sleepy", /\b(sleepy|neend aa|so raha|so rahi|😴)\b/],
-      ["nostalgic", /\b(nostalgic|purani yaad|old memories|those days)\b/],
-      ["long_distance", /\b(long distance|long-distance|door hain|door ho|distance relationship)\b/],
-      ["trust", /\b(trust|bharosa|vishwas)\b/],
-      ["reassurance", /\b(reassure|reassurance|pakka na|you still love me|i am here for you)\b/],
-      ["conflict_resolution", /\b(make up|sort this out|sulah|suljha|patch up|resolve this)\b/],
-      ["boundaries", /\b(boundaries|personal space|comfortable with|limit set)\b/],
-      ["vulnerable", /\b(vulnerable|dil ki baat|honestly share|hard to say)\b/],
-      ["motivated", /\b(motivated|motivation|let's do this|kar sakte|kar sakti|🚀)\b/],
-      ["bored", /\b(bored|boring|pak gaya|pak gayi|bore ho raha)\b/],
-      ["curious", /\b(curious|wondering|ek sawal|question puch|ask you something)\b/],
-      ["surprise", /\b(surprise|guess what|secret plan|🎁)\b/],
-      ["anniversary", /\b(anniversary|saalgirah|our special day)\b/],
-      ["proposal", /\b(proposal|marry me|shaadi karogi|shaadi karoge)\b/],
-      ["reconciliation", /\b(reconcile|heal things|start again|give us another chance|❤️‍🩹)\b/]
-    ];
+    const moodKeywords = {
+      romantic: [
+        "i love you", "love you", "jaan", "meri jaan",
+        "baby", "babu", "pyaar", "pyar", "romantic",
+        "kiss", "kissi", "😘", "😍", "❤️", "💗"
+      ],
+      deep_love: [
+        "forever", "hamesha tumhara", "hamesha tumhari",
+        "zindagi bhar", "meri zindagi", "soulmate",
+        "sirf tum", "always yours", "💞", "💘"
+      ],
+      happy: [
+        "happy", "khush", "khushi", "mast", "achha laga",
+        "bahut accha", "bahut acha", "yay", "😊", "😁", "😄"
+      ],
+      excited: [
+        "excited", "cant wait", "can't wait", "omg",
+        "amazing", "wow", "party", "congratulations",
+        "🥳", "🎉", "🤩"
+      ],
+      sad: [
+        "sad", "dukhi", "udaas", "udas", "rona",
+        "ro raha", "ro rahi", "hurt", "depressed",
+        "😭", "😢", "💔"
+      ],
+      angry: [
+        "angry", "gussa", "naraz", "naraaz", "hate",
+        "bakwas", "shut up", "irritated", "😡", "🤬"
+      ],
+      caring: [
+        "take care", "apna khayal", "khana khaya",
+        "paani pi", "pani pi", "rest karna", "safe rehna",
+        "get well", "🤗"
+      ],
+      missing: [
+        "miss you", "i miss you", "yaad aa rahi",
+        "yaad aa raha", "tumhari yaad", "tumhare bina",
+        "come back", "miss u", "🥺"
+      ],
+      playful: [
+        "haha", "hehe", "lol", "mazaak", "mazak",
+        "pagal", "tease", "😂", "😜", "🤣"
+      ],
+      worried: [
+        "worried", "tension", "pareshan", "fikar",
+        "chinta", "kya hua", "are you okay", "sab theek"
+      ]
+    };
 
-    for (const [mode, pattern] of rules) {
-      if (pattern.test(value)) return mode;
+    let bestMood = "neutral";
+    let bestScore = 0;
+
+    for (const [mood, keywords] of Object.entries(moodKeywords)) {
+      let score = 0;
+
+      keywords.forEach((keyword) => {
+        if (value.includes(keyword)) score += keyword.length > 5 ? 2 : 1;
+      });
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMood = mood;
+      }
     }
 
-    return null;
+    return bestScore > 0 ? bestMood : "neutral";
   }
 
-  function sendText() {
+   function sendText() {
     const input = inputElement();
     if (!input) return;
 
     const content = input.value.trim();
     if (!content) return;
 
+    // Automatically detect the mood from the message.
     const detectedMood = detectMessageMood(content);
 
     if (detectedMood && detectedMood !== state.mode) {
       setMode(detectedMood, false);
+      launchMoodEffects(detectedMood);
     }
 
     const clientId =
@@ -1045,12 +1041,15 @@
     });
 
     local.isOwn = true;
+
+    // Show the message immediately.
     state.messages.push(local);
     saveMessages();
     render();
 
     input.value = "";
 
+    // Send through the realtime connection when available.
     const sent = state.realtime && state.realtime.sendMessage({
       client_message_id: clientId,
       content,
@@ -1059,20 +1058,21 @@
 
     if (!sent) {
       const found = state.messages.find(
-        (m) => m.clientId === clientId || m.id === clientId
+        (message) =>
+          message.clientId === clientId ||
+          message.id === clientId
       );
 
-      if (found) {
-        found.status = state.realtime?.connected
-          ? "pending"
-          : "local_only";
-      }
+      if (found) found.status = "local_only";
 
       saveMessages();
       render();
 
       if (!state.realtime?.connected) {
-        setStatus("Reconnecting…", "offline");
+        setStatus(
+          "Offline — message saved on this device only",
+          "offline"
+        );
       }
     }
 
@@ -1082,8 +1082,18 @@
     }
   }
 
+  // Media sending requires a real, accessible media URL.
+  // A local blob preview is not uploaded automatically.
   function sendMedia(url, mediaType, messageType = "image") {
     if (!url) return;
+
+    if (/^blob:/i.test(String(url))) {
+      setStatus(
+        "This is only a local preview. Upload media first, then send its public URL.",
+        "neutral"
+      );
+      return;
+    }
 
     const clientId =
       `client_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -1101,24 +1111,33 @@
     });
 
     item.isOwn = true;
+
     state.messages.push(item);
     saveMessages();
     render();
 
-    const sent = state.realtime?.sendMessage({
-      client_message_id: clientId,
-      media_url: url,
-      media_type: mediaType,
-      message_type: messageType
-    });
+    const sent =
+      state.realtime?.connected &&
+      state.realtime?.sendMessage({
+        client_message_id: clientId,
+        media_url: url,
+        media_type: mediaType,
+        message_type: messageType
+      });
 
     if (!sent) {
       item.status = "local_only";
       saveMessages();
       render();
+
+      setStatus(
+        "Offline — media message saved on this device only",
+        "offline"
+      );
     }
   }
 
+  // Show typing status to the partner.
   function setupTyping() {
     const input = inputElement();
     if (!input) return;
@@ -1140,6 +1159,7 @@
     });
   }
 
+  // Send a suggested message.
   function sendPresetText(text) {
     const input = inputElement();
     if (!input) return;
@@ -1148,56 +1168,82 @@
     sendText();
   }
 
+  // Identify whether a message belongs to the current user.
+  function isOwnMessage(message) {
+    if (
+      state.currentUserId !== null &&
+      message.senderId !== null &&
+      message.senderId !== undefined
+    ) {
+      return String(message.senderId) === String(state.currentUserId);
+    }
+
+    return Boolean(message.isOwn);
+  }
+
+  // Export the current conversation as a text file.
   function exportChatText() {
-    const text = state.messages.map((m) =>
-      `[${formatTime(m.timestamp)}] ${m.isOwn ? "You" : "Partner"}: ${m.content || (m.mediaUrl ? "[attachment]" : "")}`
-    ).join("\n");
+    const text = state.messages.map((message) => {
+      const content =
+        message.content ||
+        (message.mediaUrl ? "[attachment]" : "");
+
+      return (
+        `[${formatTime(message.timestamp)}] ` +
+        `${isOwnMessage(message) ? "You" : "Partner"}: ${content}`
+      );
+    }).join("\n");
 
     const url = URL.createObjectURL(
-      new Blob([text], { type: "text/plain;charset=utf-8" })
+      new Blob([text], {
+        type: "text/plain;charset=utf-8"
+      })
     );
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "utanexa-chat.txt";
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "utanexa-chat.txt";
+    link.click();
 
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+
     $("closeCoupleMenu")?.click();
   }
 
+  // Build the emoji picker.
   function buildEmojiGrid(search = "") {
     const grid = $("coupleEmojiGrid");
     if (!grid) return;
 
     const emojis = [
-      "😀","😃","😄","😁","😅","😂","🤣","🥹","😊","😍","🥰","😘",
-      "😎","🥳","😭","😢","🥺","😡","🤗","🫂","❤️","🧡","💛","💚",
-      "💙","💜","💕","💞","💓","💗","💖","💘","💝","💋","🌹","🌷",
-      "✨","⭐","🌙","☀️","🔥","🎉","🎂","💍","🎮","📸","🙏","🕊️"
+      "😀", "😃", "😄", "😁", "😅", "😂", "🤣",
+      "🥹", "😊", "😍", "🥰", "😘", "😎", "🥳",
+      "😭", "😢", "🥺", "😡", "🤗", "🫂",
+      "❤️", "🧡", "💛", "💚", "💙", "💜",
+      "💕", "💞", "💓", "💗", "💖", "💘", "💝",
+      "💋", "🌹", "🌷", "✨", "⭐", "🌙", "☀️",
+      "🔥", "🎉", "🎂", "💍", "🎮", "📸", "🙏", "🕊️"
     ];
 
-    const q = String(search).trim();
+    const query = String(search).trim();
 
     grid.innerHTML = emojis
-      .filter((e) => !q || e.includes(q))
-      .map((e) =>
-        `<button type="button" class="emoji-item" data-emoji="${e}">${e}</button>`
+      .filter((emoji) => !query || emoji.includes(query))
+      .map((emoji) =>
+        `<button type="button" class="emoji-item" data-emoji="${emoji}">${emoji}</button>`
       )
       .join("");
   }
 
   function closeEmojiPicker() {
-    if ($("couplePickerBackdrop")) {
-      $("couplePickerBackdrop").hidden = true;
-    }
+    const backdrop = $("couplePickerBackdrop");
+    const picker = $("coupleEmojiPicker");
 
-    if ($("coupleEmojiPicker")) {
-      $("coupleEmojiPicker").hidden = true;
-    }
+    if (backdrop) backdrop.hidden = true;
+    if (picker) picker.hidden = true;
   }
 
-  function setupControls() {
+   function setupControls() {
     const composer = $("coupleComposer");
 
     if (composer) {
@@ -1218,18 +1264,17 @@
       });
     }
 
+    // Mood picker
     const moodButton =
       $("coupleHeaderMood") ||
       $("coupleMoodButton") ||
       $("coupleCurrentMood");
 
-    if (moodButton) {
-      moodButton.addEventListener("click", openMoodPicker);
-    }
+    moodButton?.addEventListener("click", openMoodPicker);
 
-    document.querySelectorAll("[data-mode]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const mode = btn.dataset.mode;
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.mode;
 
         if (MODES.some((item) => item[0] === mode)) {
           setMode(mode);
@@ -1238,11 +1283,11 @@
       });
     });
 
-    document.querySelectorAll(
-      "[data-close-couple-mood], .couple-mood-close"
-    ).forEach((btn) => {
-      btn.addEventListener("click", closeMoodPicker);
-    });
+    document
+      .querySelectorAll("[data-close-couple-mood], .couple-mood-close")
+      .forEach((button) => {
+        button.addEventListener("click", closeMoodPicker);
+      });
 
     $("closeMoodPanel")?.addEventListener("click", closeMoodPicker);
 
@@ -1252,6 +1297,7 @@
       }
     });
 
+    // Quick actions
     $("coupleQuickActions")?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-action]");
       if (!button) return;
@@ -1275,6 +1321,7 @@
       }
     });
 
+    // AI panel
     $("coupleAiButton")?.addEventListener("click", () => {
       const overlay = $("coupleAiOverlay");
 
@@ -1298,16 +1345,12 @@
         $("closeAiPanel")?.click();
       }
 
-      const actionButton = event.target.closest("[data-ai-action]");
-      if (!actionButton) return;
+      const button = event.target.closest("[data-ai-action]");
+      if (!button) return;
 
-      const action = actionButton.dataset.aiAction;
+      const action = button.dataset.aiAction;
 
-      if (
-        action === "suggest" ||
-        action === "question" ||
-        action === "game"
-      ) {
+      if (action === "suggest" || action === "question" || action === "game") {
         if (action === "game") setMode("game");
         else if (action === "question") setMode("deep_conversation");
 
@@ -1320,6 +1363,7 @@
       $("closeAiPanel")?.click();
     });
 
+    // Three-dot menu
     $("coupleMenuButton")?.addEventListener("click", () => {
       const overlay = $("coupleMenuOverlay");
 
@@ -1345,7 +1389,9 @@
 
       const action = event.target.closest("[data-menu-action]")?.dataset.menuAction;
 
-      if (action === "export") exportChatText();
+      if (action === "export") {
+        exportChatText();
+      }
 
       if (
         action === "clear" &&
@@ -1357,6 +1403,7 @@
       }
     });
 
+    // Suggested messages
     $("coupleSuggestions")?.addEventListener("click", (event) => {
       if (event.target.id === "closeSuggestions") {
         $("coupleSuggestions").hidden = true;
@@ -1373,6 +1420,7 @@
       }
     });
 
+    // Emoji picker
     $("coupleEmojiButton")?.addEventListener("click", () => {
       const backdrop = $("couplePickerBackdrop");
       const picker = $("coupleEmojiPicker");
@@ -1400,6 +1448,7 @@
       }
     });
 
+    // Media attachment buttons
     $("coupleAttachButton")?.addEventListener("click", () => {
       $("coupleFileInput")?.click();
     });
@@ -1408,6 +1457,7 @@
       $("coupleCameraInput")?.click();
     });
 
+    // Partner profile
     $("coupleAvatarButton")?.addEventListener("click", () => {
       const name = $("couplePartnerName")?.textContent || "Partner";
 
@@ -1416,15 +1466,21 @@
       }
     });
 
+    // Back button
     $("coupleBackButton")?.addEventListener("click", () => {
-      if (history.length > 1) history.back();
-      else location.href = "/";
+      if (history.length > 1) {
+        history.back();
+      } else {
+        location.href = "/";
+      }
     });
 
+    // Voice/video call placeholder
     $("coupleCallButton")?.addEventListener("click", () => {
       setStatus("Calling is not configured yet", "neutral");
     });
 
+    // Media preview. Uploading requires a backend upload endpoint.
     const fileInput =
       $("coupleMediaInput") ||
       $("coupleImageInput") ||
@@ -1432,7 +1488,7 @@
 
     if (fileInput) {
       fileInput.addEventListener("change", () => {
-        const file = fileInput.files && fileInput.files[0];
+        const file = fileInput.files?.[0];
         if (!file) return;
 
         const previewUrl = URL.createObjectURL(file);
@@ -1442,11 +1498,12 @@
           const preview = $("coupleMediaPreview");
 
           if (preview) {
-            preview.innerHTML = "";
+            preview.replaceChildren();
 
             const img = document.createElement("img");
             img.src = previewUrl;
             img.alt = "Media preview";
+
             preview.appendChild(img);
           }
 
@@ -1455,6 +1512,8 @@
             "neutral"
           );
         } else {
+          URL.revokeObjectURL(previewUrl);
+
           setStatus(
             "This file needs an uploaded public URL before sending",
             "neutral"
@@ -1466,7 +1525,16 @@
     }
   }
 
+  // =========================================================
+  // REALTIME CONNECTION
+  // =========================================================
+
   function initRealtime() {
+    if (!state.partnerId) {
+      setStatus("Open chat with a partner ID", "offline");
+      return;
+    }
+
     if (!window.UsanexCoupleRealtime) {
       setStatus("Chat connection unavailable", "offline");
       return;
@@ -1476,6 +1544,13 @@
       partnerId: state.partnerId,
 
       onStatus: (info) => {
+        if (
+          info.state === "connecting" ||
+          info.state === "reconnecting"
+        ) {
+          state.connectedEventReceived = false;
+        }
+
         if (info.state === "connecting") {
           setStatus("Connecting…", "neutral");
         } else if (
@@ -1489,15 +1564,22 @@
           info.state === "offline" ||
           info.state === "disconnected"
         ) {
-          if (!state.connectedEventReceived || info.state === "offline") {
+          if (
+            !state.connectedEventReceived ||
+            info.state === "offline"
+          ) {
             setStatus("Offline", "offline");
           }
         }
       },
 
-      onConnection: (data) => updatePartner(data),
+      onConnection: (data) => {
+        updatePartner(data);
+      },
 
-      onHistory: (messages) => handleHistory(messages),
+      onHistory: (messages) => {
+        handleHistory(messages);
+      },
 
       onMessage: (data) => {
         mergeIncoming(data);
@@ -1512,7 +1594,9 @@
       },
 
       onPresence: (presence) => {
-        const online = Boolean(presence.is_online ?? presence.online);
+        const online = Boolean(
+          presence.is_online ?? presence.online
+        );
 
         if (online) {
           setStatus("Online", "online");
@@ -1532,13 +1616,12 @@
           $("coupleTyping");
 
         const typing = Boolean(
-          data.is_typing ??
-          data.typing ??
-          data.active
+          data.is_typing ?? data.typing ?? data.active
         );
 
         if (indicator) {
           indicator.hidden = !typing;
+
           indicator.textContent = typing
             ? `${$("couplePartnerName")?.textContent || "Partner"} is typing…`
             : "";
@@ -1551,33 +1634,37 @@
           receipt.message_id ||
           receipt.id;
 
-        const item = state.messages.find((m) =>
+        const message = state.messages.find((item) =>
           (
             receipt.client_message_id &&
             (
-              m.clientId === receipt.client_message_id ||
-              m.id === receipt.client_message_id
+              item.clientId === receipt.client_message_id ||
+              item.id === receipt.client_message_id
             )
           ) ||
           (
             receipt.message_id &&
-            String(m.serverId || m.id) === String(receipt.message_id)
+            String(item.serverId || item.id) ===
+              String(receipt.message_id)
           ) ||
           (
             id &&
-            String(m.serverId || m.id) === String(id)
+            String(item.serverId || item.id) === String(id)
           )
         );
 
-        if (item) {
+        if (message) {
           const status = String(receipt.status || "").toLowerCase();
 
           if (status === "seen" || status === "read") {
-            item.status = "seen";
+            message.status = "seen";
           } else if (status === "delivered") {
-            item.status = "delivered";
-          } else if (status === "sent" && item.status === "pending") {
-            item.status = "sent";
+            message.status = "delivered";
+          } else if (
+            status === "sent" &&
+            message.status === "pending"
+          ) {
+            message.status = "sent";
           }
 
           saveMessages();
@@ -1593,12 +1680,17 @@
       },
 
       onDisconnect: () => {
+        state.connectedEventReceived = false;
         setStatus("Reconnecting…", "offline");
       }
     });
 
     state.realtime.connect();
   }
+
+  // =========================================================
+  // INITIALIZATION
+  // =========================================================
 
   function init() {
     state.partnerId = getPartnerId();
@@ -1624,6 +1716,7 @@
     initRealtime();
   }
 
+  // Public API
   window.UtaNexaCoupleChat = {
     setMode,
     sendText,
@@ -1632,11 +1725,12 @@
     closeMoodPicker,
     detectMessageMood,
 
-    getModes: () => MODES.map(([key, label, emoji]) => ({
-      key,
-      label,
-      emoji
-    })),
+    getModes: () =>
+      MODES.map(([key, label, emoji]) => ({
+        key,
+        label,
+        emoji
+      })),
 
     getState: () => ({
       partnerId: state.partnerId,
@@ -1646,6 +1740,7 @@
     })
   };
 
+  // Backward compatibility
   window.UsanexCoupleChat = window.UtaNexaCoupleChat;
 
   if (document.readyState === "loading") {
