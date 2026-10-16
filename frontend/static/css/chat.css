@@ -1,2175 +1,1627 @@
 /* =========================================================
-   UTANEXA — COUPLE CHAT COMPLETE CSS
-   55 MOOD THEMES • ANIMATIONS • RESPONSIVE UI
-   Welcome Screen • Chat • AI Panel • Mood Effects
+   UTANEXA — NORMAL CHAT
+   COMPLETE RESPONSIVE CSS
+   Mobile + Tablet + Desktop
+   File: frontend/static/css/chat.css
    ========================================================= */
 
-/* ===================== 1. ROOT VARIABLES ===================== */
+/* =========================
+   1. ROOT VARIABLES
+========================= */
 
 :root {
-  --couple-bg: #071126;
-  --couple-bg-secondary: #101d39;
-  --couple-panel: rgba(17, 29, 57, 0.94);
-  --couple-panel-light: rgba(255, 255, 255, 0.06);
-
-  --couple-primary: #70a7ff;
-  --couple-primary-rgb: 112, 167, 255;
-  --couple-secondary: #ff83c8;
-  --couple-secondary-rgb: 255, 131, 200;
-
-  --couple-text: #f7f8ff;
-  --couple-muted: #a8b5d0;
-  --couple-border: rgba(255, 255, 255, 0.1);
-
-  --couple-own-bubble: linear-gradient(135deg, #477bff, #855cff);
-  --couple-partner-bubble: rgba(255, 255, 255, 0.09);
-
-  --couple-radius: 22px;
-  --couple-header-height: 68px;
-  --couple-bottom-height: 86px;
-
-  --couple-transition: 350ms ease;
-  --couple-shadow: 0 12px 36px rgba(0, 0, 0, 0.24);
-}
-
-/* ===================== 2. RESET ===================== */
-
-#coupleApp,
-#coupleApp *,
-#coupleMoodPicker,
-#coupleMoodPicker *,
-#coupleAiOverlay,
-#coupleAiOverlay *,
-#coupleMenuOverlay,
-#coupleMenuOverlay *,
-#coupleEmojiPicker,
-#coupleEmojiPicker * {
-  box-sizing: border-box;
-}
-
-#coupleApp {
-  position: relative;
-  width: 100%;
-  min-height: 100dvh;
-  color: var(--couple-text);
-  background: var(--couple-bg);
-  font-family:
-    Inter, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, sans-serif;
-  overflow: hidden;
-  isolation: isolate;
-  transition:
-    background var(--couple-transition),
-    color var(--couple-transition);
-}
-
-#coupleApp button,
-#coupleApp input,
-#coupleApp textarea,
-#coupleMoodPicker button,
-#coupleAiOverlay button,
-#coupleMenuOverlay button,
-#coupleEmojiPicker button {
-  font: inherit;
-}
-
-#coupleApp button,
-#coupleMoodPicker button,
-#coupleAiOverlay button,
-#coupleMenuOverlay button,
-#coupleEmojiPicker button {
-  -webkit-tap-highlight-color: transparent;
-}
-
-#coupleApp button {
-  cursor: pointer;
-}
-
-#coupleApp button:focus-visible,
-#coupleApp input:focus-visible,
-#coupleApp textarea:focus-visible {
-  outline: 2px solid var(--couple-primary);
-  outline-offset: 3px;
-}
-
-#coupleApp img {
-  max-width: 100%;
-}
-
-#coupleApp [hidden],
-#coupleMoodPicker[hidden],
-#coupleAiOverlay[hidden],
-#coupleMenuOverlay[hidden],
-#coupleEmojiPicker[hidden],
-#couplePickerBackdrop[hidden] {
-  display: none !important;
-}
-
-/* ===================== 3. APP BACKGROUND ===================== */
-
-#coupleApp::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      circle at 15% 10%,
-      rgba(var(--couple-primary-rgb), 0.16),
-      transparent 35%
-    ),
-    radial-gradient(
-      circle at 90% 75%,
-      rgba(var(--couple-secondary-rgb), 0.12),
-      transparent 35%
-    ),
-    var(--couple-bg);
-  transition: background 500ms ease;
-}
-
-#coupleBackgroundLayer,
-#coupleEffectsLayer,
-#coupleMoodEffects {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-#coupleBackgroundLayer {
-  z-index: -1;
-  opacity: 1;
-  transition: background 600ms ease;
-}
-
-#coupleEffectsLayer {
-  z-index: 2;
-}
-
-#coupleMoodEffects {
-  z-index: 20;
-  overflow: hidden;
-}
-
-.couple-background-glow {
-  position: absolute;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.16;
-  animation: coupleGlowFloat 12s ease-in-out infinite alternate;
-}
-
-.couple-background-glow:first-child {
-  top: 5%;
-  left: -80px;
-  background: var(--couple-primary);
-}
-
-.couple-background-glow:last-child {
-  right: -80px;
-  bottom: 5%;
-  background: var(--couple-secondary);
-  animation-delay: -5s;
-}
-
-@keyframes coupleGlowFloat {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  to {
-    transform: translate3d(35px, -25px, 0) scale(1.2);
-  }
-}
-
-/* ===================== 4. WELCOME SCREEN ===================== */
-
-#coupleWelcome,
-#coupleWelcomeScreen,
-.couple-welcome-screen {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 100dvh;
-  padding: 32px 24px;
-  overflow: hidden;
-  text-align: center;
-  background:
-    radial-gradient(
-      circle at 50% 38%,
-      rgba(63, 105, 201, 0.23),
-      transparent 42%
-    ),
-    linear-gradient(160deg, #071126, #0c1b3b 55%, #10112b);
-}
-
-.couple-welcome-watermark {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  color: rgba(255, 255, 255, 0.035);
-  font-size: clamp(80px, 22vw, 190px);
-  font-weight: 900;
-  letter-spacing: -8px;
-  white-space: nowrap;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  user-select: none;
-}
-
-.couple-welcome-content {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 420px);
-}
-
-.couple-welcome-heart {
-  display: grid;
-  place-items: center;
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 24px;
-  border: 1px solid rgba(255, 131, 200, 0.3);
-  border-radius: 28px;
-  color: #ff9bd2;
-  background: rgba(255, 131, 200, 0.08);
-  box-shadow: 0 0 60px rgba(255, 131, 200, 0.15);
-  font-size: 38px;
-  animation: coupleHeartBeat 2.5s ease-in-out infinite;
-}
-
-@keyframes coupleHeartBeat {
-  0%, 100% {
-    transform: scale(1);
-  }
-
-  10%, 30% {
-    transform: scale(1.07);
-  }
-
-  20%, 40% {
-    transform: scale(1);
-  }
-}
-
-.couple-welcome-title {
-  margin: 0;
-  color: #fff;
-  font-size: clamp(32px, 8vw, 48px);
-  font-weight: 800;
-  letter-spacing: -1.5px;
-}
-
-.couple-welcome-title span {
-  color: #ff91cf;
-}
-
-.couple-welcome-subtitle {
-  margin: 14px auto 28px;
-  max-width: 310px;
-  color: #b9c6e1;
-  font-size: 15px;
-  line-height: 1.7;
-}
-
-.couple-welcome-button {
-  width: 100%;
-  min-height: 54px;
-  padding: 14px 22px;
-  border: 0;
-  border-radius: 17px;
-  color: #fff;
-  background: linear-gradient(135deg, #5286ff, #8b60ff);
-  box-shadow: 0 8px 28px rgba(82, 134, 255, 0.25);
-  font-weight: 700;
-  transition: transform 200ms ease, box-shadow 200ms ease;
-}
-
-.couple-welcome-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 34px rgba(82, 134, 255, 0.35);
-}
-
-/* ===================== 5. CHAT LAYOUT ===================== */
-
-#coupleConversation {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100dvh;
-  min-height: 440px;
-  overflow: hidden;
-  background: transparent;
-}
-
-#coupleConversation:not(.active) {
-  display: none;
-}
-
-/* ===================== 6. FIXED HEADER ===================== */
-
-#coupleHeader,
-.couple-header {
-  position: relative;
-  z-index: 30;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: var(--couple-header-height);
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--couple-border);
-  background: rgba(7, 17, 38, 0.9);
-  -webkit-backdrop-filter: blur(22px);
-  backdrop-filter: blur(22px);
-}
-
-.couple-header-button,
-#coupleBackButton,
-#coupleHeaderMood,
-#coupleMenuButton,
-#coupleCallButton,
-#coupleAiButton,
-#coupleAvatarButton {
-  display: inline-grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 1px solid var(--couple-border);
-  border-radius: 14px;
-  color: var(--couple-text);
-  background: rgba(255, 255, 255, 0.055);
-  transition:
-    background 200ms ease,
-    transform 200ms ease;
-}
-
-.couple-header-button:hover,
-#coupleBackButton:hover,
-#coupleHeaderMood:hover,
-#coupleMenuButton:hover,
-#coupleCallButton:hover,
-#coupleAiButton:hover,
-#coupleAvatarButton:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.couple-header-button:active {
-  transform: scale(0.94);
-}
-
-.couple-partner-info {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.couple-partner-avatar {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  overflow: hidden;
-  border: 2px solid rgba(255, 131, 200, 0.65);
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff85c8, #8c6aff);
-  color: #fff;
-  font-weight: 800;
-}
-
-.couple-partner-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.couple-partner-details {
-  min-width: 0;
-}
-
-#couplePartnerName,
-.couple-partner-name {
-  display: block;
-  max-width: 180px;
-  overflow: hidden;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.couple-partner-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 100%;
-  margin-top: 4px;
-  padding: 3px 8px;
-  border: 1px solid rgba(255, 131, 200, 0.25);
-  border-radius: 20px;
-  color: #ffb4dc;
-  background: rgba(255, 131, 200, 0.1);
-  font-size: 10px;
-  font-weight: 700;
-}
-
-#coupleStatus,
-#coupleConnectionStatus,
-.couple-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-  color: var(--couple-muted);
-  font-size: 11px;
-}
-
-.couple-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #8490a8;
-}
-
-.couple-status.online .couple-status-dot {
-  background: #46e6a5;
-  box-shadow: 0 0 9px rgba(70, 230, 165, 0.55);
-}
-
-.couple-status.offline .couple-status-dot {
-  background: #8490a8;
-}
-
-#coupleMoodLabel {
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ===================== 7. DAY LABEL ===================== */
-
-#coupleDayLabel,
-.couple-day-label {
-  align-self: center;
-  margin: 15px auto 8px;
-  padding: 6px 12px;
-  border: 1px solid var(--couple-border);
-  border-radius: 20px;
-  color: var(--couple-muted);
-  background: rgba(255, 255, 255, 0.055);
-  font-size: 11px;
-}
-
-/* ===================== 8. MESSAGE AREA ===================== */
-
-#coupleMessages {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  min-height: 0;
-  padding: 16px 14px 22px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  scroll-behavior: smooth;
-}
-
-#coupleMessages::-webkit-scrollbar {
-  width: 4px;
-}
-
-#coupleMessages::-webkit-scrollbar-thumb {
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.couple-message-row,
-.message-row,
-.chat-message {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 100%;
-  animation: coupleMessageEnter 250ms ease both;
-}
-
-.couple-message-row.own,
-.message-row.own,
-.chat-message.own,
-.message-row.sent {
-  align-items: flex-end;
-}
-
-@keyframes coupleMessageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===================== 9. MESSAGE BUBBLES ===================== */
-
-.message-bubble,
-.couple-message-bubble {
-  position: relative;
-  max-width: min(82%, 460px);
-  padding: 11px 14px;
-  overflow-wrap: anywhere;
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  border-radius: 19px 19px 19px 5px;
-  color: #f7f8ff;
-  background: var(--couple-partner-bubble);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-  font-size: 14px;
-  line-height: 1.55;
-  transition:
-    background var(--couple-transition),
-    border-color var(--couple-transition);
-}
-
-.own .message-bubble,
-.message-row.own .message-bubble,
-.message-row.sent .message-bubble,
-.chat-message.own .message-bubble,
-.own .couple-message-bubble {
-  border-color: rgba(255, 255, 255, 0.1);
-  border-radius: 19px 19px 5px 19px;
-  background: var(--couple-own-bubble);
-}
-
-.message-content {
-  min-width: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.message-content a {
-  color: #a9d5ff;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.message-meta {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-  margin-top: 5px;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 10px;
-  line-height: 1.2;
-}
-
-.message-time {
-  opacity: 0.8;
-}
-
-.message-ticks {
-  display: inline-flex;
-  align-items: center;
-  color: #b7c8ff;
-  font-size: 12px;
-  letter-spacing: -4px;
-  padding-right: 4px;
-}
-
-.message-ticks.seen,
-.message-seen {
-  color: #6be3ff;
-}
-
-.message-pending {
-  opacity: 0.65;
-}
-
-.message-failed {
-  border: 1px solid #ff7373 !important;
-}
-
-.message-image {
-  display: block;
-  max-width: min(100%, 300px);
-  max-height: 360px;
-  margin: 0 0 6px;
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-.message-video,
-.message-audio {
-  display: block;
-  width: 100%;
-  max-width: 300px;
-  margin-bottom: 6px;
-  border-radius: 12px;
-}
-
-.message-file {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 180px;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.message-file-icon {
-  font-size: 24px;
-}
-
-.message-file-name {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-}
-
-.message-reaction {
-  position: absolute;
-  right: 8px;
-  bottom: -13px;
-  padding: 3px 7px;
-  border: 1px solid var(--couple-border);
-  border-radius: 15px;
-  background: #182440;
-  font-size: 12px;
-}
-
-/* ===================== 10. SYSTEM MESSAGES ===================== */
-
-.couple-system-message {
-  align-self: center;
-  max-width: 90%;
-  margin: 8px 0;
-  padding: 7px 12px;
-  border-radius: 12px;
-  color: var(--couple-muted);
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 11px;
-  text-align: center;
-}
-
-/* ===================== 11. TYPING INDICATOR ===================== */
-
-#coupleTyping,
-#coupleTypingIndicator,
-.couple-typing {
-  flex-shrink: 0;
-  padding: 4px 16px 10px;
-  color: var(--couple-muted);
-  font-size: 11px;
-}
-
-.couple-typing-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 13px;
-  border: 1px solid var(--couple-border);
-  border-radius: 15px;
-  background: var(--couple-partner-bubble);
-}
-
-.couple-typing-dots span {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #b8c5e0;
-  animation: coupleTypingBounce 1s infinite ease-in-out;
-}
-
-.couple-typing-dots span:nth-child(2) {
-  animation-delay: 150ms;
-}
-
-.couple-typing-dots span:nth-child(3) {
-  animation-delay: 300ms;
-}
-
-@keyframes coupleTypingBounce {
-  0%, 60%, 100% {
-    opacity: 0.4;
-    transform: translateY(0);
-  }
-
-  30% {
-    opacity: 1;
-    transform: translateY(-4px);
-  }
-}
-
-/* ===================== 12. SUGGESTIONS ===================== */
-
-#coupleSuggestions,
-#coupleQuickReplies,
-#quickReplies {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-#coupleSuggestions::-webkit-scrollbar,
-#coupleQuickReplies::-webkit-scrollbar,
-#quickReplies::-webkit-scrollbar {
-  display: none;
-}
-
-.couple-suggestion,
-.couple-suggestion-chip,
-.suggestion-chip {
-  flex-shrink: 0;
-  min-height: 34px;
-  padding: 8px 12px;
-  border: 1px solid rgba(var(--couple-secondary-rgb), 0.25);
-  border-radius: 20px;
-  color: #ffc0e1;
-  background: rgba(var(--couple-secondary-rgb), 0.07);
-  font-size: 11px;
-  white-space: nowrap;
-  transition:
-    background 200ms ease,
-    transform 200ms ease;
-}
-
-.couple-suggestion:hover,
-.couple-suggestion-chip:hover,
-.suggestion-chip:hover {
-  background: rgba(var(--couple-secondary-rgb), 0.16);
-  transform: translateY(-1px);
-}
-
-/* ===================== 13. COMPOSER ===================== */
-
-#coupleComposer,
-.couple-composer {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  flex-shrink: 0;
-  align-items: flex-end;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--couple-border);
-  background: rgba(7, 17, 38, 0.94);
-  -webkit-backdrop-filter: blur(22px);
-  backdrop-filter: blur(22px);
-}
-
-#coupleMessageInput,
-#coupleInput,
-#messageInput {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  max-height: 130px;
-  padding: 12px 14px;
-  resize: none;
-  border: 1px solid var(--couple-border);
-  border-radius: 17px;
-  outline: none;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.065);
-  font-size: 14px;
-  line-height: 1.45;
-  transition: border-color 200ms ease, background 200ms ease;
-}
-
-#coupleMessageInput::placeholder,
-#coupleInput::placeholder,
-#messageInput::placeholder {
-  color: #8e9db9;
-}
-
-#coupleMessageInput:focus,
-#coupleInput:focus,
-#messageInput:focus {
-  border-color: rgba(var(--couple-primary-rgb), 0.6);
-  background: rgba(255, 255, 255, 0.085);
-}
-
-#coupleSendButton,
-#coupleSendBtn,
-.couple-send-button {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 0;
-  border-radius: 16px;
-  color: #fff;
-  background: linear-gradient(135deg, #5286ff, #8a5dff);
-  box-shadow: 0 5px 18px rgba(82, 134, 255, 0.2);
-  font-size: 19px;
-  transition: transform 180ms ease, filter 180ms ease;
-}
-
-#coupleSendButton:hover,
-#coupleSendBtn:hover,
-.couple-send-button:hover {
-  filter: brightness(1.12);
-  transform: translateY(-1px);
-}
-
-#coupleSendButton:active,
-#coupleSendBtn:active,
-.couple-send-button:active {
-  transform: scale(0.94);
-}
-
-#coupleEmojiButton,
-#coupleAttachButton,
-#coupleCameraButton,
-#coupleMicButton {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 42px;
-  height: 44px;
-  border: 1px solid var(--couple-border);
-  border-radius: 14px;
-  color: #c9d6f0;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 18px;
-}
-
-#coupleEmojiButton:hover,
-#coupleAttachButton:hover,
-#coupleCameraButton:hover,
-#coupleMicButton:hover {
-  background: rgba(255, 255, 255, 0.11);
-}
-
-#coupleFileInput,
-#coupleMediaInput,
-#coupleImageInput,
-#coupleCameraInput {
-  display: none;
-}
-
-/* ===================== 14. MEDIA PREVIEW ===================== */
-
-#coupleMediaPreview {
-  display: flex;
-  flex-shrink: 0;
-  gap: 8px;
-  padding: 8px 12px;
-  overflow-x: auto;
-}
-
-#coupleMediaPreview img,
-#coupleMediaPreview video {
-  width: auto;
-  max-width: 110px;
-  max-height: 100px;
-  border: 1px solid var(--couple-border);
-  border-radius: 12px;
-  object-fit: cover;
-}
-
-/* ===================== 15. RECORDING UI ===================== */
-
-#coupleRecordingBar,
-.couple-recording-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-top: 1px solid rgba(255, 80, 100, 0.22);
-  background: rgba(255, 60, 90, 0.08);
-}
-
-.couple-recording-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #ff5d75;
-  animation: coupleRecordingPulse 1s infinite;
-}
-
-@keyframes coupleRecordingPulse {
-  50% {
-    opacity: 0.35;
-    transform: scale(0.8);
-  }
-}
-
-/* ===================== 16. MOOD PARTICLES ===================== */
-
-.mood-particle,
-.couple-mood-particle {
-  position: absolute;
-  bottom: -40px;
-  display: block;
-  opacity: 0;
-  font-size: 22px;
-  pointer-events: none;
-  animation: coupleParticleFloat 4s ease-in forwards;
-  will-change: transform, opacity;
-}
-
-#coupleMoodEffects.active .mood-particle,
-#coupleMoodEffects.active .couple-mood-particle {
-  opacity: 1;
-}
-
-@keyframes coupleParticleFloat {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.6);
-  }
-
-  15% {
-    opacity: 0.9;
-  }
-
-  75% {
-    opacity: 0.75;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate3d(25px, -110vh, 0) rotate(240deg) scale(1.25);
-  }
-}
-
-.mood-particle-romantic,
-.mood-particle-deep_love {
-  filter: drop-shadow(0 0 8px rgba(255, 100, 180, 0.5));
-}
-
-.mood-particle-happy,
-.mood-particle-excited,
-.mood-particle-playful {
-  filter: drop-shadow(0 0 7px rgba(255, 215, 100, 0.4));
-}
-
-/* ===================== 17. OVERLAYS ===================== */
-
-#coupleMoodPicker,
-#coupleAiOverlay,
-#coupleMenuOverlay,
-#coupleEmojiPicker {
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(2, 7, 20, 0.72);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  animation: coupleOverlayEnter 180ms ease both;
-}
-
-#couplePickerBackdrop {
-  position: fixed;
-  z-index: 990;
-  inset: 0;
-  background: rgba(2, 7, 20, 0.55);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
-}
-
-.hidden {
-  display: none !important;
-}
-
-@keyframes coupleOverlayEnter {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-/* ===================== 18. MODAL PANELS ===================== */
-
-.couple-modal,
-.couple-panel,
-.couple-modal-content,
-#coupleMoodPicker > .couple-panel,
-#coupleAiOverlay > .couple-panel,
-#coupleMenuOverlay > .couple-panel,
-#coupleEmojiPicker > .couple-panel {
-  width: min(100%, 440px);
-  max-height: min(82dvh, 700px);
-  overflow: hidden;
-  border: 1px solid var(--couple-border);
-  border-radius: 25px;
-  color: #f7f8ff;
-  background: #101b35;
-  box-shadow: var(--couple-shadow);
-  animation: couplePanelEnter 250ms ease both;
-}
-
-@keyframes couplePanelEnter {
-  from {
-    opacity: 0;
-    transform: translateY(15px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.couple-modal-header,
-.couple-panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px;
-  border-bottom: 1px solid var(--couple-border);
-}
-
-.couple-modal-title,
-.couple-panel-title {
-  margin: 0;
-  color: #fff;
-  font-size: 17px;
-  font-weight: 800;
-}
-
-.couple-modal-close,
-.couple-panel-close,
-#closeMoodPanel,
-#closeAiPanel,
-#closeCoupleMenu,
-#closeEmojiPicker {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--couple-border);
-  border-radius: 12px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 20px;
-}
-
-.couple-modal-body,
-.couple-panel-body {
-  max-height: calc(82dvh - 80px);
-  padding: 16px;
-  overflow-y: auto;
-}
-
-/* ===================== 19. MOOD PICKER ===================== */
-
-#coupleMoodPicker {
-  z-index: 1100;
-}
-
-#coupleMoodPicker .couple-mood-grid,
-#coupleMoodOptions,
-#moodPickerOptions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
-  max-height: min(60dvh, 520px);
-  padding: 14px;
-  overflow-y: auto;
-}
-
-.couple-mood-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 83px;
-  padding: 10px 5px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 17px;
-  color: #dbe4fb;
-  background: rgba(255, 255, 255, 0.045);
-  transition:
-    background 200ms ease,
-    border-color 200ms ease,
-    transform 200ms ease;
-}
-
-.couple-mood-option:hover {
-  border-color: rgba(var(--couple-secondary-rgb), 0.4);
-  background: rgba(var(--couple-secondary-rgb), 0.09);
-  transform: translateY(-2px);
-}
-
-.couple-mood-option[aria-pressed="true"] {
-  border-color: var(--couple-secondary);
-  background: rgba(var(--couple-secondary-rgb), 0.13);
-  box-shadow: inset 0 0 0 1px rgba(var(--couple-secondary-rgb), 0.13);
-}
-
-.couple-mood-option-emoji {
-  font-size: 25px;
-}
-
-.couple-mood-option-label {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  color: #e3e9fa;
-  font-size: 11px;
-  font-weight: 650;
-  text-align: center;
-}
-
-/* ===================== 20. AI PANEL ===================== */
-
-#coupleAiOverlay {
-  z-index: 1200;
-}
-
-#coupleAiOverlay .couple-ai-panel,
-#coupleAiOverlay .couple-modal,
-#coupleAiOverlay .couple-panel {
-  width: min(100%, 420px);
-}
-
-.couple-ai-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.couple-ai-orb {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(135deg, #719cff, #ff83c8);
-  box-shadow: 0 0 24px rgba(133, 115, 255, 0.25);
-  font-size: 21px;
-}
-
-.couple-ai-title {
-  margin: 0;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.couple-ai-subtitle {
-  margin-top: 4px;
-  color: var(--couple-muted);
-  font-size: 11px;
-}
-
-.couple-ai-action {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin-bottom: 9px;
-  padding: 13px;
-  border: 1px solid var(--couple-border);
-  border-radius: 15px;
-  color: #edf2ff;
-  background: rgba(255, 255, 255, 0.045);
-  text-align: left;
-}
-
-.couple-ai-action:hover {
-  border-color: rgba(var(--couple-primary-rgb), 0.35);
-  background: rgba(var(--couple-primary-rgb), 0.09);
-}
-
-.couple-ai-action-icon {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* ===================== 21. THREE-DOT MENU ===================== */
-
-#coupleMenuOverlay {
-  z-index: 1150;
-}
-
-.couple-menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 10px;
-}
-
-.couple-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  width: 100%;
-  min-height: 48px;
-  padding: 12px;
-  border: 0;
-  border-radius: 13px;
-  color: #e9efff;
-  background: transparent;
-  text-align: left;
-}
-
-.couple-menu-item:hover {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.couple-menu-item.danger {
-  color: #ff929f;
-}
-
-/* ===================== 22. EMOJI PICKER ===================== */
-
-#coupleEmojiPicker {
-  z-index: 1300;
-}
-
-#coupleEmojiPicker .couple-emoji-panel,
-#coupleEmojiPicker .couple-modal,
-#coupleEmojiPicker .couple-panel {
-  width: min(100%, 380px);
-}
-
-#coupleEmojiSearch {
-  width: 100%;
-  min-height: 42px;
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--couple-border);
-  border-radius: 12px;
-  outline: none;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-#coupleEmojiSearch::placeholder {
-  color: #8e9db9;
-}
-
-#coupleEmojiGrid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 5px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.emoji-item {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1;
-  padding: 3px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  font-size: 24px;
-}
-
-.emoji-item:hover {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-/* ===================== 23. TOAST ===================== */
-
-#coupleToast,
-.couple-toast {
-  position: fixed;
-  z-index: 2000;
-  right: 16px;
-  bottom: calc(100px + env(safe-area-inset-bottom));
-  left: 16px;
-  width: fit-content;
-  max-width: min(90%, 360px);
-  margin: auto;
-  padding: 12px 16px;
-  border: 1px solid var(--couple-border);
-  border-radius: 14px;
-  color: #fff;
-  background: #1b2947;
-  box-shadow: var(--couple-shadow);
-  font-size: 12px;
-  animation: coupleToastEnter 220ms ease both;
-}
-
-@keyframes coupleToastEnter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* =========================================================
-   24. MOOD THEMES
-   JavaScript sets:
-   body[data-couple-mood="..."]
-   #coupleApp[data-mood="..."]
-   ========================================================= */
-
-:root,
-#coupleApp,
-body[data-couple-mood="neutral"],
-#coupleApp[data-mood="neutral"] {
-  --couple-primary: #70a7ff;
-  --couple-primary-rgb: 112, 167, 255;
-  --couple-secondary: #ff83c8;
-  --couple-secondary-rgb: 255, 131, 200;
-  --couple-own-bubble: linear-gradient(135deg, #477bff, #855cff);
-}
-
-/* LOVE */
-
-body[data-couple-mood="romantic"] #coupleApp,
-#coupleApp[data-mood="romantic"] {
-  --couple-primary: #ff7db9;
-  --couple-primary-rgb: 255, 125, 185;
-  --couple-secondary: #ffb4d8;
-  --couple-secondary-rgb: 255, 180, 216;
-  --couple-own-bubble: linear-gradient(135deg, #ec609e, #a66bff);
-}
-
-body[data-couple-mood="deep_love"] #coupleApp,
-#coupleApp[data-mood="deep_love"] {
-  --couple-primary: #ff4f87;
-  --couple-primary-rgb: 255, 79, 135;
-  --couple-secondary: #b18aff;
-  --couple-secondary-rgb: 177, 138, 255;
-  --couple-own-bubble: linear-gradient(135deg, #d83e82, #744cff);
-}
-
-body[data-couple-mood="affection"] #coupleApp,
-#coupleApp[data-mood="affection"] {
-  --couple-primary: #ff9dbb;
-  --couple-primary-rgb: 255, 157, 187;
-  --couple-secondary: #ffccdf;
-  --couple-secondary-rgb: 255, 204, 223;
-  --couple-own-bubble: linear-gradient(135deg, #e977a7, #bf79d9);
-}
-
-body[data-couple-mood="passionate"] #coupleApp,
-#coupleApp[data-mood="passionate"] {
-  --couple-primary: #ff476f;
-  --couple-primary-rgb: 255, 71, 111;
-  --couple-secondary: #ff925e;
-  --couple-secondary-rgb: 255, 146, 94;
-  --couple-own-bubble: linear-gradient(135deg, #ed365f, #ff865c);
-}
-
-body[data-couple-mood="flirty"] #coupleApp,
-#coupleApp[data-mood="flirty"] {
-  --couple-primary: #ff73ce;
-  --couple-primary-rgb: 255, 115, 206;
-  --couple-secondary: #c18cff;
-  --couple-secondary-rgb: 193, 140, 255;
-  --couple-own-bubble: linear-gradient(135deg, #f05bbb, #9b63ff);
-}
-
-body[data-couple-mood="crush"] #coupleApp,
-#coupleApp[data-mood="crush"] {
-  --couple-primary: #ff8db7;
-  --couple-primary-rgb: 255, 141, 183;
-  --couple-secondary: #ffb9d0;
-  --couple-secondary-rgb: 255, 185, 208;
-  --couple-own-bubble: linear-gradient(135deg, #f18bb4, #e477d5);
-}
-
-body[data-couple-mood="missing"] #coupleApp,
-#coupleApp[data-mood="missing"] {
-  --couple-primary: #8e9dff;
-  --couple-primary-rgb: 142, 157, 255;
-  --couple-secondary: #ff9bcf;
-  --couple-secondary-rgb: 255, 155, 207;
-  --couple-own-bubble: linear-gradient(135deg, #697ef4, #bb72d7);
-}
-
-body[data-couple-mood="long_distance"] #coupleApp,
-#coupleApp[data-mood="long_distance"] {
-  --couple-primary: #75b9ff;
-  --couple-primary-rgb: 117, 185, 255;
-  --couple-secondary: #bca5ff;
-  --couple-secondary-rgb: 188, 165, 255;
-  --couple-own-bubble: linear-gradient(135deg, #518be9, #9273e9);
-}
-
-body[data-couple-mood="grateful"] #coupleApp,
-#coupleApp[data-mood="grateful"] {
-  --couple-primary: #ffca7a;
-  --couple-primary-rgb: 255, 202, 122;
-  --couple-secondary: #ffe4a6;
-  --couple-secondary-rgb: 255, 228, 166;
-  --couple-own-bubble: linear-gradient(135deg, #d79b45, #ef7e88);
-}
-
-/* HAPPY */
-
-body[data-couple-mood="happy"] #coupleApp,
-#coupleApp[data-mood="happy"] {
-  --couple-primary: #ffd166;
-  --couple-primary-rgb: 255, 209, 102;
-  --couple-secondary: #ff9e76;
-  --couple-secondary-rgb: 255, 158, 118;
-  --couple-own-bubble: linear-gradient(135deg, #f5b941, #f28d73);
-}
-
-body[data-couple-mood="excited"] #coupleApp,
-#coupleApp[data-mood="excited"] {
-  --couple-primary: #ffb347;
-  --couple-primary-rgb: 255, 179, 71;
-  --couple-secondary: #ff73bd;
-  --couple-secondary-rgb: 255, 115, 189;
-  --couple-own-bubble: linear-gradient(135deg, #f8a238, #ec65bc);
-}
-
-body[data-couple-mood="playful"] #coupleApp,
-#coupleApp[data-mood="playful"] {
-  --couple-primary: #b5f36c;
-  --couple-primary-rgb: 181, 243, 108;
-  --couple-secondary: #7de5e7;
-  --couple-secondary-rgb: 125, 229, 231;
-  --couple-own-bubble: linear-gradient(135deg, #72c95d, #36bfc4);
-}
-
-body[data-couple-mood="funny"] #coupleApp,
-#coupleApp[data-mood="funny"] {
-  --couple-primary: #ffdb68;
-  --couple-primary-rgb: 255, 219, 104;
-  --couple-secondary: #ff94c6;
-  --couple-secondary-rgb: 255, 148, 198;
-  --couple-own-bubble: linear-gradient(135deg, #f0c343, #ee82bc);
-}
-
-body[data-couple-mood="celebration"] #coupleApp,
-#coupleApp[data-mood="celebration"] {
-  --couple-primary: #ffca66;
-  --couple-primary-rgb: 255, 202, 102;
-  --couple-secondary: #b49aff;
-  --couple-secondary-rgb: 180, 154, 255;
-  --couple-own-bubble: linear-gradient(135deg, #e5a832, #a475ff);
-}
-
-body[data-couple-mood="confident"] #coupleApp,
-#coupleApp[data-mood="confident"] {
-  --couple-primary: #64caff;
-  --couple-primary-rgb: 100, 202, 255;
-  --couple-secondary: #8e9aff;
-  --couple-secondary-rgb: 142, 154, 255;
-  --couple-own-bubble: linear-gradient(135deg, #379bdc, #6b6be8);
-}
-
-body[data-couple-mood="peaceful"] #coupleApp,
-#coupleApp[data-mood="peaceful"] {
-  --couple-primary: #8ce3ce;
-  --couple-primary-rgb: 140, 227, 206;
-  --couple-secondary: #9fc5ff;
-  --couple-secondary-rgb: 159, 197, 255;
-  --couple-own-bubble: linear-gradient(135deg, #52c5ae, #6d9fe7);
-}
-
-body[data-couple-mood="playful_love"] #coupleApp,
-#coupleApp[data-mood="playful_love"] {
-  --couple-primary: #ff8fc8;
-  --couple-primary-rgb: 255, 143, 200;
-  --couple-secondary: #ffe17a;
-  --couple-secondary-rgb: 255, 225, 122;
-  --couple-own-bubble: linear-gradient(135deg, #ee75c1, #e7b950);
-}
-
-/* SAD / SUPPORTIVE */
-
-body[data-couple-mood="sad"] #coupleApp,
-#coupleApp[data-mood="sad"] {
-  --couple-primary: #7ca8ff;
-  --couple-primary-rgb: 124, 168, 255;
-  --couple-secondary: #9bafff;
-  --couple-secondary-rgb: 155, 175, 255;
-  --couple-own-bubble: linear-gradient(135deg, #5178c8, #786ecb);
-}
-
-body[data-couple-mood="lonely"] #coupleApp,
-#coupleApp[data-mood="lonely"] {
-  --couple-primary: #8d9ce8;
-  --couple-primary-rgb: 141, 156, 232;
-  --couple-secondary: #b2a0db;
-  --couple-secondary-rgb: 178, 160, 219;
-  --couple-own-bubble: linear-gradient(135deg, #6577bb, #8c72b4);
-}
-
-body[data-couple-mood="worried"] #coupleApp,
-#coupleApp[data-mood="worried"] {
-  --couple-primary: #8bb5ff;
-  --couple-primary-rgb: 139, 181, 255;
-  --couple-secondary: #b7a8ff;
-  --couple-secondary-rgb: 183, 168, 255;
-  --couple-own-bubble: linear-gradient(135deg, #618fd9, #8975d4);
-}
-
-body[data-couple-mood="anxious"] #coupleApp,
-#coupleApp[data-mood="anxious"] {
-  --couple-primary: #90b7ff;
-  --couple-primary-rgb: 144, 183, 255;
-  --couple-secondary: #b2baff;
-  --couple-secondary-rgb: 178, 186, 255;
-  --couple-own-bubble: linear-gradient(135deg, #688ed0, #8b8cdb);
-}
-
-body[data-couple-mood="comforting"] #coupleApp,
-#coupleApp[data-mood="comforting"] {
-  --couple-primary: #9bd7ff;
-  --couple-primary-rgb: 155, 215, 255;
-  --couple-secondary: #b9b1ff;
-  --couple-secondary-rgb: 185, 177, 255;
-  --couple-own-bubble: linear-gradient(135deg, #6eaddb, #9488dc);
-}
-
-body[data-couple-mood="caring"] #coupleApp,
-#coupleApp[data-mood="caring"] {
-  --couple-primary: #ffb3c8;
-  --couple-primary-rgb: 255, 179, 200;
-  --couple-secondary: #a8e7d6;
-  --couple-secondary-rgb: 168, 231, 214;
-  --couple-own-bubble: linear-gradient(135deg, #e78eac, #62c8b0);
-}
-
-body[data-couple-mood="supportive"] #coupleApp,
-#coupleApp[data-mood="supportive"] {
-  --couple-primary: #80d6ff;
-  --couple-primary-rgb: 128, 214, 255;
-  --couple-secondary: #91e5c2;
-  --couple-secondary-rgb: 145, 229, 194;
-  --couple-own-bubble: linear-gradient(135deg, #4eaedc, #55c49b);
-}
-
-body[data-couple-mood="healing"] #coupleApp,
-#coupleApp[data-mood="healing"] {
-  --couple-primary: #a8a3ff;
-  --couple-primary-rgb: 168, 163, 255;
-  --couple-secondary: #9ce8d6;
-  --couple-secondary-rgb: 156, 232, 214;
-  --couple-own-bubble: linear-gradient(135deg, #8e8be9, #5cc5ab);
-}
-
-body[data-couple-mood="emotional"] #coupleApp,
-#coupleApp[data-mood="emotional"] {
-  --couple-primary: #b6a0ff;
-  --couple-primary-rgb: 182, 160, 255;
-  --couple-secondary: #ff9fca;
-  --couple-secondary-rgb: 255, 159, 202;
-  --couple-own-bubble: linear-gradient(135deg, #9581e8, #e77eae);
-}
-
-/* SERIOUS / CONVERSATION */
-
-body[data-couple-mood="deep_conversation"] #coupleApp,
-#coupleApp[data-mood="deep_conversation"] {
-  --couple-primary: #82b4ff;
-  --couple-primary-rgb: 130, 180, 255;
-  --couple-secondary: #9eaaff;
-  --couple-secondary-rgb: 158, 170, 255;
-  --couple-own-bubble: linear-gradient(135deg, #4e8fdf, #786ee0);
-}
-
-body[data-couple-mood="serious"] #coupleApp,
-#coupleApp[data-mood="serious"] {
-  --couple-primary: #8da6ca;
-  --couple-primary-rgb: 141, 166, 202;
-  --couple-secondary: #a6b4cf;
-  --couple-secondary-rgb: 166, 180, 207;
-  --couple-own-bubble: linear-gradient(135deg, #52739f, #6e80a8);
-}
-
-body[data-couple-mood="apologetic"] #coupleApp,
-#coupleApp[data-mood="apologetic"] {
-  --couple-primary: #d0a5ff;
-  --couple-primary-rgb: 208, 165, 255;
-  --couple-secondary: #ffb3d2;
-  --couple-secondary-rgb: 255, 179, 210;
-  --couple-own-bubble: linear-gradient(135deg, #a47ae2, #df86b2);
-}
-
-body[data-couple-mood="forgiving"] #coupleApp,
-#coupleApp[data-mood="forgiving"] {
-  --couple-primary: #9ce6d4;
-  --couple-primary-rgb: 156, 230, 212;
-  --couple-secondary: #b9c6ff;
-  --couple-secondary-rgb: 185, 198, 255;
-  --couple-own-bubble: linear-gradient(135deg, #58c7ad, #8899e5);
-}
-
-body[data-couple-mood="curious"] #coupleApp,
-#coupleApp[data-mood="curious"] {
-  --couple-primary: #7edbff;
-  --couple-primary-rgb: 126, 219, 255;
-  --couple-secondary: #c4a3ff;
-  --couple-secondary-rgb: 196, 163, 255;
-  --couple-own-bubble: linear-gradient(135deg, #44b9e4, #9a78e8);
-}
-
-body[data-couple-mood="thoughtful"] #coupleApp,
-#coupleApp[data-mood="thoughtful"] {
-  --couple-primary: #a9c6ff;
-  --couple-primary-rgb: 169, 198, 255;
-  --couple-secondary: #c3b2eb;
-  --couple-secondary-rgb: 195, 178, 235;
-  --couple-own-bubble: linear-gradient(135deg, #769be0, #a28bc9);
-}
-
-body[data-couple-mood="motivational"] #coupleApp,
-#coupleApp[data-mood="motivational"] {
-  --couple-primary: #ffbf69;
-  --couple-primary-rgb: 255, 191, 105;
-  --couple-secondary: #ff8f79;
-  --couple-secondary-rgb: 255, 143, 121;
-  --couple-own-bubble: linear-gradient(135deg, #edaa48, #e97b68);
-}
-
-body[data-couple-mood="proud"] #coupleApp,
-#coupleApp[data-mood="proud"] {
-  --couple-primary: #ffdc75;
-  --couple-primary-rgb: 255, 220, 117;
-  --couple-secondary: #ffad8b;
-  --couple-secondary-rgb: 255, 173, 139;
-  --couple-own-bubble: linear-gradient(135deg, #d8b44f, #e88d6c);
-}
-
-/* CONFLICT / INTENSE FEELINGS */
-
-body[data-couple-mood="angry"] #coupleApp,
-#coupleApp[data-mood="angry"] {
-  --couple-primary: #ff6e76;
-  --couple-primary-rgb: 255, 110, 118;
-  --couple-secondary: #ff9a6d;
-  --couple-secondary-rgb: 255, 154, 109;
-  --couple-own-bubble: linear-gradient(135deg, #e64c59, #d96d4c);
-}
-
-body[data-couple-mood="frustrated"] #coupleApp,
-#coupleApp[data-mood="frustrated"] {
-  --couple-primary: #ff9472;
-  --couple-primary-rgb: 255, 148, 114;
-  --couple-secondary: #ffc17c;
-  --couple-secondary-rgb: 255, 193, 124;
-  --couple-own-bubble: linear-gradient(135deg, #e97656, #d99b4c);
-}
-
-body[data-couple-mood="jealous"] #coupleApp,
-#coupleApp[data-mood="jealous"] {
-  --couple-primary: #b6a0ff;
-  --couple-primary-rgb: 182, 160, 255;
-  --couple-secondary: #ff9ecb;
-  --couple-secondary-rgb: 255, 158, 203;
-  --couple-own-bubble: linear-gradient(135deg, #9078d8, #d66d9d);
-}
-
-body[data-couple-mood="insecure"] #coupleApp,
-#coupleApp[data-mood="insecure"] {
-  --couple-primary: #9daee5;
-  --couple-primary-rgb: 157, 174, 229;
-  --couple-secondary: #c1b0df;
-  --couple-secondary-rgb: 193, 176, 223;
-  --couple-own-bubble: linear-gradient(135deg, #748bc8, #a18ac8);
-}
-
-body[data-couple-mood="disappointed"] #coupleApp,
-#coupleApp[data-mood="disappointed"] {
-  --couple-primary: #8ea7d9;
-  --couple-primary-rgb: 142, 167, 217;
-  --couple-secondary: #b5a5d4;
-  --couple-secondary-rgb: 181, 165, 212;
-  --couple-own-bubble: linear-gradient(135deg, #6e89c3, #9785bd);
-}
-
-body[data-couple-mood="confused"] #coupleApp,
-#coupleApp[data-mood="confused"] {
-  --couple-primary: #b2a5ff;
-  --couple-primary-rgb: 178, 165, 255;
-  --couple-secondary: #84d7ff;
-  --couple-secondary-rgb: 132, 215, 255;
-  --couple-own-bubble: linear-gradient(135deg, #9584e8, #5bb7e0);
-}
-
-body[data-couple-mood="relieved"] #coupleApp,
-#coupleApp[data-mood="relieved"] {
-  --couple-primary: #8be0c5;
-  --couple-primary-rgb: 139, 224, 197;
-  --couple-secondary: #a8d6ff;
-  --couple-secondary-rgb: 168, 214, 255;
-  --couple-own-bubble: linear-gradient(135deg, #52c7a6, #70b4e5);
-}
-
-/* SPECIAL MOMENTS */
-
-body[data-couple-mood="nostalgic"] #coupleApp,
-#coupleApp[data-mood="nostalgic"] {
-  --couple-primary: #e4b6a0;
-  --couple-primary-rgb: 228, 182, 160;
-  --couple-secondary: #d7a8d8;
-  --couple-secondary-rgb: 215, 168, 216;
-  --couple-own-bubble: linear-gradient(135deg, #bd8f7b, #aa79b8);
-}
-
-body[data-couple-mood="dreamy"] #coupleApp,
-#coupleApp[data-mood="dreamy"] {
-  --couple-primary: #c3a5ff;
-  --couple-primary-rgb: 195, 165, 255;
-  --couple-secondary: #ffb9e0;
-  --couple-secondary-rgb: 255, 185, 224;
-  --couple-own-bubble: linear-gradient(135deg, #a28ae8, #e18ac6);
-}
-
-body[data-couple-mood="sleepy"] #coupleApp,
-#coupleApp[data-mood="sleepy"] {
-  --couple-primary: #a7a7ff;
-  --couple-primary-rgb: 167, 167, 255;
-  --couple-secondary: #9ac9ff;
-  --couple-secondary-rgb: 154, 201, 255;
-  --couple-own-bubble: linear-gradient(135deg, #7f84dc, #659fdc);
-}
-
-body[data-couple-mood="goodnight"] #coupleApp,
-#coupleApp[data-mood="goodnight"] {
-  --couple-primary: #9a9bff;
-  --couple-primary-rgb: 154, 155, 255;
-  --couple-secondary: #e4b0ff;
-  --couple-secondary-rgb: 228, 176, 255;
-  --couple-own-bubble: linear-gradient(135deg, #7779e5, #b17de1);
-}
-
-body[data-couple-mood="goodmorning"] #coupleApp,
-#coupleApp[data-mood="goodmorning"] {
-  --couple-primary: #ffca83;
-  --couple-primary-rgb: 255, 202, 131;
-  --couple-secondary: #ff9eae;
-  --couple-secondary-rgb: 255, 158, 174;
-  --couple-own-bubble: linear-gradient(135deg, #edb05c, #e985a4);
-}
-
-body[data-couple-mood="celebratory"] #coupleApp,
-#coupleApp[data-mood="celebratory"] {
-  --couple-primary: #ffcd69;
-  --couple-primary-rgb: 255, 205, 105;
-  --couple-secondary: #ff86d2;
-  --couple-secondary-rgb: 255, 134, 210;
-  --couple-own-bubble: linear-gradient(135deg, #f2b43d, #e76ebc);
-}
-
-body[data-couple-mood="adventurous"] #coupleApp,
-#coupleApp[data-mood="adventurous"] {
-  --couple-primary: #72e5b0;
-  --couple-primary-rgb: 114, 229, 176;
-  --couple-secondary: #75caff;
-  --couple-secondary-rgb: 117, 202, 255;
-  --couple-own-bubble: linear-gradient(135deg, #45c994, #4da8e8);
-}
-
-body[data-couple-mood="grief"] #coupleApp,
-#coupleApp[data-mood="grief"] {
-  --couple-primary: #9baac9;
-  --couple-primary-rgb: 155, 170, 201;
-  --couple-secondary: #b8a9d3;
-  --couple-secondary-rgb: 184, 169, 211;
-  --couple-own-bubble: linear-gradient(135deg, #7587ad, #9784b4);
-}
-
-body[data-couple-mood="hopeful"] #coupleApp,
-#coupleApp[data-mood="hopeful"] {
-  --couple-primary: #8ee2a6;
-  --couple-primary-rgb: 142, 226, 166;
-  --couple-secondary: #8edbff;
-  --couple-secondary-rgb: 142, 219, 255;
-  --couple-own-bubble: linear-gradient(135deg, #5dc47d, #55b9e4);
-}
-
-body[data-couple-mood="thankful"] #coupleApp,
-#coupleApp[data-mood="thankful"] {
-  --couple-primary: #ffe092;
-  --couple-primary-rgb: 255, 224, 146;
-  --couple-secondary: #ffb7d7;
-  --couple-secondary-rgb: 255, 183, 215;
-  --couple-own-bubble: linear-gradient(135deg, #d9ba62, #e68bb9);
-}
-
-body[data-couple-mood="calm"] #coupleApp,
-#coupleApp[data-mood="calm"] {
-  --couple-primary: #8bdcd1;
-  --couple-primary-rgb: 139, 220, 209;
-  --couple-secondary: #a7caff;
-  --couple-secondary-rgb: 167, 202, 255;
-  --couple-own-bubble: linear-gradient(135deg, #51bcb1, #719ce5);
-}
-
-body[data-couple-mood="mysterious"] #coupleApp,
-#coupleApp[data-mood="mysterious"] {
-  --couple-primary: #b28aff;
-  --couple-primary-rgb: 178, 138, 255;
-  --couple-secondary: #e49aff;
-  --couple-secondary-rgb: 228, 154, 255;
-  --couple-own-bubble: linear-gradient(135deg, #8860d6, #bb65d9);
-}
-
-body[data-couple-mood="passive"] #coupleApp,
-#coupleApp[data-mood="passive"] {
-  --couple-primary: #9bb5ce;
-  --couple-primary-rgb: 155, 181, 206;
-  --couple-secondary: #a9b5d7;
-  --couple-secondary-rgb: 169, 181, 215;
-  --couple-own-bubble: linear-gradient(135deg, #718fae, #8a91bf);
-}
-
-body[data-couple-mood="game"] #coupleApp,
-#coupleApp[data-mood="game"] {
-  --couple-primary: #80f0cc;
-  --couple-primary-rgb: 128, 240, 204;
-  --couple-secondary: #9c9aff;
-  --couple-secondary-rgb: 156, 154, 255;
-  --couple-own-bubble: linear-gradient(135deg, #46cda7, #8377e8);
-}
-
-/* ===================== 25. THEME TRANSITIONS ===================== */
-
-#coupleApp[data-mood] #coupleBackgroundLayer {
-  background:
-    radial-gradient(
-      circle at 12% 20%,
-      rgba(var(--couple-primary-rgb), 0.14),
-      transparent 42%
-    ),
-    radial-gradient(
-      circle at 88% 75%,
-      rgba(var(--couple-secondary-rgb), 0.12),
-      transparent 40%
+    --chat-bg: #0b1020;
+    --chat-panel: #10172a;
+    --chat-panel-light: #151e34;
+    --chat-panel-hover: #1c2842;
+
+    --chat-blue: #4387ff;
+    --chat-blue-light: #75a9ff;
+    --chat-pink: #f17bb5;
+
+    --chat-text: #f3f6ff;
+    --chat-text-soft: #c4cce0;
+    --chat-muted: #8490aa;
+
+    --chat-border: rgba(255, 255, 255, 0.09);
+    --chat-border-light: rgba(255, 255, 255, 0.14);
+
+    --chat-success: #42d995;
+    --chat-danger: #ff637b;
+
+    --chat-received: #18233a;
+    --chat-sent: linear-gradient(135deg, #3478f6, #6657e8);
+
+    --chat-radius-sm: 10px;
+    --chat-radius-md: 16px;
+    --chat-radius-lg: 22px;
+
+    --chat-header-height: 68px;
+    --chat-composer-height: 76px;
+
+    --chat-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* =========================
+   2. RESET — CHAT ONLY
+========================= */
+
+.chat-app,
+.chat-app * {
+    box-sizing: border-box;
+}
+
+.chat-app [hidden] {
+    display: none !important;
+}
+
+.chat-app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    max-width: 100%;
+
+    height: 100vh;
+    height: 100dvh;
+
+    min-height: 0;
+    min-width: 0;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: hidden;
+
+    color: var(--chat-text);
+    background: var(--chat-bg);
+
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+
+    font-size: 14px;
+    line-height: 1.45;
+
+    isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.chat-app button,
+.chat-app input,
+.chat-app textarea {
+    font: inherit;
+}
+
+.chat-app button {
+    color: inherit;
+    cursor: pointer;
+}
+
+.chat-app button:focus-visible,
+.chat-app input:focus-visible,
+.chat-app textarea:focus-visible {
+    outline: 2px solid var(--chat-blue-light);
+    outline-offset: 3px;
+}
+
+.chat-app button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.chat-app img {
+    max-width: 100%;
+}
+
+.chat-app svg {
+    flex-shrink: 0;
+}
+
+/* =========================
+   3. CHAT HEADER
+========================= */
+
+.chat-app .chat-header {
+    position: relative;
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex: 0 0 auto;
+
+    min-width: 0;
+    min-height: var(--chat-header-height);
+
+    padding:
+        max(10px, env(safe-area-inset-top))
+        14px
+        10px;
+
+    background: rgba(13, 20, 38, 0.96);
+
+    border-bottom: 1px solid var(--chat-border);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+/* Header icon buttons */
+
+.chat-app #backButton,
+.chat-app #selectedAvatarButton,
+.chat-app #coupleChatButton,
+.chat-app #voiceCallButton,
+.chat-app #conversationMenu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    border: 0;
+    outline: none;
+
+    background: transparent;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        color 0.2s ease;
+}
+
+.chat-app #backButton {
+    width: 38px;
+    height: 38px;
+
+    margin-left: -5px;
+
+    border-radius: 50%;
+}
+
+.chat-app #backButton:hover,
+.chat-app #coupleChatButton:hover,
+.chat-app #voiceCallButton:hover,
+.chat-app #conversationMenu:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.chat-app #backButton:active,
+.chat-app #coupleChatButton:active,
+.chat-app #voiceCallButton:active,
+.chat-app #conversationMenu:active {
+    transform: scale(0.94);
+}
+
+/* Selected user avatar */
+
+.chat-app #selectedAvatarButton {
+    width: 43px;
+    height: 43px;
+
+    padding: 0;
+
+    overflow: hidden;
+
+    border: 2px solid rgba(91, 143, 255, 0.65);
+    border-radius: 50%;
+
+    background: var(--chat-panel-light);
+}
+
+.chat-app #selectedAvatar {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Selected user details */
+
+.chat-app .chat-header > div,
+.chat-app .chat-header .user-info,
+.chat-app .chat-header .chat-user-info {
+    flex: 1 1 auto;
+
+    min-width: 0;
+}
+
+.chat-app #selectedName {
+    display: block;
+
+    max-width: 100%;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    color: var(--chat-text);
+
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.chat-app #selectedStatus {
+    display: block;
+
+    margin-top: 3px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    color: var(--chat-muted);
+
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+.chat-app #selectedStatus.online,
+.chat-app #selectedStatus.is-online {
+    color: var(--chat-success);
+}
+
+/* Header action buttons */
+
+.chat-app #coupleChatButton,
+.chat-app #voiceCallButton,
+.chat-app #conversationMenu {
+    width: 36px;
+    height: 36px;
+
+    padding: 8px;
+
+    border-radius: 50%;
+}
+
+.chat-app #coupleChatButton svg,
+.chat-app #voiceCallButton svg,
+.chat-app #conversationMenu svg,
+.chat-app #backButton svg {
+    width: 21px;
+    height: 21px;
+}
+
+/* =========================
+   4. CHAT SEARCH
+========================= */
+
+.chat-app #chatSearchSection {
+    position: relative;
+    z-index: 15;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    flex: 0 0 auto;
+
+    padding: 10px 14px;
+
+    background: var(--chat-panel);
+
+    border-bottom: 1px solid var(--chat-border);
+}
+
+.chat-app #chatSearch {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+
+    padding: 0 14px;
+
+    color: var(--chat-text);
+    background: var(--chat-panel-light);
+
+    border: 1px solid var(--chat-border);
+    border-radius: 12px;
+
+    outline: none;
+}
+
+.chat-app #chatSearch::placeholder {
+    color: var(--chat-muted);
+}
+
+.chat-app #chatSearch:focus {
+    border-color: rgba(67, 135, 255, 0.8);
+}
+
+.chat-app #closeChatSearch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    flex: 0 0 auto;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: transparent;
+}
+
+/* =========================
+   5. CONVERSATION AREA
+========================= */
+
+.chat-app .conversation {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(67, 135, 255, 0.055),
+            transparent 34%
+        ),
+        radial-gradient(
+            circle at 90% 85%,
+            rgba(241, 123, 181, 0.045),
+            transparent 32%
+        ),
+        var(--chat-bg);
+}
+
+/* Background watermark */
+
+.chat-app .conversation-watermark {
+    position: absolute;
+    z-index: 0;
+
+    top: 50%;
+    left: 50%;
+
+    width: min(65%, 330px);
+
+    transform: translate(-50%, -50%);
+
+    color: rgba(255, 255, 255, 0.025);
+
+    font-size: clamp(35px, 8vw, 72px);
+    font-weight: 900;
+    letter-spacing: 3px;
+
+    text-align: center;
+
+    pointer-events: none;
+    user-select: none;
+}
+
+/* =========================
+   6. MESSAGES SCROLL AREA
+========================= */
+
+.chat-app .messages {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+
+    padding: 18px 15px 22px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    overscroll-behavior-y: contain;
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgba(150, 165, 200, 0.25)
+        transparent;
+
+    -webkit-overflow-scrolling: touch;
+}
+
+.chat-app .messages::-webkit-scrollbar {
+    width: 5px;
+}
+
+.chat-app .messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-app .messages::-webkit-scrollbar-thumb {
+    background: rgba(150, 165, 200, 0.25);
+    border-radius: 10px;
+}
+
+/* Empty conversation */
+
+.chat-app .empty-conversation {
+    position: absolute;
+    z-index: 2;
+
+    top: 50%;
+    left: 50%;
+
+    width: min(85%, 320px);
+
+    transform: translate(-50%, -50%);
+
+    color: var(--chat-muted);
+
+    text-align: center;
+}
+
+.chat-app .empty-conversation h2,
+.chat-app .empty-conversation h3 {
+    margin: 0 0 8px;
+
+    color: var(--chat-text);
+
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.chat-app .empty-conversation p {
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* =========================
+   7. MESSAGE ROWS
+========================= */
+
+.chat-app .message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+
+    width: 100%;
+    min-width: 0;
+
+    animation: chatMessageIn 0.2s ease both;
+}
+
+.chat-app .message-row.received,
+.chat-app .message-row.incoming,
+.chat-app .message-row.other {
+    justify-content: flex-start;
+}
+
+.chat-app .message-row.sent,
+.chat-app .message-row.outgoing,
+.chat-app .message-row.mine {
+    justify-content: flex-end;
+}
+
+@keyframes chatMessageIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================
+   8. MESSAGE BUBBLES
+========================= */
+
+.chat-app .message-bubble {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    width: fit-content;
+    max-width: min(78%, 540px);
+
+    min-width: 0;
+
+    padding: 10px 12px 7px;
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
+    border: 1px solid transparent;
+    border-radius: 17px;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.09);
+}
+
+.chat-app .message-row.received .message-bubble,
+.chat-app .message-row.incoming .message-bubble,
+.chat-app .message-row.other .message-bubble {
+    color: var(--chat-text);
+
+    background: var(--chat-received);
+
+    border-color: rgba(255, 255, 255, 0.045);
+
+    border-bottom-left-radius: 5px;
+}
+
+.chat-app .message-row.sent .message-bubble,
+.chat-app .message-row.outgoing .message-bubble,
+.chat-app .message-row.mine .message-bubble {
+    color: #ffffff;
+
+    background: var(--chat-sent);
+
+    border-bottom-right-radius: 5px;
+}
+
+.chat-app .message-text {
+    margin: 0;
+
+    color: inherit;
+
+    font-size: 14px;
+    line-height: 1.6;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.chat-app .message-bubble a {
+    color: #a9caff;
+
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.chat-app .message-row.sent .message-bubble a,
+.chat-app .message-row.outgoing .message-bubble a {
+    color: #ffffff;
+}
+
+/* Message metadata */
+
+.chat-app .message-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+
+    min-height: 13px;
+
+    color: rgba(235, 241, 255, 0.65);
+
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+.chat-app .message-row.sent .message-meta,
+.chat-app .message-row.outgoing .message-meta {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.chat-app .message-time {
+    white-space: nowrap;
+}
+
+.chat-app .message-tick,
+.chat-app .message-status {
+    color: #b7e0ff;
+
+    font-size: 11px;
+}
+
+/* =========================
+   9. MESSAGE IMAGES
+========================= */
+
+.chat-app .message-bubble img,
+.chat-app .message-image {
+    display: block;
+
+    width: auto;
+    max-width: 100%;
+    max-height: 340px;
+
+    object-fit: contain;
+
+    border-radius: 12px;
+
+    cursor: zoom-in;
+}
+
+.chat-app .message-bubble:has(img) {
+    padding: 5px;
+}
+
+.chat-app .message-bubble:has(img) .message-meta {
+    padding: 3px 5px 1px;
+}
+
+/* =========================
+   10. VOICE MESSAGE
+========================= */
+
+.chat-app .message-bubble audio {
+    display: block;
+
+    width: min(260px, 100%);
+    max-width: 100%;
+
+    min-height: 38px;
+}
+
+.chat-app .message-bubble video {
+    display: block;
+
+    width: min(320px, 100%);
+    max-width: 100%;
+
+    border-radius: 12px;
+}
+
+/* =========================
+   11. TYPING INDICATOR
+========================= */
+
+.chat-app .typing-indicator {
+    position: relative;
+    z-index: 3;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    flex: 0 0 auto;
+
+    padding: 7px 16px 10px;
+
+    color: var(--chat-muted);
+
+    font-size: 12px;
+}
+
+.chat-app .typing-indicator::after {
+    content: "";
+
+    display: inline-block;
+
+    width: 5px;
+    height: 5px;
+
+    border-radius: 50%;
+
+    background: var(--chat-blue);
+
+    box-shadow:
+        9px 0 0 rgba(67, 135, 255, 0.65),
+        18px 0 0 rgba(67, 135, 255, 0.35);
+
+    animation: chatTyping 1s infinite ease-in-out;
+}
+
+@keyframes chatTyping {
+    0%,
+    100% {
+        opacity: 0.4;
+        transform: translateY(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateY(-2px);
+    }
+}
+
+/* =========================
+   12. COMPOSER AREA
+========================= */
+
+.chat-app #composer {
+    position: relative;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    flex: 0 0 auto;
+
+    width: 100%;
+    min-width: 0;
+
+    padding:
+        10px
+        12px
+        max(10px, env(safe-area-inset-bottom));
+
+    background: rgba(13, 20, 38, 0.97);
+
+    border-top: 1px solid var(--chat-border);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+/* Composer icon buttons */
+
+.chat-app #emojiButton,
+.chat-app #micButton,
+.chat-app #attachButton,
+.chat-app #cameraButton,
+.chat-app #sendButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 40px;
+    height: 40px;
+
+    padding: 9px;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: transparent;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        color 0.2s ease;
+}
+
+.chat-app #emojiButton:hover,
+.chat-app #micButton:hover,
+.chat-app #attachButton:hover,
+.chat-app #cameraButton:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.chat-app #emojiButton svg,
+.chat-app #micButton svg,
+.chat-app #attachButton svg,
+.chat-app #cameraButton svg,
+.chat-app #sendButton svg {
+    width: 21px;
+    height: 21px;
+}
+
+/* Message input */
+
+.chat-app #messageInput {
+    display: block;
+
+    flex: 1 1 auto;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    max-height: 130px;
+
+    padding: 11px 14px;
+
+    resize: none;
+
+    color: var(--chat-text);
+    background: var(--chat-panel-light);
+
+    border: 1px solid var(--chat-border);
+    border-radius: 22px;
+
+    outline: none;
+
+    font-size: 14px;
+    line-height: 1.4;
+
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+}
+
+.chat-app #messageInput::placeholder {
+    color: var(--chat-muted);
+}
+
+.chat-app #messageInput:focus {
+    border-color: rgba(67, 135, 255, 0.7);
+
+    box-shadow: 0 0 0 3px rgba(67, 135, 255, 0.08);
+}
+
+/* Send button */
+
+.chat-app #sendButton {
+    color: #ffffff;
+
+    background: linear-gradient(
+        135deg,
+        var(--chat-blue),
+        #6858e8
     );
+
+    box-shadow: 0 4px 14px rgba(67, 135, 255, 0.2);
 }
 
-#coupleApp[data-mood] .message-bubble {
-  transition:
-    background 500ms ease,
-    border-color 500ms ease,
-    box-shadow 500ms ease;
+.chat-app #sendButton:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
 }
 
-#coupleApp[data-mood] .couple-header-button,
-#coupleApp[data-mood] #coupleHeaderMood {
-  transition: border-color 500ms ease, background 500ms ease;
+.chat-app #sendButton:active {
+    transform: scale(0.94);
 }
 
-/* ===================== 26. OFFLINE / CONNECTION STATE ===================== */
-
-.couple-connection-offline {
-  color: #ffb0b8 !important;
+.chat-app #sendButton svg {
+    stroke: currentColor;
 }
 
-.couple-connection-online {
-  color: #76efbc !important;
+/* =========================
+   13. RECORDING STATUS
+========================= */
+
+.chat-app #recordingStatus {
+    position: relative;
+    z-index: 12;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    flex: 0 0 auto;
+
+    width: 100%;
+
+    padding: 12px 16px;
+
+    background: #211a30;
+
+    border-top: 1px solid rgba(241, 123, 181, 0.22);
 }
 
-.couple-connection-connecting {
-  color: #ffd38a !important;
+.chat-app #recordingTime {
+    color: #ff8ebc;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
 }
 
-/* ===================== 27. EMPTY CHAT ===================== */
+.chat-app #cancelRecordingButton,
+.chat-app #sendRecordingButton {
+    min-height: 36px;
 
-.couple-empty-state {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 28px 18px;
-  color: var(--couple-muted);
-  text-align: center;
+    padding: 8px 13px;
+
+    border: 0;
+    border-radius: 18px;
+
+    font-size: 12px;
+    font-weight: 700;
 }
 
-.couple-empty-icon {
-  display: grid;
-  place-items: center;
-  width: 72px;
-  height: 72px;
-  margin-bottom: 18px;
-  border: 1px solid var(--couple-border);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 32px;
+.chat-app #cancelRecordingButton {
+    color: var(--chat-text);
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.couple-empty-title {
-  margin: 0 0 8px;
-  color: #fff;
-  font-size: 17px;
-  font-weight: 750;
+.chat-app #sendRecordingButton {
+    color: #ffffff;
+    background: var(--chat-blue);
 }
 
-.couple-empty-description {
-  max-width: 280px;
-  font-size: 12px;
-  line-height: 1.7;
+/* =========================
+   14. EXPRESSION / EMOJI PANEL
+========================= */
+
+.chat-app #expressionPanel {
+    position: absolute;
+    z-index: 40;
+
+    right: 10px;
+    bottom: calc(
+        var(--chat-composer-height) +
+        env(safe-area-inset-bottom) +
+        8px
+    );
+    left: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    width: auto;
+    max-width: 480px;
+    max-height: min(440px, 62dvh);
+
+    margin-left: auto;
+
+    overflow: hidden;
+
+    background: #121a2d;
+
+    border: 1px solid var(--chat-border-light);
+    border-radius: 20px;
+
+    box-shadow: var(--chat-shadow);
 }
 
-/* ===================== 28. RESPONSIVE TABLETS ===================== */
+/* Expression panel header/tabs */
 
-@media (min-width: 700px) {
-  #coupleApp {
+.chat-app #expressionPanel > div:first-child {
+    flex: 0 0 auto;
+}
+
+.chat-app #emojiTab,
+.chat-app #gifTab,
+.chat-app #closeExpressionPanel {
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    border: 0;
+    border-radius: 10px;
+
+    background: transparent;
+
+    color: var(--chat-text-soft);
+}
+
+.chat-app #emojiTab:hover,
+.chat-app #gifTab:hover,
+.chat-app #closeExpressionPanel:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.chat-app #emojiTab.active,
+.chat-app #gifTab.active,
+.chat-app #emojiTab[aria-selected="true"],
+.chat-app #gifTab[aria-selected="true"] {
+    color: #ffffff;
+
+    background: rgba(67, 135, 255, 0.2);
+}
+
+/* Expression search */
+
+.chat-app #expressionSearch {
+    display: block;
+
+    flex: 0 0 auto;
+
+    width: calc(100% - 20px);
+    height: 38px;
+
+    margin: 8px 10px;
+
+    padding: 0 12px;
+
+    color: var(--chat-text);
+    background: var(--chat-panel-light);
+
+    border: 1px solid var(--chat-border);
+    border-radius: 10px;
+
+    outline: none;
+}
+
+.chat-app #expressionSearch::placeholder {
+    color: var(--chat-muted);
+}
+
+/* Emoji categories */
+
+.chat-app #emojiCategories {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    flex: 0 0 auto;
+
+    padding: 5px 10px 8px;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+}
+
+.chat-app #emojiCategories::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-app #emojiCategories button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    min-width: 34px;
+    height: 34px;
+
+    padding: 5px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: transparent;
+}
+
+.chat-app #emojiCategories button:hover,
+.chat-app #emojiCategories button.active {
+    background: rgba(67, 135, 255, 0.2);
+}
+
+/* Emoji grid */
+
+.chat-app #emojiGrid,
+.chat-app #gifGrid {
+    display: grid;
+
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+
+    flex: 1 1 auto;
+
+    min-height: 0;
+
+    padding: 8px 10px 12px;
+
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    scrollbar-width: thin;
+}
+
+.chat-app #emojiGrid button {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100dvh;
-    padding: 22px;
-  }
 
-  #coupleConversation {
-    width: min(100%, 680px);
-    height: min(900px, calc(100dvh - 44px));
-    min-height: 500px;
-    border: 1px solid var(--couple-border);
-    border-radius: 26px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-  }
+    min-width: 0;
+    min-height: 36px;
 
-  #coupleHeader {
-    border-radius: 26px 26px 0 0;
-  }
+    padding: 3px;
 
-  #coupleMessages {
-    padding-right: 24px;
-    padding-left: 24px;
-  }
+    border: 0;
+    border-radius: 9px;
 
-  .message-bubble,
-  .couple-message-bubble {
-    max-width: 75%;
-  }
+    background: transparent;
 
-  #coupleComposer {
-    padding-right: 18px;
-    padding-left: 18px;
-  }
+    font-size: 23px;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
 }
 
-/* ===================== 29. RESPONSIVE MOBILE ===================== */
+.chat-app #emojiGrid button:hover {
+    background: rgba(255, 255, 255, 0.09);
+    transform: scale(1.12);
+}
 
-@media (max-width: 480px) {
-  #coupleApp {
-    min-height: 100dvh;
-  }
+/* GIF grid */
 
-  #coupleConversation {
-    height: 100dvh;
-    min-height: 0;
-  }
+.chat-app #gifGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
-  #coupleHeader {
-    min-height: 62px;
-    gap: 7px;
-    padding: 8px 9px;
-  }
+.chat-app #gifGrid img,
+.chat-app #gifGrid video {
+    width: 100%;
 
-  .couple-header-button,
-  #coupleBackButton,
-  #coupleHeaderMood,
-  #coupleMenuButton,
-  #coupleCallButton,
-  #coupleAiButton,
-  #coupleAvatarButton {
-    width: 36px;
-    height: 36px;
+    border-radius: 10px;
+}
+
+/* Expression note */
+
+.chat-app #expressionNote {
+    flex: 0 0 auto;
+
+    padding: 8px 12px;
+
+    color: var(--chat-muted);
+
+    border-top: 1px solid var(--chat-border);
+
+    font-size: 11px;
+    text-align: center;
+}
+
+/* =========================
+   15. MODAL BACKDROPS
+========================= */
+
+.chat-app #callOptionsModal,
+.chat-app #conversationMenuModal {
+    position: fixed;
+    z-index: 1000;
+
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(3, 7, 17, 0.72);
+
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+}
+
+/* Modal cards */
+
+.chat-app #callOptionsModal > div,
+.chat-app #conversationMenuModal > div,
+.chat-app .modal-content,
+.chat-app .modal-card {
+    width: min(100%, 360px);
+    max-height: min(80dvh, 600px);
+
+    padding: 20px;
+
+    overflow-y: auto;
+
+    background: #131c31;
+
+    border: 1px solid var(--chat-border-light);
+    border-radius: 22px;
+
+    box-shadow: var(--chat-shadow);
+}
+
+/* Modal headings */
+
+.chat-app #callOptionsModal h2,
+.chat-app #callOptionsModal h3,
+.chat-app #conversationMenuModal h2,
+.chat-app #conversationMenuModal h3 {
+    margin: 0 0 16px;
+
+    color: var(--chat-text);
+
+    font-size: 18px;
+    font-weight: 750;
+}
+
+/* Modal buttons */
+
+.chat-app #callOptionsModal button,
+.chat-app #conversationMenuModal button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    width: 100%;
+    min-height: 44px;
+
+    margin-top: 8px;
+    padding: 11px 13px;
+
+    color: var(--chat-text);
+
+    background: var(--chat-panel-light);
+
+    border: 1px solid var(--chat-border);
     border-radius: 12px;
-  }
 
-  .couple-partner-avatar {
-    width: 37px;
-    height: 37px;
-  }
+    text-align: left;
 
-  #couplePartnerName,
-  .couple-partner-name {
-    max-width: 125px;
-    font-size: 13px;
-  }
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
 
-  #coupleMoodLabel {
-    display: none;
-  }
+.chat-app #callOptionsModal button:hover,
+.chat-app #conversationMenuModal button:hover {
+    background: var(--chat-panel-hover);
 
-  #coupleMessages {
-    gap: 10px;
-    padding: 12px 10px 18px;
-  }
+    border-color: rgba(67, 135, 255, 0.4);
+}
 
-  .message-bubble,
-  .couple-message-bubble {
-    max-width: 86%;
-    padding: 10px 12px;
-    font-size: 13px;
-  }
+.chat-app #callOptionsModal #closeCallOptions,
+.chat-app #conversationMenuModal #closeConversationMenu {
+    justify-content: center;
 
-  #coupleComposer {
-    gap: 6px;
-    padding: 8px 8px calc(9px + env(safe-area-inset-bottom));
-  }
+    margin-top: 14px;
 
-  #coupleMessageInput,
-  #coupleInput,
-  #messageInput {
-    min-height: 42px;
-    padding: 11px;
-    font-size: 13px;
-  }
+    color: var(--chat-text-soft);
+    background: transparent;
+}
 
-  #coupleEmojiButton,
-  #coupleAttachButton,
-  #coupleCameraButton,
-  #coupleMicButton {
-    width: 35px;
-    height: 42px;
-    border-radius: 12px;
-    font-size: 16px;
-  }
+/* =========================
+   16. IMAGE VIEWER
+========================= */
 
-  #coupleSendButton,
-  #coupleSendBtn,
-  .couple-send-button {
+.chat-app #imageViewer {
+    position: fixed;
+    z-index: 2000;
+
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0, 0, 0, 0.94);
+}
+
+.chat-app #viewerImage {
+    display: block;
+
+    width: auto;
+    height: auto;
+
+    max-width: 100%;
+    max-height: 88dvh;
+
+    object-fit: contain;
+
+    border-radius: 8px;
+}
+
+.chat-app #closeImageViewer {
+    position: absolute;
+
+    top: max(15px, env(safe-area-inset-top));
+    right: 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     width: 42px;
     height: 42px;
+
+    padding: 8px;
+
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+
+    border: 0;
+    border-radius: 50%;
+}
+
+.chat-app #closeImageViewer:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.chat-app #closeImageViewer svg {
+    width: 23px;
+    height: 23px;
+}
+
+/* =========================
+   17. HIDDEN FILE INPUTS
+========================= */
+
+.chat-app #fileInput,
+.chat-app #cameraInput {
+    display: none !important;
+}
+
+/* =========================
+   18. AUDIO PREVIEW
+========================= */
+
+.chat-app #audioPreview {
+    max-width: 100%;
+}
+
+.chat-app #audioPreview audio {
+    display: block;
+
+    width: 100%;
+    max-width: 340px;
+}
+
+/* =========================
+   19. TOAST NOTIFICATION
+========================= */
+
+.chat-app #chatToast {
+    position: fixed;
+    z-index: 3000;
+
+    right: 16px;
+    bottom: calc(
+        var(--chat-composer-height) +
+        env(safe-area-inset-bottom) +
+        18px
+    );
+    left: 16px;
+
+    width: fit-content;
+    max-width: calc(100% - 32px);
+
+    margin: 0 auto;
+    padding: 11px 17px;
+
+    color: #ffffff;
+
+    background: #25324b;
+
+    border: 1px solid var(--chat-border-light);
     border-radius: 13px;
-  }
 
-  #coupleMoodPicker,
-  #coupleAiOverlay,
-  #coupleMenuOverlay,
-  #coupleEmojiPicker {
-    padding: 10px;
-  }
+    box-shadow: var(--chat-shadow);
 
-  #coupleMoodPicker .couple-mood-grid,
-  #coupleMoodOptions,
-  #moodPickerOptions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
-    padding: 10px;
-  }
+    font-size: 13px;
+    text-align: center;
 
-  .couple-mood-option {
-    min-height: 75px;
-    padding: 8px 3px;
-  }
+    overflow-wrap: anywhere;
 
-  .couple-mood-option-emoji {
-    font-size: 22px;
-  }
-
-  .couple-mood-option-label {
-    font-size: 10px;
-  }
-
-  #coupleEmojiGrid {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
+    animation: chatToastIn 0.2s ease both;
 }
 
-/* ===================== 30. SMALL MOBILE ===================== */
+@keyframes chatToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
 
-@media (max-width: 360px) {
-  #coupleHeader {
-    gap: 5px;
-    padding-right: 6px;
-    padding-left: 6px;
-  }
-
-  .couple-header-button,
-  #coupleBackButton,
-  #coupleHeaderMood,
-  #coupleMenuButton,
-  #coupleCallButton,
-  #coupleAiButton,
-  #coupleAvatarButton {
-    width: 32px;
-    height: 32px;
-  }
-
-  .couple-partner-avatar {
-    width: 32px;
-    height: 32px;
-  }
-
-  #couplePartnerName,
-  .couple-partner-name {
-    max-width: 100px;
-    font-size: 12px;
-  }
-
-  #coupleEmojiButton,
-  #coupleAttachButton,
-  #coupleCameraButton,
-  #coupleMicButton {
-    width: 31px;
-  }
-
-  #coupleSendButton,
-  #coupleSendBtn,
-  .couple-send-button {
-    width: 38px;
-    height: 40px;
-  }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* ===================== 31. ACCESSIBILITY ===================== */
+/* =========================
+   20. LINKS AND SELECTION
+========================= */
+
+.chat-app ::selection {
+    color: #ffffff;
+    background: rgba(67, 135, 255, 0.45);
+}
+
+.chat-app input,
+.chat-app textarea {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* =========================
+   21. TABLET RESPONSIVE
+========================= */
+
+@media (min-width: 600px) {
+    .chat-app .chat-header {
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+
+    .chat-app .messages {
+        padding: 22px 24px 26px;
+    }
+
+    .chat-app .message-bubble {
+        max-width: min(72%, 540px);
+
+        padding: 12px 14px 8px;
+    }
+
+    .chat-app #composer {
+        gap: 10px;
+
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+
+    .chat-app #expressionPanel {
+        right: 20px;
+        left: auto;
+
+        width: 400px;
+    }
+}
+
+/* =========================
+   22. DESKTOP RESPONSIVE
+========================= */
+
+@media (min-width: 900px) {
+    .chat-app {
+        width: 100%;
+        height: 100dvh;
+    }
+
+    .chat-app .chat-header {
+        min-height: 72px;
+
+        padding-right: 26px;
+        padding-left: 26px;
+    }
+
+    .chat-app #selectedAvatarButton {
+        width: 46px;
+        height: 46px;
+    }
+
+    .chat-app #selectedName {
+        font-size: 16px;
+    }
+
+    .chat-app .messages {
+        gap: 14px;
+
+        padding: 26px 5% 30px;
+    }
+
+    .chat-app .message-bubble {
+        max-width: min(65%, 560px);
+    }
+
+    .chat-app .message-text {
+        font-size: 14px;
+    }
+
+    .chat-app #composer {
+        gap: 12px;
+
+        padding: 14px 5% 16px;
+    }
+
+    .chat-app #messageInput {
+        min-height: 46px;
+    }
+
+    .chat-app #expressionPanel {
+        right: 5%;
+        bottom: 90px;
+    }
+}
+
+/* =========================
+   23. SMALL MOBILE
+========================= */
+
+@media (max-width: 380px) {
+    .chat-app {
+        --chat-header-height: 62px;
+        --chat-composer-height: 68px;
+    }
+
+    .chat-app .chat-header {
+        gap: 6px;
+
+        padding-right: 8px;
+        padding-left: 9px;
+    }
+
+    .chat-app #backButton {
+        width: 32px;
+        height: 36px;
+
+        margin-left: -3px;
+    }
+
+    .chat-app #selectedAvatarButton {
+        width: 37px;
+        height: 37px;
+    }
+
+    .chat-app #selectedName {
+        font-size: 13px;
+    }
+
+    .chat-app #selectedStatus {
+        font-size: 10px;
+    }
+
+    .chat-app #coupleChatButton,
+    .chat-app #voiceCallButton,
+    .chat-app #conversationMenu {
+        width: 31px;
+        height: 34px;
+
+        padding: 5px;
+    }
+
+    .chat-app #coupleChatButton svg,
+    .chat-app #voiceCallButton svg,
+    .chat-app #conversationMenu svg {
+        width: 19px;
+        height: 19px;
+    }
+
+    .chat-app #composer {
+        gap: 3px;
+
+        padding-right: 6px;
+        padding-left: 6px;
+    }
+
+    .chat-app #emojiButton,
+    .chat-app #micButton,
+    .chat-app #attachButton,
+    .chat-app #cameraButton,
+    .chat-app #sendButton {
+        width: 34px;
+        height: 38px;
+
+        padding: 7px;
+    }
+
+    .chat-app #messageInput {
+        min-height: 39px;
+
+        padding: 9px 11px;
+
+        font-size: 13px;
+    }
+
+    .chat-app .messages {
+        gap: 10px;
+
+        padding: 14px 9px 18px;
+    }
+
+    .chat-app .message-bubble {
+        max-width: 84%;
+
+        padding: 9px 10px 6px;
+    }
+
+    .chat-app .message-text {
+        font-size: 13px;
+    }
+
+    .chat-app #emojiGrid {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+}
+
+/* =========================
+   24. REDUCED MOTION
+========================= */
 
 @media (prefers-reduced-motion: reduce) {
-  #coupleApp *,
-  #coupleMoodPicker *,
-  #coupleAiOverlay *,
-  #coupleMenuOverlay *,
-  #coupleEmojiPicker * {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+    .chat-app *,
+    .chat-app *::before,
+    .chat-app *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+
+        transition-duration: 0.01ms !important;
+
+        scroll-behavior: auto !important;
+    }
 }
 
-/* ===================== END UTANEXA COUPLE CHAT CSS ===================== */
+/* =========================
+   END — UTANEXA NORMAL CHAT
+========================= */
