@@ -1,734 +1,696 @@
-/* =========================================================
-   UTANEXA — CHAT ENGINE
+/* ============================================================
+   UTANEXA — NORMAL CHAT
+   Complete JavaScript Replacement
    File: frontend/static/js/chat.js
-   Version: 7
 
    Features:
-   - Existing authentication and chat API integration
-   - Text messages
-   - Image attachment and camera
-   - Emoji picker and searchable emojis
-   - Speech-to-text
-   - Voice message recording UI
-   - Couple Chat navigation
-   - Call option UI
+   - Authentication
+   - User profile and online status
+   - Text messaging
+   - Image / file sending
+   - Image compression
+   - Emoji picker
    - Message search
+   - Speech-to-text
+   - Voice recording
    - Image viewer
-   - Responsive mobile interaction
-   - Online status and accurate IST last-seen display
+   - Conversation menu
+   - Couple Chat navigation
+   - Voice/video call UI hooks
+   - Message polling and deduplication
+   - Mobile responsive support
 
-   Note:
-   Real-time delivery, GIF provider integration, and
-   WebRTC calls require corresponding backend support.
-========================================================= */
+   API:
+   GET  /api/auth/me
+   GET  /api/profile/{user_id}
+   GET  /api/chat/{user_id}
+   POST /api/chat/send
+   ============================================================ */
 
-(() => {
+(function () {
     "use strict";
 
-    /* =====================================================
-       CONFIGURATION
-    ===================================================== */
+    /* ========================================================
+       1. CONFIGURATION
+    ======================================================== */
 
     const API = {
         me: "/api/auth/me",
-        profile: (id) => `/api/profile/${encodeURIComponent(id)}`,
-        messages: (id) => `/api/chat/${encodeURIComponent(id)}`,
+
+        profile: function (id) {
+            return "/api/profile/" + encodeURIComponent(id);
+        },
+
+        messages: function (id) {
+            return "/api/chat/" + encodeURIComponent(id);
+        },
+
         send: "/api/chat/send"
     };
 
-    const MAX_IMAGE_SIZE = 25 * 1024 * 1024;
-    const IMAGE_COMPRESS_THRESHOLD = 2 * 1024 * 1024;
-    const MAX_MESSAGE_LENGTH = 10000;
+    const CONFIG = {
+        maxFileSize: 25 * 1024 * 1024,
+        compressAbove: 2 * 1024 * 1024,
+        maxImageDimension: 1920,
+        imageQuality: 0.88,
+        pollInterval: 4000,
+        requestTimeout: 20000
+    };
 
-    const TIME_ZONE = "Asia/Kolkata";
+    const $ = function (id) {
+        return document.getElementById(id);
+    };
 
     const state = {
-        currentUser: null,
-        selectedUser: null,
-        selectedUserId: null,
+        me: null,
+        partner: null,
+
+        partnerId: null,
 
         messages: [],
+        messageIds: new Set(),
 
-        loading: false,
-        sending: false,
+        loadingMessages: false,
+        sendingMessage: false,
 
-        recognition: null,
-        isRecognizing: false,
-
-        mediaRecorder: null,
-        audioStream: null,
-        audioChunks: [],
-        recordedAudioBlob: null,
-
-        recordingStartedAt: 0,
-        recordingTimer: null,
+        pollingTimer: null,
+        pollingActive: false,
 
         activeExpressionTab: "emoji",
         activeEmojiCategory: "smileys",
 
         recentEmojis: [],
 
-        toastTimer: null,
-        searchQuery: "",
+        selectedFile: null,
 
-        messageObjectUrls: new Set()
+        mediaRecorder: null,
+        recordedChunks: [],
+        recordingStream: null,
+        recordingTimer: null,
+        recordingStartedAt: 0,
+        recordingSeconds: 0,
+
+        isRecording: false,
+        isSendingRecording: false,
+
+        speechRecognition: null,
+        speechActive: false,
+
+        searchTerm: "",
+
+        toastTimer: null,
+
+        currentAudio: null,
+
+        lastMessageSignature: null
     };
 
-    const $ = (id) => document.getElementById(id);
+    /* ========================================================
+       2. SAFE HELPERS
+    ======================================================== */
 
-    /* =====================================================
-       DOM HELPERS
-    ===================================================== */
-
-    function on(element, event, handler, options) {
-        if (element) {
-            element.addEventListener(event, handler, options);
-        }
+    function getParam(name) {
+        return new URLSearchParams(window.location.search).get(name);
     }
 
-    function show(element) {
-        if (element) {
-            element.hidden = false;
+    function firstValue(object, keys, fallback) {
+        if (!object || typeof object !== "object") {
+            return fallback;
         }
+
+        for (const key of keys) {
+            const value = object[key];
+
+            if (
+                value !== undefined &&
+                value !== null &&
+                value !== ""
+            ) {
+                return value;
+            }
+        }
+
+        return fallback;
     }
 
-    function hide(element) {
-        if (element) {
-            element.hidden = true;
-        }
+    function escapeHTML(value) {
+        return String(value == null ? "" : value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-    function setText(element, value) {
-        if (element) {
-            element.textContent = value ?? "";
-        }
+    function normaliseId(value) {
+        return String(value == null ? "" : value).trim();
     }
 
-    function safeString(value) {
-        return value == null ? "" : String(value);
+    function sameId(a, b) {
+        return normaliseId(a) === normaliseId(b);
     }
 
     function getUserId(user) {
-        if (!user || typeof user !== "object") {
-            return "";
-        }
-
-        return safeString(
-            user.user_id ??
-            user.id ??
-            user.username ??
-            user.mobile ??
-            ""
+        return normaliseId(
+            firstValue(
+                user,
+                ["user_id", "id", "username", "uid"],
+                ""
+            )
         );
     }
 
-    function getDisplayName(user) {
-        if (!user || typeof user !== "object") {
-            return "User";
-        }
-
-        return safeString(
-            user.name ??
-            user.full_name ??
-            user.username ??
-            user.user_id ??
-            "User"
+    function getUserName(user) {
+        return String(
+            firstValue(
+                user,
+                ["name", "full_name", "username", "display_name"],
+                "UtaNexa User"
+            )
         );
     }
 
-    function getAvatarUrl(user) {
-        if (!user || typeof user !== "object") {
-            return "";
-        }
-
-        return safeString(
-            user.profile_photo ??
-            user.profile_picture ??
-            user.avatar ??
-            user.photo ??
-            ""
+    function getAvatar(user) {
+        return String(
+            firstValue(
+                user,
+                [
+                    "avatar_url",
+                    "profile_picture",
+                    "profile_image",
+                    "photo_url",
+                    "image_url",
+                    "avatar"
+                ],
+                ""
+            )
         );
     }
 
-    function getCurrentPageUserId() {
-        const params = new URLSearchParams(
-            window.location.search
+    function getMessageId(message) {
+        return normaliseId(
+            firstValue(
+                message,
+                ["id", "message_id", "uuid"],
+                ""
+            )
         );
+    }
+
+    function getMessageText(message) {
+        return String(
+            firstValue(
+                message,
+                ["content", "message", "text", "body"],
+                ""
+            )
+        );
+    }
+
+    function getMessageSenderId(message) {
+        return normaliseId(
+            firstValue(
+                message,
+                [
+                    "sender_id",
+                    "user_id",
+                    "from_user_id",
+                    "sender_user_id"
+                ],
+                ""
+            )
+        );
+    }
+
+    function getMessageTimestamp(message) {
+        return firstValue(
+            message,
+            [
+                "created_at",
+                "timestamp",
+                "sent_at",
+                "created",
+                "time"
+            ],
+            null
+        );
+    }
+
+    function getMessageMediaUrl(message) {
+        return String(
+            firstValue(
+                message,
+                [
+                    "file_url",
+                    "attachment_url",
+                    "media_url",
+                    "image_url",
+                    "audio_url",
+                    "voice_url",
+                    "file"
+                ],
+                ""
+            )
+        );
+    }
+
+    function isImageMessage(message) {
+        const type = String(
+            firstValue(
+                message,
+                ["file_type", "media_type", "attachment_type", "type"],
+                ""
+            )
+        ).toLowerCase();
+
+        const url = getMessageMediaUrl(message);
 
         return (
-            params.get("user_id") ||
-            params.get("partner_id") ||
-            params.get("receiver_id") ||
-            params.get("id") ||
-            ""
+            type.startsWith("image") ||
+            /\.(png|jpe?g|gif|webp|bmp|avif)(\?.*)?$/i.test(url)
         );
     }
 
-    /* =====================================================
-       DATE AND TIME HELPERS
-    ===================================================== */
+    function isAudioMessage(message) {
+        const type = String(
+            firstValue(
+                message,
+                ["file_type", "media_type", "attachment_type", "type"],
+                ""
+            )
+        ).toLowerCase();
 
-    function parseDate(value) {
-        if (value == null || value === "") {
-            return null;
+        const url = getMessageMediaUrl(message);
+
+        return (
+            type.startsWith("audio") ||
+            type.startsWith("voice") ||
+            /\.(mp3|wav|ogg|m4a|aac|webm)(\?.*)?$/i.test(url)
+        );
+    }
+
+    function getErrorMessage(error, fallback) {
+        if (error && error.message) {
+            return error.message;
         }
 
+        return fallback || "Kuch galat ho gaya.";
+    }
+
+    /* ========================================================
+       3. TOAST
+    ======================================================== */
+
+    function showToast(message, duration) {
+        const toast = $("chatToast");
+
+        if (!toast) {
+            console.log("[UtaNexa Chat]", message);
+            return;
+        }
+
+        toast.textContent = String(message || "");
+
+        toast.hidden = false;
+
+        if (state.toastTimer) {
+            clearTimeout(state.toastTimer);
+        }
+
+        state.toastTimer = setTimeout(function () {
+            toast.hidden = true;
+        }, duration || 2800);
+    }
+
+    /* ========================================================
+       4. FETCH HELPER
+    ======================================================== */
+
+    async function request(url, options) {
+        const controller = new AbortController();
+
+        const timeout = setTimeout(function () {
+            controller.abort();
+        }, CONFIG.requestTimeout);
+
+        try {
+            const response = await fetch(url, {
+                credentials: "same-origin",
+                ...options,
+                signal: controller.signal
+            });
+
+            if (response.status === 401) {
+                window.location.href = "/login";
+                throw new Error("Login required.");
+            }
+
+            if (response.status === 403) {
+                throw new Error("Aapko is action ki permission nahi hai.");
+            }
+
+            const contentType =
+                response.headers.get("content-type") || "";
+
+            let data = null;
+
+            if (contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+
+                data = {
+                    detail: text
+                };
+            }
+
+            if (!response.ok) {
+                const message = firstValue(
+                    data,
+                    ["detail", "message", "error"],
+                    "Request failed: " + response.status
+                );
+
+                throw new Error(
+                    typeof message === "string"
+                        ? message
+                        : "Request failed: " + response.status
+                );
+            }
+
+            return data;
+
+        } catch (error) {
+            if (error.name === "AbortError") {
+                throw new Error("Request timeout. Dobara try karein.");
+            }
+
+            throw error;
+
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    /* ========================================================
+       5. CURRENT USER
+    ======================================================== */
+
+    async function loadCurrentUser() {
+        const data = await request(API.me);
+
+        state.me = data && data.user
+            ? data.user
+            : data;
+
+        if (
+            !state.me ||
+            typeof state.me !== "object"
+        ) {
+            throw new Error("User information nahi mili.");
+        }
+
+        return state.me;
+    }
+
+    /* ========================================================
+       6. PARTNER ID
+    ======================================================== */
+
+    function getPartnerIdFromURL() {
+        return (
+            getParam("user_id") ||
+            getParam("partner_id") ||
+            getParam("receiver_id") ||
+            getParam("id") ||
+            ""
+        ).trim();
+    }
+
+    /* ========================================================
+       7. LOAD PARTNER PROFILE
+    ======================================================== */
+
+    async function loadPartnerProfile() {
+        state.partnerId = getPartnerIdFromURL();
+
+        if (!state.partnerId) {
+            showToast("Chat karne ke liye user select karein.");
+            return false;
+        }
+
+        const myId = getUserId(state.me);
+
+        if (myId && sameId(myId, state.partnerId)) {
+            showToast("Aap apne aap ko message nahi kar sakte.");
+            return false;
+        }
+
+        const data = await request(
+            API.profile(state.partnerId)
+        );
+
+        state.partner = data && data.user
+            ? data.user
+            : data && data.profile
+                ? data.profile
+                : data;
+
+        if (!state.partner || typeof state.partner !== "object") {
+            throw new Error("User profile load nahi hua.");
+        }
+
+        const actualId = getUserId(state.partner);
+
+        if (actualId) {
+            state.partnerId = actualId;
+        }
+
+        renderPartnerHeader();
+
+        return true;
+    }
+
+    /* ========================================================
+       8. PARTNER HEADER
+    ======================================================== */
+
+    function renderPartnerHeader() {
+        const partner = state.partner;
+
+        if (!partner) {
+            return;
+        }
+
+        const name = getUserName(partner);
+        const avatar = getAvatar(partner);
+
+        const nameElement = $("selectedName");
+        const avatarElement = $("selectedAvatar");
+        const statusElement = $("selectedStatus");
+
+        if (nameElement) {
+            nameElement.textContent = name;
+        }
+
+        if (avatarElement) {
+            if (avatar) {
+                avatarElement.src = avatar;
+                avatarElement.alt = name;
+
+                avatarElement.onerror = function () {
+                    this.style.visibility = "hidden";
+                };
+
+                avatarElement.onload = function () {
+                    this.style.visibility = "visible";
+                };
+
+            } else {
+                avatarElement.removeAttribute("src");
+                avatarElement.alt = name;
+                avatarElement.style.visibility = "hidden";
+            }
+        }
+
+        if (statusElement) {
+            const online = Boolean(
+                firstValue(
+                    partner,
+                    ["is_online", "online", "is_active"],
+                    false
+                )
+            );
+
+            const lastSeen = firstValue(
+                partner,
+                ["last_seen", "last_seen_at"],
+                null
+            );
+
+            statusElement.textContent = online
+                ? "Online"
+                : formatLastSeen(lastSeen);
+
+            statusElement.classList.toggle("online", online);
+            statusElement.classList.toggle("is-online", online);
+        }
+
+        document.title = name + " | UtaNexa Chat";
+    }
+
+    function formatLastSeen(value) {
+        if (!value) {
+            return "UtaNexa par";
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return "UtaNexa par";
+        }
+
+        return "Last seen " + formatTime(date);
+    }
+
+    /* ========================================================
+       9. TIME FORMATTING — INDIA
+    ======================================================== */
+
+    function formatTime(value) {
         let date;
 
         if (value instanceof Date) {
-            date = new Date(value.getTime());
-        } else if (typeof value === "number") {
-            date = new Date(value);
+            date = value;
         } else {
-            const text = String(value).trim();
-
-            if (!text) {
-                return null;
-            }
-
-            /*
-             * If the backend returns an ISO timestamp without
-             * a timezone, interpret it as UTC.
-             *
-             * Recommended backend format:
-             * 2026-10-14T15:10:00Z
-             *
-             * If the backend returns an explicit +05:30
-             * offset, that offset is respected automatically.
-             */
-            const hasTimezone =
-                /(?:Z|[+-]\d{2}:\d{2})$/i.test(text);
-
-            const normalized =
-                !hasTimezone &&
-                /^\d{4}-\d{2}-\d{2}T/.test(text)
-                    ? `${text}Z`
-                    : text;
-
-            date = new Date(normalized);
+            date = new Date(value || Date.now());
         }
 
         if (Number.isNaN(date.getTime())) {
-            return null;
+            date = new Date();
         }
 
-        return date;
-    }
-
-    function getISTDateParts(date) {
-        const parts = new Intl.DateTimeFormat("en-GB", {
-            timeZone: TIME_ZONE,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit"
-        }).formatToParts(date);
-
-        const result = {};
-
-        for (const part of parts) {
-            if (part.type !== "literal") {
-                result[part.type] = part.value;
-            }
-        }
-
-        return {
-            year: Number(result.year),
-            month: Number(result.month),
-            day: Number(result.day)
-        };
-    }
-
-    function getISTClockParts(date) {
-        const parts = new Intl.DateTimeFormat("en-IN", {
-            timeZone: TIME_ZONE,
-            hour: "numeric",
+        return new Intl.DateTimeFormat("en-IN", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
             minute: "2-digit",
             hour12: true
-        }).formatToParts(date);
-
-        const result = {};
-
-        for (const part of parts) {
-            if (part.type !== "literal") {
-                result[part.type] = part.value;
-            }
-        }
-
-        let hour = result.hour || "12";
-        let minute = result.minute || "00";
-        let period = (result.dayPeriod || "").toLowerCase();
-
-        if (period === "am") {
-            period = "am";
-        } else if (period === "pm") {
-            period = "pm";
-        }
-
-        hour = String(hour).replace(/[^\d]/g, "");
-        minute = String(minute).replace(/[^\d]/g, "");
-
-        return {
-            hour: hour || "12",
-            minute: (minute || "00").padStart(2, "0"),
-            period
-        };
+        }).format(date);
     }
 
-    function formatISTTime(date) {
-        if (!(date instanceof Date)) {
+    function formatDateLabel(value) {
+        const date = new Date(value || Date.now());
+
+        if (Number.isNaN(date.getTime())) {
             return "";
         }
 
-        const parts = getISTClockParts(date);
-
-        return `${parts.hour}:${parts.minute} ${parts.period}`.trim();
-    }
-
-    function getISTCalendarDayNumber(date) {
-        const parts = getISTDateParts(date);
-
-        return Math.floor(
-            Date.UTC(
-                parts.year,
-                parts.month - 1,
-                parts.day
-            ) / 86400000
-        );
-    }
-
-    function formatISTDate(date) {
         return new Intl.DateTimeFormat("en-IN", {
-            timeZone: TIME_ZONE,
-            day: "2-digit",
+            timeZone: "Asia/Kolkata",
+            day: "numeric",
             month: "short",
             year: "numeric"
         }).format(date);
     }
 
-    function formatLastSeen(value) {
-        const date = parseDate(value);
+    /* ========================================================
+       10. LOAD MESSAGE HISTORY
+    ======================================================== */
 
-        if (!date) {
-            return "Offline";
-        }
+    async function loadMessages(options) {
+        options = options || {};
 
-        const now = new Date();
-
-        const todayNumber = getISTCalendarDayNumber(now);
-        const seenNumber = getISTCalendarDayNumber(date);
-
-        const time = formatISTTime(date);
-
-        if (seenNumber === todayNumber) {
-            return `Last seen today at ${time}`;
-        }
-
-        if (seenNumber === todayNumber - 1) {
-            return `Last seen yesterday at ${time}`;
-        }
-
-        return `Last seen on ${formatISTDate(date)} at ${time}`;
-    }
-
-    /* =====================================================
-       FETCH HELPERS
-    ===================================================== */
-
-    async function request(url, options = {}) {
-        const response = await fetch(url, {
-            credentials: "include",
-            ...options,
-            headers: {
-                ...(options.headers || {})
-            }
-        });
-
-        if (response.status === 401) {
-            window.location.href = "/login";
-
-            throw new Error(
-                "Your session has expired. Please log in again."
-            );
-        }
-
-        return response;
-    }
-
-    async function requestJSON(url, options = {}) {
-        const response = await request(url, options);
-
-        if (!response.ok) {
-            const message = await readErrorMessage(response);
-
-            throw new Error(
-                message || `Request failed (${response.status})`
-            );
-        }
-
-        const contentType =
-            response.headers.get("content-type") || "";
-
-        if (!contentType.includes("application/json")) {
-            return {};
-        }
-
-        return response.json();
-    }
-
-    async function readErrorMessage(response) {
-        try {
-            const data = await response.clone().json();
-
-            return (
-                data.detail ||
-                data.message ||
-                data.error ||
-                ""
-            );
-        } catch {
-            return "";
-        }
-    }
-
-    /* =====================================================
-       TOAST
-    ===================================================== */
-
-    function toast(message, duration = 2600) {
-        const element = $("chatToast");
-
-        if (!element) {
-            console.log("[UtaNexa]", message);
+        if (!state.partnerId || state.loadingMessages) {
             return;
         }
 
-        setText(element, message);
+        state.loadingMessages = true;
 
-        show(element);
+        const container = $("messages");
 
-        clearTimeout(state.toastTimer);
+        const previousScrollTop = container
+            ? container.scrollTop
+            : 0;
 
-        state.toastTimer = setTimeout(() => {
-            hide(element);
-        }, duration);
-    }
-
-    /* =====================================================
-       USER LOADING
-    ===================================================== */
-
-    async function loadCurrentUser() {
-        try {
-            const data = await requestJSON(API.me);
-
-            state.currentUser =
-                data.user ||
-                data.current_user ||
-                data.profile ||
-                data;
-
-            return state.currentUser;
-        } catch (error) {
-            console.error(
-                "Could not load current user:",
-                error
-            );
-
-            return null;
-        }
-    }
-
-    async function loadSelectedUser(userId) {
-        if (!userId) {
-            state.selectedUser = null;
-            state.selectedUserId = null;
-
-            showEmptyConversation(true);
-
-            setText(
-                $("selectedName"),
-                "Select a conversation"
-            );
-
-            setText(
-                $("selectedStatus"),
-                "No conversation selected"
-            );
-
-            const avatar = $("selectedAvatar");
-
-            if (avatar) {
-                avatar.removeAttribute("src");
-                avatar.alt = "";
-            }
-
-            return null;
-        }
-
-        state.selectedUserId = userId;
+        const wasNearBottom = container
+            ? (
+                container.scrollHeight -
+                container.scrollTop -
+                container.clientHeight
+            ) < 100
+            : true;
 
         try {
-            const data = await requestJSON(
-                API.profile(userId)
+            const data = await request(
+                API.messages(state.partnerId)
             );
 
-            state.selectedUser =
-                data.user ||
-                data.profile ||
-                data;
+            let list = [];
 
-            updateHeader();
+            if (Array.isArray(data)) {
+                list = data;
 
-            return state.selectedUser;
-        } catch (error) {
-            console.error(
-                "Could not load chat profile:",
-                error
-            );
+            } else if (data && Array.isArray(data.messages)) {
+                list = data.messages;
 
-            state.selectedUser = {
-                user_id: userId,
-                name: "User"
-            };
+            } else if (data && Array.isArray(data.items)) {
+                list = data.items;
 
-            updateHeader();
-
-            return state.selectedUser;
-        }
-    }
-
-    /* =====================================================
-       ONLINE STATUS AND LAST SEEN
-    ===================================================== */
-
-    function isUserOnline(user) {
-        if (!user || typeof user !== "object") {
-            return false;
-        }
-
-        if (user.is_online === true || user.online === true) {
-            return true;
-        }
-
-        const status = String(
-            user.status ??
-            user.presence ??
-            ""
-        ).toLowerCase().trim();
-
-        return [
-            "online",
-            "active",
-            "available"
-        ].includes(status);
-    }
-
-    function getLastSeenValue(user) {
-        if (!user || typeof user !== "object") {
-            return null;
-        }
-
-        return (
-            user.last_seen_at ??
-            user.last_seen ??
-            user.last_seen_time ??
-            user.last_active_at ??
-            user.last_activity_at ??
-            user.last_online_at ??
-            user.last_activity ??
-            null
-        );
-    }
-
-    function updateHeader() {
-        const user = state.selectedUser;
-
-        if (!user) {
-            return;
-        }
-
-        setText(
-            $("selectedName"),
-            getDisplayName(user)
-        );
-
-        const statusElement = $("selectedStatus");
-        const online = isUserOnline(user);
-
-        if (statusElement) {
-            if (online) {
-                statusElement.textContent = "Online";
-                statusElement.classList.add("online-status");
-                statusElement.dataset.presence = "online";
-            } else {
-                const lastSeen = getLastSeenValue(user);
-
-                statusElement.textContent =
-                    formatLastSeen(lastSeen);
-
-                statusElement.classList.remove("online-status");
-
-                statusElement.dataset.presence = "offline";
-            }
-        }
-
-        /*
-         * The green online dot has intentionally been removed.
-         * Presence is shown as text beside the user's name.
-         */
-
-        const avatar = $("selectedAvatar");
-        const avatarUrl = getAvatarUrl(user);
-
-        if (avatar) {
-            if (avatarUrl) {
-                avatar.src = avatarUrl;
-            } else {
-                avatar.removeAttribute("src");
+            } else if (data && Array.isArray(data.results)) {
+                list = data.results;
             }
 
-            avatar.alt = getDisplayName(user);
+            const previousCount = state.messages.length;
 
-            avatar.onerror = () => {
-                avatar.onerror = null;
-                avatar.removeAttribute("src");
-                avatar.alt = getDisplayName(user);
-            };
-        }
-    }
+            state.messages = list;
 
-    /* =====================================================
-       MESSAGE NORMALIZATION
-    ===================================================== */
-
-    function normalizeMessages(data) {
-        if (Array.isArray(data)) {
-            return data;
-        }
-
-        if (!data || typeof data !== "object") {
-            return [];
-        }
-
-        if (Array.isArray(data.messages)) {
-            return data.messages;
-        }
-
-        if (Array.isArray(data.items)) {
-            return data.items;
-        }
-
-        if (Array.isArray(data.results)) {
-            return data.results;
-        }
-
-        return [];
-    }
-
-    async function loadMessages() {
-        if (!state.selectedUserId || state.loading) {
-            return;
-        }
-
-        state.loading = true;
-
-        try {
-            const data = await requestJSON(
-                API.messages(state.selectedUserId)
-            );
-
-            state.messages = normalizeMessages(data);
+            rebuildMessageIdSet();
 
             renderMessages();
 
-            showEmptyConversation(
-                state.messages.length === 0
-            );
+            if (container) {
+                if (
+                    options.forceBottom ||
+                    wasNearBottom ||
+                    previousCount === 0
+                ) {
+                    scrollMessagesToBottom();
 
-            scrollMessages(false);
+                } else {
+                    container.scrollTop = previousScrollTop;
+                }
+            }
+
         } catch (error) {
-            console.error(
-                "Could not load messages:",
-                error
-            );
+            if (!options.silent) {
+                showToast(
+                    getErrorMessage(
+                        error,
+                        "Messages load nahi hue."
+                    )
+                );
+            }
 
-            toast("Messages could not be loaded.");
         } finally {
-            state.loading = false;
+            state.loadingMessages = false;
         }
     }
 
-    /* =====================================================
-       MESSAGE HELPERS
-    ===================================================== */
+    function rebuildMessageIdSet() {
+        state.messageIds.clear();
 
-    function getMessageSenderId(message) {
-        return safeString(
-            message.sender_id ??
-            message.sender_user_id ??
-            message.from_user_id ??
-            message.user_id ??
-            message.sender?.user_id ??
-            message.sender?.id ??
-            ""
-        );
+        state.messages.forEach(function (message) {
+            const id = getMessageId(message);
+
+            if (id) {
+                state.messageIds.add(id);
+            }
+        });
     }
 
-    function getMessageContent(message) {
-        return safeString(
-            message.content ??
-            message.message ??
-            message.text ??
-            ""
-        );
-    }
-
-    function getMessageImage(message) {
-        return safeString(
-            message.image_url ??
-            message.file_url ??
-            message.media_url ??
-            message.attachment_url ??
-            message.image ??
-            ""
-        );
-    }
-
-    function getMessageDate(message) {
-        const value =
-            message.created_at ??
-            message.timestamp ??
-            message.sent_at ??
-            message.time ??
-            "";
-
-        return parseDate(value);
-    }
-
-    function isOwnMessage(message) {
-        const senderId = getMessageSenderId(message);
-        const currentId = getUserId(state.currentUser);
-
-        return Boolean(
-            senderId &&
-            currentId &&
-            senderId === currentId
-        );
-    }
-
-    function formatTime(message) {
-        const date = getMessageDate(message);
-
-        if (!date) {
-            return "";
-        }
-
-        return formatISTTime(date);
-    }
-
-    /* =====================================================
-       MESSAGE RENDERING
-    ===================================================== */
+    /* ========================================================
+       11. RENDER MESSAGES
+    ======================================================== */
 
     function renderMessages() {
         const container = $("messages");
@@ -737,146 +699,193 @@
             return;
         }
 
-        const fragment = document.createDocumentFragment();
+        container.replaceChildren();
 
-        const filtered = state.searchQuery
-            ? state.messages.filter((message) =>
-                getMessageContent(message)
-                    .toLowerCase()
-                    .includes(state.searchQuery.toLowerCase())
-            )
-            : state.messages;
+        const empty = $("emptyConversation");
 
-        for (const message of filtered) {
-            const row = createMessageElement(message);
+        const filtered = getFilteredMessages();
 
-            if (row) {
-                fragment.appendChild(row);
-            }
+        if (empty) {
+            empty.hidden = filtered.length > 0;
         }
 
-        container.replaceChildren(fragment);
+        filtered.forEach(function (message) {
+            container.appendChild(
+                createMessageElement(message)
+            );
+        });
 
-        showEmptyConversation(
-            filtered.length === 0 &&
-            !state.searchQuery
+        container.setAttribute(
+            "aria-live",
+            "polite"
         );
+    }
+
+    function getFilteredMessages() {
+        const term = state.searchTerm.trim().toLowerCase();
+
+        if (!term) {
+            return state.messages;
+        }
+
+        return state.messages.filter(function (message) {
+            const text = getMessageText(message).toLowerCase();
+
+            return text.includes(term);
+        });
+    }
+
+    function isMyMessage(message) {
+        const senderId = getMessageSenderId(message);
+        const myId = getUserId(state.me);
+
+        if (senderId && myId) {
+            return sameId(senderId, myId);
+        }
+
+        if (message && typeof message.is_mine === "boolean") {
+            return message.is_mine;
+        }
+
+        if (message && typeof message.is_sent_by_me === "boolean") {
+            return message.is_sent_by_me;
+        }
+
+        return false;
     }
 
     function createMessageElement(message) {
         const row = document.createElement("div");
 
-        row.className = "message-row";
+        const mine = isMyMessage(message);
 
-        const own = isOwnMessage(message);
-
-        row.classList.add(
-            own ? "sent" : "received"
-        );
+        row.className = "message-row " +
+            (mine ? "sent" : "received");
 
         const bubble = document.createElement("div");
-
         bubble.className = "message-bubble";
 
-        const content = getMessageContent(message);
-        const imageUrl = getMessageImage(message);
+        const mediaUrl = getMessageMediaUrl(message);
+        const text = getMessageText(message);
 
-        if (imageUrl) {
+        if (mediaUrl && isImageMessage(message)) {
             const image = document.createElement("img");
 
-            image.src = imageUrl;
+            image.src = mediaUrl;
             image.alt = "Shared image";
             image.loading = "lazy";
-            image.decoding = "async";
+            image.className = "message-image";
 
-            image.addEventListener("click", () => {
-                openImageViewer(imageUrl);
+            image.addEventListener("click", function () {
+                openImageViewer(mediaUrl);
+            });
+
+            image.addEventListener("error", function () {
+                image.alt = "Image could not be loaded";
             });
 
             bubble.appendChild(image);
+
+        } else if (mediaUrl && isAudioMessage(message)) {
+            const audio = document.createElement("audio");
+
+            audio.controls = true;
+            audio.preload = "metadata";
+            audio.src = mediaUrl;
+
+            bubble.appendChild(audio);
+
+        } else if (mediaUrl) {
+            const link = document.createElement("a");
+
+            link.href = mediaUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "Open attachment";
+
+            bubble.appendChild(link);
         }
 
-        if (content) {
-            const text = document.createElement("div");
+        if (text) {
+            const textElement = document.createElement("div");
 
-            text.className = "message-text";
-            text.textContent = content;
+            textElement.className = "message-text";
+            textElement.textContent = text;
 
-            bubble.appendChild(text);
+            bubble.appendChild(textElement);
         }
 
-        if (!content && !imageUrl) {
+        if (!text && !mediaUrl) {
             const fallback = document.createElement("div");
 
             fallback.className = "message-text";
-            fallback.textContent = "Unsupported message";
+            fallback.textContent = "Message";
 
             bubble.appendChild(fallback);
         }
 
         const meta = document.createElement("div");
-
         meta.className = "message-meta";
 
-        const time = document.createElement("span");
+        const timestamp = document.createElement("span");
 
-        time.className = "message-time";
-        time.textContent = formatTime(message);
+        timestamp.className = "message-time";
+        timestamp.textContent = formatTime(
+            getMessageTimestamp(message)
+        );
 
-        meta.appendChild(time);
+        meta.appendChild(timestamp);
 
-        if (own) {
-            const status = document.createElement("span");
+        if (mine) {
+            const tick = document.createElement("span");
 
-            status.className = "message-status";
+            tick.className = "message-tick";
 
-            const read =
-                message.is_read === true ||
-                message.read === true ||
-                message.status === "read";
+            const read = Boolean(
+                firstValue(
+                    message,
+                    ["is_read", "read", "seen"],
+                    false
+                )
+            );
 
-            status.textContent = read ? "✓✓" : "✓";
+            tick.textContent = read ? "✓✓" : "✓";
 
-            meta.appendChild(status);
+            meta.appendChild(tick);
         }
 
         bubble.appendChild(meta);
         row.appendChild(bubble);
 
+        const id = getMessageId(message);
+
+        if (id) {
+            row.dataset.messageId = id;
+        }
+
         return row;
     }
 
-    function showEmptyConversation(empty) {
-        const element = $("emptyConversation");
-
-        if (!element) {
-            return;
-        }
-
-        element.hidden = !empty;
-    }
-
-    function scrollMessages(smooth = true) {
+    function scrollMessagesToBottom() {
         const container = $("messages");
 
         if (!container) {
             return;
         }
 
-        container.scrollTo({
-            top: container.scrollHeight,
-            behavior: smooth ? "smooth" : "auto"
+        requestAnimationFrame(function () {
+            container.scrollTop = container.scrollHeight;
         });
     }
 
-    /* =====================================================
-       SEND TEXT MESSAGE
-    ===================================================== */
+    /* ========================================================
+       12. SEND TEXT MESSAGE
+    ======================================================== */
 
-    async function sendMessage() {
+    async function sendTextMessage() {
         const input = $("messageInput");
 
-        if (!input || state.sending) {
+        if (!input || state.sendingMessage) {
             return;
         }
 
@@ -886,17 +895,17 @@
             return;
         }
 
-        if (!state.selectedUserId) {
-            toast("Please open a conversation first.");
+        if (!state.partnerId) {
+            showToast("Pehle user select karein.");
             return;
         }
 
-        if (content.length > MAX_MESSAGE_LENGTH) {
-            toast("Message is too long.");
+        if (state.me && state.partnerId === getUserId(state.me)) {
+            showToast("Khud ko message nahi bhej sakte.");
             return;
         }
 
-        state.sending = true;
+        state.sendingMessage = true;
 
         const sendButton = $("sendButton");
 
@@ -904,638 +913,389 @@
             sendButton.disabled = true;
         }
 
-        const formData = new FormData();
-
-        formData.append(
-            "receiver_id",
-            state.selectedUserId
-        );
-
-        formData.append("content", content);
-
         try {
-            await requestJSON(API.send, {
+            const formData = new FormData();
+
+            formData.append(
+                "receiver_id",
+                state.partnerId
+            );
+
+            formData.append(
+                "content",
+                content
+            );
+
+            await request(API.send, {
                 method: "POST",
                 body: formData
             });
 
             input.value = "";
-
             autoResizeInput();
 
-            await loadMessages();
+            await loadMessages({
+                silent: true,
+                forceBottom: true
+            });
 
-            scrollMessages(true);
         } catch (error) {
-            console.error(
-                "Message sending failed:",
-                error
+            showToast(
+                getErrorMessage(
+                    error,
+                    "Message send nahi hua."
+                )
             );
 
-            toast(
-                error.message ||
-                "Message could not be sent."
-            );
         } finally {
-            state.sending = false;
+            state.sendingMessage = false;
 
             if (sendButton) {
                 sendButton.disabled = false;
             }
 
-            input.focus({
-                preventScroll: true
-            });
+            if (input) {
+                input.focus();
+            }
         }
     }
 
-    /* =====================================================
-       COMPOSER
-    ===================================================== */
+    /* ========================================================
+       13. SEND FILE / IMAGE
+    ======================================================== */
 
-    function setupComposer() {
-        const form = $("composer");
-        const input = $("messageInput");
-
-        on(form, "submit", (event) => {
-            event.preventDefault();
-            sendMessage();
-        });
-
-        on(input, "input", autoResizeInput);
-
-        on(input, "keydown", (event) => {
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                !event.isComposing
-            ) {
-                event.preventDefault();
-                sendMessage();
-            }
-        });
-    }
-
-    function autoResizeInput() {
-        const input = $("messageInput");
-
-        if (!input) {
+    async function sendFile(file) {
+        if (!file || state.isSendingRecording) {
             return;
         }
 
-        input.style.height = "auto";
+        if (!state.partnerId) {
+            showToast("Pehle user select karein.");
+            return;
+        }
 
-        input.style.height =
-            Math.min(input.scrollHeight, 130) + "px";
-    }
+        if (file.size > CONFIG.maxFileSize) {
+            showToast("File 25 MB se chhoti honi chahiye.");
+            return;
+        }
 
-    /* =====================================================
-       IMAGE COMPRESSION
-    ===================================================== */
+        let uploadFile = file;
 
-    async function compressImage(file) {
         if (
-            !file ||
-            !file.type.startsWith("image/") ||
-            file.size <= IMAGE_COMPRESS_THRESHOLD
+            file.type.startsWith("image/") &&
+            file.size > CONFIG.compressAbove &&
+            file.type !== "image/gif" &&
+            file.type !== "image/svg+xml"
         ) {
-            return file;
-        }
-
-        if (!("createImageBitmap" in window)) {
-            return file;
-        }
-
-        try {
-            const bitmap = await createImageBitmap(file);
-
-            const maxDimension = 1920;
-
-            const ratio = Math.min(
-                1,
-                maxDimension /
-                    Math.max(bitmap.width, bitmap.height)
-            );
-
-            const canvas = document.createElement("canvas");
-
-            canvas.width = Math.max(
-                1,
-                Math.round(bitmap.width * ratio)
-            );
-
-            canvas.height = Math.max(
-                1,
-                Math.round(bitmap.height * ratio)
-            );
-
-            const context = canvas.getContext("2d", {
-                alpha: false
-            });
-
-            if (!context) {
-                bitmap.close?.();
-                return file;
-            }
-
-            context.drawImage(
-                bitmap,
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-            bitmap.close?.();
-
-            const blob = await new Promise((resolve) => {
-                canvas.toBlob(
-                    resolve,
-                    "image/jpeg",
-                    0.86
+            try {
+                uploadFile = await compressImage(file);
+            } catch (error) {
+                console.warn(
+                    "Image compression failed:",
+                    error
                 );
-            });
-
-            if (!blob || blob.size >= file.size) {
-                return file;
             }
-
-            const name =
-                file.name.replace(/\.[^.]+$/, "") + ".jpg";
-
-            return new File([blob], name, {
-                type: "image/jpeg",
-                lastModified: Date.now()
-            });
-        } catch (error) {
-            console.warn(
-                "Image compression skipped:",
-                error
-            );
-
-            return file;
-        }
-    }
-
-    /* =====================================================
-       SEND IMAGE
-    ===================================================== */
-
-    async function sendImage(file) {
-        if (!file) {
-            return;
         }
 
-        if (!state.selectedUserId) {
-            toast("Please open a conversation first.");
-            return;
-        }
+        const formData = new FormData();
 
-        if (!file.type.startsWith("image/")) {
-            toast("Please select an image.");
-            return;
-        }
+        formData.append(
+            "receiver_id",
+            state.partnerId
+        );
 
-        if (file.size > MAX_IMAGE_SIZE) {
-            toast(
-                "Image is too large. Maximum size is 25 MB."
-            );
+        formData.append("content", "");
 
-            return;
-        }
+        formData.append(
+            "file",
+            uploadFile,
+            uploadFile.name || "attachment"
+        );
 
-        toast("Preparing image...");
+        showToast("File send ho rahi hai...", 1200);
 
         try {
-            const optimized = await compressImage(file);
-
-            const formData = new FormData();
-
-            formData.append(
-                "receiver_id",
-                state.selectedUserId
-            );
-
-            formData.append("content", "");
-            formData.append("file", optimized);
-
-            await requestJSON(API.send, {
+            await request(API.send, {
                 method: "POST",
                 body: formData
             });
 
-            await loadMessages();
+            await loadMessages({
+                silent: true,
+                forceBottom: true
+            });
 
-            scrollMessages(true);
+            showToast("File send ho gayi.");
 
-            toast("Image sent.");
         } catch (error) {
-            console.error(
-                "Image sending failed:",
-                error
-            );
-
-            toast(
-                error.message ||
-                "Image could not be sent."
+            showToast(
+                getErrorMessage(
+                    error,
+                    "File send nahi hui."
+                )
             );
         }
     }
 
-    /* =====================================================
-       ATTACHMENT / CAMERA
-    ===================================================== */
+    /* ========================================================
+       14. IMAGE COMPRESSION
+    ======================================================== */
 
-    function setupAttachment() {
-        on($("attachButton"), "click", () => {
-            $("fileInput")?.click();
-        });
+    async function compressImage(file) {
+        if (!file.type.startsWith("image/")) {
+            return file;
+        }
 
-        on($("fileInput"), "change", async (event) => {
-            const files = Array.from(
-                event.target.files || []
+        const image = await loadImageFromFile(file);
+
+        const width = image.naturalWidth || image.width;
+        const height = image.naturalHeight || image.height;
+
+        if (!width || !height) {
+            return file;
+        }
+
+        const ratio = Math.min(
+            1,
+            CONFIG.maxImageDimension / Math.max(width, height)
+        );
+
+        const canvas = document.createElement("canvas");
+
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+            return file;
+        }
+
+        context.drawImage(
+            image,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const blob = await new Promise(function (resolve) {
+            canvas.toBlob(
+                resolve,
+                "image/jpeg",
+                CONFIG.imageQuality
             );
+        });
 
-            event.target.value = "";
+        if (!blob) {
+            return file;
+        }
 
-            for (const file of files) {
-                await sendImage(file);
+        const originalName = file.name.replace(
+            /\.[^.]+$/,
+            ""
+        );
+
+        return new File(
+            [blob],
+            (originalName || "image") + ".jpg",
+            {
+                type: "image/jpeg",
+                lastModified: Date.now()
             }
+        );
+    }
+
+    function loadImageFromFile(file) {
+        return new Promise(function (resolve, reject) {
+            const url = URL.createObjectURL(file);
+
+            const image = new Image();
+
+            image.onload = function () {
+                URL.revokeObjectURL(url);
+                resolve(image);
+            };
+
+            image.onerror = function () {
+                URL.revokeObjectURL(url);
+                reject(new Error("Image read nahi ho payi."));
+            };
+
+            image.src = url;
         });
     }
 
-    function setupCamera() {
-        on($("cameraButton"), "click", () => {
-            $("cameraInput")?.click();
-        });
+    /* ========================================================
+       15. IMAGE VIEWER
+    ======================================================== */
 
-        on($("cameraInput"), "change", async (event) => {
-            const file = event.target.files?.[0];
-
-            event.target.value = "";
-
-            if (file) {
-                await sendImage(file);
-            }
-        });
-    }
-
-    /* =====================================================
-       IMAGE VIEWER
-    ===================================================== */
-
-    function openImageViewer(src) {
+    function openImageViewer(url) {
         const viewer = $("imageViewer");
         const image = $("viewerImage");
 
-        if (!viewer || !image || !src) {
+        if (!viewer || !image) {
+            window.open(url, "_blank", "noopener");
             return;
         }
 
-        image.src = src;
+        image.src = url;
+        viewer.hidden = false;
 
-        show(viewer);
+        document.body.style.overflow = "hidden";
     }
 
     function closeImageViewer() {
         const viewer = $("imageViewer");
         const image = $("viewerImage");
 
-        hide(viewer);
+        if (viewer) {
+            viewer.hidden = true;
+        }
 
         if (image) {
             image.removeAttribute("src");
         }
+
+        document.body.style.overflow = "";
     }
 
-    function setupImageViewer() {
-        on(
-            $("closeImageViewer"),
-            "click",
-            closeImageViewer
-        );
+    /* ========================================================
+       16. EMOJI DATA
+    ======================================================== */
 
-        on($("imageViewer"), "click", (event) => {
-            if (event.target === $("imageViewer")) {
-                closeImageViewer();
-            }
-        });
-    }
+    const EMOJIS = {
+        recent: [],
 
-    /* =====================================================
-       EMOJI DATA
-    ===================================================== */
-
-    const EMOJI_DATA = {
         smileys: [
-            "😀","😃","😄","😁","😆","😅","🤣","😂",
-            "🙂","🙃","😉","😊","😇","🥰","😍","🤩",
-            "😘","😗","☺️","😚","😙","🥲","😋","😛",
-            "😜","🤪","😝","🤑","🤗","🤭","🫢","🫣",
-            "🤫","🤔","🫡","🤐","🤨","😐","😑","😶",
-            "🫥","😏","😒","🙄","😬","😮‍💨","🤥","😌",
-            "😔","😪","🤤","😴","😷","🤒","🤕","🤢",
-            "🤮","🥵","🥶","🥴","😵","🤯","🥳","🥸",
-            "😎","🤓","🧐","😕","🫤","😟","🙁","☹️",
-            "😮","😯","😲","😳","🥺","🥹","😦","😧",
-            "😨","😰","😥","😢","😭","😱","😖","😣",
-            "😞","😓","😩","😫","🥱","😤","😡","😠",
-            "🤬","😈","👿","💀","☠️","💩","🤡","👻",
-            "👽","👾","🤖","🎃","😺","😸","😹","😻",
-            "😼","😽","🙀","😿","😾"
+            "😀", "😃", "😄", "😁", "😆", "😅",
+            "😂", "🤣", "🥹", "😊", "😇", "🙂",
+            "🙃", "😉", "😍", "🥰", "😘", "😗",
+            "😙", "😚", "😋", "😛", "😜", "🤪",
+            "😎", "🤩", "🥳", "😏", "😒", "😔",
+            "🥺", "😭", "😢", "😤", "😡", "🤬",
+            "🤔", "🤫", "🤭", "🫢", "🫣", "🤗",
+            "😴", "🥱", "😷", "🤒", "🤕", "🤯",
+            "😱", "😳", "🥴", "😵", "🤐", "😬",
+            "🙄", "😮", "😲", "😌", "😈", "👿",
+            "💀", "👻", "🤖", "💩", "🫶", "❤️",
+            "🩷", "🧡", "💛", "💚", "💙", "💜",
+            "🖤", "🤍", "💔", "💕", "💞", "💓",
+            "💗", "💖", "💘", "💝", "💟", "💌"
         ],
 
         people: [
-            "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏",
-            "✌️","🤞","🫰","🤟","🤘","🤙","👈","👉",
-            "👆","👇","☝️","🫵","👍","👎","✊","👊",
-            "🤛","🤜","👏","🙌","🫶","👐","🤲","🤝",
-            "🙏","✍️","💅","🤳","💪","🦾","🦿","🦵",
-            "🦶","👂","🦻","👃","🧠","🫀","🫁","🦷",
-            "🦴","👀","👁️","👅","👄","🫦","👶","🧒",
-            "👦","👧","🧑","👨","👩","🧔","👵","👴",
-            "🙍","🙎","🙅","🙆","💁","🙋","🧏","🙇",
-            "🤦","🤷","👮","🕵️","💂","🥷","👷","🫅",
-            "🤴","👸","👳","👲","🧕","🤵","👰","🤰",
-            "🫃","🫄","🤱","👼","🎅","🤶","🦸","🦹"
+            "👋", "🤚", "✋", "🖐️", "👌", "🤌",
+            "🤏", "✌️", "🤞", "🫰", "🤟", "🤘",
+            "🤙", "👈", "👉", "👆", "👇", "☝️",
+            "👍", "👎", "✊", "👊", "👏", "🙌",
+            "👐", "🤲", "🤝", "🙏", "✍️", "💅",
+            "💪", "🦾", "🧠", "👀", "👁️", "👄",
+            "👶", "🧒", "👦", "👧", "🧑", "👨",
+            "👩", "🧔", "👴", "👵", "👮", "👷",
+            "💃", "🕺", "👯", "🧘", "🚶", "🏃"
         ],
 
         nature: [
-            "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼",
-            "🐻‍❄️","🐨","🐯","🦁","🐮","🐷","🐸","🐵",
-            "🙈","🙉","🙊","🐒","🐔","🐧","🐦","🐤",
-            "🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄",
-            "🐝","🪱","🐛","🦋","🐌","🐞","🐜","🪰",
-            "🦟","🦗","🕷️","🦂","🐢","🐍","🦎","🦖",
-            "🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠",
-            "🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆",
-            "🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪",
-            "🐫","🦒","🦘","🦬","🐃","🐂","🐄","🐎",
-            "🐖","🐏","🐑","🦙","🐐","🦌","🐕","🐩",
-            "🦮","🐈","🐈‍⬛","🐓","🦃","🦚","🦜","🦢",
-            "🦩","🕊️","🐇","🦝","🦨","🦡","🦫","🦦",
-            "🌵","🌲","🌳","🌴","🌱","🌿","☘️","🍀",
-            "🎍","🪴","🎋","🍃","🍂","🍁","🌾","🌺",
-            "🌻","🌹","🌷","🌼","🌸","💐","🌞","🌝",
-            "🌛","🌜","🌚","🌕","🌙","⭐","🌟","✨",
-            "⚡","☄️","💥","🔥","🌪️","🌈","☀️","🌤️",
-            "⛅","🌧️","⛈️","❄️","☃️","🌊"
+            "🐶", "🐱", "🐭", "🐹", "🐰", "🦊",
+            "🐻", "🐼", "🐨", "🐯", "🦁", "🐮",
+            "🐷", "🐸", "🐵", "🙈", "🙉", "🙊",
+            "🐔", "🐧", "🐦", "🦆", "🦅", "🦉",
+            "🦋", "🐌", "🐞", "🐜", "🐝", "🪲",
+            "🌸", "🌹", "🌺", "🌻", "🌼", "🌷",
+            "🌱", "🌲", "🌳", "🌴", "🌵", "🍀",
+            "🍁", "🍂", "🍃", "🌍", "🌈", "☀️",
+            "🌤️", "⛅", "🌧️", "⛈️", "❄️", "☃️",
+            "🔥", "💧", "🌊", "🌙", "⭐", "✨"
         ],
 
         food: [
-            "🍏","🍎","🍐","🍊","🍋","🍌","🍉","🍇",
-            "🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥",
-            "🥝","🍅","🍆","🥑","🥦","🥬","🥒","🌶️",
-            "🫑","🌽","🥕","🫒","🧄","🧅","🥔","🍠",
-            "🥐","🥯","🍞","🥖","🥨","🧀","🥚","🍳",
-            "🧈","🥞","🧇","🥓","🥩","🍗","🍖","🌭",
-            "🍔","🍟","🍕","🫓","🥪","🥙","🧆","🌮",
-            "🌯","🫔","🥗","🥘","🫕","🥫","🍝","🍜",
-            "🍲","🍛","🍣","🍱","🥟","🦪","🍤","🍙",
-            "🍚","🍘","🍥","🥠","🥮","🍢","🍡","🍧",
-            "🍨","🍦","🥧","🧁","🍰","🎂","🍮","🍭",
-            "🍬","🍫","🍿","🍩","🍪","🌰","🥜","🍯",
-            "🥛","🍼","☕","🫖","🍵","🧃","🥤","🧋",
-            "🍶","🍺","🍻","🥂","🍷","🥃","🍸","🍹",
-            "🧉","🍾"
+            "🍏", "🍎", "🍐", "🍊", "🍋", "🍌",
+            "🍉", "🍇", "🍓", "🫐", "🍈", "🍒",
+            "🍑", "🥭", "🍍", "🥥", "🥝", "🍅",
+            "🍆", "🥑", "🥦", "🥬", "🥒", "🌶️",
+            "🌽", "🥕", "🧄", "🧅", "🥔", "🍠",
+            "🥐", "🍞", "🥖", "🧀", "🥚", "🍳",
+            "🥞", "🧇", "🥓", "🍔", "🍟", "🍕",
+            "🌭", "🥪", "🌮", "🌯", "🥗", "🍝",
+            "🍜", "🍣", "🍱", "🍛", "🍚", "🍦",
+            "🍧", "🍨", "🍩", "🍪", "🎂", "🍰",
+            "🧁", "🍫", "🍿", "☕", "🧋", "🥤"
         ],
 
         activities: [
-            "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉",
-            "🥏","🎱","🪀","🏓","🏸","🏒","🏑","🥍",
-            "🏏","🪃","🥅","⛳","🪁","🏹","🎣","🤿",
-            "🥊","🥋","🎽","🛹","🛼","🛷","⛸️","🥌",
-            "🎿","⛷️","🏂","🪂","🏋️","🤼","🤸","⛹️",
-            "🤺","🤾","🏌️","🏇","🧘","🏄","🏊","🤽",
-            "🚣","🧗","🚵","🚴","🏆","🥇","🥈","🥉",
-            "🏅","🎖️","🏵️","🎗️","🎫","🎟️","🎪","🤹",
-            "🎭","🩰","🎨","🎬","🎤","🎧","🎼","🎹",
-            "🥁","🪘","🎷","🎺","🪗","🎸","🪕","🎻",
-            "🎲","♟️","🎯","🎳","🎮","🕹️","🎰","🧩",
-            "🎊","🎉","🎈","🎁","🎀","🎂","🎆","🎇",
-            "🧨","✨","🎄","🎃","🎋","🎍"
+            "⚽", "🏀", "🏈", "⚾", "🎾", "🏐",
+            "🏉", "🎱", "🏓", "🏸", "🥊", "🥋",
+            "🎯", "⛳", "🎣", "🤿", "🎽", "🎿",
+            "🛷", "🥌", "🎮", "🕹️", "🎲", "♟️",
+            "🎭", "🎨", "🎬", "🎤", "🎧", "🎼",
+            "🎹", "🥁", "🎷", "🎸", "🎻", "🎺",
+            "🏆", "🥇", "🥈", "🥉", "🎖️", "🏅",
+            "🎪", "🎟️", "🎫", "🎳", "🎰", "🧩"
         ],
 
         travel: [
-            "🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑",
-            "🚒","🚐","🛻","🚚","🚛","🚜","🛵","🏍️",
-            "🛺","🚲","🛴","🛹","🚏","🛣️","🛤️","🛢️",
-            "⛽","🛞","🚨","🚥","🚦","🛑","🚧","⚓",
-            "⛵","🛶","🚤","🛳️","⛴️","🚢","✈️","🛩️",
-            "🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡",
-            "🛰️","🚀","🛸","🌍","🌎","🌏","🌐","🗺️",
-            "🗾","🧭","🏔️","⛰️","🌋","🗻","🏕️","🏖️",
-            "🏜️","🏝️","🏞️","🏟️","🏛️","🏗️","🧱","🪨",
-            "🪵","🛖","🏘️","🏚️","🏠","🏡","🏢","🏣",
-            "🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬",
-            "🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌",
-            "🛕","🕍","⛩️","🕋","⛲","⛺","🌁","🌃",
-            "🌆","🌇","🌉","🎠","🛝","🎡","🎢","💈"
+            "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️",
+            "🚓", "🚑", "🚒", "🚐", "🛻", "🚚",
+            "🚛", "🚜", "🏍️", "🛵", "🚲", "🛴",
+            "✈️", "🚀", "🛸", "🚁", "⛵", "🚤",
+            "🚢", "🚂", "🚆", "🚇", "🚉", "🚏",
+            "🏠", "🏡", "🏢", "🏰", "🏯", "🏖️",
+            "🏝️", "🏕️", "🏔️", "⛰️", "🌋", "🗻",
+            "⛺", "🗽", "🗼", "🌉", "🌃", "🌆",
+            "🌇", "🌄", "🌅", "🛣️", "🛤️", "🗺️"
         ],
 
         objects: [
-            "⌚","📱","📲","💻","⌨️","🖥️","🖨️","🖱️",
-            "🖲️","🕹️","💽","💾","💿","📀","📼","📷",
-            "📸","📹","🎥","📽️","🎞️","📞","☎️","📟",
-            "📠","📺","📻","🎙️","🎚️","🎛️","🧭","⏱️",
-            "⏰","🕰️","⌛","⏳","📡","🔋","🪫","🔌",
-            "💡","🔦","🕯️","🪔","🧯","🛢️","💸","💵",
-            "💴","💶","💷","💰","💳","🪙","💎","⚖️",
-            "🪜","🧰","🔧","🔨","⚒️","🛠️","⛏️","🪚",
-            "🔩","⚙️","🪤","🧲","🪝","🧪","🧫","🧬",
-            "🔬","🔭","📡","💊","🩹","🩺","🩻","🩼",
-            "🚪","🛏️","🛋️","🪑","🚽","🚿","🛁","🪥",
-            "🧴","🧻","🧼","🪒","🧽","🧹","🧺","🧷",
-            "🧵","🪡","🧶","🪢","🧳","🌂","☂️","🧸",
-            "🪆","🖼️","🪞","🪟","🛍️","🎒","👓","🕶️"
+            "⌚", "📱", "💻", "⌨️", "🖥️", "🖨️",
+            "🖱️", "💽", "💾", "📷", "📸", "📹",
+            "🎥", "📞", "☎️", "📺", "📻", "🎙️",
+            "🔋", "🔌", "💡", "🔦", "🕯️", "🧯",
+            "💸", "💵", "💴", "💶", "💷", "💰",
+            "💎", "⚖️", "🔧", "🔨", "⚒️", "🛠️",
+            "🔑", "🗝️", "🔒", "🔓", "🔔", "🔕",
+            "📦", "📫", "📮", "✉️", "📩", "📨",
+            "📁", "📂", "📅", "📆", "📝", "📚",
+            "📖", "✏️", "🖊️", "🖋️", "✂️", "📌"
         ],
 
         symbols: [
-            "❤️","🧡","💛","💚","💙","💜","🖤","🤍",
-            "🤎","🩷","🩵","🩶","💔","❣️","💕","💞",
-            "💓","💗","💖","💘","💝","💟","♥️","💌",
-            "💋","💯","💢","💥","💫","💦","💨","🕳️",
-            "💬","👁️‍🗨️","🗨️","🗯️","💭","💤","♨️","💣",
-            "💬","🌀","💠","🔔","🔕","🎵","🎶","🏧",
-            "🚮","🚰","♿","🚹","🚺","🚻","🚼","🚾",
-            "⚠️","🚸","⛔","🚫","🚳","🚭","🚯","🚱",
-            "🚷","📵","🔞","☢️","☣️","⬆️","↗️","➡️",
-            "↘️","⬇️","↙️","⬅️","↖️","↕️","↔️","↩️",
-            "↪️","⤴️","⤵️","🔃","🔄","🔙","🔚","🔛",
-            "🔜","🔝","🛐","⚛️","🕉️","✡️","☸️","☯️",
-            "✝️","☦️","☪️","☮️","🕎","🔯","♈","♉",
-            "♊","♋","♌","♍","♎","♏","♐","♑",
-            "♒","♓","⏭️","⏮️","⏯️","🔀","🔁","🔂",
-            "▶️","⏩","⏪","⏫","⏬","⏹️","⏺️","⏏️",
-            "🎦","🔅","🔆","📶","🛜","📳","📴","✖️",
-            "➕","➖","➗","🟰","♾️","‼️","⁉️","❓",
-            "❔","❕","❗","〰️","➰","➿","✔️","☑️",
-            "🔘","⚪","⚫","🔴","🟠","🟡","🟢","🔵",
-            "🟣","🟤","🔺","🔻","🔸","🔹","🔶","🔷",
-            "▪️","▫️","◾","◽","◼️","◻️","⬛","⬜",
-            "⭐","🌟","✨","💫","🔥","🎉","🎊","🏆"
+            "❤️", "🩷", "💔", "❣️", "💕", "💞",
+            "💓", "💗", "💖", "💘", "💝", "💟",
+            "☮️", "✝️", "☯️", "♈", "♉", "♊",
+            "♋", "♌", "♍", "♎", "♏", "♐",
+            "♑", "♒", "♓", "⚛️", "🆔", "⚠️",
+            "🚫", "⛔", "❌", "⭕", "✅", "☑️",
+            "✔️", "❎", "➕", "➖", "➗", "✖️",
+            "♾️", "💯", "🔱", "⚡", "☀️", "🌙",
+            "❄️", "☂️", "⭐", "🌟", "✨", "💫",
+            "🎵", "🎶", "🔊", "🔇", "🔔", "📣",
+            "🔝", "🔜", "🔙", "🔚", "🔛", "🔜"
         ]
     };
 
-    /* =====================================================
-       EMOJI PICKER
-    ===================================================== */
+    /* ========================================================
+       17. EMOJI PICKER
+    ======================================================== */
 
-    function setupEmoji() {
-        on($("emojiButton"), "click", toggleExpressionPanel);
+    function getExpressionCategoryButtons() {
+        const container = $("emojiCategories");
 
-        on(
-            $("closeExpressionPanel"),
-            "click",
-            closeExpressionPanel
-        );
-
-        on($("emojiTab"), "click", () => {
-            switchExpressionTab("emoji");
-        });
-
-        on($("gifTab"), "click", () => {
-            switchExpressionTab("gif");
-        });
-
-        on($("emojiCategories"), "click", (event) => {
-            const button = event.target.closest(
-                "[data-emoji-category]"
-            );
-
-            if (!button) {
-                return;
-            }
-
-            const category = button.dataset.emojiCategory;
-
-            state.activeEmojiCategory =
-                EMOJI_DATA[category] ? category : "smileys";
-
-            $("emojiCategories")
-                ?.querySelectorAll("[data-emoji-category]")
-                .forEach((item) => {
-                    item.classList.toggle(
-                        "active",
-                        item.dataset.emojiCategory ===
-                            state.activeEmojiCategory
-                    );
-                });
-
-            renderEmojiGrid();
-        });
-
-        on($("emojiGrid"), "click", (event) => {
-            const button = event.target.closest("[data-emoji]");
-
-            if (!button) {
-                return;
-            }
-
-            insertEmoji(button.dataset.emoji);
-        });
-
-        on($("expressionSearch"), "input", () => {
-            if (state.activeExpressionTab === "emoji") {
-                renderEmojiGrid();
-            } else {
-                renderGifPlaceholder();
-            }
-        });
-
-        document.addEventListener("click", (event) => {
-            const panel = $("expressionPanel");
-
-            if (!panel || panel.hidden) {
-                return;
-            }
-
-            if (
-                panel.contains(event.target) ||
-                $("emojiButton")?.contains(event.target)
-            ) {
-                return;
-            }
-
-            closeExpressionPanel();
-        });
-    }
-
-    function toggleExpressionPanel() {
-        const panel = $("expressionPanel");
-
-        if (!panel) {
-            return;
+        if (!container) {
+            return [];
         }
 
-        if (!panel.hidden) {
-            closeExpressionPanel();
-            return;
-        }
-
-        show(panel);
-
-        switchExpressionTab("emoji");
-
-        renderEmojiGrid();
+        return Array.from(container.querySelectorAll("button"));
     }
 
-    function closeExpressionPanel() {
-        hide($("expressionPanel"));
-    }
-
-    function switchExpressionTab(tab) {
-        state.activeExpressionTab = tab;
-
-        const emojiTab = $("emojiTab");
-        const gifTab = $("gifTab");
-
-        emojiTab?.classList.toggle(
-            "active",
-            tab === "emoji"
+    function resolveEmojiCategory(button) {
+        return (
+            button.dataset.category ||
+            button.dataset.emojiCategory ||
+            button.getAttribute("data-tab") ||
+            button.getAttribute("aria-label") ||
+            button.textContent.trim().toLowerCase()
         );
-
-        gifTab?.classList.toggle(
-            "active",
-            tab === "gif"
-        );
-
-        emojiTab?.setAttribute(
-            "aria-selected",
-            String(tab === "emoji")
-        );
-
-        gifTab?.setAttribute(
-            "aria-selected",
-            String(tab === "gif")
-        );
-
-        const emojiGrid = $("emojiGrid");
-        const categories = $("emojiCategories");
-        const gifGrid = $("gifGrid");
-        const search = $("expressionSearch");
-
-        if (tab === "emoji") {
-            show(emojiGrid);
-            show(categories);
-            hide(gifGrid);
-
-            if (search) {
-                search.placeholder = "Search emoji...";
-            }
-
-            renderEmojiGrid();
-        } else {
-            hide(emojiGrid);
-            hide(categories);
-            show(gifGrid);
-
-            if (search) {
-                search.placeholder = "Search GIFs...";
-            }
-
-            renderGifPlaceholder();
-        }
     }
 
     function renderEmojiGrid() {
@@ -1545,40 +1305,46 @@
             return;
         }
 
-        const query = (
+        const category = state.activeEmojiCategory;
+
+        const list = EMOJIS[category] || EMOJIS.smileys;
+
+        const search = (
             $("expressionSearch")?.value || ""
-        ).trim().toLowerCase();
+        ).trim();
 
-        let emojis =
-            EMOJI_DATA[state.activeEmojiCategory] ||
-            EMOJI_DATA.smileys;
+        grid.replaceChildren();
 
-        if (query) {
-            const allEmojis = Object.values(
-                EMOJI_DATA
-            ).flat();
+        let emojis = list.slice();
 
-            emojis = [...new Set(allEmojis)].filter(
-                (emoji) => emoji.includes(query)
-            );
+        if (category === "recent") {
+            emojis = state.recentEmojis.slice();
         }
 
-        const fragment = document.createDocumentFragment();
+        if (search) {
+            /*
+             * Emoji Unicode doesn't provide a reliable English
+             * keyword search in the browser. Keep matching visible
+             * to the selected category rather than hiding results.
+             */
+            emojis = emojis.filter(function (emoji) {
+                return emoji.includes(search);
+            });
+        }
 
-        for (const emoji of emojis) {
+        emojis.forEach(function (emoji) {
             const button = document.createElement("button");
 
             button.type = "button";
-            button.className = "emoji-item";
-            button.dataset.emoji = emoji;
             button.textContent = emoji;
-
             button.setAttribute("aria-label", emoji);
 
-            fragment.appendChild(button);
-        }
+            button.addEventListener("click", function () {
+                insertEmoji(emoji);
+            });
 
-        grid.replaceChildren(fragment);
+            grid.appendChild(button);
+        });
     }
 
     function insertEmoji(emoji) {
@@ -1588,40 +1354,92 @@
             return;
         }
 
-        const start =
-            input.selectionStart ?? input.value.length;
-
-        const end =
-            input.selectionEnd ?? input.value.length;
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
 
         input.value =
             input.value.slice(0, start) +
             emoji +
             input.value.slice(end);
 
-        const position = start + emoji.length;
+        const cursor = start + emoji.length;
 
-        input.focus({
-            preventScroll: true
-        });
+        input.focus();
 
-        input.setSelectionRange(position, position);
+        input.setSelectionRange(cursor, cursor);
 
         autoResizeInput();
 
-        closeExpressionPanel();
-
         state.recentEmojis = [
             emoji,
-            ...state.recentEmojis.filter(
-                (item) => item !== emoji
-            )
-        ].slice(0, 20);
+            ...state.recentEmojis.filter(function (item) {
+                return item !== emoji;
+            })
+        ].slice(0, 30);
+
+        if (state.activeEmojiCategory === "recent") {
+            renderEmojiGrid();
+        }
     }
 
-    /* =====================================================
-       GIF PLACEHOLDER
-    ===================================================== */
+    function setExpressionTab(tab) {
+        state.activeExpressionTab = tab;
+
+        const emojiTab = $("emojiTab");
+        const gifTab = $("gifTab");
+        const emojiGrid = $("emojiGrid");
+        const gifGrid = $("gifGrid");
+        const categories = $("emojiCategories");
+        const search = $("expressionSearch");
+        const note = $("expressionNote");
+
+        if (emojiTab) {
+            emojiTab.classList.toggle("active", tab === "emoji");
+            emojiTab.setAttribute(
+                "aria-selected",
+                String(tab === "emoji")
+            );
+        }
+
+        if (gifTab) {
+            gifTab.classList.toggle("active", tab === "gif");
+            gifTab.setAttribute(
+                "aria-selected",
+                String(tab === "gif")
+            );
+        }
+
+        if (emojiGrid) {
+            emojiGrid.hidden = tab !== "emoji";
+        }
+
+        if (gifGrid) {
+            gifGrid.hidden = tab !== "gif";
+        }
+
+        if (categories) {
+            categories.hidden = tab !== "emoji";
+        }
+
+        if (search) {
+            search.value = "";
+            search.placeholder = tab === "gif"
+                ? "GIF search"
+                : "Search emoji";
+        }
+
+        if (note) {
+            note.textContent = tab === "gif"
+                ? "GIF search requires a configured GIF provider."
+                : "Select an emoji to add it to your message.";
+        }
+
+        if (tab === "emoji") {
+            renderEmojiGrid();
+        } else {
+            renderGifPlaceholder();
+        }
+    }
 
     function renderGifPlaceholder() {
         const grid = $("gifGrid");
@@ -1634,190 +1452,155 @@
 
         const note = document.createElement("p");
 
-        note.className = "expression-note";
-
         note.textContent =
-            "GIF search needs a GIF provider and a server endpoint. " +
-            "Connect a provider before GIFs can be searched and sent.";
+            "GIFs abhi available nahi hain. GIF provider/API configure karna hoga.";
+
+        note.style.gridColumn = "1 / -1";
+        note.style.color = "var(--chat-muted)";
+        note.style.textAlign = "center";
+        note.style.fontSize = "12px";
+        note.style.padding = "20px 8px";
 
         grid.appendChild(note);
     }
 
-    /* =====================================================
-       SPEECH TO TEXT
-    ===================================================== */
+    function toggleExpressionPanel() {
+        const panel = $("expressionPanel");
 
-    function setupSpeechToText() {
-        const button = $("micButton");
+        if (!panel) {
+            return;
+        }
 
+        panel.hidden = !panel.hidden;
+
+        if (!panel.hidden) {
+            setExpressionTab("emoji");
+            renderEmojiGrid();
+        }
+    }
+
+    /* ========================================================
+       18. SPEECH TO TEXT
+    ======================================================== */
+
+    function startSpeechRecognition() {
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
 
-        if (!button) {
+        const input = $("messageInput");
+
+        if (!SpeechRecognition) {
+            showToast(
+                "Speech input is browser mein supported nahi hai."
+            );
             return;
         }
 
-        if (!SpeechRecognition) {
-            on(button, "click", () => {
-                toast(
-                    "Speech-to-text is not supported in this browser."
-                );
-            });
-
+        if (state.speechActive && state.speechRecognition) {
+            state.speechRecognition.stop();
             return;
         }
 
         const recognition = new SpeechRecognition();
 
         recognition.lang = "hi-IN";
-        recognition.continuous = true;
         recognition.interimResults = true;
+        recognition.continuous = false;
+        recognition.maxAlternatives = 1;
 
-        state.recognition = recognition;
+        state.speechRecognition = recognition;
+        state.speechActive = true;
 
         let finalTranscript = "";
 
-        recognition.onstart = () => {
-            state.isRecognizing = true;
-
-            button.style.color = "var(--success)";
-
-            toast("Listening... Speak now.");
-        };
-
-        recognition.onresult = (event) => {
-            let interim = "";
+        recognition.onresult = function (event) {
+            let interimTranscript = "";
 
             for (
-                let index = event.resultIndex;
-                index < event.results.length;
-                index++
+                let i = event.resultIndex;
+                i < event.results.length;
+                i++
             ) {
-                const result = event.results[index];
+                const transcript =
+                    event.results[i][0].transcript;
 
-                if (result.isFinal) {
-                    finalTranscript +=
-                        result[0].transcript + " ";
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + " ";
                 } else {
-                    interim += result[0].transcript;
+                    interimTranscript += transcript;
                 }
             }
 
-            const input = $("messageInput");
+            if (input) {
+                const existing = input.value.trim();
 
-            if (!input) {
-                return;
-            }
+                const spoken =
+                    (finalTranscript + interimTranscript).trim();
 
-            input.value = (
-                finalTranscript + interim
-            ).trim();
+                input.value = existing
+                    ? existing + " " + spoken
+                    : spoken;
 
-            autoResizeInput();
-        };
-
-        recognition.onerror = (event) => {
-            console.warn(
-                "Speech recognition error:",
-                event.error
-            );
-
-            if (event.error === "not-allowed") {
-                toast("Please allow microphone access.");
-            } else if (event.error !== "no-speech") {
-                toast("Speech recognition stopped.");
+                autoResizeInput();
             }
         };
 
-        recognition.onend = () => {
-            state.isRecognizing = false;
-
-            button.style.color = "";
-
-            finalTranscript = "";
+        recognition.onerror = function (event) {
+            if (event.error !== "no-speech" &&
+                event.error !== "aborted") {
+                showToast("Voice input complete nahi hua.");
+            }
         };
 
-        on(button, "click", () => {
-            if (state.isRecognizing) {
-                recognition.stop();
-                return;
+        recognition.onend = function () {
+            state.speechActive = false;
+            state.speechRecognition = null;
+
+            const mic = $("micButton");
+
+            if (mic) {
+                mic.classList.remove("active");
+                mic.setAttribute("aria-pressed", "false");
             }
+        };
 
-            finalTranscript = "";
+        const mic = $("micButton");
 
-            try {
-                recognition.lang = "hi-IN";
-                recognition.start();
-            } catch (error) {
-                console.warn(error);
-
-                toast(
-                    "Unable to start speech recognition."
-                );
-            }
-        });
-    }
-
-    /* =====================================================
-       VOICE MESSAGE RECORDING
-    ===================================================== */
-
-    function setupVoiceRecording() {
-        const sendButton = $("sendButton");
-
-        if (!sendButton) {
-            return;
+        if (mic) {
+            mic.classList.add("active");
+            mic.setAttribute("aria-pressed", "true");
         }
 
-        on(sendButton, "contextmenu", (event) => {
-            event.preventDefault();
-            startVoiceRecording();
-        });
+        try {
+            recognition.start();
+        } catch (error) {
+            state.speechActive = false;
+            state.speechRecognition = null;
 
-        let holdTimer = null;
-
-        on(sendButton, "pointerdown", (event) => {
-            if (event.pointerType === "mouse") {
-                return;
+            if (mic) {
+                mic.classList.remove("active");
             }
 
-            holdTimer = setTimeout(() => {
-                startVoiceRecording();
-            }, 500);
-        });
-
-        const stopHold = () => {
-            clearTimeout(holdTimer);
-        };
-
-        on(sendButton, "pointerup", stopHold);
-        on(sendButton, "pointercancel", stopHold);
-        on(sendButton, "pointerleave", stopHold);
-
-        on(
-            $("cancelRecordingButton"),
-            "click",
-            cancelVoiceRecording
-        );
-
-        on(
-            $("sendRecordingButton"),
-            "click",
-            sendVoiceRecording
-        );
+            showToast("Microphone start nahi ho paya.");
+        }
     }
+
+    /* ========================================================
+       19. VOICE RECORDING
+    ======================================================== */
 
     async function startVoiceRecording() {
-        if (state.mediaRecorder) {
+        if (state.isRecording) {
             return;
         }
 
-        if (!navigator.mediaDevices?.getUserMedia) {
-            toast(
-                "Voice recording is not supported by this browser."
+        if (!navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia ||
+            !window.MediaRecorder) {
+            showToast(
+                "Voice recording is browser mein supported nahi hai."
             );
-
             return;
         }
 
@@ -1827,445 +1610,934 @@
                     audio: true
                 });
 
-            state.audioStream = stream;
-            state.audioChunks = [];
+            state.recordingStream = stream;
+            state.recordedChunks = [];
 
-            let options = {};
+            let mimeType = "";
 
-            if (
-                window.MediaRecorder &&
-                MediaRecorder.isTypeSupported(
-                    "audio/webm;codecs=opus"
-                )
-            ) {
-                options.mimeType = "audio/webm;codecs=opus";
+            if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+                mimeType = "audio/webm;codecs=opus";
+            } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+                mimeType = "audio/webm";
             }
 
-            state.mediaRecorder = new MediaRecorder(
-                stream,
-                options
-            );
+            const recorder = mimeType
+                ? new MediaRecorder(stream, { mimeType })
+                : new MediaRecorder(stream);
 
-            state.mediaRecorder.ondataavailable = (event) => {
-                if (event.data?.size) {
-                    state.audioChunks.push(event.data);
+            state.mediaRecorder = recorder;
+            state.isRecording = true;
+            state.recordingStartedAt = Date.now();
+            state.recordingSeconds = 0;
+
+            recorder.ondataavailable = function (event) {
+                if (event.data && event.data.size > 0) {
+                    state.recordedChunks.push(event.data);
                 }
             };
 
-            state.mediaRecorder.onstop = () => {
-                const mimeType =
-                    state.mediaRecorder?.mimeType ||
-                    "audio/webm";
+            recorder.onstop = function () {
+                stopRecordingTimer();
+                stopRecordingTracks();
 
-                state.recordedAudioBlob = new Blob(
-                    state.audioChunks,
-                    {
-                        type: mimeType
-                    }
+                const type =
+                    recorder.mimeType || "audio/webm";
+
+                const blob = new Blob(
+                    state.recordedChunks,
+                    { type }
                 );
 
-                stopAudioStream();
+                state.recordedChunks = [];
 
+                if (blob.size > 0 && !state.cancelRecording) {
+                    const extension =
+                        type.includes("mp4") ? "m4a" : "webm";
+
+                    const file = new File(
+                        [blob],
+                        "voice-message." + extension,
+                        {
+                            type,
+                            lastModified: Date.now()
+                        }
+                    );
+
+                    state.pendingVoiceFile = file;
+                }
+
+                state.isRecording = false;
                 state.mediaRecorder = null;
+
+                updateRecordingUI(false);
             };
 
-            state.mediaRecorder.start();
+            recorder.start(250);
 
-            state.recordingStartedAt = Date.now();
+            state.cancelRecording = false;
 
-            show($("recordingStatus"));
+            startRecordingTimer();
+            updateRecordingUI(true);
 
-            updateRecordingTimer();
+            showToast("Voice recording start ho gayi.", 1400);
 
-            state.recordingTimer = setInterval(
-                updateRecordingTimer,
-                500
-            );
-
-            toast(
-                "Recording started. Tap Send to finish."
-            );
         } catch (error) {
-            console.error("Microphone error:", error);
+            stopRecordingTracks();
 
-            toast("Microphone permission is required.");
+            showToast(
+                "Microphone permission dein aur dobara try karein."
+            );
         }
     }
 
-    function updateRecordingTimer() {
-        const elapsed = Math.max(
-            0,
-            Math.floor(
+    function startRecordingTimer() {
+        stopRecordingTimer();
+
+        state.recordingTimer = setInterval(function () {
+            state.recordingSeconds = Math.floor(
                 (Date.now() - state.recordingStartedAt) / 1000
-            )
-        );
+            );
 
-        const minutes = String(
-            Math.floor(elapsed / 60)
-        ).padStart(2, "0");
+            const time = $("recordingTime");
 
-        const seconds = String(
-            elapsed % 60
-        ).padStart(2, "0");
+            if (time) {
+                const minutes = Math.floor(
+                    state.recordingSeconds / 60
+                );
 
-        setText(
-            $("recordingTime"),
-            `Recording ${minutes}:${seconds}`
-        );
+                const seconds = state.recordingSeconds % 60;
+
+                time.textContent =
+                    String(minutes).padStart(2, "0") +
+                    ":" +
+                    String(seconds).padStart(2, "0");
+            }
+        }, 250);
     }
 
-    function stopAudioStream() {
-        if (state.audioStream) {
-            state.audioStream
-                .getTracks()
-                .forEach((track) => track.stop());
+    function stopRecordingTimer() {
+        if (state.recordingTimer) {
+            clearInterval(state.recordingTimer);
+            state.recordingTimer = null;
+        }
+    }
 
-            state.audioStream = null;
+    function stopRecordingTracks() {
+        if (state.recordingStream) {
+            state.recordingStream.getTracks().forEach(
+                function (track) {
+                    track.stop();
+                }
+            );
+
+            state.recordingStream = null;
+        }
+    }
+
+    function updateRecordingUI(active) {
+        const status = $("recordingStatus");
+        const composer = $("composer");
+
+        if (status) {
+            status.hidden = !active;
         }
 
-        clearInterval(state.recordingTimer);
+        if (composer) {
+            composer.classList.toggle(
+                "is-recording",
+                active
+            );
+        }
 
-        state.recordingTimer = null;
+        const button = $("sendButton");
+
+        if (button) {
+            button.classList.toggle(
+                "is-recording",
+                active
+            );
+        }
     }
 
-    function cancelVoiceRecording() {
+    function stopVoiceRecording(cancel) {
+        const recorder = state.mediaRecorder;
+
+        if (!recorder || recorder.state === "inactive") {
+            return;
+        }
+
+        state.cancelRecording = Boolean(cancel);
+
+        try {
+            recorder.stop();
+        } catch (error) {
+            console.warn("Recorder stop error:", error);
+        }
+    }
+
+    async function sendRecordedVoice() {
+        if (!state.pendingVoiceFile) {
+            showToast("Pehle voice message record karein.");
+            return;
+        }
+
+        if (!state.partnerId) {
+            showToast("Pehle user select karein.");
+            return;
+        }
+
+        const file = state.pendingVoiceFile;
+
+        state.pendingVoiceFile = null;
+        state.isSendingRecording = true;
+
+        try {
+            await sendFile(file);
+        } finally {
+            state.isSendingRecording = false;
+        }
+    }
+
+    function cancelRecordedVoice() {
+        state.pendingVoiceFile = null;
+        state.cancelRecording = true;
+
+        if (state.isRecording) {
+            stopVoiceRecording(true);
+        }
+
+        updateRecordingUI(false);
+    }
+
+    /* ========================================================
+       20. INPUT AUTO RESIZE
+    ======================================================== */
+
+    function autoResizeInput() {
+        const input = $("messageInput");
+
+        if (!input) {
+            return;
+        }
+
+        input.style.height = "auto";
+
+        input.style.height = Math.min(
+            input.scrollHeight,
+            130
+        ) + "px";
+    }
+
+    /* ========================================================
+       21. SEARCH MESSAGES
+    ======================================================== */
+
+    function openChatSearch() {
+        const section = $("chatSearchSection");
+        const input = $("chatSearch");
+
+        if (section) {
+            section.hidden = false;
+        }
+
+        if (input) {
+            input.focus();
+        }
+    }
+
+    function closeChatSearch() {
+        const section = $("chatSearchSection");
+        const input = $("chatSearch");
+
+        if (section) {
+            section.hidden = true;
+        }
+
+        if (input) {
+            input.value = "";
+        }
+
+        state.searchTerm = "";
+
+        renderMessages();
+    }
+
+    function filterMessages() {
+        const input = $("chatSearch");
+
+        state.searchTerm = input
+            ? input.value.trim()
+            : "";
+
+        renderMessages();
+    }
+
+    /* ========================================================
+       22. MODAL HELPERS
+    ======================================================== */
+
+    function openModal(id) {
+        const modal = $(id);
+
+        if (modal) {
+            modal.hidden = false;
+        }
+    }
+
+    function closeModal(id) {
+        const modal = $(id);
+
+        if (modal) {
+            modal.hidden = true;
+        }
+    }
+
+    /* ========================================================
+       23. NAVIGATION
+    ======================================================== */
+
+    function goBack() {
+        if (window.history.length > 1) {
+            const referrer = document.referrer;
+
+            if (referrer && new URL(referrer).origin === location.origin) {
+                window.history.back();
+                return;
+            }
+        }
+
+        window.location.href = "/home";
+    }
+
+    function openPartnerProfile() {
+        if (!state.partnerId) {
+            return;
+        }
+
+        window.location.href =
+            "/profile?user_id=" +
+            encodeURIComponent(state.partnerId);
+    }
+
+    function openCoupleChat() {
+        if (!state.partnerId) {
+            showToast("Partner select nahi hua.");
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        params.set("partner_id", state.partnerId);
+
+        if (state.partner) {
+            params.set("name", getUserName(state.partner));
+
+            const avatar = getAvatar(state.partner);
+
+            if (avatar) {
+                params.set("avatar", avatar);
+            }
+        }
+
+        window.location.href =
+            "/couple-chat?" + params.toString();
+    }
+
+    /* ========================================================
+       24. CALL OPTIONS
+    ======================================================== */
+
+    function openCallOptions() {
+        openModal("callOptionsModal");
+    }
+
+    function startVoiceCall() {
+        closeModal("callOptionsModal");
+
+        showToast(
+            "Voice calling ke liye backend call signaling aur WebRTC configure karna hoga."
+        );
+    }
+
+    function startVideoCall() {
+        closeModal("callOptionsModal");
+
+        showToast(
+            "Video calling ke liye backend call signaling aur WebRTC configure karna hoga."
+        );
+    }
+
+    /* ========================================================
+       25. CONVERSATION MENU
+    ======================================================== */
+
+    function openConversationMenu() {
+        openModal("conversationMenuModal");
+    }
+
+    function clearConversation() {
+        closeModal("conversationMenuModal");
+
+        const confirmed = window.confirm(
+            "Kya aap is chat ko clear karna chahte hain? Yeh action server par messages delete nahi karega."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        /*
+         * Local-only clearing is intentionally avoided.
+         * Otherwise messages would reappear during the next poll.
+         * Server deletion requires a dedicated backend endpoint.
+         */
+
+        showToast(
+            "Chat delete karne ke liye backend delete endpoint zaroori hai."
+        );
+    }
+
+    function viewConversationMedia() {
+        closeModal("conversationMenuModal");
+
+        const images = state.messages.filter(function (message) {
+            return getMessageMediaUrl(message) &&
+                isImageMessage(message);
+        });
+
+        if (!images.length) {
+            showToast("Is chat mein koi image nahi hai.");
+            return;
+        }
+
+        openImageViewer(getMessageMediaUrl(images[images.length - 1]));
+    }
+
+    /* ========================================================
+       26. POLLING
+    ======================================================== */
+
+    function startPolling() {
+        stopPolling();
+
+        state.pollingActive = true;
+
+        state.pollingTimer = setInterval(function () {
+            if (
+                document.visibilityState === "visible" &&
+                state.partnerId &&
+                !state.loadingMessages
+            ) {
+                loadMessages({
+                    silent: true
+                });
+            }
+        }, CONFIG.pollInterval);
+    }
+
+    function stopPolling() {
+        if (state.pollingTimer) {
+            clearInterval(state.pollingTimer);
+            state.pollingTimer = null;
+        }
+
+        state.pollingActive = false;
+    }
+
+    document.addEventListener(
+        "visibilitychange",
+        function () {
+            if (
+                document.visibilityState === "visible" &&
+                state.partnerId &&
+                !state.loadingMessages
+            ) {
+                loadMessages({
+                    silent: true
+                });
+            }
+        }
+    );
+
+    /* ========================================================
+       27. FILE INPUTS
+    ======================================================== */
+
+    function openFilePicker() {
+        const input = $("fileInput");
+
+        if (input) {
+            input.click();
+        }
+    }
+
+    function openCameraPicker() {
+        const input = $("cameraInput");
+
+        if (input) {
+            input.click();
+        }
+    }
+
+    /* ========================================================
+       28. EVENT BINDINGS
+    ======================================================== */
+
+    function bindEvents() {
+        /* Back */
+
+        $("backButton")?.addEventListener(
+            "click",
+            goBack
+        );
+
+        /* Partner profile */
+
+        $("selectedAvatarButton")?.addEventListener(
+            "click",
+            openPartnerProfile
+        );
+
+        /* Couple Chat */
+
+        $("coupleChatButton")?.addEventListener(
+            "click",
+            openCoupleChat
+        );
+
+        /* Calls */
+
+        $("voiceCallButton")?.addEventListener(
+            "click",
+            openCallOptions
+        );
+
+        $("closeCallOptions")?.addEventListener(
+            "click",
+            function () {
+                closeModal("callOptionsModal");
+            }
+        );
+
+        $("startVoiceCall")?.addEventListener(
+            "click",
+            startVoiceCall
+        );
+
+        $("startVideoCall")?.addEventListener(
+            "click",
+            startVideoCall
+        );
+
+        /* Conversation menu */
+
+        $("conversationMenu")?.addEventListener(
+            "click",
+            openConversationMenu
+        );
+
+        $("closeConversationMenu")?.addEventListener(
+            "click",
+            function () {
+                closeModal("conversationMenuModal");
+            }
+        );
+
+        $("menuSearchMessages")?.addEventListener(
+            "click",
+            function () {
+                closeModal("conversationMenuModal");
+                openChatSearch();
+            }
+        );
+
+        $("menuViewMedia")?.addEventListener(
+            "click",
+            viewConversationMedia
+        );
+
+        $("menuClearChat")?.addEventListener(
+            "click",
+            clearConversation
+        );
+
+        /* Search */
+
+        $("closeChatSearch")?.addEventListener(
+            "click",
+            closeChatSearch
+        );
+
+        $("chatSearch")?.addEventListener(
+            "input",
+            filterMessages
+        );
+
+        /* Sending text */
+
+        $("sendButton")?.addEventListener(
+            "click",
+            function () {
+                if (state.isRecording) {
+                    stopVoiceRecording(false);
+                    return;
+                }
+
+                if (state.pendingVoiceFile) {
+                    sendRecordedVoice();
+                    return;
+                }
+
+                sendTextMessage();
+            }
+        );
+
+        $("messageInput")?.addEventListener(
+            "input",
+            autoResizeInput
+        );
+
+        $("messageInput")?.addEventListener(
+            "keydown",
+            function (event) {
+                if (
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.isComposing
+                ) {
+                    event.preventDefault();
+                    sendTextMessage();
+                }
+            }
+        );
+
+        /* Emoji */
+
+        $("emojiButton")?.addEventListener(
+            "click",
+            toggleExpressionPanel
+        );
+
+        $("emojiTab")?.addEventListener(
+            "click",
+            function () {
+                setExpressionTab("emoji");
+            }
+        );
+
+        $("gifTab")?.addEventListener(
+            "click",
+            function () {
+                setExpressionTab("gif");
+            }
+        );
+
+        $("closeExpressionPanel")?.addEventListener(
+            "click",
+            function () {
+                const panel = $("expressionPanel");
+
+                if (panel) {
+                    panel.hidden = true;
+                }
+            }
+        );
+
+        $("expressionSearch")?.addEventListener(
+            "input",
+            function () {
+                if (state.activeExpressionTab === "emoji") {
+                    renderEmojiGrid();
+                } else {
+                    renderGifPlaceholder();
+                }
+            }
+        );
+
+        getExpressionCategoryButtons().forEach(
+            function (button) {
+                button.addEventListener("click", function () {
+                    const category = resolveEmojiCategory(button);
+
+                    if (EMOJIS[category]) {
+                        state.activeEmojiCategory = category;
+
+                        getExpressionCategoryButtons().forEach(
+                            function (item) {
+                                item.classList.toggle(
+                                    "active",
+                                    item === button
+                                );
+                            }
+                        );
+
+                        renderEmojiGrid();
+                    }
+                });
+            }
+        );
+
+        /* Speech-to-text */
+
+        $("micButton")?.addEventListener(
+            "click",
+            startSpeechRecognition
+        );
+
+        /* File upload */
+
+        $("attachButton")?.addEventListener(
+            "click",
+            openFilePicker
+        );
+
+        $("cameraButton")?.addEventListener(
+            "click",
+            openCameraPicker
+        );
+
+        $("fileInput")?.addEventListener(
+            "change",
+            async function () {
+                const file = this.files && this.files[0];
+
+                if (file) {
+                    await sendFile(file);
+                }
+
+                this.value = "";
+            }
+        );
+
+        $("cameraInput")?.addEventListener(
+            "change",
+            async function () {
+                const file = this.files && this.files[0];
+
+                if (file) {
+                    await sendFile(file);
+                }
+
+                this.value = "";
+            }
+        );
+
+        /* Voice recording controls */
+
+        $("cancelRecordingButton")?.addEventListener(
+            "click",
+            cancelRecordedVoice
+        );
+
+        $("sendRecordingButton")?.addEventListener(
+            "click",
+            function () {
+                if (state.isRecording) {
+                    stopVoiceRecording(false);
+                } else {
+                    sendRecordedVoice();
+                }
+            }
+        );
+
+        /* Image viewer */
+
+        $("closeImageViewer")?.addEventListener(
+            "click",
+            closeImageViewer
+        );
+
+        $("imageViewer")?.addEventListener(
+            "click",
+            function (event) {
+                if (event.target === this) {
+                    closeImageViewer();
+                }
+            }
+        );
+
+        /* Modal backdrop clicks */
+
+        ["callOptionsModal", "conversationMenuModal"].forEach(
+            function (id) {
+                const modal = $(id);
+
+                if (!modal) {
+                    return;
+                }
+
+                modal.addEventListener("click", function (event) {
+                    if (event.target === modal) {
+                        modal.hidden = true;
+                    }
+                });
+            }
+        );
+
+        /* Escape key */
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            closeImageViewer();
+
+            closeModal("callOptionsModal");
+            closeModal("conversationMenuModal");
+
+            const expressionPanel = $("expressionPanel");
+
+            if (expressionPanel) {
+                expressionPanel.hidden = true;
+            }
+
+            if (!$("chatSearchSection")?.hidden) {
+                closeChatSearch();
+            }
+        });
+
+        /* Prevent default file drag-and-drop navigation */
+
+        const conversation = $("conversation");
+
+        if (conversation) {
+            conversation.addEventListener(
+                "dragover",
+                function (event) {
+                    event.preventDefault();
+                }
+            );
+
+            conversation.addEventListener(
+                "drop",
+                async function (event) {
+                    event.preventDefault();
+
+                    const file =
+                        event.dataTransfer?.files?.[0];
+
+                    if (file) {
+                        await sendFile(file);
+                    }
+                }
+            );
+        }
+    }
+
+    /* ========================================================
+       29. INITIALIZATION
+    ======================================================== */
+
+    async function init() {
+        bindEvents();
+
+        if ($("expressionPanel")) {
+            $("expressionPanel").hidden = true;
+        }
+
+        if ($("chatSearchSection")) {
+            $("chatSearchSection").hidden = true;
+        }
+
+        if ($("callOptionsModal")) {
+            $("callOptionsModal").hidden = true;
+        }
+
+        if ($("conversationMenuModal")) {
+            $("conversationMenuModal").hidden = true;
+        }
+
+        if ($("imageViewer")) {
+            $("imageViewer").hidden = true;
+        }
+
+        if ($("recordingStatus")) {
+            $("recordingStatus").hidden = true;
+        }
+
+        renderEmojiGrid();
+
+        try {
+            await loadCurrentUser();
+
+            const loaded = await loadPartnerProfile();
+
+            if (!loaded) {
+                return;
+            }
+
+            await loadMessages({
+                silent: false,
+                forceBottom: true
+            });
+
+            startPolling();
+
+            console.log(
+                "[UtaNexa Chat] Initialized successfully."
+            );
+
+        } catch (error) {
+            console.error(
+                "[UtaNexa Chat] Initialization failed:",
+                error
+            );
+
+            showToast(
+                getErrorMessage(
+                    error,
+                    "Chat load nahi hui."
+                ),
+                4000
+            );
+        }
+    }
+
+    /* ========================================================
+       30. CLEANUP
+    ======================================================== */
+
+    window.addEventListener("beforeunload", function () {
+        stopPolling();
+        stopRecordingTimer();
+        stopRecordingTracks();
+
+        if (
+            state.speechRecognition &&
+            state.speechActive
+        ) {
+            try {
+                state.speechRecognition.stop();
+            } catch (_) {
+                // Browser may already have stopped recognition.
+            }
+        }
+
         if (
             state.mediaRecorder &&
             state.mediaRecorder.state !== "inactive"
         ) {
             try {
                 state.mediaRecorder.stop();
-            } catch (error) {
-                console.warn(error);
+            } catch (_) {
+                // Browser may already have stopped recording.
             }
         }
+    });
 
-        state.audioChunks = [];
-        state.recordedAudioBlob = null;
+    /* ========================================================
+       31. START
+    ======================================================== */
 
-        stopAudioStream();
-
-        hide($("recordingStatus"));
-
-        toast("Recording cancelled.");
-    }
-
-    async function sendVoiceRecording() {
-        if (state.mediaRecorder?.state === "recording") {
-            state.mediaRecorder.stop();
-        }
-
-        /*
-         * Wait for MediaRecorder to emit its final data.
-         */
-        await new Promise((resolve) => {
-            setTimeout(resolve, 350);
-        });
-
-        const blob = state.recordedAudioBlob;
-
-        if (!blob || !blob.size) {
-            toast("No voice recording available.");
-            return;
-        }
-
-        if (!state.selectedUserId) {
-            toast("Please open a conversation first.");
-            return;
-        }
-
-        const formData = new FormData();
-
-        formData.append(
-            "receiver_id",
-            state.selectedUserId
+    if (document.readyState === "loading") {
+        document.addEventListener(
+            "DOMContentLoaded",
+            init,
+            { once: true }
         );
-
-        formData.append("content", "");
-
-        formData.append(
-            "file",
-            blob,
-            "voice-message.webm"
-        );
-
-        try {
-            await requestJSON(API.send, {
-                method: "POST",
-                body: formData
-            });
-
-            state.recordedAudioBlob = null;
-            state.audioChunks = [];
-
-            hide($("recordingStatus"));
-
-            await loadMessages();
-
-            toast("Voice message uploaded.");
-        } catch (error) {
-            console.error(
-                "Voice message upload failed:",
-                error
-            );
-
-            toast(
-                "Voice upload failed. Your server must support audio attachments."
-            );
-        } finally {
-            stopAudioStream();
-        }
+    } else {
+        init();
     }
-
-    /* =====================================================
-       COUPLE CHAT
-    ===================================================== */
-
-    function setupNavigation() {
-        on($("coupleChatButton"), "click", () => {
-            if (!state.selectedUserId) {
-                toast(
-                    "Please select a conversation first."
-                );
-
-                return;
-            }
-
-            const user = state.selectedUser || {};
-
-            const params = new URLSearchParams({
-                partner_id: state.selectedUserId,
-                name: getDisplayName(user),
-                avatar: getAvatarUrl(user)
-            });
-
-            window.location.href =
-                `/couple-chat?${params.toString()}`;
-        });
-
-        on($("backButton"), "click", () => {
-            window.location.href = "/home";
-        });
-
-        on($("selectedAvatarButton"), "click", () => {
-            if (!state.selectedUserId) {
-                return;
-            }
-
-            window.location.href =
-                `/profile?user_id=${encodeURIComponent(
-                    state.selectedUserId
-                )}`;
-        });
-
-        document
-            .querySelectorAll(".bottom-nav button[data-page]")
-            .forEach((button) => {
-                on(button, "click", () => {
-                    const page = button.dataset.page;
-
-                    if (page) {
-                        window.location.href =
-                            `/${encodeURIComponent(page)}`;
-                    }
-                });
-            });
-    }
-
-    /* =====================================================
-       CALL OPTIONS
-    ===================================================== */
-
-    function setupCallOptions() {
-        on($("voiceCallButton"), "click", () => {
-            if (!state.selectedUserId) {
-                toast(
-                    "Please select a conversation first."
-                );
-
-                return;
-            }
-
-            show($("callOptionsModal"));
-        });
-
-        on($("closeCallOptions"), "click", () => {
-            hide($("callOptionsModal"));
-        });
-
-        on($("callOptionsModal"), "click", (event) => {
-            if (event.target === $("callOptionsModal")) {
-                hide($("callOptionsModal"));
-            }
-        });
-
-        on($("startVoiceCall"), "click", () => {
-            hide($("callOptionsModal"));
-
-            toast(
-                "Voice calling requires WebRTC and call-signaling support on the server.",
-                4000
-            );
-        });
-
-        on($("startVideoCall"), "click", () => {
-            hide($("callOptionsModal"));
-
-            toast(
-                "Video calling requires WebRTC and call-signaling support on the server.",
-                4000
-            );
-        });
-    }
-
-    /* =====================================================
-       CONVERSATION MENU
-    ===================================================== */
-
-    function setupConversationMenu() {
-        on($("conversationMenu"), "click", () => {
-            show($("conversationMenuModal"));
-        });
-
-        on($("closeConversationMenu"), "click", () => {
-            hide($("conversationMenuModal"));
-        });
-
-        on(
-            $("conversationMenuModal"),
-            "click",
-            (event) => {
-                if (
-                    event.target === $("conversationMenuModal")
-                ) {
-                    hide($("conversationMenuModal"));
-                }
-            }
-        );
-
-        on($("menuSearchMessages"), "click", () => {
-            hide($("conversationMenuModal"));
-
-            show($("chatSearchSection"));
-
-            $("chatSearch")?.focus();
-        });
-
-        on($("menuViewMedia"), "click", () => {
-            hide($("conversationMenuModal"));
-
-            const hasMedia = state.messages.some(
-                (message) =>
-                    Boolean(getMessageImage(message))
-            );
-
-            toast(
-                hasMedia
-                    ? "Scroll through the conversation to view shared images."
-                    : "No shared images found."
-            );
-        });
-
-        on($("menuClearChat"), "click", () => {
-            hide($("conversationMenuModal"));
-
-            toast(
-                "Clear chat is not enabled. A backend endpoint is required.",
-                3500
-            );
-        });
-    }
-
-    /* =====================================================
-       MESSAGE SEARCH
-    ===================================================== */
-
-    function setupSearch() {
-        on($("chatSearch"), "input", (event) => {
-            state.searchQuery = event.target.value.trim();
-
-            renderMessages();
-        });
-
-        on($("closeChatSearch"), "click", () => {
-            state.searchQuery = "";
-
-            if ($("chatSearch")) {
-                $("chatSearch").value = "";
-            }
-
-            hide($("chatSearchSection"));
-
-            renderMessages();
-        });
-    }
-
-    /* =====================================================
-       KEYBOARD SHORTCUTS
-    ===================================================== */
-
-    function setupKeyboard() {
-        on(document, "keydown", (event) => {
-            if (event.key === "Escape") {
-                closeExpressionPanel();
-
-                hide($("callOptionsModal"));
-
-                hide($("conversationMenuModal"));
-
-                closeImageViewer();
-            }
-        });
-    }
-
-    /* =====================================================
-       PAGE INITIALIZATION
-    ===================================================== */
-
-    async function initChatPage() {
-        setupComposer();
-        setupEmoji();
-        setupAttachment();
-        setupCamera();
-        setupNavigation();
-        setupCallOptions();
-        setupConversationMenu();
-        setupSearch();
-        setupImageViewer();
-        setupSpeechToText();
-        setupVoiceRecording();
-        setupKeyboard();
-
-        renderEmojiGrid();
-
-        const userId = getCurrentPageUserId();
-
-        await loadCurrentUser();
-
-        if (!userId) {
-            setText(
-                $("selectedName"),
-                "Select a conversation"
-            );
-
-            setText(
-                $("selectedStatus"),
-                "Open a chat from your connections"
-            );
-
-            showEmptyConversation(true);
-
-            return;
-        }
-
-        await loadSelectedUser(userId);
-
-        await loadMessages();
-    }
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        initChatPage
-    );
 
 })();
