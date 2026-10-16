@@ -1858,3 +1858,409 @@ img {
     transition-duration: .01ms !important;
   }
 }
+/* =========================================================
+   UTANEXA — 55 MOOD EFFECTS EXTENSION
+   Add at the END of couple-chat.css
+   ========================================================= */
+
+/* 27. JEALOUS */
+html[data-couple-mode="jealous"],
+body[data-couple-mode="jealous"] {
+  --couple-accent: #bd6488;
+  --couple-accent-rgb: 189, 100, 136;
+  --couple-bg: #fff4f7;
+  --couple-glow: rgba(189, 100, 136, .28);
+  --couple-bubble-own: linear-gradient(135deg, #bd6488, #9165ba);
+}
+
+/* 28. LONELY */
+html[data-couple-mode="lonely"],
+body[data-couple-mode="lonely"] {
+  --couple-accent: #7188a9;
+  --couple-accent-rgb: 113, 136, 169;
+  --couple-bg: #f2f5fb;
+  --couple-glow: rgba(113, 136, 169, .24);
+  --couple-bubble-own: linear-gradient(135deg, #7188a9, #9b9bd3);
+}
+
+/* 29. EXCITED */
+html[data-couple-mode="excited"],
+body[data-couple-mode="excited"] {
+  --couple-accent: #ff8b42;
+  --couple-accent-rgb: 255, 139, 66;
+  --couple-bg: #fff8ed;
+  --couple-glow: rgba(255, 139, 66, .3);
+  --couple-bubble-own: linear-gradient(135deg, #ff9c43, #ff668e);
+}
+
+/* 30. SHY */
+html[data-couple-mode="shy"],
+body[data-couple-mode="shy"] {
+  --couple-accent: #d58bc1;
+  --couple-accent-rgb: 213, 139, 193;
+  --couple-bg: #fff5fb;
+  --couple-glow: rgba(213, 139, 193, .25);
+  --couple-bubble-own: linear-gradient(135deg, #e8a4d2, #b5a0ed);
+}
+
+/* 31. TRUST */
+html[data-couple-mode="trust"],
+body[data-couple-mode="trust"] {
+  --couple-accent: #58a995;
+  --couple-accent-rgb: 88, 169, 149;
+  --couple-bg: #f1fbf7;
+  --couple-glow: rgba(88, 169, 149, .22);
+  --couple-bubble-own: linear-gradient(135deg, #58b99d, #75a9d8);
+}
+
+/* 32. HOPEFUL */
+html[data-couple-mode="hopeful"],
+body[data-couple-mode="hopeful"] {
+  --couple-accent: #80a8df;
+  --couple-accent-rgb: 128, 168, 223;
+  --couple-bg: #f5f8ff;
+  --couple-glow: rgba(128, 168, 223, .25);
+  --couple-bubble-own: linear-gradient(135deg, #82b7ec, #a58be4);
+}
+
+/* 33. GRATEFUL */
+html[data-couple-mode="grateful"],
+body[data-couple-mode="grateful"] {
+  --couple-accent: #c5a14c;
+  --couple-accent-rgb: 197, 161, 76;
+  --couple-bg: #fffbee;
+  --couple-glow: rgba(197, 161, 76, .25);
+  --couple-bubble-own: linear-gradient(135deg, #e4c56b, #e8a5b4);
+}
+
+/* 34. PROUD */
+html[data-couple-mode="proud"],
+body[data-couple-mode="proud"] {
+  --couple-accent: #6d91cc;
+  --couple-accent-rgb: 109, 145, 204;
+  --couple-bg: #f3f7ff;
+  --couple-glow: rgba(109, 145, 204, .25);
+  --couple-bubble-own: linear-gradient(135deg, #6d91cc, #8e82d8);
+}
+
+/* 35. RELAXED */
+html[data-couple-mode="relaxed"],
+body[data-couple-mode="relaxed"] {
+  --couple-accent: #79b8a5;
+  --couple-accent-rgb: 121, 184, 165;
+  --couple-bg: #f3fbf7;
+  --couple-glow: rgba(121, 184, 165, .2);
+  --couple-bubble-own: linear-gradient(135deg, #8acbb5, #9ebce4);
+}
+
+/* 36. NERVOUS */
+html[data-couple-mode="nervous"],
+body[data-couple-mode="nervous"] {
+  --couple-accent: #b6a16b;
+  --couple-accent-rgb: 182, 161, 107;
+  --couple-bg: #fcf9f0;
+  --couple-glow: rgba(182, 161, 107, .2);
+  --couple-bubble-own: linear-gradient(135deg, #cbb77f, #b6a1d6);
+}
+
+/* 37. WORRIED */
+html[data-couple-mode="worried"],
+body[data-couple-mode="worried"] {
+  --couple-accent: #7c9cb9;
+  --couple-accent-rgb: 124, 156, 185;
+  --couple-bg: #f4f8fb;
+  --couple-glow: rgba(124, 156, 185, .22);
+  --couple-bubble-own: linear-gradient(135deg, #86accb, #a49bd9);
+}
+
+/* 38. PEACEFUL */
+html[data-couple-mode="peaceful"],
+body[data-couple-mode="peaceful"] {
+  --couple-accent: #8bbba8;
+  --couple-accent-rgb: 139, 187, 168;
+  --couple-bg: #f5fbf6;
+  --couple-glow: rgba(139, 187, 168, .2);
+  --couple-bubble-own: linear-gradient(135deg, #9bceb9, #a8c7e8);
+}
+
+/* 39. PASSIONATE ROMANCE */
+html[data-couple-mode="romantic_dream"],
+body[data-couple-mode="romantic_dream"] {
+  --couple-accent: #e66ca8;
+  --couple-accent-rgb: 230, 108, 168;
+  --couple-bg: #fff2f8;
+  --couple-glow: rgba(230, 108, 168, .3);
+  --couple-bubble-own: linear-gradient(135deg, #ff80bb, #ba8bea);
+}
+
+/* 40. LONGING */
+html[data-couple-mode="longing"],
+body[data-couple-mode="longing"] {
+  --couple-accent: #9388c9;
+  --couple-accent-rgb: 147, 136, 201;
+  --couple-bg: #f7f4ff;
+  --couple-glow: rgba(147, 136, 201, .25);
+  --couple-bubble-own: linear-gradient(135deg, #9d92d9, #b58cc9);
+}
+
+/* 41. RECONCILIATION */
+html[data-couple-mode="reconciliation"],
+body[data-couple-mode="reconciliation"] {
+  --couple-accent: #70b4a1;
+  --couple-accent-rgb: 112, 180, 161;
+  --couple-bg: #f2fbf8;
+  --couple-glow: rgba(112, 180, 161, .23);
+  --couple-bubble-own: linear-gradient(135deg, #80c9b5, #9fa9e2);
+}
+
+/* 42. SUPPORTIVE */
+html[data-couple-mode="supportive"],
+body[data-couple-mode="supportive"] {
+  --couple-accent: #70a9cb;
+  --couple-accent-rgb: 112, 169, 203;
+  --couple-bg: #f2f9fd;
+  --couple-glow: rgba(112, 169, 203, .23);
+  --couple-bubble-own: linear-gradient(135deg, #7dbce0, #a0a0df);
+}
+
+/* 43. PLAYFUL */
+html[data-couple-mode="playful"],
+body[data-couple-mode="playful"] {
+  --couple-accent: #a58bff;
+  --couple-accent-rgb: 165, 139, 255;
+  --couple-bg: #f8f5ff;
+  --couple-glow: rgba(165, 139, 255, .3);
+  --couple-bubble-own: linear-gradient(135deg, #a58bff, #ff9ad4);
+}
+
+/* 44. MISSING HOME */
+html[data-couple-mode="homesick"],
+body[data-couple-mode="homesick"] {
+  --couple-accent: #9a9bcf;
+  --couple-accent-rgb: 154, 155, 207;
+  --couple-bg: #f7f7ff;
+  --couple-glow: rgba(154, 155, 207, .23);
+  --couple-bubble-own: linear-gradient(135deg, #9a9bcf, #b5a5d9);
+}
+
+/* 45. DREAMY */
+html[data-couple-mode="dreamy"],
+body[data-couple-mode="dreamy"] {
+  --couple-accent: #9b8ae0;
+  --couple-accent-rgb: 155, 138, 224;
+  --couple-bg: #f7f4ff;
+  --couple-glow: rgba(155, 138, 224, .27);
+  --couple-bubble-own: linear-gradient(135deg, #9b8ae0, #d69fdf);
+}
+
+/* 46. SLEEPY */
+html[data-couple-mode="sleepy"],
+body[data-couple-mode="sleepy"] {
+  --couple-accent: #8d91c5;
+  --couple-accent-rgb: 141, 145, 197;
+  --couple-bg: #f4f4ff;
+  --couple-glow: rgba(141, 145, 197, .2);
+  --couple-bubble-own: linear-gradient(135deg, #8d91c5, #a9a0dc);
+}
+
+/* 47. MISSING YOU */
+html[data-couple-mode="homesick"],
+body[data-couple-mode="homesick"] {
+  --couple-accent: #8497d8;
+  --couple-accent-rgb: 132, 151, 216;
+  --couple-bg: #f5f6ff;
+  --couple-glow: rgba(132, 151, 216, .25);
+  --couple-bubble-own: linear-gradient(135deg, #8ca4e8, #b391d9);
+}
+
+/* 48. CONFIDENT */
+html[data-couple-mode="confident"],
+body[data-couple-mode="confident"] {
+  --couple-accent: #548fbd;
+  --couple-accent-rgb: 84, 143, 189;
+  --couple-bg: #f1f8fc;
+  --couple-glow: rgba(84, 143, 189, .23);
+  --couple-bubble-own: linear-gradient(135deg, #548fbd, #7d8cdb);
+}
+
+/* 49. CURIOUS */
+html[data-couple-mode="curious"],
+body[data-couple-mode="curious"] {
+  --couple-accent: #68a9d9;
+  --couple-accent-rgb: 104, 169, 217;
+  --couple-bg: #f2f9ff;
+  --couple-glow: rgba(104, 169, 217, .23);
+  --couple-bubble-own: linear-gradient(135deg, #68a9d9, #9c96e8);
+}
+
+/* 50. THOUGHTFUL */
+html[data-couple-mode="thoughtful"],
+body[data-couple-mode="thoughtful"] {
+  --couple-accent: #9b91b9;
+  --couple-accent-rgb: 155, 145, 185;
+  --couple-bg: #f8f6fc;
+  --couple-glow: rgba(155, 145, 185, .2);
+  --couple-bubble-own: linear-gradient(135deg, #9b91b9, #b8a2d5);
+}
+
+/* 51. MOTIVATED */
+html[data-couple-mode="motivated"],
+body[data-couple-mode="motivated"] {
+  --couple-accent: #65ad83;
+  --couple-accent-rgb: 101, 173, 131;
+  --couple-bg: #f2fbf3;
+  --couple-glow: rgba(101, 173, 131, .24);
+  --couple-bubble-own: linear-gradient(135deg, #65bd88, #7fabe8);
+}
+
+/* 52. REGRETFUL */
+html[data-couple-mode="regretful"],
+body[data-couple-mode="regretful"] {
+  --couple-accent: #a49ab4;
+  --couple-accent-rgb: 164, 154, 180;
+  --couple-bg: #f8f6fa;
+  --couple-glow: rgba(164, 154, 180, .21);
+  --couple-bubble-own: linear-gradient(135deg, #aaa0bf, #c49fb8);
+}
+
+/* 53. FORGIVENESS */
+html[data-couple-mode="forgiveness"],
+body[data-couple-mode="forgiveness"] {
+  --couple-accent: #79b8a6;
+  --couple-accent-rgb: 121, 184, 166;
+  --couple-bg: #f2fbf7;
+  --couple-glow: rgba(121, 184, 166, .23);
+  --couple-bubble-own: linear-gradient(135deg, #86cbb4, #a4b7e8);
+}
+
+/* 54. ANNIVERSARY */
+html[data-couple-mode="anniversary"],
+body[data-couple-mode="anniversary"] {
+  --couple-accent: #c59b4d;
+  --couple-accent-rgb: 197, 155, 77;
+  --couple-bg: #fff9eb;
+  --couple-glow: rgba(197, 155, 77, .28);
+  --couple-bubble-own: linear-gradient(135deg, #e3bd65, #e69bb4);
+}
+
+/* 55. FOREVER LOVE */
+html[data-couple-mode="forever_love"],
+body[data-couple-mode="forever_love"] {
+  --couple-accent: #d95791;
+  --couple-accent-rgb: 217, 87, 145;
+  --couple-bg: #fff2f8;
+  --couple-glow: rgba(217, 87, 145, .32);
+  --couple-bubble-own: linear-gradient(135deg, #f06ca8, #a88bea);
+}
+
+/* ==================== MOOD-BASED MESSAGE EFFECTS ==================== */
+
+.couple-message-bubble {
+  transition:
+    background 400ms ease,
+    box-shadow 400ms ease,
+    border-color 400ms ease,
+    transform 220ms ease;
+}
+
+.couple-message-row.mood-romantic .couple-message-bubble,
+.couple-message-row.mood-deep_love .couple-message-bubble,
+.couple-message-row.mood-forever_love .couple-message-bubble {
+  box-shadow:
+    0 5px 18px var(--couple-glow),
+    0 0 0 1px rgba(var(--couple-accent-rgb), .08);
+}
+
+.couple-message-row.mood-happy .couple-message-bubble,
+.couple-message-row.mood-excited .couple-message-bubble,
+.couple-message-row.mood-celebration .couple-message-bubble {
+  animation: coupleHappyMessage .6s ease both;
+}
+
+.couple-message-row.mood-sad .couple-message-bubble,
+.couple-message-row.mood-lonely .couple-message-bubble,
+.couple-message-row.mood-missing_you .couple-message-bubble {
+  box-shadow: 0 4px 18px rgba(115, 153, 212, .16);
+}
+
+@keyframes coupleHappyMessage {
+  0% { transform: scale(.97); }
+  60% { transform: scale(1.015); }
+  100% { transform: scale(1); }
+}
+
+/* ==================== PARTICLE VARIANTS ==================== */
+
+.couple-mood-particle,
+.mood-particle {
+  position: absolute;
+  left: var(--particle-x, 50%);
+  bottom: -30px;
+  z-index: 0;
+  font-size: var(--particle-size, 18px);
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 5px var(--couple-glow));
+  animation: coupleMoodFloat var(--particle-duration, 7s) linear forwards;
+}
+
+[data-couple-mode="romantic"] .couple-mood-particle,
+[data-couple-mode="deep_love"] .couple-mood-particle,
+[data-couple-mode="forever_love"] .couple-mood-particle {
+  filter: drop-shadow(0 0 8px rgba(255, 105, 180, .5));
+}
+
+[data-couple-mode="celebration"] .couple-mood-particle,
+[data-couple-mode="birthday"] .couple-mood-particle,
+[data-couple-mode="anniversary"] .couple-mood-particle {
+  filter: drop-shadow(0 0 7px rgba(255, 193, 7, .45));
+}
+
+/* ==================== GENTLE BACKGROUND GLOW ==================== */
+
+#coupleConversation::before,
+.couple-conversation::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 20%,
+    rgba(var(--couple-accent-rgb), .08),
+    transparent 58%
+  );
+  animation: coupleMoodGlow 8s ease-in-out infinite alternate;
+}
+
+@keyframes coupleMoodGlow {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
+
+/* ==================== EFFECT INTENSITY ==================== */
+
+#coupleEffectsLayer,
+.couple-effects-layer {
+  contain: layout paint;
+}
+
+.couple-mood-particle,
+.mood-particle {
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #coupleConversation::before,
+  .couple-conversation::before,
+  .couple-message-row.mood-happy .couple-message-bubble,
+  .couple-message-row.mood-excited .couple-message-bubble,
+  .couple-message-row.mood-celebration .couple-message-bubble {
+    animation: none !important;
+  }
+
+  .couple-mood-particle,
+  .mood-particle {
+    display: none !important;
+  }
+}
