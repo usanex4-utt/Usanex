@@ -6,260 +6,26 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
     >
 
-    <meta name="theme-color" content="#080b16">
+    <meta name="theme-color" content="#080b14">
 
     <title>Home | UtaNexa</title>
 
-    <link rel="stylesheet" href="/static/css/home.css?v=26">
-
-    <style>
-        /* =========================================
-           UTANEXA HOME HEADER
-           Existing features preserved
-        ========================================= */
-
-        [hidden] {
-            display: none !important;
-        }
-
-        .top-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 9px;
-            position: relative;
-        }
-
-        .brand {
-            flex-shrink: 0;
-            white-space: nowrap;
-            font-size: 19px;
-            font-weight: 850;
-            letter-spacing: 1.4px;
-            line-height: 1;
-        }
-
-        .brand-blue {
-            color: #24d7ff;
-            text-shadow: 0 0 12px rgba(36, 215, 255, .35);
-        }
-
-        .brand-white {
-            color: #fff;
-        }
-
-        /* NEXA assistant button */
-
-        .header-nexa-button {
-            flex: 1;
-            min-width: 0;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-            padding: 0 10px;
-            border: 1px solid rgba(75, 179, 255, .48);
-            border-radius: 14px;
-            background:
-                radial-gradient(
-                    circle at 50% 0%,
-                    rgba(75, 83, 190, .22),
-                    transparent 75%
-                ),
-                linear-gradient(120deg, #10172b, #171020);
-            color: #fff;
-            cursor: pointer;
-            overflow: hidden;
-            position: relative;
-            -webkit-tap-highlight-color: transparent;
-            box-shadow: 0 0 15px rgba(52, 133, 255, .09);
-            transition: transform .2s ease, box-shadow .2s ease;
-        }
-
-        .header-nexa-button::after {
-            content: "";
-            position: absolute;
-            top: -50%;
-            bottom: -50%;
-            left: -70%;
-            width: 35%;
-            transform: rotate(22deg);
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255, 255, 255, .13),
-                transparent
-            );
-            animation: nexaLightSweep 4s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        .header-nexa-button:active {
-            transform: scale(.97);
-            box-shadow: 0 0 20px rgba(52, 180, 255, .25);
-        }
-
-        /* Rotating NEXA orb */
-
-        .header-nexa-orb {
-            width: 25px;
-            height: 25px;
-            flex: 0 0 25px;
-            position: relative;
-            display: block;
-            border-radius: 50%;
-            background: conic-gradient(
-                from 0deg,
-                #16e5ff,
-                #526bff,
-                #d44cff,
-                #ff4c9a,
-                #ff8a42,
-                #16e5ff
-            );
-            animation: nexaOrbSpin 2.8s linear infinite;
-            box-shadow:
-                0 0 8px rgba(37, 195, 255, .6),
-                0 0 20px rgba(133, 69, 255, .25);
-        }
-
-        .header-nexa-orb::before {
-            content: "";
-            position: absolute;
-            inset: 3px;
-            border-radius: inherit;
-            background: #111426;
-        }
-
-        .header-nexa-orb::after {
-            content: "";
-            position: absolute;
-            inset: -3px;
-            border: 1px solid rgba(103, 214, 255, .42);
-            border-radius: inherit;
-            animation: nexaOrbPulse 1.8s ease-in-out infinite;
-        }
-
-        .nexa-orb-core {
-            position: absolute;
-            z-index: 2;
-            width: 8px;
-            height: 8px;
-            left: 50%;
-            top: 50%;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            background: #a9fbff;
-            box-shadow:
-                0 0 6px #5eeeff,
-                0 0 13px #268bff;
-            animation: nexaCorePulse 1.2s ease-in-out infinite alternate;
-        }
-
-        .header-nexa-text {
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            color: #f7fbff;
-            font-size: 12px;
-            font-weight: 850;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(57, 188, 255, .55);
-        }
-
-        .header-plus {
-            flex-shrink: 0;
-        }
-
-        @keyframes nexaOrbSpin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes nexaOrbPulse {
-            0%, 100% {
-                transform: scale(.94);
-                opacity: .45;
-            }
-            50% {
-                transform: scale(1.12);
-                opacity: 1;
-            }
-        }
-
-        @keyframes nexaCorePulse {
-            from {
-                transform: translate(-50%, -50%) scale(.72);
-                opacity: .7;
-            }
-            to {
-                transform: translate(-50%, -50%) scale(1.18);
-                opacity: 1;
-            }
-        }
-
-        @keyframes nexaLightSweep {
-            0%, 70% {
-                left: -70%;
-            }
-            100% {
-                left: 140%;
-            }
-        }
-
-        /* Accessibility */
-
-        @media (prefers-reduced-motion: reduce) {
-            .header-nexa-orb,
-            .header-nexa-orb::after,
-            .nexa-orb-core,
-            .header-nexa-button::after {
-                animation: none !important;
-            }
-        }
-
-        @media (max-width: 380px) {
-            .top-header {
-                gap: 5px;
-            }
-
-            .brand {
-                font-size: 15px;
-                letter-spacing: .7px;
-            }
-
-            .header-nexa-button {
-                height: 39px;
-                gap: 6px;
-                padding: 0 6px;
-            }
-
-            .header-nexa-orb {
-                width: 22px;
-                height: 22px;
-                flex-basis: 22px;
-            }
-
-            .header-nexa-text {
-                font-size: 11px;
-                letter-spacing: 1.5px;
-            }
-        }
-    </style>
+    <link
+        rel="stylesheet"
+        href="/static/css/home.css?v=26"
+    >
 </head>
 
 <body>
-<div class="app-shell">
 
-    <!-- HEADER -->
+    <!-- ================= HEADER ================= -->
+
     <header class="top-header">
 
+        <!-- MENU -->
         <button
             type="button"
             class="menu-button"
@@ -271,224 +37,259 @@
             <span></span>
         </button>
 
-        <!-- UtaNexa brand -->
-        <div class="brand" aria-label="UtaNexa">
-            <span class="brand-blue">UTA</span><span class="brand-white">NEXA</span>
-        </div>
-
-        <!-- Animated NEXA assistant -->
-        <button
-            type="button"
-            class="header-nexa-button"
-            id="nexaAssistantButton"
-            aria-label="Open NEXA assistant"
+        <!-- CENTER BRAND -->
+        <a
+            href="/home"
+            class="brand brand-centered"
+            aria-label="UtaNexa Home"
         >
-            <span class="header-nexa-orb" aria-hidden="true">
-                <span class="nexa-orb-core"></span>
-            </span>
-            <span class="header-nexa-text">NEXA</span>
-        </button>
+            <span class="brand-uta">UTA</span><span class="brand-nexa">NEXA</span>
+        </a>
 
+        <!-- CREATE -->
         <button
             type="button"
             class="header-plus"
             id="headerPlus"
             aria-label="Create"
-        >+</button>
+        >
+            +
+        </button>
 
     </header>
 
-    <!-- MAIN CONTENT -->
-    <main class="main-area">
-        <div class="content-scroll">
 
-            <!-- NEX MOMENT -->
-            <section class="status-section">
-                <div class="section-header">
-                    <h2>Nex Moment</h2>
+    <!-- ================= MAIN ================= -->
 
-                    <button
-                        type="button"
-                        class="see-all"
-                        id="momentSeeAll"
-                    >See all</button>
-                </div>
+    <main class="home-main" id="homeMain">
 
-                <div class="moments">
+        <!-- NEX MOMENTS -->
+        <section
+            class="moment-section"
+            id="momentSection"
+        >
 
-                    <div class="moment-item">
-                        <div class="moment-avatar your-moment">
-                            <div class="moment-plus">+</div>
-                        </div>
-                        <span>You</span>
-                    </div>
+            <div class="section-heading">
 
-                    <div class="moment-item">
-                        <div class="moment-avatar">U</div>
-                        <span>Uttam</span>
-                    </div>
+                <h2>Nex Moments</h2>
 
-                    <div class="moment-item">
-                        <div class="moment-avatar">A</div>
-                        <span>Aman</span>
-                    </div>
+                <button
+                    type="button"
+                    class="see-all-button"
+                    id="momentSeeAll"
+                >
+                    See all
+                </button>
 
-                    <div class="moment-item">
-                        <div class="moment-avatar">R</div>
-                        <span>Rahul</span>
-                    </div>
+            </div>
 
-                    <div class="moment-item">
-                        <div class="moment-avatar">P</div>
-                        <span>Priya</span>
-                    </div>
-
-                    <div class="moment-item">
-                        <div class="moment-avatar">S</div>
-                        <span>Shiv</span>
-                    </div>
-
-                    <div class="moment-item">
-                        <div class="moment-avatar">K</div>
-                        <span>Karan</span>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- CONNECTED PEOPLE -->
-            <section
-                class="connected-people-section"
-                id="connectedPeopleSection"
-                hidden
+            <div
+                class="moment-list"
+                id="momentList"
             >
-                <div class="connected-section-header">
-                    <h2 id="connectedSectionTitle">All Connected</h2>
+                <!-- Moments are loaded by existing app code -->
+            </div>
 
-                    <span
-                        class="connected-count"
-                        id="connectedPeopleCount"
-                    >0</span>
-                </div>
+        </section>
 
-                <div
-                    class="connected-people-list"
-                    id="connectedPeopleList"
-                ></div>
-            </section>
 
-        </div>
-    </main>
+        <!-- CONNECTED PEOPLE -->
+        <section
+            class="connected-people-section"
+            id="connectedPeopleSection"
+            hidden
+        >
 
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="bottom-nav" aria-label="Main navigation">
+            <div class="section-heading">
 
-        <button type="button" class="nav-item active" id="homeNav">
-            <svg viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.8">
-                <path d="M3 10.5L12 3l9 7.5"></path>
-                <path d="M5.5 9.5V21h13V9.5"></path>
-            </svg>
-            <span>Home</span>
-        </button>
-
-        <button type="button" class="nav-item" id="reelNav">
-            <svg viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="16" rx="3"></rect>
-                <path d="M8 4l3 5"></path>
-                <path d="M14 4l3 5"></path>
-                <path d="M10 12l5 3-5 3v-6z"></path>
-            </svg>
-            <span>Reel</span>
-        </button>
-
-        <button type="button" class="nav-item" id="searchNav">
-            <svg viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.8">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20l-4-4"></path>
-            </svg>
-            <span>Search</span>
-        </button>
-
-        <button type="button" class="nav-item" id="notificationNav">
-            <span class="notification-icon-wrapper">
-                <svg viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="1.8">
-                    <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-                    <path d="M10 21h4"></path>
-                </svg>
+                <h2 id="connectedSectionTitle">
+                    All Connected
+                </h2>
 
                 <span
-                    class="notification-dot"
-                    id="notificationDot"
-                    hidden
-                ></span>
-            </span>
-            <span>Notification</span>
+                    class="connected-count"
+                    id="connectedPeopleCount"
+                >
+                    0
+                </span>
+
+            </div>
+
+            <div
+                class="connected-people-list"
+                id="connectedPeopleList"
+            >
+                <!-- Connections are rendered by home.js -->
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- ================= BOTTOM NAVIGATION ================= -->
+
+    <nav
+        class="bottom-nav"
+        aria-label="Main navigation"
+    >
+
+        <button
+            type="button"
+            class="nav-item active"
+            id="homeNav"
+            aria-label="Home"
+        >
+            <span class="nav-icon">⌂</span>
+            <span class="nav-label">Home</span>
         </button>
 
-        <button type="button" class="nav-item" id="profileNav">
-            <svg viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.8">
-                <circle cx="12" cy="8" r="4"></circle>
-                <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"></path>
-            </svg>
-            <span>Profile</span>
+        <button
+            type="button"
+            class="nav-item"
+            id="reelNav"
+            aria-label="Reels"
+        >
+            <span class="nav-icon">▷</span>
+            <span class="nav-label">Reel</span>
+        </button>
+
+        <button
+            type="button"
+            class="nav-item"
+            id="searchNav"
+            aria-label="Search"
+        >
+            <span class="nav-icon">⌕</span>
+            <span class="nav-label">Search</span>
+        </button>
+
+        <button
+            type="button"
+            class="nav-item"
+            id="notificationNav"
+            aria-label="Notifications"
+        >
+            <span class="nav-icon">♧</span>
+            <span class="nav-label">Alerts</span>
+        </button>
+
+        <button
+            type="button"
+            class="nav-item"
+            id="profileNav"
+            aria-label="My profile"
+        >
+            <span class="nav-icon">○</span>
+            <span class="nav-label">Profile</span>
         </button>
 
     </nav>
 
-    <!-- SIDE MENU -->
-    <div class="menu-overlay" id="menuOverlay" hidden>
-        <div class="menu-panel" role="dialog" aria-modal="true">
 
-            <div class="menu-header">
-                <div class="menu-brand">
-                    <span class="brand-blue">UTA</span><span class="brand-white">NEXA</span>
+    <!-- ================= SIDE MENU ================= -->
+
+    <div
+        class="menu-overlay"
+        id="menuOverlay"
+        hidden
+    >
+
+        <aside
+            class="side-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+        >
+
+            <div class="side-menu-header">
+
+                <div class="side-menu-brand">
+                    <span class="brand-uta">UTA</span><span class="brand-nexa">NEXA</span>
                 </div>
 
                 <button
                     type="button"
                     id="closeMenu"
-                    class="close-menu"
+                    class="close-menu-button"
                     aria-label="Close menu"
-                >×</button>
+                >
+                    ×
+                </button>
+
             </div>
 
-            <div class="menu-items">
-                <button type="button" id="menuAllConnected">All Connected</button>
-                <button type="button" id="menuFamily">Family</button>
-                <button type="button" id="menuFriends">Friends</button>
-                <button type="button" id="menuCoupleChat">Couple Chat</button>
-                <button type="button" id="menuSettings">Settings</button>
-                <button type="button" id="logoutButton">Logout</button>
+
+            <div class="side-menu-options">
+
+                <button
+                    type="button"
+                    class="menu-option"
+                    id="menuAllConnected"
+                >
+                    <span>♧</span>
+                    <span>All Connected</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-option"
+                    id="menuFamily"
+                >
+                    <span>♡</span>
+                    <span>Family</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-option"
+                    id="menuFriends"
+                >
+                    <span>♙</span>
+                    <span>Friends</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-option"
+                    id="menuCoupleChat"
+                >
+                    <span>♥</span>
+                    <span>Couple Chat</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-option"
+                    id="menuSettings"
+                >
+                    <span>⚙</span>
+                    <span>Settings</span>
+                </button>
+
             </div>
-        </div>
+
+
+            <button
+                type="button"
+                class="logout-button"
+                id="logoutButton"
+            >
+                Log out
+            </button>
+
+        </aside>
+
     </div>
 
-</div>
 
-<!-- EXISTING FEATURE SCRIPTS -->
-<script src="/static/js/home.js?v=25" defer></script>
-<script src="/static/js/create-sheet.js?v=1" defer></script>
+    <!-- ================= SCRIPTS ================= -->
 
-<!-- NEXA FLOATING VOICE BUTTON -->
-<script src="/static/js/nexa-global.js?v=3" defer></script>
+    <script src="/static/js/home.js?v=25" defer></script>
 
-<!-- NEXA HEADER BUTTON -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const nexaButton = document.getElementById("nexaAssistantButton");
+    <script src="/static/js/create-sheet.js?v=1" defer></script>
 
-    if (nexaButton) {
-        nexaButton.addEventListener("click", function () {
-            window.location.href = "/nexa";
-        });
-    }
-});
-</script>
+    <script src="/static/js/nexa-global.js?v=3" defer></script>
 
 </body>
 </html>
