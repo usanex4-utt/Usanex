@@ -1284,3 +1284,28 @@ img {
     content: none !important;
     display: none !important;
 }
+
+/* FINAL FIX — REMOVE HEADER UNDERLINE */
+header.top-header {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+    background-image: none !important;
+}
+
+header.top-header::before,
+header.top-header::after,
+header.top-header .brand::before,
+header.top-header .brand::after {
+    content: none !important;
+    display: none !important;
+}
+
+header.top-header a.brand,
+header.top-header a.brand:link,
+header.top-header a.brand:visited,
+header.top-header a.brand:hover,
+header.top-header a.brand:active {
+    text-decoration: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
