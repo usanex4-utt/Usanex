@@ -1268,3 +1268,19 @@ img {
         transition-duration: .01ms !important;
     }
 }
+/* Remove line under UTA NEXA header */
+.top-header {
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+.top-header .brand.brand-centered {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+.top-header .brand.brand-centered::after,
+.top-header .brand.brand-centered::before {
+    content: none !important;
+    display: none !important;
+}
