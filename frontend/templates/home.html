@@ -1,73 +1,227 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
-    <title>Home | Usanex</title>
+    <meta name="theme-color" content="#080b16">
 
-    <link rel="stylesheet" href="/static/css/home.css?v=25">
+    <title>Home | UtaNexa</title>
+
+    <link rel="stylesheet" href="/static/css/home.css?v=26">
 
     <style>
-        /* ===== HEADER ===== */
+        /* =========================================
+           UTANEXA HOME HEADER
+           Existing features preserved
+        ========================================= */
+
+        [hidden] {
+            display: none !important;
+        }
+
         .top-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 9px;
+            position: relative;
         }
 
         .brand {
             flex-shrink: 0;
             white-space: nowrap;
+            font-size: 19px;
+            font-weight: 850;
+            letter-spacing: 1.4px;
+            line-height: 1;
         }
+
+        .brand-blue {
+            color: #24d7ff;
+            text-shadow: 0 0 12px rgba(36, 215, 255, .35);
+        }
+
+        .brand-white {
+            color: #fff;
+        }
+
+        /* NEXA assistant button */
 
         .header-nexa-button {
             flex: 1;
             min-width: 0;
-            height: 40px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 7px;
-            padding: 0 9px;
-            border: 1px solid rgba(72, 135, 255, .35);
-            border-radius: 13px;
-            background: linear-gradient(110deg, #111d35, #10121e);
-            color: #dce9ff;
+            gap: 9px;
+            padding: 0 10px;
+            border: 1px solid rgba(75, 179, 255, .48);
+            border-radius: 14px;
+            background:
+                radial-gradient(
+                    circle at 50% 0%,
+                    rgba(75, 83, 190, .22),
+                    transparent 75%
+                ),
+                linear-gradient(120deg, #10172b, #171020);
+            color: #fff;
             cursor: pointer;
+            overflow: hidden;
+            position: relative;
             -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 0 15px rgba(52, 133, 255, .09);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .header-nexa-button::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            bottom: -50%;
+            left: -70%;
+            width: 35%;
+            transform: rotate(22deg);
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, .13),
+                transparent
+            );
+            animation: nexaLightSweep 4s ease-in-out infinite;
+            pointer-events: none;
         }
 
         .header-nexa-button:active {
             transform: scale(.97);
+            box-shadow: 0 0 20px rgba(52, 180, 255, .25);
         }
 
-        .header-nexa-dot {
+        /* Rotating NEXA orb */
+
+        .header-nexa-orb {
+            width: 25px;
+            height: 25px;
+            flex: 0 0 25px;
+            position: relative;
+            display: block;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                #16e5ff,
+                #526bff,
+                #d44cff,
+                #ff4c9a,
+                #ff8a42,
+                #16e5ff
+            );
+            animation: nexaOrbSpin 2.8s linear infinite;
+            box-shadow:
+                0 0 8px rgba(37, 195, 255, .6),
+                0 0 20px rgba(133, 69, 255, .25);
+        }
+
+        .header-nexa-orb::before {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            border-radius: inherit;
+            background: #111426;
+        }
+
+        .header-nexa-orb::after {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            border: 1px solid rgba(103, 214, 255, .42);
+            border-radius: inherit;
+            animation: nexaOrbPulse 1.8s ease-in-out infinite;
+        }
+
+        .nexa-orb-core {
+            position: absolute;
+            z-index: 2;
             width: 8px;
             height: 8px;
-            flex: 0 0 8px;
+            left: 50%;
+            top: 50%;
             border-radius: 50%;
-            background: #438cff;
+            transform: translate(-50%, -50%);
+            background: #a9fbff;
+            box-shadow:
+                0 0 6px #5eeeff,
+                0 0 13px #268bff;
+            animation: nexaCorePulse 1.2s ease-in-out infinite alternate;
         }
 
         .header-nexa-text {
+            min-width: 0;
             overflow: hidden;
-            white-space: nowrap;
             text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #f7fbff;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 850;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(57, 188, 255, .55);
         }
 
         .header-plus {
             flex-shrink: 0;
         }
 
-        /* ===== CONTENT SAFETY ===== */
-        [hidden] {
-            display: none !important;
+        @keyframes nexaOrbSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes nexaOrbPulse {
+            0%, 100% {
+                transform: scale(.94);
+                opacity: .45;
+            }
+            50% {
+                transform: scale(1.12);
+                opacity: 1;
+            }
+        }
+
+        @keyframes nexaCorePulse {
+            from {
+                transform: translate(-50%, -50%) scale(.72);
+                opacity: .7;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1.18);
+                opacity: 1;
+            }
+        }
+
+        @keyframes nexaLightSweep {
+            0%, 70% {
+                left: -70%;
+            }
+            100% {
+                left: 140%;
+            }
+        }
+
+        /* Accessibility */
+
+        @media (prefers-reduced-motion: reduce) {
+            .header-nexa-orb,
+            .header-nexa-orb::after,
+            .nexa-orb-core,
+            .header-nexa-button::after {
+                animation: none !important;
+            }
         }
 
         @media (max-width: 380px) {
@@ -75,13 +229,26 @@
                 gap: 5px;
             }
 
+            .brand {
+                font-size: 15px;
+                letter-spacing: .7px;
+            }
+
             .header-nexa-button {
-                gap: 5px;
-                padding: 0 5px;
+                height: 39px;
+                gap: 6px;
+                padding: 0 6px;
+            }
+
+            .header-nexa-orb {
+                width: 22px;
+                height: 22px;
+                flex-basis: 22px;
             }
 
             .header-nexa-text {
-                font-size: 10px;
+                font-size: 11px;
+                letter-spacing: 1.5px;
             }
         }
     </style>
@@ -104,18 +271,22 @@
             <span></span>
         </button>
 
-        <div class="brand">
-            <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
+        <!-- UtaNexa brand -->
+        <div class="brand" aria-label="UtaNexa">
+            <span class="brand-blue">UTA</span><span class="brand-white">NEXA</span>
         </div>
 
+        <!-- Animated NEXA assistant -->
         <button
             type="button"
             class="header-nexa-button"
             id="nexaAssistantButton"
-            aria-label="Open NEXA Personal Assistant"
+            aria-label="Open NEXA assistant"
         >
-            <span class="header-nexa-dot"></span>
-            <span class="header-nexa-text">Personal Assistant</span>
+            <span class="header-nexa-orb" aria-hidden="true">
+                <span class="nexa-orb-core"></span>
+            </span>
+            <span class="header-nexa-text">NEXA</span>
         </button>
 
         <button
@@ -144,6 +315,7 @@
                 </div>
 
                 <div class="moments">
+
                     <div class="moment-item">
                         <div class="moment-avatar your-moment">
                             <div class="moment-plus">+</div>
@@ -180,6 +352,7 @@
                         <div class="moment-avatar">K</div>
                         <span>Karan</span>
                     </div>
+
                 </div>
             </section>
 
@@ -273,7 +446,7 @@
 
             <div class="menu-header">
                 <div class="menu-brand">
-                    <span class="brand-blue">Usa</span><span class="brand-white">nex</span>
+                    <span class="brand-blue">UTA</span><span class="brand-white">NEXA</span>
                 </div>
 
                 <button
