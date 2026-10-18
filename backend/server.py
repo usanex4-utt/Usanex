@@ -352,6 +352,23 @@ except Exception as e:
 
 
 # =========================================================
+# NORMAL CHAT API ROUTES
+# =========================================================
+
+try:
+    from .routes.chat import router as chat_router
+
+    app.include_router(chat_router)
+
+    print("[UtaNexa] Normal Chat API routes loaded.")
+
+except Exception as e:
+    print("[UtaNexa] Chat router not loaded:", str(e))
+    
+
+
+
+# =========================================================
 # NEXA AI ASSISTANT ROUTES
 # =========================================================
 
