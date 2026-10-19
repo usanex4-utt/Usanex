@@ -324,22 +324,33 @@
     }
 
     function openImage(url) {
-        if (!url) {
-            toast("Profile photo available nahi hai.");
-            return;
-        }
-
-        const modal = $("imageViewer");
-        const image = $("viewerImage");
-
-        if (!modal || !image) return;
-
-        image.onerror = () => toast("Image load nahi ho paayi.");
-        image.src = url;
-        modal.hidden = false;
-        document.body.classList.add("viewer-open");
+    
+function openImage(url) {
+    if (!url) {
+        toast("Profile photo available nahi hai.");
+        return;
     }
 
+    const viewer = $("imageViewer");
+    const image = $("viewerImage");
+    const name = $("dpProfileName");
+
+    if (!viewer || !image) return;
+
+    if (name) {
+        name.textContent = displayName(partner || {});
+    }
+
+    image.onerror = function () {
+        toast("Profile photo load nahi ho paayi.");
+        this.onerror = null;
+    };
+
+    image.src = url;
+    viewer.hidden = false;
+    document.body.classList.add("viewer-open");
+}
+       
     function closeImage() {
         if ($("imageViewer")) $("imageViewer").hidden = true;
         if ($("viewerImage")) $("viewerImage").src = "";
