@@ -816,6 +816,34 @@ button:disabled {
 /* Image viewer khula ho to background scroll na ho */
 body.viewer-open {
     overflow: hidden;
+
+   /* FIX: Normal Chat DP visibility */
+#selectedAvatarButton {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+#selectedAvatar {
+    display: block !important;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#selectedAvatar[src=""],
+#selectedAvatar:not([src]) {
+    display: none !important;
+}
 }
 
 
