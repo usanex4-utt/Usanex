@@ -2541,3 +2541,186 @@
     }
 
 })();
+
+
+/* =====================================================
+   UTANEXA NORMAL CHAT — UI ENHANCEMENTS
+   Add at the END of the existing chat.js file.
+   Does not replace existing chat functions.
+   ===================================================== */
+(function () {
+    "use strict";
+
+    function initChatEnhancements() {
+        const avatarButton = document.getElementById("selectedAvatarButton");
+        const avatar = document.getElementById("selectedAvatar");
+        const name = document.getElementById("selectedName");
+
+        if (!avatarButton || !avatar || !name) return;
+
+        /* ---------- Toast message ---------- */
+        function showEnhancementToast(message) {
+            let toast = document.getElementById("chatEnhancementToast");
+
+            if (!toast) {
+                toast = document.createElement("div");
+                toast.id = "chatEnhancementToast";
+                toast.className = "chat-enhancement-toast";
+                toast.setAttribute("role", "status");
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            toast.classList.add("show");
+
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(function () {
+                toast.classList.remove("show");
+            }, 2200);
+        }
+
+        /* ---------- Enlarge profile photo ---------- */
+        function openProfilePhoto() {
+            const imageUrl = avatar.currentSrc || avatar.src;
+
+            if (!imageUrl || imageUrl === window.location.href) {
+                showEnhancementToast("Profile photo available nahi hai.");
+                return;
+            }
+
+            let overlay = document.getElementById("chatProfilePhotoOverlay");
+
+            if (!overlay) {
+                overlay = document.createElement("div");
+                overlay.id = "chatProfilePhotoOverlay";
+
+                Object.assign(overlay.style, {
+                    position: "fixed",
+                    inset: "0",
+                    zIndex: "11000",
+                    display: "none",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "24px",
+                    background: "rgba(0,0,0,0.92)",
+                    backdropFilter: "blur(12px)"
+                });
+
+                const close = document.createElement("button");
+                close.type = "button";
+                close.textContent = "×";
+                close.setAttribute("aria-label", "Close photo");
+
+                Object.assign(close.style, {
+                    position: "absolute",
+                    top: "max(18px, env(safe-area-inset-top))",
+                    right: "20px",
+                    width: "44px",
+                    height: "44px",
+                    border: "0",
+                    borderRadius: "50%",
+                    background: "#202b40",
+                    color: "#fff",
+                    fontSize: "30px",
+                    cursor: "pointer"
+                });
+
+                const largeImage = document.createElement("img");
+                largeImage.id = "chatProfilePhotoLarge";
+                largeImage.alt = "Profile photo";
+
+                Object.assign(largeImage.style, {
+                    display: "block",
+                    maxWidth: "100%",
+                    maxHeight: "80dvh",
+                    objectFit: "contain",
+                    borderRadius: "18px",
+                    boxShadow: "0 12px 45px rgba(0,0,0,0.5)"
+                });
+
+                close.addEventListener("click", closePhoto);
+                overlay.addEventListener("click", function (event) {
+                    if (event.target === overlay) closePhoto();
+                });
+
+                overlay.append(close, largeImage);
+                document.body.appendChild(overlay);
+            }
+
+            const largeImage = document.getElementById("chatProfilePhotoLarge");
+            largeImage.src = imageUrl;
+            overlay.style.display = "flex";
+            document.body.style.overflow = "hidden";
+
+            function handleEscape(event) {
+                if (event.key === "Escape") closePhoto();
+            }
+
+            function closePhoto() {
+                overlay.style.display = "none";
+                document.body.style.overflow = "";
+                document.removeEventListener("keydown", handleEscape);
+            }
+
+            overlay._closePhoto = closePhoto;
+            document.addEventListener("keydown", handleEscape);
+        }
+
+        /* Capture the avatar tap before the old profile-click handler. */
+        document.addEventListener("click", function (event) {
+            const clickedAvatar = event.target.closest("#selectedAvatarButton");
+
+            if (!clickedAvatar) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            openProfilePhoto();
+        }, true);
+
+        /* ---------- Name opens partner profile ---------- */
+        name.setAttribute("role", "link");
+        name.setAttribute("tabindex", "0");
+        name.setAttribute("aria-label", "Open profile");
+
+        function openPartnerProfilePage() {
+            const params = new URLSearchParams(window.location.search);
+            const partnerId =
+                params.get("user_id") ||
+                params.get("partner_id") ||
+                params.get("receiver_id");
+
+            if (!partnerId) {
+                showEnhancementToast("Profile kholne ke liye partner ID nahi mili.");
+                return;
+            }
+
+            window.location.href =
+                "/profile?user_id=" + encodeURIComponent(partnerId);
+        }
+
+        name.addEventListener("click", openPartnerProfilePage);
+
+        name.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openPartnerProfilePage();
+            }
+        });
+
+        /* ---------- Better mobile tap feedback ---------- */
+        [avatarButton, name].forEach(function (element) {
+            element.style.webkitTapHighlightColor = "transparent";
+        });
+
+        console.info("[UtaNexa] Chat UI enhancements loaded.");
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initChatEnhancements, {
+            once: true
+        });
+    } else {
+        initChatEnhancements();
+    }
+})();
+
