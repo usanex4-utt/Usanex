@@ -2,276 +2,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
-    >
-
-    <meta name="theme-color" content="#080d19">
-    <title>Chat | UtaNexa</title>
-
-    <link rel="stylesheet" href="/static/css/chat.css?v=9">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d18">
+  <title>Chat | UtaNexa</title>
+  <link rel="stylesheet" href="/static/css/chat.css?v=10">
 </head>
-
 <body>
 <div class="chat-app">
 
-    <!-- Chat header -->
-    <header class="chat-header">
-        <button
-            id="backButton"
-            class="icon-btn"
-            type="button"
-            aria-label="Go back"
-        >‹</button>
+  <header class="chat-header">
+    <button class="icon-btn" id="backButton" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
 
-        <button
-            id="selectedAvatarButton"
-            class="avatar-button"
-            type="button"
-            aria-label="View profile photo"
-        >
-            <img
-                id="selectedAvatar"
-                src="/static/images/default-avatar.png"
-                alt="Profile photo"
-            >
-            <span id="onlineDot" class="online-dot"></span>
-        </button>
+    <button class="profile-head" id="selectedAvatarButton" aria-label="View profile photo">
+      <span class="avatar-wrap">
+        <img id="selectedAvatar" alt="Profile photo" hidden>
+        <span id="avatarFallback" class="avatar-fallback">U</span>
+        <i id="onlineDot" class="online-dot"></i>
+      </span>
+      <span class="profile-head-text">
+        <strong id="selectedName">Chat</strong>
+        <small id="selectedStatus">Connecting…</small>
+      </span>
+    </button>
 
-        <button
-            id="profileNameButton"
-            class="profile-heading"
-            type="button"
-            aria-label="View user profile"
-        >
-            <span id="selectedName">UtaNexa User</span>
-            <small id="selectedStatus">Connecting…</small>
-        </button>
+    <div class="header-actions">
+      <button class="icon-btn" id="coupleButton" aria-label="Couple page" title="Couple">
+        <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/><path d="M7 12h3l1.5-2.5L14 15l1.5-3H18"/></svg>
+      </button>
+      <button class="icon-btn" id="callButton" aria-label="Call options" title="Call">
+        <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.2-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.8 2.1Z"/></svg>
+      </button>
+      <button class="icon-btn" id="chatMenuButton" aria-label="More options" title="More">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+      </button>
+    </div>
+  </header>
 
-        <div class="header-actions">
-            <button
-                id="voiceCallButton"
-                class="icon-btn"
-                type="button"
-                aria-label="Call options"
-            >☎</button>
+  <section id="searchBar" class="search-bar" hidden>
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+    <input id="messageSearch" type="search" placeholder="Search messages…">
+    <button class="icon-btn small" id="clearSearch" aria-label="Close search">×</button>
+  </section>
 
-            <button
-                id="conversationMenu"
-                class="icon-btn"
-                type="button"
-                aria-label="Chat options"
-            >⋮</button>
-        </div>
+  <main id="messagesArea" class="messages-area">
+    <div id="connectionBanner" class="connection-banner" hidden>
+      <span id="connectionMessage">Unable to load messages.</span>
+      <button id="retryButton">Retry</button>
+    </div>
+
+    <section id="welcomeCard" class="welcome-card">
+      <div class="welcome-logo">U<span>N</span></div>
+      <strong id="welcomeName">Your conversation</strong>
+      <p>Your private conversation starts here.</p>
+    </section>
+
+    <div id="messagesList" class="messages-list" aria-live="polite"></div>
+    <div id="messagesEnd"></div>
+  </main>
+
+  <div id="uploadPreview" class="upload-preview" hidden>
+    <div class="file-preview-icon" id="previewIcon">📎</div>
+    <div class="file-preview-info">
+      <strong id="previewName">Attachment</strong>
+      <small id="previewSize"></small>
+    </div>
+    <button id="removeAttachment" class="icon-btn small" aria-label="Remove attachment">×</button>
+  </div>
+
+  <div id="replyPreview" class="reply-preview" hidden>
+    <div class="reply-preview-line"></div>
+    <div class="reply-preview-content">
+      <strong id="replyPreviewName">Replying to</strong>
+      <span id="replyPreviewText"></span>
+    </div>
+    <button id="cancelReply" class="icon-btn small" aria-label="Cancel reply">×</button>
+  </div>
+
+  <div id="emojiPanel" class="emoji-panel" hidden>
+    <div class="emoji-panel-tabs">
+      <button class="emoji-tab active" data-emoji-tab="emoji">Emoji</button>
+      <button class="emoji-tab" data-emoji-tab="gif">GIF</button>
+      <button class="icon-btn small" id="closeEmojiPanel" aria-label="Close">×</button>
+    </div>
+    <input id="emojiSearch" type="search" placeholder="Search emoji">
+    <div id="emojiGrid" class="emoji-grid"></div>
+    <div id="gifPanel" class="gif-panel" hidden>
+      <p>GIF search service can be connected here.</p>
+      <input id="gifSearch" type="search" placeholder="Search GIFs">
+      <button id="gifSearchButton" class="secondary-btn">Search GIFs</button>
+      <div id="gifResults" class="gif-results"></div>
+    </div>
+  </div>
+
+  <footer class="composer-wrap">
+    <div class="composer">
+      <button class="icon-btn composer-icon" id="emojiButton" aria-label="Emoji and GIF">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 3 4 3 4-3 4-3M9 9h.01M15 9h.01"/></svg>
+      </button>
+
+      <textarea id="messageInput" rows="1" maxlength="10000" placeholder="Message…" aria-label="Message"></textarea>
+
+      <input id="fileInput" type="file" hidden
+        accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm,audio/*,.pdf,.txt,.csv,.docx,.xlsx,.pptx">
+
+      <button class="icon-btn composer-icon" id="cameraButton" aria-label="Camera" title="Camera">
+        <svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="4"/></svg>
+      </button>
+
+      <button class="icon-btn composer-icon" id="attachButton" aria-label="Attach file" title="Attach">
+        <svg viewBox="0 0 24 24"><path d="m21.4 11.1-9.9 9.9a6 6 0 0 1-8.5-8.5l10.6-10.6a4 4 0 0 1 5.7 5.7L8.7 18.2a2 2 0 0 1-2.8-2.8l9.2-9.2"/></svg>
+      </button>
+
+      <button class="icon-btn composer-icon" id="micButton" aria-label="Voice message" title="Voice message">
+        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4m-4 0h8"/></svg>
+      </button>
+
+      <button id="sendButton" class="send-button" aria-label="Send message" title="Send">
+        <svg id="sendButtonIcon" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+      </button>
+    </div>
+    <div class="composer-caption">Private chat · <span>UtaNexa</span></div>
+  </footer>
+
+  <div id="attachMenu" class="floating-menu attach-menu" hidden>
+    <button data-attach="image"><span>▧</span> Photos & videos</button>
+    <button data-attach="document"><span>▤</span> Document</button>
+    <button data-attach="audio"><span>♫</span> Audio file</button>
+  </div>
+
+  <div id="chatMenu" class="floating-menu chat-menu" hidden>
+    <button data-menu="chat"><span>♧</span><span><strong>Chat</strong><small>Connected, Friend, Family</small></span></button>
+    <button data-menu="privacy"><span>◇</span><span><strong>Privacy</strong><small>Online, last seen, typing</small></span></button>
+    <button data-menu="mute"><span>♩</span><span><strong>Mute notifications</strong></span></button>
+    <button data-menu="search"><span>⌕</span><span><strong>Search</strong></span></button>
+    <button data-menu="media"><span>▧</span><span><strong>Media, links & documents</strong></span></button>
+    <button data-menu="more"><span>•••</span><span><strong>More</strong></span></button>
+  </div>
+
+  <div id="actionSheet" class="modal-backdrop" hidden>
+    <section class="action-sheet" role="dialog" aria-modal="true" aria-labelledby="actionSheetTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <strong id="actionSheetTitle">Options</strong>
+        <button id="closeActionSheet" class="icon-btn small" aria-label="Close">×</button>
+      </div>
+      <div id="actionSheetContent" class="sheet-content"></div>
+    </section>
+  </div>
+
+  <div id="messageActions" class="message-actions" hidden>
+    <div id="reactionBar" class="reaction-bar">
+      <button data-reaction="❤️">❤️</button><button data-reaction="😂">😂</button>
+      <button data-reaction="😍">😍</button><button data-reaction="😮">😮</button>
+      <button data-reaction="😢">😢</button><button data-reaction="➕">＋</button>
+    </div>
+    <div class="message-action-grid">
+      <button data-message-action="reply"><span>↩</span>Reply</button>
+      <button data-message-action="copy"><span>▢</span>Copy</button>
+      <button data-message-action="pin"><span>⌁</span>Pin</button>
+      <button data-message-action="info"><span>ⓘ</span>Info</button>
+      <button data-message-action="share"><span>↗</span>Share</button>
+      <button data-message-action="delete"><span>⌫</span>Delete</button>
+    </div>
+  </div>
+
+  <div id="dpViewer" class="dp-viewer" hidden>
+    <header class="dp-viewer-header">
+      <div class="dp-viewer-title">
+        <strong id="dpProfileName">Profile</strong>
+        <small>Profile photo</small>
+      </div>
+      <button id="closeImageViewer" class="icon-btn" aria-label="Close photo">×</button>
     </header>
-
-    <!-- Search messages -->
-    <section id="chatSearchSection" class="search-bar" hidden>
-        <input
-            id="chatSearch"
-            type="search"
-            placeholder="Search messages…"
-            autocomplete="off"
-        >
-        <button
-            id="closeChatSearch"
-            type="button"
-            aria-label="Close search"
-        >×</button>
-    </section>
-
-    <!-- Messages -->
-    <main
-        id="messages"
-        class="messages-area"
-        aria-live="polite"
-    >
-        <div id="emptyConversation" class="empty-chat">
-            <div class="empty-chat-icon">✦</div>
-            <h2>Start a conversation</h2>
-            <p>Send a message and start chatting on UtaNexa.</p>
-        </div>
-
-        <div id="conversation"></div>
-
-        <div id="typingIndicator" class="typing-indicator" hidden>
-            <span></span>
-            <span></span>
-            <span></span>
-            <small>Typing…</small>
-        </div>
-    </main>
-
-    <!-- Voice recording controls -->
-    <div id="recordingStatus" class="recording-status" hidden>
-        <span class="recording-dot"></span>
-        <span>Recording voice</span>
-        <span id="recordingTime">00:00</span>
-
-        <button id="cancelRecordingButton" type="button">
-            Cancel
-        </button>
-
-        <button id="sendRecordingButton" type="button">
-            Send
-        </button>
+    <div class="dp-viewer-stage">
+      <img id="viewerImage" alt="Profile photo">
+      <div id="viewerAvatar" class="viewer-avatar-fallback" hidden>U</div>
     </div>
-
-    <!-- Audio preview -->
-    <div id="audioPreview" class="audio-preview" hidden></div>
-
-    <!-- Message composer -->
-    <form id="composer" class="chat-composer">
-        <button
-            id="emojiButton"
-            class="composer-icon"
-            type="button"
-            aria-label="Emoji"
-        >☺</button>
-
-        <textarea
-            id="messageInput"
-            rows="1"
-            placeholder="Message…"
-            aria-label="Write a message"
-        ></textarea>
-
-        <button
-            id="attachButton"
-            class="composer-icon"
-            type="button"
-            aria-label="Attach file"
-        >＋</button>
-
-        <button
-            id="cameraButton"
-            class="composer-icon"
-            type="button"
-            aria-label="Take photo"
-        >▣</button>
-
-        <button
-            id="micButton"
-            class="composer-icon"
-            type="button"
-            aria-label="Record voice"
-        >🎙</button>
-
-        <button
-            id="sendButton"
-            class="send-button"
-            type="submit"
-            aria-label="Send message"
-        >➤</button>
-    </form>
-
-    <!-- File attachments -->
-    <input
-        id="fileInput"
-        type="file"
-        hidden
-        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
-    >
-
-    <!-- Camera -->
-    <input
-        id="cameraInput"
-        type="file"
-        hidden
-        accept="image/*"
-        capture="environment"
-    >
-
-</div>
-
-<!-- Call options modal -->
-<div id="callOptionsModal" class="modal" hidden>
-    <section class="options-modal">
-        <button
-            id="closeCallOptions"
-            class="modal-close"
-            type="button"
-            aria-label="Close"
-        >×</button>
-
-        <h2>Call options</h2>
-
-        <button id="startVoiceCall" type="button">
-            ☎ Voice call
-        </button>
-
-        <button id="startVideoCall" type="button">
-            ▣ Video call
-        </button>
-
-        <p class="modal-note">
-            Calls require working call-signaling and media support.
-        </p>
-    </section>
-</div>
-
-<!-- Conversation menu -->
-<div id="conversationMenuModal" class="modal" hidden>
-    <section class="options-modal">
-        <button
-            id="closeConversationMenu"
-            class="modal-close"
-            type="button"
-            aria-label="Close"
-        >×</button>
-
-        <h2>Chat options</h2>
-
-        <button id="menuSearchMessages" type="button">
-            ⌕ Search messages
-        </button>
-
-        <button id="menuViewMedia" type="button">
-            ▧ View media
-        </button>
-
-        <button id="menuClearChat" type="button">
-            ⌫ Clear chat
-        </button>
-
-        <button id="menuViewProfile" type="button">
-            ♙ View profile
-        </button>
-    </section>
-</div>
-
-<!-- Circular profile photo viewer -->
-<div id="imageViewer" class="image-viewer" hidden>
-    <div class="dp-profile-view">
-        <div id="dpProfileName" class="dp-profile-name">
-            UtaNexa User
-        </div>
-
-        <img
-            id="viewerImage"
-            src=""
-            alt="Profile photo"
-        >
+    <div class="dp-viewer-controls">
+      <button id="zoomOut" class="icon-btn" aria-label="Zoom out">−</button>
+      <span id="zoomLevel">100%</span>
+      <button id="zoomIn" class="icon-btn" aria-label="Zoom in">＋</button>
+      <button id="zoomReset" class="icon-btn" aria-label="Reset zoom">⤢</button>
     </div>
+  </div>
 
-    <button
-        id="closeImageViewer"
-        type="button"
-        aria-label="Close photo"
-    >×</button>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 </div>
 
-<!-- Toast notifications -->
-<div
-    id="chatToast"
-    class="chat-toast"
-    role="status"
-    aria-live="polite"
-></div>
-
-<script src="/static/js/chat.js?v=9"></script>
-
+<script src="/static/js/chat.js?v=10" defer></script>
 </body>
 </html>
