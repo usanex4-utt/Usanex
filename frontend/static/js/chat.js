@@ -325,6 +325,7 @@
 
     function openImage(url) {
     
+
 function openImage(url) {
     if (!url) {
         toast("Profile photo available nahi hai.");
@@ -337,8 +338,17 @@ function openImage(url) {
 
     if (!viewer || !image) return;
 
+    // Jis user ki DP khuli hai, usi ka naam dikhao
+    const userName =
+        partner?.name ||
+        partner?.full_name ||
+        partner?.username ||
+        partner?.user_name ||
+        $("selectedName")?.textContent?.trim() ||
+        "UtaNexa User";
+
     if (name) {
-        name.textContent = displayName(partner || {});
+        name.textContent = userName;
     }
 
     image.onerror = function () {
@@ -350,6 +360,15 @@ function openImage(url) {
     viewer.hidden = false;
     document.body.classList.add("viewer-open");
 }
+       
+const zoomImage = document.getElementById("viewerImage");
+
+if (zoomImage) {
+    zoomImage.addEventListener("click", function () {
+        this.classList.toggle("zoomed");
+    });
+}
+       
        
     function closeImage() {
         if ($("imageViewer")) $("imageViewer").hidden = true;
