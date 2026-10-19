@@ -1,293 +1,202 @@
 
 /* =========================================================
    UTANEXA — NORMAL CHAT
-   Header DP + Profile + Messages + Attachments
-   Existing backend API integration
+   Messaging + Profile DP + Circular Zoom + Search + Media
+   Couple Chat files are not modified.
    ========================================================= */
 
-(function () {
+(() => {
     "use strict";
 
     const $ = (id) => document.getElementById(id);
-    const API = "/api";
-    const POLL_INTERVAL = 4000;
 
-    let currentUser = null;
-    let partner = null;
-    let partnerId = "";
-    let messages = [];
-    let isLoading = false;
-    let isSending = false;
-    let pollTimer = null;
-    let toastTimer = null;
-    let searchTerm = "";
-    let mediaOnly = false;
-    let recorder = null;
-    let recordingStream = null;
-    let recordedChunks = [];
-    let recordedBlob = null;
-    let recordingTimer = null;
-    let recordingStartedAt = 0;
+    const state = {
+        currentUser: null,
+        partner: null,
+        messages: [],
+        loading: false,
+        sending: false,
+        zoomed: false,
+        searchQuery: "",
+        refreshTimer: null,
+        lastMessageCount: 0
+    };
 
-    const DEFAULT_AVATAR = "/static/images/default-avatar.png";
+    const API = {
+        me: "/api/auth/me",
+        profile: (id) => `/api/profile/${encodeURIComponent(id)}`,
+        chat: (id) => `/api/chat/${encodeURIComponent(id)}`,
+        send: "/api/chat/send",
+        read: (id) => `/api/chat/${encodeURIComponent(id)}/read`,
+        deleteMessage: (id) =>
+            `/api/chat/message/${encodeURIComponent(id)}/delete`
+    };
 
-    const EMOJIS = [
-        "😀","😂","🥰","😍","😘","😊","😭","🥹","😎",
-        "❤️","🩷","💖","💕","💞","💘","🔥","✨","🌹",
-        "👍","🙏","🤝","🫶","🎉","🌙","☀️","😔","🤗"
-    ];
+    function getToken() {
+        return (
+            localStorage.getItem("access_token") ||
+            localStorage.getItem("token") ||
+            sessionStorage.getItem("access_token") ||
+            sessionStorage.getItem("token") ||
+            ""
+        );
+    }
+
+    function headers(json = false) {
+        const h = {};
+        if (json) h["Content-Type"] = "application/json";
+
+        const token = getToken();
+        if (token) h.Authorization = `Bearer ${token}`;
+
+        return h;
+    }
 
     async function api(url, options = {}) {
         const response = await fetch(url, {
-            credentials: "same-origin",
+            credentials: "include",
             ...options,
-            headers: { ...(options.headers || {}) }
+            headers: {
+                ...headers(
+                    options.body &&
+                    typeof options.body === "string"
+                ),
+                ...(options.headers || {})
+            }
         });
 
-        const contentType = response.headers.get("content-type") || "";
-        let data = {};
-
-        if (contentType.includes("application/json")) {
-            data = await response.json();
-        } else {
-            data.message = await response.text();
+        if (response.status === 401) {
+            toast("Session expire ho gaya. Dobara login karein.");
+            throw new Error("Authentication required");
         }
 
         if (!response.ok) {
-            throw new Error(
-                data.detail || data.message || `Request failed (${response.status})`
-            );
+            const message = await response.text().catch(() => "");
+            throw new Error(message || `Request failed: ${response.status}`);
         }
 
-        return data;
+        if (response.status === 204) return null;
+
+        const type = response.headers.get("content-type") || "";
+        if (type.includes("application/json")) {
+            return response.json();
+        }
+
+        return response.text();
     }
 
     function toast(message) {
-        const element = $("chatToast");
-        if (!element) {
-            console.log("[UtaNexa]", message);
+        const el = $("chatToast");
+        if (!el) {
+            console.log(message);
             return;
         }
 
-        element.textContent = message;
-        element.classList.add("show");
-        clearTimeout(toastTimer);
+        el.textContent = message;
+        el.classList.add("show");
 
-        toastTimer = setTimeout(() => {
-            element.classList.remove("show");
-        }, 2800);
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+            el.classList.remove("show");
+        }, 2600);
     }
 
-    function partnerIdFromURL() {
-        const params = new URLSearchParams(location.search);
+    function getUserId(user) {
+        if (!user) return "";
 
-        return (
-            params.get("user_id") ||
-            params.get("partner_id") ||
-            params.get("receiver_id") ||
-            params.get("id") ||
-            ""
-        ).trim();
-    }
-
-    function userId(user) {
         return String(
-            user?.user_id ??
-            user?.id ??
-            user?.uid ??
+            user.user_id ??
+            user.id ??
+            user.uid ??
+            user.receiver_id ??
+            user.partner_id ??
             ""
         );
     }
 
     function displayName(user) {
-        return (
-            user?.name ||
-            user?.full_name ||
-            user?.username ||
-            user?.user_id ||
+        if (!user) return "UtaNexa User";
+
+        return String(
+            user.full_name ||
+            user.name ||
+            user.display_name ||
+            user.username ||
+            user.user_name ||
+            user.first_name ||
             "UtaNexa User"
+        ).trim();
+    }
+
+    function getPartnerId() {
+        const params = new URLSearchParams(location.search);
+
+        return (
+            params.get("user_id") ||
+            params.get("partner_id") ||
+            params.get("id") ||
+            getUserId(state.partner)
         );
     }
 
-    // Supports common profile field names and nested profile responses.
-    function getAvatar(user) {
-        const objects = [
-            user,
-            user?.user,
-            user?.profile,
-            user?.data,
-            user?.data?.user,
-            user?.data?.profile
-        ].filter(Boolean);
+    function normalizeImageUrl(value) {
+        if (!value || typeof value !== "string") return "";
 
-        const keys = [
-            "profile_picture",
-            "profile_picture_url",
-            "profile_pic",
-            "profile_pic_url",
-            "profile_image",
-            "profile_image_url",
-            "profile_photo",
-            "profile_photo_url",
-            "avatar_url",
-            "photo_url",
-            "image_url",
-            "avatar",
-            "photo",
-            "image",
-            "dp"
+        const url = value.trim();
+        if (!url) return "";
+
+        if (
+            url.startsWith("data:image/") ||
+            url.startsWith("blob:")
+        ) {
+            return url;
+        }
+
+        if (/^https?:\/\//i.test(url)) return url;
+        if (url.startsWith("//")) return `${location.protocol}${url}`;
+
+        return url.startsWith("/") ? url : `/${url}`;
+    }
+
+    function getAvatar(user) {
+        if (!user) return "";
+
+        const candidates = [
+            user.profile_photo_url,
+            user.profile_image_url,
+            user.avatar_url,
+            user.photo_url,
+            user.profile_picture,
+            user.profile_pic,
+            user.avatar,
+            user.photo,
+            user.image_url,
+            user.image,
+            user.profile_image,
+            user.dp,
+            user.picture
         ];
 
-        for (const object of objects) {
-            for (const key of keys) {
-                const value = object[key];
-
-                if (typeof value === "string" && value.trim()) {
-                    const url = value.trim();
-
-                    if (
-                        /^(https?:\/\/|data:image\/|blob:|\/)/i.test(url)
-                    ) {
-                        return url;
-                    }
-
-                    return "/" + url.replace(/^\.?\//, "");
-                }
+        for (const candidate of candidates) {
+            if (typeof candidate === "string" && candidate.trim()) {
+                return normalizeImageUrl(candidate);
             }
         }
 
         return "";
     }
 
-    function setHeaderPhoto(url, name) {
-        const image = $("selectedAvatar");
-        if (!image) return;
-
-        // Keep the real URL available for the enlarged photo view.
-        image.dataset.realPhoto = url || "";
-        image.alt = name || "Profile photo";
-
-        image.onerror = function () {
-            console.error("Header DP failed to load:", this.src);
-
-            this.onerror = null;
-            this.src = DEFAULT_AVATAR;
-            this.dataset.realPhoto = "";
-        };
-
-        image.src = url || DEFAULT_AVATAR;
+    function escapeHTML(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
     }
 
-    function setPartnerHeader(user) {
-        const name = displayName(user);
-        const photo = getAvatar(user);
-
-        if ($("selectedName")) {
-            $("selectedName").textContent = name;
-        }
-
-        setHeaderPhoto(photo, name);
-
-        if ($("selectedStatus")) {
-            $("selectedStatus").textContent = "Chat on UtaNexa";
-        }
-
-        if ($("onlineDot")) {
-            $("onlineDot").classList.remove("is-online");
-            $("onlineDot").title = "Online status unavailable";
-        }
-    }
-
-    async function loadCurrentUser() {
-        const data = await api(`${API}/auth/me`);
-        currentUser = data.user || data.current_user || data;
-    }
-
-    async function loadProfile() {
-        if (!partnerId) return;
-
-        try {
-            const data = await api(
-                `${API}/profile/${encodeURIComponent(partnerId)}`
-            );
-
-            // Prefer the object that actually contains a photo URL.
-            const candidates = [
-                data?.user,
-                data?.profile,
-                data?.data?.user,
-                data?.data?.profile,
-                data?.data,
-                data
-            ].filter(Boolean);
-
-            partner =
-                candidates.find((item) => getAvatar(item)) ||
-                candidates[0] ||
-                { user_id: partnerId };
-
-            setPartnerHeader(partner);
-        } catch (error) {
-            console.error("Profile API failed:", error);
-            setPartnerHeader({ user_id: partnerId });
-            toast("Partner profile load nahi hui.");
-        }
-    }
-
-    function messageId(message) {
-        return message?.id ?? message?.message_id ?? "";
-    }
-
-    function messageText(message) {
-        return String(message?.content ?? message?.message ?? message?.text ?? "");
-    }
-
-    function mediaURL(message) {
-        const value =
-            message?.media_url ||
-            message?.file_url ||
-            message?.attachment_url ||
-            message?.image_url ||
-            "";
-
-        if (typeof value === "string" && value.trim()) {
-            const url = value.trim();
-
-            if (/^(https?:\/\/|data:|blob:|\/)/i.test(url)) {
-                return url;
-            }
-
-            return "/" + url.replace(/^\.?\//, "");
-        }
-
-        const content = messageText(message).trim();
-        return /^data:image\//i.test(content) ? content : "";
-    }
-
-    function mediaType(message, url) {
-        const type = String(message?.media_type || "").toLowerCase();
-
-        if (type.includes("image") || /^data:image\//i.test(url) ||
-            /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(url)) {
-            return "image";
-        }
-
-        if (type.includes("video") || /\.(mp4|webm|mov)(\?|$)/i.test(url)) {
-            return "video";
-        }
-
-        if (type.includes("audio") || /\.(mp3|wav|ogg|m4a|webm)(\?|$)/i.test(url)) {
-            return "audio";
-        }
-
-        return url ? "file" : "";
-    }
-
-    function mine(message) {
-        return String(message?.sender_id) === userId(currentUser);
-    }
-
-    function timeLabel(value) {
+    function formatTime(value) {
         if (!value) return "";
 
         const date = new Date(value);
@@ -299,723 +208,740 @@
         });
     }
 
-    function dateLabel(value) {
+    function setStatus(text, online = false) {
+        const status = $("selectedStatus");
+        const dot = $("onlineDot");
+
+        if (status) status.textContent = text || "Offline";
+
+        if (dot) {
+            dot.classList.toggle("online", Boolean(online));
+            dot.hidden = !online;
+        }
+    }
+
+    function setHeaderPhoto(user) {
+        const img = $("selectedAvatar");
+        if (!img) return;
+
+        const url = getAvatar(user);
+        img.dataset.realPhoto = url;
+
+        img.onerror = () => {
+            img.onerror = null;
+            img.src = "/static/images/default-avatar.png";
+        };
+
+        img.src = url || "/static/images/default-avatar.png";
+        img.alt = `${displayName(user)} profile photo`;
+    }
+
+    function setHeader(user) {
+        state.partner = user || state.partner;
+
+        const name = $("selectedName");
+        if (name) name.textContent = displayName(state.partner);
+
+        setHeaderPhoto(state.partner);
+
+        const online =
+            state.partner?.is_online === true ||
+            state.partner?.online === true;
+
+        const statusText =
+            state.partner?.is_online === true ||
+            state.partner?.online === true
+                ? "Online"
+                : state.partner?.last_seen
+                    ? `Last seen ${formatLastSeen(state.partner.last_seen)}`
+                    : "UtaNexa";
+
+        setStatus(statusText, online);
+    }
+
+    function formatLastSeen(value) {
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return "";
+        if (Number.isNaN(date.getTime())) return "recently";
 
-        const today = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (date.toDateString() === today.toDateString()) return "Today";
-        if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-
-        return date.toLocaleDateString([], {
+        return date.toLocaleString([], {
             day: "numeric",
-            month: "short"
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
         });
     }
 
-    function el(tag, className, text) {
-        const node = document.createElement(tag);
-        if (className) node.className = className;
-        if (text !== undefined) node.textContent = text;
-        return node;
-    }
-
-    function openImage(url) {
-    
-
-function openImage(url) {
-    if (!url) {
-        toast("Profile photo available nahi hai.");
-        return;
-    }
-
-    const viewer = $("imageViewer");
-    const image = $("viewerImage");
-    const name = $("dpProfileName");
-
-    if (!viewer || !image) return;
-
-    // Jis user ki DP khuli hai, usi ka naam dikhao
-    const userName =
-        partner?.name ||
-        partner?.full_name ||
-        partner?.username ||
-        partner?.user_name ||
-        $("selectedName")?.textContent?.trim() ||
-        "UtaNexa User";
-
-    if (name) {
-        name.textContent = userName;
-    }
-
-    image.onerror = function () {
-        toast("Profile photo load nahi ho paayi.");
-        this.onerror = null;
-    };
-
-    image.src = url;
-    viewer.hidden = false;
-    document.body.classList.add("viewer-open");
-}
-       
-const zoomImage = document.getElementById("viewerImage");
-
-if (zoomImage) {
-    zoomImage.addEventListener("click", function () {
-        this.classList.toggle("zoomed");
-    });
-}
-       
-       
-    function closeImage() {
-        if ($("imageViewer")) $("imageViewer").hidden = true;
-        if ($("viewerImage")) $("viewerImage").src = "";
-        document.body.classList.remove("viewer-open");
-    }
-
-    function renderOneMessage(message) {
-        const outgoing = mine(message);
-        const row = el(
-            "article",
-            "message " + (outgoing ? "outgoing" : "incoming")
-        );
-
-        row.dataset.messageId = String(messageId(message));
-        const bubble = el("div", "message-bubble");
-
-        if (message.is_deleted) {
-            bubble.appendChild(
-                el("p", "deleted-message", "This message was deleted.")
-            );
-        } else {
-            const url = mediaURL(message);
-            const type = mediaType(message, url);
-
-            if (url && type === "image") {
-                const image = el("img", "message-image");
-                image.src = url;
-                image.alt = "Shared image";
-                image.loading = "lazy";
-                image.addEventListener("click", () => openImage(url));
-                image.onerror = () => {
-                    image.alt = "Image could not be loaded";
-                    console.error("Message image failed:", url);
-                };
-                bubble.appendChild(image);
-            } else if (url && type === "video") {
-                const video = el("video", "message-video");
-                video.src = url;
-                video.controls = true;
-                video.preload = "metadata";
-                bubble.appendChild(video);
-            } else if (url && type === "audio") {
-                const audio = el("audio", "message-audio");
-                audio.src = url;
-                audio.controls = true;
-                bubble.appendChild(audio);
-            } else if (url) {
-                const link = el("a", "message-file", "📎 Open attachment");
-                link.href = url;
-                link.target = "_blank";
-                link.rel = "noopener noreferrer";
-                bubble.appendChild(link);
-            }
-
-            const content = messageText(message);
-            if (content && !(url === content && /^data:image\//i.test(content))) {
-                bubble.appendChild(el("p", "message-text", content));
-            }
-        }
-
-        const meta = el("div", "message-meta");
-        meta.appendChild(el("time", "message-time", timeLabel(message.created_at)));
-
-        if (outgoing && !message.is_deleted) {
-            const read = Boolean(message.is_read || message.read || message.seen);
-            meta.appendChild(el("span", "message-receipt", read ? "✓✓" : "✓"));
-        }
-
-        bubble.appendChild(meta);
-        row.appendChild(bubble);
-
-        if (outgoing && messageId(message) && !message.is_deleted) {
-            row.addEventListener("contextmenu", (event) => {
-                event.preventDefault();
-                if (confirm("Delete this message?")) deleteMessage(messageId(message));
-            });
-        }
-
-        if (searchTerm) {
-            const searchable = (
-                messageText(message) + " " + urlForSearch(message)
-            ).toLowerCase();
-
-            row.hidden = !searchable.includes(searchTerm.toLowerCase());
-        }
-
-        if (mediaOnly && !mediaURL(message)) row.hidden = true;
-
-        return row;
-    }
-
-    function urlForSearch(message) {
+    function getMessageId(message) {
         return String(
-            message?.media_url ||
-            message?.file_url ||
-            message?.attachment_url ||
+            message?.id ??
+            message?.message_id ??
+            message?.chat_id ??
             ""
         );
     }
 
-    function renderMessages(scrollToBottom = false) {
-        const container = $("conversation");
-        if (!container) return;
+    function isMine(message) {
+        const sender = String(
+            message.sender_id ??
+            message.sender_user_id ??
+            message.from_user_id ??
+            message.user_id ??
+            ""
+        );
 
-        const area = $("messages");
-        const nearBottom = area
-            ? area.scrollHeight - area.scrollTop - area.clientHeight < 140
-            : true;
+        return sender !== "" && sender === getUserId(state.currentUser);
+    }
 
-        container.replaceChildren();
+    function messageText(message) {
+        return String(
+            message.content ??
+            message.message ??
+            message.text ??
+            ""
+        );
+    }
 
-        let lastDate = "";
+    function mediaUrl(message) {
+        return normalizeImageUrl(
+            message.media_url ||
+            message.file_url ||
+            message.attachment_url ||
+            message.image_url ||
+            ""
+        );
+    }
 
-        messages.forEach((message) => {
-            const currentDate = dateLabel(message.created_at);
+    function mediaType(message) {
+        const explicit = String(
+            message.media_type ||
+            message.file_type ||
+            message.attachment_type ||
+            ""
+        ).toLowerCase();
 
-            if (currentDate && currentDate !== lastDate) {
-                container.appendChild(
-                    el("div", "message-date-divider", currentDate)
-                );
-                lastDate = currentDate;
-            }
-
-            container.appendChild(renderOneMessage(message));
-        });
-
-        if ($("emptyConversation")) {
-            $("emptyConversation").hidden = messages.length > 0;
+        if (explicit.includes("image")) return "image";
+        if (explicit.includes("video")) return "video";
+        if (explicit.includes("audio") || explicit.includes("voice")) {
+            return "audio";
         }
 
-        if (area && (scrollToBottom || nearBottom)) {
+        const url = mediaUrl(message).split("?")[0].toLowerCase();
+
+        if (/\.(png|jpe?g|gif|webp|avif|bmp)$/i.test(url)) return "image";
+        if (/\.(mp4|webm|mov|m4v)$/i.test(url)) return "video";
+        if (/\.(mp3|wav|ogg|m4a|aac|webm)$/i.test(url)) return "audio";
+
+        return "";
+    }
+
+    function renderMedia(message) {
+        const url = mediaUrl(message);
+        if (!url) return "";
+
+        const type = mediaType(message);
+        const safeUrl = escapeHTML(url);
+
+        if (type === "image") {
+            return `
+                <img
+                    class="message-media message-image"
+                    src="${safeUrl}"
+                    alt="Shared image"
+                    loading="lazy"
+                    data-open-image="${safeUrl}"
+                >
+            `;
+        }
+
+        if (type === "video") {
+            return `
+                <video class="message-media" controls preload="metadata">
+                    <source src="${safeUrl}">
+                    Your browser does not support video.
+                </video>
+            `;
+        }
+
+        if (type === "audio") {
+            return `
+                <audio class="message-audio" controls preload="metadata">
+                    <source src="${safeUrl}">
+                </audio>
+            `;
+        }
+
+        return `
+            <a class="message-file" href="${safeUrl}" target="_blank"
+               rel="noopener noreferrer">Open attachment</a>
+        `;
+    }
+
+    function receiptText(message) {
+        if (!isMine(message)) return "";
+
+        if (message.seen || message.is_seen || message.read_at) {
+            return "✓✓ Seen";
+        }
+
+        if (message.delivered || message.is_delivered) {
+            return "✓✓ Delivered";
+        }
+
+        return "✓ Sent";
+    }
+
+    function renderMessage(message) {
+        const mine = isMine(message);
+        const content = messageText(message);
+        const time = formatTime(
+            message.created_at ||
+            message.timestamp ||
+            message.sent_at
+        );
+
+        const id = getMessageId(message);
+        const media = renderMedia(message);
+        const receipt = receiptText(message);
+
+        return `
+            <article
+                class="message ${mine ? "outgoing sent" : "incoming received"}"
+                data-message-id="${escapeHTML(id)}"
+                data-message-text="${escapeHTML(content.toLowerCase())}"
+            >
+                <div class="message-bubble">
+                    ${media}
+                    ${content ? `<div class="message-text">${escapeHTML(content)}</div>` : ""}
+                    <div class="message-meta">
+                        <time>${escapeHTML(time)}</time>
+                        ${receipt ? `<span class="message-receipt">${escapeHTML(receipt)}</span>` : ""}
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function scrollToBottom(force = false) {
+        const area = $("messages");
+        if (!area) return;
+
+        const distance =
+            area.scrollHeight - area.scrollTop - area.clientHeight;
+
+        if (force || distance < 180) {
             area.scrollTop = area.scrollHeight;
         }
     }
 
-    function signature(list) {
-        return JSON.stringify(list.map((item) => [
-            messageId(item),
-            item.content,
-            item.media_url,
-            item.is_read,
-            item.is_deleted
-        ]));
+    function renderMessages(messages, forceScroll = false) {
+        const conversation = $("conversation");
+        const empty = $("emptyConversation");
+
+        if (!conversation) return;
+
+        state.messages = Array.isArray(messages) ? messages : [];
+
+        conversation.innerHTML = state.messages
+            .map(renderMessage)
+            .join("");
+
+        if (empty) {
+            empty.hidden = state.messages.length > 0;
+        }
+
+        applySearch();
+
+        if (forceScroll) scrollToBottom(true);
+    }
+
+    function applySearch() {
+        const query = state.searchQuery.trim().toLowerCase();
+        const nodes = document.querySelectorAll("#conversation .message");
+
+        nodes.forEach((node) => {
+            const text = node.dataset.messageText || "";
+            node.hidden = Boolean(query && !text.includes(query));
+        });
+    }
+
+    async function loadCurrentUser() {
+        const data = await api(API.me);
+        state.currentUser =
+            data?.user ||
+            data?.current_user ||
+            data?.profile ||
+            data;
+
+        if (!state.currentUser || !getUserId(state.currentUser)) {
+            throw new Error("Current user details not found");
+        }
+
+        return state.currentUser;
+    }
+
+    async function loadProfile(partnerId) {
+        if (!partnerId) {
+            throw new Error("Chat user ID missing in URL");
+        }
+
+        const data = await api(API.profile(partnerId));
+        const user =
+            data?.user ||
+            data?.profile ||
+            data?.data ||
+            data;
+
+        if (!user || typeof user !== "object") {
+            throw new Error("User profile not found");
+        }
+
+        state.partner = {
+            ...user,
+            user_id: user.user_id ?? user.id ?? partnerId
+        };
+
+        setHeader(state.partner);
+        return state.partner;
+    }
+
+    async function markRead(partnerId) {
+        try {
+            await api(API.read(partnerId), {
+                method: "POST"
+            });
+        } catch (error) {
+            console.debug("Could not mark messages read:", error.message);
+        }
     }
 
     async function loadMessages({ initial = false } = {}) {
-        if (!partnerId || isLoading) return;
+        const partnerId = getPartnerId();
+        if (!partnerId || state.loading) return;
 
-        isLoading = true;
+        state.loading = true;
 
         try {
-            const data = await api(
-                `${API}/chat/${encodeURIComponent(partnerId)}`
-            );
-
-            const list = Array.isArray(data)
+            const data = await api(API.chat(partnerId));
+            const messages = Array.isArray(data)
                 ? data
-                : (data.messages || data.items || []);
+                : data?.messages ||
+                  data?.data?.messages ||
+                  [];
 
-            const oldSignature = signature(messages);
-            const newSignature = signature(list);
-
-            messages = list;
-
-            if (initial || oldSignature !== newSignature) {
-                renderMessages(initial);
+            if (data?.user && typeof data.user === "object") {
+                state.partner = {
+                    ...state.partner,
+                    ...data.user
+                };
+                setHeader(state.partner);
             }
 
-            if (initial) await markRead();
+            const oldCount = state.messages.length;
+            const oldLastId = oldCount
+                ? getMessageId(state.messages[oldCount - 1])
+                : "";
+
+            const newLastId = messages.length
+                ? getMessageId(messages[messages.length - 1])
+                : "";
+
+            const changed =
+                oldCount !== messages.length ||
+                oldLastId !== newLastId;
+
+            if (changed || initial) {
+                renderMessages(messages, initial || changed);
+            } else {
+                state.messages = messages;
+            }
+
+            await markRead(partnerId);
         } catch (error) {
-            console.error("Messages API failed:", error);
-            if (initial) toast("Messages load nahi ho paaye.");
+            console.error("Chat load failed:", error);
+            if (initial) {
+                toast("Chat load nahi ho paayi. Dobara try karein.");
+            }
         } finally {
-            isLoading = false;
+            state.loading = false;
         }
     }
 
-    async function markRead() {
-        try {
-            await api(
-                `${API}/chat/${encodeURIComponent(partnerId)}/read`,
-                { method: "POST" }
-            );
-        } catch (error) {
-            console.debug("Read receipt:", error.message);
+    async function sendMessage(content, file = null) {
+        const partnerId = getPartnerId();
+
+        if (!partnerId) {
+            toast("Chat user nahi mila.");
+            return;
         }
-    }
 
-    async function sendPayload(payload) {
-        if (isSending || !partnerId) return false;
+        if (state.sending) return;
 
-        isSending = true;
-        if ($("sendButton")) $("sendButton").disabled = true;
+        const text = String(content || "").trim();
+
+        if (!text && !file) return;
+
+        /*
+         * Text messages are sent through the existing API.
+         * The file input is handled separately below because file uploads
+         * require the upload endpoint supported by the backend.
+         */
+        if (file) {
+            toast("File upload ke liye backend upload endpoint zaroori hai.");
+            return;
+        }
+
+        state.sending = true;
+
+        const sendButton = $("sendButton");
+        if (sendButton) sendButton.disabled = true;
 
         try {
-            await api(`${API}/chat/send`, {
+            await api(API.send, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     receiver_id: partnerId,
-                    recipient_id: partnerId,
-                    ...payload
+                    content: text,
+                    media_url: null,
+                    media_type: null
                 })
             });
 
+            const input = $("messageInput");
+            if (input) {
+                input.value = "";
+                resizeTextarea(input);
+            }
+
             await loadMessages();
-            renderMessages(true);
-            return true;
+            scrollToBottom(true);
         } catch (error) {
-            console.error("Send API failed:", error);
-            toast(error.message || "Message send nahi hua.");
-            return false;
+            console.error("Message send failed:", error);
+            toast("Message send nahi hua. Dobara try karein.");
         } finally {
-            isSending = false;
-            if ($("sendButton")) $("sendButton").disabled = false;
+            state.sending = false;
+            if (sendButton) sendButton.disabled = false;
         }
     }
 
-    async function sendText() {
-        const input = $("messageInput");
-        if (!input) return;
-
-        const content = input.value.trim();
-        if (!content) return;
-
-        const success = await sendPayload({ content });
-
-        if (success) {
-            input.value = "";
-            resizeInput();
-        }
-    }
-
-    async function deleteMessage(id) {
-        try {
-            await api(
-                `${API}/chat/message/${encodeURIComponent(id)}/delete`,
-                { method: "POST" }
-            );
-            toast("Message deleted.");
-            await loadMessages();
-        } catch (error) {
-            toast(error.message || "Message delete nahi hua.");
-        }
-    }
-
-    function resizeInput() {
-        const input = $("messageInput");
+    function resizeTextarea(input) {
         if (!input) return;
 
         input.style.height = "auto";
-        input.style.height = Math.min(input.scrollHeight, 120) + "px";
+        input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
     }
 
-    function openProfile() {
-        if (partnerId) {
-            location.href = `/profile?user_id=${encodeURIComponent(partnerId)}`;
+    function openImage(url, owner = state.partner) {
+        if (!url) {
+            toast("Photo available nahi hai.");
+            return;
         }
+
+        const viewer = $("imageViewer");
+        const image = $("viewerImage");
+        const name = $("dpProfileName");
+
+        if (!viewer || !image) return;
+
+        state.zoomed = false;
+        image.classList.remove("zoomed");
+        image.style.transformOrigin = "center center";
+
+        if (name) {
+            name.textContent = displayName(owner);
+        }
+
+        image.onerror = () => {
+            image.onerror = null;
+            toast("Photo load nahi ho paayi.");
+        };
+
+        image.src = normalizeImageUrl(url);
+        viewer.hidden = false;
+        document.body.classList.add("viewer-open");
     }
 
-    function showModal(id) {
-        if ($(id)) $(id).hidden = false;
+    function closeImage() {
+        const viewer = $("imageViewer");
+        const image = $("viewerImage");
+
+        if (viewer) viewer.hidden = true;
+
+        if (image) {
+            image.classList.remove("zoomed");
+            image.style.transformOrigin = "center center";
+        }
+
+        state.zoomed = false;
+        document.body.classList.remove("viewer-open");
     }
 
-    function hideModal(id) {
-        if ($(id)) $(id).hidden = true;
+    function toggleZoom() {
+        const image = $("viewerImage");
+        if (!image) return;
+
+        state.zoomed = !state.zoomed;
+        image.classList.toggle("zoomed", state.zoomed);
     }
 
-    function addEmojiPicker() {
-        $("emojiPicker")?.remove();
+    function openModal(id) {
+        const modal = $(id);
+        if (modal) modal.hidden = false;
+    }
 
-        const picker = el("div", "emoji-picker");
-        picker.id = "emojiPicker";
+    function closeModal(id) {
+        const modal = $(id);
+        if (modal) modal.hidden = true;
+    }
 
-        EMOJIS.forEach((emoji) => {
-            const button = el("button", "emoji-option", emoji);
-            button.type = "button";
+    function openSearch() {
+        const section = $("chatSearchSection");
+        const input = $("chatSearch");
 
-            button.addEventListener("click", () => {
-                const input = $("messageInput");
-                if (!input) return;
+        if (section) section.hidden = false;
+        if (input) input.focus();
+    }
 
-                const start = input.selectionStart ?? input.value.length;
-                const end = input.selectionEnd ?? input.value.length;
+    function showProfile() {
+        const partnerId = getPartnerId();
+        if (!partnerId) return;
 
-                input.value =
-                    input.value.slice(0, start) +
-                    emoji +
-                    input.value.slice(end);
+        location.href =
+            `/profile?user_id=${encodeURIComponent(partnerId)}`;
+    }
 
-                input.focus();
-                input.setSelectionRange(start + emoji.length, start + emoji.length);
-                resizeInput();
-            });
+    function showMedia() {
+        const images = document.querySelectorAll(
+            "#conversation img.message-image"
+        );
 
-            picker.appendChild(button);
+        if (!images.length) {
+            toast("Abhi koi image available nahi hai.");
+            return;
+        }
+
+        const first = images[0];
+        first.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
         });
 
-        $("composer")?.insertAdjacentElement("beforebegin", picker);
+        first.classList.add("media-highlight");
+        setTimeout(() => first.classList.remove("media-highlight"), 1200);
+
+        closeModal("conversationMenuModal");
     }
 
-    function dataURL(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error("File read nahi hui."));
-            reader.readAsDataURL(blob);
-        });
-    }
+    function clearVisibleChat() {
+        /*
+         * This only clears the current display.
+         * It does not delete server-side messages.
+         */
+        const conversation = $("conversation");
+        if (conversation) conversation.innerHTML = "";
 
-    async function sendFile(file) {
-        if (!file) return;
+        state.messages = [];
 
-        if (file.size > 8 * 1024 * 1024) {
-            toast("File 8 MB se chhoti honi chahiye.");
-            return;
-        }
+        const empty = $("emptyConversation");
+        if (empty) empty.hidden = false;
 
-        try {
-            const url = await dataURL(file);
-            let type = "file";
-
-            if (file.type.startsWith("image/")) type = "image";
-            else if (file.type.startsWith("video/")) type = "video";
-            else if (file.type.startsWith("audio/")) type = "audio";
-
-            await sendPayload({
-                content: "",
-                media_url: url,
-                media_type: type,
-                file_name: file.name || "attachment"
-            });
-        } catch (error) {
-            toast("Attachment prepare nahi ho paaya.");
-        }
-    }
-
-    async function startRecording() {
-        if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-            toast("Voice recording is browser mein supported nahi hai.");
-            return;
-        }
-
-        try {
-            recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            recordedChunks = [];
-            recorder = new MediaRecorder(recordingStream);
-
-            recorder.ondataavailable = (event) => {
-                if (event.data?.size) recordedChunks.push(event.data);
-            };
-
-            recorder.onstop = () => {
-                recordedBlob = new Blob(recordedChunks, {
-                    type: recorder?.mimeType || "audio/webm"
-                });
-
-                if ($("audioPreview")) {
-                    $("audioPreview").replaceChildren();
-
-                    const audio = el("audio", "recorded-audio-preview");
-                    audio.controls = true;
-                    audio.src = URL.createObjectURL(recordedBlob);
-
-                    $("audioPreview").appendChild(audio);
-                    $("audioPreview").hidden = false;
-                }
-
-                if ($("sendRecordingButton")) {
-                    $("sendRecordingButton").disabled = false;
-                }
-            };
-
-            recorder.start();
-            recordingStartedAt = Date.now();
-
-            if ($("recordingStatus")) $("recordingStatus").hidden = false;
-            if ($("sendRecordingButton")) $("sendRecordingButton").disabled = true;
-
-            recordingTimer = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - recordingStartedAt) / 1000);
-                const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
-                const seconds = String(elapsed % 60).padStart(2, "0");
-
-                if ($("recordingTime")) {
-                    $("recordingTime").textContent = `${minutes}:${seconds}`;
-                }
-            }, 500);
-
-            $("micButton")?.classList.add("recording");
-        } catch (error) {
-            console.error("Microphone error:", error);
-            toast("Microphone permission allow karein.");
-            stopRecordingTracks();
-        }
-    }
-
-    function stopRecordingTracks() {
-        clearInterval(recordingTimer);
-        recordingTimer = null;
-
-        recordingStream?.getTracks().forEach((track) => track.stop());
-        recordingStream = null;
-
-        $("micButton")?.classList.remove("recording");
-    }
-
-    function stopRecording() {
-        if (recorder && recorder.state !== "inactive") recorder.stop();
-        stopRecordingTracks();
-
-        if ($("recordingStatus")) $("recordingStatus").hidden = true;
-    }
-
-    function cancelRecording() {
-        if (recorder && recorder.state !== "inactive") {
-            recorder.onstop = null;
-            recorder.stop();
-        }
-
-        stopRecordingTracks();
-        recordedBlob = null;
-        recordedChunks = [];
-
-        if ($("recordingStatus")) $("recordingStatus").hidden = true;
-        if ($("audioPreview")) {
-            $("audioPreview").hidden = true;
-            $("audioPreview").replaceChildren();
-        }
-
-        toast("Recording cancelled.");
-    }
-
-    async function sendRecording() {
-        if (!recordedBlob) {
-            toast("Pehle voice record karein.");
-            return;
-        }
-
-        try {
-            const url = await dataURL(recordedBlob);
-
-            const success = await sendPayload({
-                content: "",
-                media_url: url,
-                media_type: "audio"
-            });
-
-            if (success) {
-                recordedBlob = null;
-                recordedChunks = [];
-
-                if ($("audioPreview")) {
-                    $("audioPreview").hidden = true;
-                    $("audioPreview").replaceChildren();
-                }
-
-                toast("Voice message sent.");
-            }
-        } catch (error) {
-            toast("Voice message send nahi hua.");
-        }
-    }
-
-    function searchMessages() {
-        searchTerm = ($("chatSearch")?.value || "").trim();
-        renderMessages();
+        closeModal("conversationMenuModal");
+        toast("Chat display clear ho gaya.");
     }
 
     function bindEvents() {
+        const composer = $("composer");
+        composer?.addEventListener("submit", (event) => {
+            event.preventDefault();
+            sendMessage($("messageInput")?.value || "");
+        });
+
+        const input = $("messageInput");
+        input?.addEventListener("input", () => resizeTextarea(input));
+
+        input?.addEventListener("keydown", (event) => {
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.isComposing
+            ) {
+                event.preventDefault();
+                composer?.requestSubmit();
+            }
+        });
+
         $("backButton")?.addEventListener("click", () => {
             if (history.length > 1) history.back();
             else location.href = "/home";
         });
 
-        $("profileNameButton")?.addEventListener("click", openProfile);
-
         $("selectedAvatarButton")?.addEventListener("click", () => {
-            const image = $("selectedAvatar");
-            openImage(image?.dataset.realPhoto || "");
+            const url = $("selectedAvatar")?.dataset.realPhoto || "";
+            openImage(url, state.partner);
         });
 
-        $("composer")?.addEventListener("submit", (event) => {
-            event.preventDefault();
-            sendText();
-        });
-
-        $("messageInput")?.addEventListener("input", resizeInput);
-
-        $("messageInput")?.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                sendText();
-            }
-        });
-
-        $("emojiButton")?.addEventListener("click", addEmojiPicker);
-
-        $("attachButton")?.addEventListener("click", () => $("fileInput")?.click());
-        $("cameraButton")?.addEventListener("click", () => $("cameraInput")?.click());
-
-        $("fileInput")?.addEventListener("change", async (event) => {
-            if (event.target.files?.[0]) await sendFile(event.target.files[0]);
-            event.target.value = "";
-        });
-
-        $("cameraInput")?.addEventListener("change", async (event) => {
-            if (event.target.files?.[0]) await sendFile(event.target.files[0]);
-            event.target.value = "";
-        });
-
-        $("micButton")?.addEventListener("click", () => {
-            if (recorder?.state === "recording") stopRecording();
-            else startRecording();
-        });
-
-        $("cancelRecordingButton")?.addEventListener("click", cancelRecording);
-        $("sendRecordingButton")?.addEventListener("click", sendRecording);
-
-        $("voiceCallButton")?.addEventListener("click", () => showModal("callOptionsModal"));
-        $("closeCallOptions")?.addEventListener("click", () => hideModal("callOptionsModal"));
-
-        $("startVoiceCall")?.addEventListener("click", () => {
-            hideModal("callOptionsModal");
-            toast("Voice calling ke liye WebRTC signaling backend required hai.");
-        });
-
-        $("startVideoCall")?.addEventListener("click", () => {
-            hideModal("callOptionsModal");
-            toast("Video calling ke liye WebRTC signaling backend required hai.");
-        });
-
-        $("conversationMenu")?.addEventListener("click", () => {
-            showModal("conversationMenuModal");
-        });
-
-        $("closeConversationMenu")?.addEventListener("click", () => {
-            hideModal("conversationMenuModal");
-        });
-
-        $("menuSearchMessages")?.addEventListener("click", () => {
-            mediaOnly = false;
-            if ($("chatSearchSection")) $("chatSearchSection").hidden = false;
-            $("chatSearch")?.focus();
-            hideModal("conversationMenuModal");
-        });
-
-        $("closeChatSearch")?.addEventListener("click", () => {
-            searchTerm = "";
-            if ($("chatSearch")) $("chatSearch").value = "";
-            if ($("chatSearchSection")) $("chatSearchSection").hidden = true;
-            renderMessages();
-        });
-
-        $("chatSearch")?.addEventListener("input", searchMessages);
-
-        $("menuViewMedia")?.addEventListener("click", () => {
-            mediaOnly = true;
-            searchTerm = "";
-            hideModal("conversationMenuModal");
-            renderMessages();
-
-            const count = messages.filter((message) => mediaURL(message)).length;
-            toast(count ? `${count} attachment(s) in chat.` : "No shared media yet.");
-        });
-
-        $("menuClearChat")?.addEventListener("click", () => {
-            hideModal("conversationMenuModal");
-            toast("Clear chat ke liye backend endpoint chahiye.");
-        });
-
-        $("menuViewProfile")?.addEventListener("click", () => {
-            hideModal("conversationMenuModal");
-            openProfile();
-        });
+        $("profileNameButton")?.addEventListener("click", showProfile);
+        $("menuViewProfile")?.addEventListener("click", showProfile);
 
         $("closeImageViewer")?.addEventListener("click", closeImage);
+        $("viewerImage")?.addEventListener("click", toggleZoom);
 
         $("imageViewer")?.addEventListener("click", (event) => {
             if (event.target === $("imageViewer")) closeImage();
         });
 
+        $("conversationMenu")?.addEventListener("click", () => {
+            openModal("conversationMenuModal");
+        });
+
+        $("closeConversationMenu")?.addEventListener("click", () => {
+            closeModal("conversationMenuModal");
+        });
+
+        $("voiceCallButton")?.addEventListener("click", () => {
+            openModal("callOptionsModal");
+        });
+
+        $("closeCallOptions")?.addEventListener("click", () => {
+            closeModal("callOptionsModal");
+        });
+
+        $("startVoiceCall")?.addEventListener("click", () => {
+            toast("Voice call ke liye call-signaling backend chahiye.");
+            closeModal("callOptionsModal");
+        });
+
+        $("startVideoCall")?.addEventListener("click", () => {
+            toast("Video call ke liye call-signaling backend chahiye.");
+            closeModal("callOptionsModal");
+        });
+
+        $("menuSearchMessages")?.addEventListener("click", () => {
+            closeModal("conversationMenuModal");
+            openSearch();
+        });
+
+        $("menuViewMedia")?.addEventListener("click", showMedia);
+
+        $("menuClearChat")?.addEventListener("click", () => {
+            const confirmed = window.confirm(
+                "Sirf current screen se messages clear karein? Server ke messages delete nahi honge."
+            );
+
+            if (confirmed) clearVisibleChat();
+        });
+
+        $("chatSearch")?.addEventListener("input", (event) => {
+            state.searchQuery = event.target.value || "";
+            applySearch();
+        });
+
+        $("closeChatSearch")?.addEventListener("click", () => {
+            state.searchQuery = "";
+
+            const input = $("chatSearch");
+            if (input) input.value = "";
+
+            const section = $("chatSearchSection");
+            if (section) section.hidden = true;
+
+            applySearch();
+        });
+
+        $("conversation")?.addEventListener("click", (event) => {
+            const image = event.target.closest("[data-open-image]");
+            if (!image) return;
+
+            const messageElement = image.closest("[data-message-id]");
+            const messageId = messageElement?.dataset.messageId;
+
+            const message = state.messages.find(
+                (item) => getMessageId(item) === messageId
+            );
+
+            const owner = message && isMine(message)
+                ? state.currentUser
+                : state.partner;
+
+            openImage(image.dataset.openImage, owner);
+        });
+
+        $("attachButton")?.addEventListener("click", () => {
+            $("fileInput")?.click();
+        });
+
+        $("cameraButton")?.addEventListener("click", () => {
+            $("cameraInput")?.click();
+        });
+
+        $("fileInput")?.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                toast("File select hui. Upload ke liye backend upload endpoint chahiye.");
+            }
+            event.target.value = "";
+        });
+
+        $("cameraInput")?.addEventListener("change", (event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                toast("Photo select hui. Upload ke liye backend upload endpoint chahiye.");
+            }
+            event.target.value = "";
+        });
+
+        $("emojiButton")?.addEventListener("click", () => {
+            const input = $("messageInput");
+            if (!input) return;
+
+            input.value += " 😊";
+            input.focus();
+            resizeTextarea(input);
+        });
+
+        $("micButton")?.addEventListener("click", () => {
+            toast("Voice recording upload ke liye backend support chahiye.");
+        });
+
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 closeImage();
-                hideModal("callOptionsModal");
-                hideModal("conversationMenuModal");
-                $("emojiPicker")?.remove();
-            }
-        });
-
-        const menu = $("conversationMenuModal")?.querySelector(".options-modal");
-
-        if (menu && !$("openCoupleChat")) {
-            const button = el("button", "", "💗 Open Couple Chat");
-            button.id = "openCoupleChat";
-            button.type = "button";
-
-            button.addEventListener("click", () => {
-                if (!partnerId) return;
-
-                location.href =
-                    `/couple-chat?partner_id=${encodeURIComponent(partnerId)}`;
-            });
-
-            menu.appendChild(button);
-        }
-
-        document.addEventListener("visibilitychange", () => {
-            if (!document.hidden) {
-                loadMessages();
-                markRead();
+                closeModal("callOptionsModal");
+                closeModal("conversationMenuModal");
             }
         });
     }
 
     async function init() {
         bindEvents();
-        partnerId = partnerIdFromURL();
-
-        if (!partnerId) {
-            toast("Chat URL mein partner user_id nahi mili.");
-            return;
-        }
 
         try {
             await loadCurrentUser();
+
+            const partnerId = getPartnerId();
+
+            if (!partnerId) {
+                toast("Chat open karne ke liye user ID missing hai.");
+                setStatus("User not selected", false);
+                return;
+            }
+
+            await loadProfile(partnerId);
+            await loadMessages({ initial: true });
+
+            clearInterval(state.refreshTimer);
+            state.refreshTimer = setInterval(() => {
+                if (!document.hidden) loadMessages();
+            }, 5000);
         } catch (error) {
-            console.error("Login session:", error);
-            toast("Login session nahi mila. Dobara login karein.");
-
-            setTimeout(() => {
-                location.href = "/login";
-            }, 1000);
-
-            return;
+            console.error("UtaNexa chat initialization failed:", error);
+            setStatus("Connection problem", false);
+            toast("Chat connect nahi ho paayi. Login aur user ID check karein.");
         }
-
-        await loadProfile();
-        await loadMessages({ initial: true });
-
-        clearInterval(pollTimer);
-        pollTimer = setInterval(() => {
-            if (!document.hidden) loadMessages();
-        }, POLL_INTERVAL);
     }
 
-    document.addEventListener("DOMContentLoaded", init);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init, { once: true });
+    } else {
+        init();
+    }
 })();
