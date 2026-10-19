@@ -794,3 +794,28 @@ button:disabled {
     cursor: pointer;
 }
 
+
+/* DP zoom in / zoom out */
+#viewerImage {
+    cursor: zoom-in;
+    transition: transform 0.25s ease;
+    transform: scale(1);
+}
+
+#viewerImage.zoomed {
+    transform: scale(1.7);
+    cursor: zoom-out;
+}
+
+/* Viewer ke andar DP circle hi rahe */
+#viewerImage {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Image viewer khula ho to background scroll na ho */
+body.viewer-open {
+    overflow: hidden;
+}
+
+
