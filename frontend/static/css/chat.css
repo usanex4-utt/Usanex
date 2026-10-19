@@ -733,3 +733,64 @@ button:disabled {
         transition-duration: .01ms !important;
     }
 }
+
+/* ===== UTANEXA CIRCULAR DP VIEWER ===== */
+
+.image-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(4, 8, 18, 0.96);
+    backdrop-filter: blur(14px);
+}
+
+.image-viewer[hidden] {
+    display: none !important;
+}
+
+.dp-profile-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    width: 100%;
+}
+
+.dp-profile-name {
+    max-width: 90%;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+#viewerImage {
+    display: block;
+    width: min(76vw, 340px);
+    height: min(76vw, 340px);
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 35px rgba(70, 130, 255, 0.25);
+}
+
+#closeImageViewer {
+    position: absolute;
+    top: max(20px, env(safe-area-inset-top));
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 30px;
+    cursor: pointer;
+}
+
