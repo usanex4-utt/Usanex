@@ -1,4 +1,4 @@
-# backend/database/models.p
+# backend/database/models.py
 
 from datetime import datetime
 
