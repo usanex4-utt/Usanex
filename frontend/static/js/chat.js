@@ -56,33 +56,45 @@
 
     window.setTimeout(() => node.remove(), 3200);
   }
+async function request(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    credentials: "include"
+  });
 
-  async function request(url, options = {}) {
-    const response = await fetch(url, {
-      credentials: "include",
-      ...options
+  const contentType = response.headers.get("content-type") || "";
+  let data = {};
+
+  try {
+    if (contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      data = { detail: await response.text() };
+    }
+  } catch (_) {}
+
+  if (!response.ok) {
+    let message = data.detail || data.message || "";
+
+    if (Array.isArray(message)) {
+      message = message
+        .map(item => item.msg || JSON.stringify(item))
+        .join(", ");
+    }
+
+    console.error("UtaNexa API error:", {
+      url,
+      status: response.status,
+      response: data
     });
 
-    let data = {};
-
-    try {
-      data = await response.json();
-    } catch (_) {
-      // Some responses may not contain JSON.
-    }
-
-    if (!response.ok) {
-      let message = data.detail || data.message;
-
-      if (Array.isArray(message)) {
-        message = message.map(item => item.msg || "").filter(Boolean).join(", ");
-      }
-
-      throw new Error(message || `Request failed (${response.status})`);
-    }
-
-    return data;
+    throw new Error(
+      `HTTP ${response.status}: ${message || "Request failed"}`
+    );
   }
+
+  return data;
+}
 
   function setConnectionError(message) {
     const banner = $("connectionBanner");
@@ -616,60 +628,76 @@
       console.debug("Mark read unavailable:", error.message);
     }
   }
+async function sendMessage() {
+  if (!partnerId || state.sending) return;
 
-  async function sendMessage() {
-    if (!partnerId || state.sending) return;
+  const input = $("messageInput");
+  if (!input) return;
 
-    const input = $("messageInput");
-    if (!input) return;
+  const content = input.value.trim();
 
-    const content = input.value.trim();
-
-    if (!content && !state.file) {
-      toast("Type a message or attach a file.");
-      return;
-    }
-
-    const form = new FormData();
-    form.append("receiver_id", partnerId);
-    form.append("content", content);
-
-    if (state.file) {
-      form.append("file", state.file);
-    }
-
-    state.sending = true;
-
-    if ($("sendButton")) $("sendButton").disabled = true;
-
-    try {
-      const data = await request("/api/chat/send", {
-        method: "POST",
-        body: form
-      });
-
-      if (data.success === false) {
-        throw new Error(data.message || "Message not sent");
-      }
-
-      input.value = "";
-      resizeInput();
-      clearAttachment();
-      clearReply();
-
-      await loadMessages({ keepPosition: false });
-      await markRead();
-    } catch (error) {
-      console.error("Message send failed:", error);
-      toast(error.message || "Message could not be sent.", true);
-    } finally {
-      state.sending = false;
-
-      if ($("sendButton")) $("sendButton").disabled = false;
-
-      input.focus();
-    }
+  if (!content && !state.file) {
+    toast("Type a message or attach a file.");
+    return;
   }
+
+  const form = new FormData();
+  form.append("receiver_id", partnerId);
+  form.append("content", content);
+
+  if (state.file) {
+    form.append("file", state.file);
+  }
+
+  state.sending = true;
+
+  if ($("sendButton")) $("sendButton").disabled = true;
+
+  try {
+    const data = await request("/api/chat/send", {
+      method: "POST",
+      body: form
+    });
+
+    if (data.success === false || !data.message) {
+      throw new Error(data.message || "Server did not confirm the message.");
+    }
+
+    const sentMessage = normalizeMessage(data.message);
+
+    // Show the confirmed message immediately.
+    if (
+      !state.messages.some(
+        message => String(message.id) === String(sentMessage.id)
+      )
+    ) {
+      state.messages.push(sentMessage);
+    }
+
+    input.value = "";
+    resizeInput();
+    clearAttachment();
+    clearReply();
+    renderMessages(false);
+
+    toast("Message sent.");
+
+    // Refresh history separately; a refresh failure should not
+    // make a successfully sent message appear to have failed.
+    void loadMessages({ keepPosition: true });
+    void markRead();
+
+  } catch (error) {
+    console.error("UtaNexa send error:", error);
+    toast(error.message || "Message could not be sent.", true);
+  } finally {
+    state.sending = false;
+
+    if ($("sendButton")) $("sendButton").disabled = false;
+
+    input.focus();
+  }
+}
 
   function resizeInput() {
     const input = $("messageInput");
