@@ -3,48 +3,91 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    >
 
     <meta name="theme-color" content="#080d19">
     <title>Chat | UtaNexa</title>
 
-    <link rel="stylesheet" href="/static/css/chat.css?v=8">
+    <link rel="stylesheet" href="/static/css/chat.css?v=9">
 </head>
+
 <body>
 <div class="chat-app">
 
+    <!-- Chat header -->
     <header class="chat-header">
-        <button id="backButton" class="icon-btn" type="button"
-                aria-label="Go back">‹</button>
+        <button
+            id="backButton"
+            class="icon-btn"
+            type="button"
+            aria-label="Go back"
+        >‹</button>
 
-        <button id="selectedAvatarButton" class="avatar-button"
-                type="button" aria-label="View profile photo">
-            <img id="selectedAvatar" src="/static/images/default-avatar.png"
-                 alt="Profile photo">
+        <button
+            id="selectedAvatarButton"
+            class="avatar-button"
+            type="button"
+            aria-label="View profile photo"
+        >
+            <img
+                id="selectedAvatar"
+                src="/static/images/default-avatar.png"
+                alt="Profile photo"
+            >
             <span id="onlineDot" class="online-dot"></span>
         </button>
 
-        <button id="profileNameButton" class="profile-heading" type="button">
+        <button
+            id="profileNameButton"
+            class="profile-heading"
+            type="button"
+            aria-label="View user profile"
+        >
             <span id="selectedName">UtaNexa User</span>
             <small id="selectedStatus">Connecting…</small>
         </button>
 
         <div class="header-actions">
-            <button id="voiceCallButton" class="icon-btn"
-                    type="button" aria-label="Voice call">☎</button>
-            <button id="conversationMenu" class="icon-btn"
-                    type="button" aria-label="Chat options">⋮</button>
+            <button
+                id="voiceCallButton"
+                class="icon-btn"
+                type="button"
+                aria-label="Call options"
+            >☎</button>
+
+            <button
+                id="conversationMenu"
+                class="icon-btn"
+                type="button"
+                aria-label="Chat options"
+            >⋮</button>
         </div>
     </header>
 
+    <!-- Search messages -->
     <section id="chatSearchSection" class="search-bar" hidden>
-        <input id="chatSearch" type="search"
-               placeholder="Search messages…" autocomplete="off">
-        <button id="closeChatSearch" type="button" aria-label="Close search">×</button>
+        <input
+            id="chatSearch"
+            type="search"
+            placeholder="Search messages…"
+            autocomplete="off"
+        >
+        <button
+            id="closeChatSearch"
+            type="button"
+            aria-label="Close search"
+        >×</button>
     </section>
 
-    <main id="messages" class="messages-area" aria-live="polite">
+    <!-- Messages -->
+    <main
+        id="messages"
+        class="messages-area"
+        aria-live="polite"
+    >
         <div id="emptyConversation" class="empty-chat">
             <div class="empty-chat-icon">✦</div>
             <h2>Start a conversation</h2>
@@ -54,57 +97,115 @@
         <div id="conversation"></div>
 
         <div id="typingIndicator" class="typing-indicator" hidden>
-            <span></span><span></span><span></span>
+            <span></span>
+            <span></span>
+            <span></span>
             <small>Typing…</small>
         </div>
     </main>
 
+    <!-- Voice recording controls -->
     <div id="recordingStatus" class="recording-status" hidden>
         <span class="recording-dot"></span>
         <span>Recording voice</span>
         <span id="recordingTime">00:00</span>
-        <button id="cancelRecordingButton" type="button">Cancel</button>
-        <button id="sendRecordingButton" type="button">Send</button>
+
+        <button id="cancelRecordingButton" type="button">
+            Cancel
+        </button>
+
+        <button id="sendRecordingButton" type="button">
+            Send
+        </button>
     </div>
 
+    <!-- Audio preview -->
     <div id="audioPreview" class="audio-preview" hidden></div>
 
+    <!-- Message composer -->
     <form id="composer" class="chat-composer">
-        <button id="emojiButton" class="composer-icon" type="button"
-                aria-label="Emoji">☺</button>
+        <button
+            id="emojiButton"
+            class="composer-icon"
+            type="button"
+            aria-label="Emoji"
+        >☺</button>
 
-        <textarea id="messageInput" rows="1"
-                  placeholder="Message…"
-                  aria-label="Write a message"></textarea>
+        <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Message…"
+            aria-label="Write a message"
+        ></textarea>
 
-        <button id="attachButton" class="composer-icon" type="button"
-                aria-label="Attach file">＋</button>
+        <button
+            id="attachButton"
+            class="composer-icon"
+            type="button"
+            aria-label="Attach file"
+        >＋</button>
 
-        <button id="cameraButton" class="composer-icon" type="button"
-                aria-label="Take photo">▣</button>
+        <button
+            id="cameraButton"
+            class="composer-icon"
+            type="button"
+            aria-label="Take photo"
+        >▣</button>
 
-        <button id="micButton" class="composer-icon" type="button"
-                aria-label="Record voice">🎙</button>
+        <button
+            id="micButton"
+            class="composer-icon"
+            type="button"
+            aria-label="Record voice"
+        >🎙</button>
 
-        <button id="sendButton" class="send-button" type="submit"
-                aria-label="Send message">➤</button>
+        <button
+            id="sendButton"
+            class="send-button"
+            type="submit"
+            aria-label="Send message"
+        >➤</button>
     </form>
 
-    <input id="fileInput" type="file" hidden
-           accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-    <input id="cameraInput" type="file" hidden
-           accept="image/*" capture="environment">
+    <!-- File attachments -->
+    <input
+        id="fileInput"
+        type="file"
+        hidden
+        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+    >
+
+    <!-- Camera -->
+    <input
+        id="cameraInput"
+        type="file"
+        hidden
+        accept="image/*"
+        capture="environment"
+    >
 
 </div>
 
-<!-- Call options -->
+<!-- Call options modal -->
 <div id="callOptionsModal" class="modal" hidden>
     <section class="options-modal">
-        <button id="closeCallOptions" class="modal-close"
-                type="button" aria-label="Close">×</button>
+        <button
+            id="closeCallOptions"
+            class="modal-close"
+            type="button"
+            aria-label="Close"
+        >×</button>
+
         <h2>Call options</h2>
-        <button id="startVoiceCall" type="button">☎ Voice call</button>
-        <button id="startVideoCall" type="button">▣ Video call</button>
+
+        <button id="startVoiceCall" type="button">
+            ☎ Voice call
+        </button>
+
+        <button id="startVideoCall" type="button">
+            ▣ Video call
+        </button>
+
         <p class="modal-note">
             Calls require working call-signaling and media support.
         </p>
@@ -114,25 +215,63 @@
 <!-- Conversation menu -->
 <div id="conversationMenuModal" class="modal" hidden>
     <section class="options-modal">
-        <button id="closeConversationMenu" class="modal-close"
-                type="button" aria-label="Close">×</button>
+        <button
+            id="closeConversationMenu"
+            class="modal-close"
+            type="button"
+            aria-label="Close"
+        >×</button>
+
         <h2>Chat options</h2>
-        <button id="menuSearchMessages" type="button">⌕ Search messages</button>
-        <button id="menuViewMedia" type="button">▧ View media</button>
-        <button id="menuClearChat" type="button">⌫ Clear chat</button>
-        <button id="menuViewProfile" type="button">♙ View profile</button>
+
+        <button id="menuSearchMessages" type="button">
+            ⌕ Search messages
+        </button>
+
+        <button id="menuViewMedia" type="button">
+            ▧ View media
+        </button>
+
+        <button id="menuClearChat" type="button">
+            ⌫ Clear chat
+        </button>
+
+        <button id="menuViewProfile" type="button">
+            ♙ View profile
+        </button>
     </section>
 </div>
 
-<!-- Image viewer -->
+<!-- Circular profile photo viewer -->
 <div id="imageViewer" class="image-viewer" hidden>
-    <button id="closeImageViewer" type="button"
-            aria-label="Close image">×</button>
-    <img id="viewerImage" src="" alt="Expanded image">
+    <div class="dp-profile-view">
+        <div id="dpProfileName" class="dp-profile-name">
+            UtaNexa User
+        </div>
+
+        <img
+            id="viewerImage"
+            src=""
+            alt="Profile photo"
+        >
+    </div>
+
+    <button
+        id="closeImageViewer"
+        type="button"
+        aria-label="Close photo"
+    >×</button>
 </div>
 
-<div id="chatToast" class="chat-toast" role="status" aria-live="polite"></div>
+<!-- Toast notifications -->
+<div
+    id="chatToast"
+    class="chat-toast"
+    role="status"
+    aria-live="polite"
+></div>
 
-<script src="/static/js/chat.js?v=8"></script>
+<script src="/static/js/chat.js?v=9"></script>
+
 </body>
 </html>
