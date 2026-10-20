@@ -26,7 +26,15 @@
     audioChunks: [],
     recording: false,
     loadAgain: false,
-    lastError: ""
+    lastError: "",
+
+    // Online / Last Seen / Typing
+    presenceConnected: false,
+    presenceSocket: null,
+    presenceOnline: false,
+    presenceLastSeen: null,
+    partnerTyping: false,
+    typingTimer: null
   };
 
   const EMOJIS = [
@@ -111,12 +119,44 @@ async function request(url, options = {}) {
   }
 
   function setStatus(text, online = false) {
-    if ($("selectedStatus")) $("selectedStatus").textContent = text;
+  const status = $("selectedStatus");
+  const dot = $("onlineDot");
 
-    if ($("onlineDot")) {
-      $("onlineDot").classList.toggle("is-online", online);
-    }
+  if (status) {
+    status.textContent = text;
   }
+
+  if (dot) {
+    dot.classList.toggle("is-online", online);
+  }
+}
+
+function formatLastSeen(value) {
+  if (!value) return "Offline";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Offline";
+  }
+
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+
+  if (sameDay) {
+    return "Last seen today, " + date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  return "Last seen " + date.toLocaleString([], {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
 
   function profileImageUrl(path) {
     if (!path || typeof path !== "string") return "";
@@ -582,7 +622,9 @@ async function request(url, options = {}) {
 
       updateProfile(state.partner);
       clearConnectionError();
-      setStatus("Chat connected");
+      if (!state.presenceConnected) {
+  setStatus("Chat connected");
+      }
 
       if (oldSignature !== newSignature || !options.keepPosition) {
         renderMessages(Boolean(options.keepPosition));
