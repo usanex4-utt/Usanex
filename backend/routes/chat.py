@@ -427,6 +427,209 @@ async def send_message(
 
     return {"success": True, "message": serialize_message(message)}
 
+# =========================================================
+# CHAT PRESENCE / TYPING
+# =========================================================
+
+# Active WebSocket connections in this backend process.
+_chat_sockets: dict[int, set[WebSocket]] = {}
+
+
+async def _send_chat_event(websocket: WebSocket, payload: dict):
+    try:
+        await websocket.send_json(payload)
+        return True
+    except Exception:
+        return False
+
+
+async def _send_user_event(user_id: int, payload: dict):
+    sockets = list(_chat_sockets.get(user_id, set()))
+
+    for socket in sockets:
+        sent = await _send_chat_event(socket, payload)
+        if not sent:
+            _chat_sockets.get(user_id, set()).discard(socket)
+
+
+def _last_seen_value(user):
+    value = getattr(user, "last_seen_at", None)
+    return value.isoformat() if value else None
+
+
+@router.websocket("/ws/{partner_user_id}")
+async def chat_presence_websocket(
+    websocket: WebSocket,
+    partner_user_id: str,
+):
+    db = SessionLocal()
+    current_user = None
+    partner = None
+    registered = False
+
+    try:
+        # Authenticate using the existing login session cookie.
+        session_token = websocket.cookies.get(SESSION_COOKIE_NAME)
+
+        if not session_token:
+            await websocket.close(code=4401)
+            return
+
+        session = (
+            db.query(UserSession)
+            .filter(UserSession.session_token == session_token)
+            .first()
+        )
+
+        if session is None or not session.is_active:
+            await websocket.close(code=4401)
+            return
+
+        if session.expires_at is None:
+            await websocket.close(code=4401)
+            return
+
+        expires_at = session.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+        if datetime.now(timezone.utc) >= expires_at:
+            await websocket.close(code=4401)
+            return
+
+        current_user = (
+            db.query(User)
+            .filter(User.id == session.user_id)
+            .first()
+        )
+
+        if current_user is None or not current_user.is_active:
+            await websocket.close(code=4401)
+            return
+
+        partner = find_user(db, partner_user_id)
+
+        if partner is None or not partner.is_active:
+            await websocket.close(code=4404)
+            return
+
+        # Only accepted connections can use chat presence or typing.
+        try:
+            require_connected(db, current_user.id, partner.id)
+        except HTTPException:
+            await websocket.close(code=4403)
+            return
+
+        # Finish database work before keeping the socket open.
+        session.last_used_at = utc_now()
+        db.commit()
+
+        current_id = current_user.id
+        partner_id = partner.id
+
+        await websocket.accept()
+
+        _chat_sockets.setdefault(current_id, set()).add(websocket)
+        registered = True
+
+        # Tell the current user whether the partner is online.
+        partner_online = bool(_chat_sockets.get(partner_id))
+
+        await _send_chat_event(
+            websocket,
+            {
+                "type": "presence",
+                "user_id": partner_id,
+                "online": partner_online,
+                "last_seen": (
+                    None if partner_online
+                    else _last_seen_value(partner)
+                ),
+            },
+        )
+
+        # Tell the partner that this user is now online.
+        await _send_user_event(
+            partner_id,
+            {
+                "type": "presence",
+                "user_id": current_id,
+                "online": True,
+                "last_seen": None,
+            },
+        )
+
+        # Receive typing events and forward them only to this connection.
+        while True:
+            payload = await websocket.receive_json()
+
+            if not isinstance(payload, dict):
+                continue
+
+            event_type = payload.get("type")
+
+            if event_type == "typing":
+                is_typing = payload.get("typing") is True
+
+                await _send_user_event(
+                    partner_id,
+                    {
+                        "type": "typing",
+                        "user_id": current_id,
+                        "typing": is_typing,
+                    },
+                )
+
+    except WebSocketDisconnect:
+        pass
+
+    except Exception:
+        # Keep unexpected socket errors from breaking normal chat APIs.
+        pass
+
+    finally:
+        if registered and current_user is not None:
+            current_id = current_user.id
+            sockets = _chat_sockets.get(current_id, set())
+            sockets.discard(websocket)
+
+            if not sockets:
+                _chat_sockets.pop(current_id, None)
+
+                try:
+                    last_seen_db = SessionLocal()
+                    try:
+                        user = (
+                            last_seen_db.query(User)
+                            .filter(User.id == current_id)
+                            .first()
+                        )
+
+                        if user is not None:
+                            user.last_seen_at = utc_now()
+                            last_seen_db.commit()
+                            last_seen = _last_seen_value(user)
+                        else:
+                            last_seen = None
+
+                    finally:
+                        last_seen_db.close()
+
+                    await _send_user_event(
+                        partner.id,
+                        {
+                            "type": "presence",
+                            "user_id": current_id,
+                            "online": False,
+                            "last_seen": last_seen,
+                        },
+                    )
+
+                except Exception:
+                    pass
+
+        db.close()
+
 
 # =========================================================
 # MARK CHAT READ
