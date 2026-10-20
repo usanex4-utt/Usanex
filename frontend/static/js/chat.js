@@ -132,7 +132,6 @@ async function request(url, options = {}) {
 }
 
 function formatLastSeen(value) {
-function formatLastSeen(value) {
   if (!value) return "Offline";
 
   let normalizedValue = value;
