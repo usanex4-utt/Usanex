@@ -431,7 +431,7 @@ async def send_message(
 # CHAT PRESENCE / TYPING
 # =========================================================
 
-# Active WebSocket connections in this backend process.
+# Active chat sockets for this backend process.
 _chat_sockets: dict[int, set[WebSocket]] = {}
 
 
@@ -448,6 +448,7 @@ async def _send_user_event(user_id: int, payload: dict):
 
     for socket in sockets:
         sent = await _send_chat_event(socket, payload)
+
         if not sent:
             _chat_sockets.get(user_id, set()).discard(socket)
 
@@ -463,12 +464,13 @@ async def chat_presence_websocket(
     partner_user_id: str,
 ):
     db = SessionLocal()
-    current_user = None
-    partner = None
+
+    current_id = None
+    partner_id = None
     registered = False
 
     try:
-        # Authenticate using the existing login session cookie.
+        # Authenticate with the existing session cookie.
         session_token = websocket.cookies.get(SESSION_COOKIE_NAME)
 
         if not session_token:
@@ -490,6 +492,7 @@ async def chat_presence_websocket(
             return
 
         expires_at = session.expires_at
+
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
 
@@ -513,28 +516,31 @@ async def chat_presence_websocket(
             await websocket.close(code=4404)
             return
 
-        # Only accepted connections can use chat presence or typing.
+        # Enforce the existing accepted-connection rule.
         try:
             require_connected(db, current_user.id, partner.id)
         except HTTPException:
             await websocket.close(code=4403)
             return
 
-        # Finish database work before keeping the socket open.
+        current_id = current_user.id
+        partner_id = partner.id
+        partner_last_seen = _last_seen_value(partner)
+
         session.last_used_at = utc_now()
         db.commit()
 
-        current_id = current_user.id
-        partner_id = partner.id
+        # Do not keep a database connection open during the socket lifetime.
+        db.close()
 
         await websocket.accept()
 
         _chat_sockets.setdefault(current_id, set()).add(websocket)
         registered = True
 
-        # Tell the current user whether the partner is online.
         partner_online = bool(_chat_sockets.get(partner_id))
 
+        # Send the partner's current status to this user.
         await _send_chat_event(
             websocket,
             {
@@ -543,12 +549,12 @@ async def chat_presence_websocket(
                 "online": partner_online,
                 "last_seen": (
                     None if partner_online
-                    else _last_seen_value(partner)
+                    else partner_last_seen
                 ),
             },
         )
 
-        # Tell the partner that this user is now online.
+        # Notify the partner that this user is online.
         await _send_user_event(
             partner_id,
             {
@@ -559,24 +565,20 @@ async def chat_presence_websocket(
             },
         )
 
-        # Receive typing events and forward them only to this connection.
+        # Receive typing events and forward them to the partner.
         while True:
             payload = await websocket.receive_json()
 
             if not isinstance(payload, dict):
                 continue
 
-            event_type = payload.get("type")
-
-            if event_type == "typing":
-                is_typing = payload.get("typing") is True
-
+            if payload.get("type") == "typing":
                 await _send_user_event(
                     partner_id,
                     {
                         "type": "typing",
                         "user_id": current_id,
-                        "typing": is_typing,
+                        "typing": payload.get("typing") is True,
                     },
                 )
 
@@ -584,20 +586,22 @@ async def chat_presence_websocket(
         pass
 
     except Exception:
-        # Keep unexpected socket errors from breaking normal chat APIs.
+        # Socket errors must not affect normal chat APIs.
         pass
 
     finally:
-        if registered and current_user is not None:
-            current_id = current_user.id
+        if registered and current_id is not None:
             sockets = _chat_sockets.get(current_id, set())
             sockets.discard(websocket)
 
+            # Update last seen only after the final socket disconnects.
             if not sockets:
                 _chat_sockets.pop(current_id, None)
+                last_seen = None
 
                 try:
                     last_seen_db = SessionLocal()
+
                     try:
                         user = (
                             last_seen_db.query(User)
@@ -609,14 +613,16 @@ async def chat_presence_websocket(
                             user.last_seen_at = utc_now()
                             last_seen_db.commit()
                             last_seen = _last_seen_value(user)
-                        else:
-                            last_seen = None
 
                     finally:
                         last_seen_db.close()
 
+                except Exception:
+                    pass
+
+                if partner_id is not None:
                     await _send_user_event(
-                        partner.id,
+                        partner_id,
                         {
                             "type": "presence",
                             "user_id": current_id,
@@ -625,10 +631,9 @@ async def chat_presence_websocket(
                         },
                     )
 
-                except Exception:
-                    pass
-
         db.close()
+
+    
 
 
 # =========================================================
