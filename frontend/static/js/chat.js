@@ -158,6 +158,158 @@ function formatLastSeen(value) {
   });
 }
 
+
+    // =====================================================
+  // UTANEXA CHAT: ONLINE / LAST SEEN / TYPING
+  // =====================================================
+
+  function updatePresenceStatus() {
+    if (state.partnerTyping) {
+      setStatus("Typing…", state.presenceOnline);
+      return;
+    }
+
+    if (state.presenceOnline) {
+      setStatus("Online", true);
+      return;
+    }
+
+    setStatus(formatLastSeen(state.presenceLastSeen), false);
+  }
+
+  function sendTypingStatus(typing) {
+    const socket = state.presenceSocket;
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    try {
+      socket.send(JSON.stringify({
+        type: "typing",
+        typing: typing === true
+      }));
+    } catch (error) {
+      console.debug("Typing status unavailable:", error);
+    }
+  }
+
+  function connectPresence() {
+    if (!partnerId) return;
+
+    const existing = state.presenceSocket;
+
+    if (
+      existing &&
+      (
+        existing.readyState === WebSocket.OPEN ||
+        existing.readyState === WebSocket.CONNECTING
+      )
+    ) {
+      return;
+    }
+
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const socketUrl =
+      `${protocol}//${location.host}/api/chat/ws/${encodeURIComponent(partnerId)}`;
+
+    let socket;
+
+    try {
+      socket = new WebSocket(socketUrl);
+    } catch (error) {
+      console.error("Chat presence connection failed:", error);
+      return;
+    }
+
+    state.presenceSocket = socket;
+
+    socket.addEventListener("open", () => {
+      if (state.presenceSocket !== socket) return;
+
+      state.presenceConnected = true;
+      console.log("UtaNexa chat presence connected.");
+    });
+
+    socket.addEventListener("message", event => {
+      if (state.presenceSocket !== socket) return;
+
+      let payload;
+
+      try {
+        payload = JSON.parse(event.data);
+      } catch (_) {
+        return;
+      }
+
+      if (!payload || typeof payload !== "object") return;
+
+      if (payload.type === "presence") {
+        // Ignore presence events for users other than this chat partner.
+        if (
+          !state.partner ||
+          String(payload.user_id) !== String(state.partner.id)
+        ) {
+          return;
+        }
+
+        state.presenceOnline = payload.online === true;
+        state.presenceLastSeen = payload.last_seen || null;
+
+        updatePresenceStatus();
+        return;
+      }
+
+      if (payload.type === "typing") {
+        if (
+          !state.partner ||
+          String(payload.user_id) !== String(state.partner.id)
+        ) {
+          return;
+        }
+
+        state.partnerTyping = payload.typing === true;
+        updatePresenceStatus();
+      }
+    });
+
+    socket.addEventListener("close", () => {
+      if (state.presenceSocket !== socket) return;
+
+      state.presenceConnected = false;
+      state.presenceSocket = null;
+      state.partnerTyping = false;
+
+      // Do not repeatedly replace a status supplied by a live socket.
+      if (state.presenceOnline) {
+        state.presenceOnline = false;
+        updatePresenceStatus();
+      }
+    });
+
+    socket.addEventListener("error", error => {
+      console.debug("Chat presence socket error:", error);
+    });
+  }
+
+  function disconnectPresence() {
+    if (state.typingTimer) {
+      clearTimeout(state.typingTimer);
+      state.typingTimer = null;
+    }
+
+    const socket = state.presenceSocket;
+    state.presenceSocket = null;
+    state.presenceConnected = false;
+    state.partnerTyping = false;
+
+    if (socket) {
+      try {
+        socket.close();
+      } catch (_) {}
+    }
+  }
+
   function profileImageUrl(path) {
     if (!path || typeof path !== "string") return "";
 
@@ -1429,6 +1581,28 @@ async function sendMessage() {
     $("sendButton")?.addEventListener("click", sendMessage);
 
     $("messageInput")?.addEventListener("input", resizeInput);
+        // Send typing status to the chat partner
+    $("messageInput")?.addEventListener("input", () => {
+      sendTypingStatus(true);
+
+      if (state.typingTimer) {
+        clearTimeout(state.typingTimer);
+      }
+
+      state.typingTimer = window.setTimeout(() => {
+        sendTypingStatus(false);
+        state.typingTimer = null;
+      }, 1500);
+    });
+
+    $("messageInput")?.addEventListener("blur", () => {
+      sendTypingStatus(false);
+
+      if (state.typingTimer) {
+        clearTimeout(state.typingTimer);
+        state.typingTimer = null;
+      }
+    });
 
     $("messageInput")?.addEventListener("keydown", event => {
       if (event.key === "Enter" &&
@@ -1605,6 +1779,8 @@ async function sendMessage() {
     window.addEventListener("beforeunload", () => {
       if (state.poll) clearInterval(state.poll);
 
+      disconnectPresence();
+
       if (state.mediaRecorder?.state === "recording") {
         state.mediaRecorder.stop();
       }
@@ -1625,6 +1801,7 @@ async function sendMessage() {
     }
 
     await loadMessages();
+    connectPresence();
     await markRead();
 
     state.poll = window.setInterval(() => {
