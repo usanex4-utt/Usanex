@@ -132,32 +132,47 @@ async function request(url, options = {}) {
 }
 
 function formatLastSeen(value) {
+function formatLastSeen(value) {
   if (!value) return "Offline";
 
-  const date = new Date(value);
+  let normalizedValue = value;
+
+  // Backend sends naive timestamps in UTC.
+  if (
+    typeof normalizedValue === "string" &&
+    !/(Z|[+-]\d{2}:\d{2})$/i.test(normalizedValue)
+  ) {
+    normalizedValue += "Z";
+  }
+
+  const date = new Date(normalizedValue);
 
   if (Number.isNaN(date.getTime())) {
     return "Offline";
   }
 
   const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
+
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  const time = date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  });
 
   if (sameDay) {
-    return "Last seen today, " + date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    return "Last seen today, " + time;
   }
 
-  return "Last seen " + date.toLocaleString([], {
+  return "Last seen " + date.toLocaleDateString("en-IN", {
     day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+    month: "short"
+  }) + ", " + time;
 }
-
 
     // =====================================================
   // UTANEXA CHAT: ONLINE / LAST SEEN / TYPING
