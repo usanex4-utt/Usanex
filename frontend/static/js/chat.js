@@ -774,9 +774,6 @@ function formatLastSeen(value) {
 
       updateProfile(state.partner);
       clearConnectionError();
-      if (!state.presenceConnected) {
-  setStatus("Chat connected");
-      }
 
       if (oldSignature !== newSignature || !options.keepPosition) {
         renderMessages(Boolean(options.keepPosition));
