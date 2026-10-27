@@ -364,12 +364,12 @@ function createReelCard(reel, index) {
     const videoUrl = getVideoUrl(reel);
 
     const captionText = String(reel.caption || "").trim();
-    const captionWords = captionText.split(/\s+/).filter(Boolean);
-    const shortCaption = captionWords.slice(0, 15).join(" ");
+    const captionChars = Array.from(captionText);
+    const shortCaption = captionChars.slice(0, 15).join("").trimEnd();
     const hashtagsText = Array.isArray(reel.hashtags)
         ? reel.hashtags.join(" ")
         : String(reel.hashtags || "").trim();
-    const needsCaptionExpand = captionWords.length > 15;
+    const needsCaptionExpand = captionChars.length > 15;
 
 
     card.innerHTML = `
