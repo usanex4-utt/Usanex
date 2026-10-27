@@ -654,23 +654,14 @@ function createReelCard(reel, index) {
 
 
             <div class="interest-controls">
-
-                <button
-                    type="button"
-                    class="interest-button"
-                    data-interest="interested"
-                >
-                    Interested
+                <button type="button" class="interest-button" data-interest="interested">
+                    <span class="interest-icon" aria-hidden="true">👍</span>
+                    <span>Interested</span>
                 </button>
-
-                <button
-                    type="button"
-                    class="interest-button"
-                    data-interest="not_interested"
-                >
-                    Not interested
+                <button type="button" class="interest-button" data-interest="not_interested">
+                    <span class="interest-icon" aria-hidden="true">👎</span>
+                    <span>Not interested</span>
                 </button>
-
             </div>
 
 
