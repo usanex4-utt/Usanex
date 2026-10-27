@@ -339,6 +339,7 @@ function createReelCard(reel, index) {
 
     const creator =
         reel.creator || {};
+    const creatorUserId = creator.user_id || "";
 
     const creatorName =
         creator.name ||
@@ -599,7 +600,7 @@ function createReelCard(reel, index) {
                     : ""
             }
 
-            <div class="reel-user-row">
+            <div class="reel-user-row" data-profile-user-id="${escapeHTML(creatorUserId)}">
                 ${
                     profilePhoto
                         ? `
@@ -1000,7 +1001,32 @@ function attachCardEvents(card) {
     attachActionEvents(card);
     attachInterestEvents(card);
     attachFollowEvent(card);
+    attachCreatorProfileEvent(card);
     attachCaptionExpandEvents(card);
+}
+
+
+function attachCreatorProfileEvent(card) {
+    const row = card.querySelector(".reel-user-row");
+    if (!row) return;
+
+    row.addEventListener("click", event => {
+        if (event.target.closest(".follow-button")) return;
+
+        const target = event.target.closest(
+            ".reel-avatar, .reel-user-details"
+        );
+        if (!target) return;
+
+        const userId = row.dataset.profileUserId;
+        if (!userId) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        window.location.href =
+            `/profile?user_id=${encodeURIComponent(userId)}`;
+    });
 }
 
 function attachCaptionExpandEvents(card) {
