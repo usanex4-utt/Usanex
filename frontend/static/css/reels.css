@@ -1691,3 +1691,64 @@ button {
     margin: 0;
     flex-shrink: 0;
 }
+
+
+/* Long caption expansion */
+.caption-toggle {
+    display: inline-block;
+    margin-left: 5px;
+    padding: 2px 4px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.reel-expanded-details[hidden] {
+    display: none !important;
+}
+
+.reel-full-caption,
+.reel-hashtags {
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.reel-hashtags {
+    color: #83baff;
+}
+
+.reel-card.caption-expanded::after {
+    display: none;
+}
+
+.reel-card.caption-expanded .reel-video {
+    inset: 0 0 auto;
+    height: 50%;
+    overflow: hidden;
+}
+
+.reel-card.caption-expanded .reel-info {
+    top: 50%;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+    padding: 18px 18px calc(20px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: #10151c;
+    text-shadow: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.reel-card.caption-expanded .reel-actions {
+    display: none;
+}

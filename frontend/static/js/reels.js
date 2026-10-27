@@ -361,8 +361,15 @@ function createReelCard(reel, index) {
 
     /* VIDEO */
 
-    const videoUrl =
-        getVideoUrl(reel);
+    const videoUrl = getVideoUrl(reel);
+
+    const captionText = String(reel.caption || "").trim();
+    const captionChars = Array.from(captionText);
+    const shortCaption = captionChars.slice(0, 40).join("").trimEnd();
+    const hashtagsText = Array.isArray(reel.hashtags)
+        ? reel.hashtags.join(" ")
+        : String(reel.hashtags || "").trim();
+    const needsCaptionExpand = captionChars.length > 40;
 
 
     card.innerHTML = `
@@ -580,8 +587,15 @@ function createReelCard(reel, index) {
         <!-- USER INFO -->
         <div class="reel-info">
             ${
-                reel.caption
-                    ? `<p class="reel-caption">${escapeHTML(reel.caption)}</p>`
+                captionText
+                    ? needsCaptionExpand
+                        ? `<p class="reel-caption">${escapeHTML(shortCaption)}… <button type="button" class="caption-toggle caption-more">More</button></p>
+                           <div class="reel-expanded-details" hidden>
+                               <p class="reel-full-caption">${escapeHTML(captionText)}</p>
+                               ${hashtagsText ? `<p class="reel-hashtags">${escapeHTML(hashtagsText)}</p>` : ""}
+                               <button type="button" class="caption-toggle caption-less">Less</button>
+                           </div>`
+                        : `<p class="reel-caption">${escapeHTML(captionText)}</p>`
                     : ""
             }
 
@@ -982,14 +996,33 @@ function toggleMute(video) {
 ========================================================= */
 
 function attachCardEvents(card) {
-
     attachRatingEvents(card);
-
     attachActionEvents(card);
-
     attachInterestEvents(card);
-
     attachFollowEvent(card);
+    attachCaptionExpandEvents(card);
+}
+
+function attachCaptionExpandEvents(card) {
+    const moreButton = card.querySelector(".caption-more");
+    const lessButton = card.querySelector(".caption-less");
+    const details = card.querySelector(".reel-expanded-details");
+
+    if (!moreButton || !lessButton || !details) return;
+
+    moreButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        card.classList.add("caption-expanded");
+        details.hidden = false;
+    });
+
+    lessButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        card.classList.remove("caption-expanded");
+        details.hidden = true;
+    });
 }
 
 
