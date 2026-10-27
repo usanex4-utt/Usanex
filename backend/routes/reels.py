@@ -1718,6 +1718,16 @@ def rate_reel(
         .first()
     )
 
+    if existing and existing.rating == payload.rating:
+        return {
+            "success": True,
+            "rating": existing.rating,
+            "one_star_count": reel.one_star_count or 0,
+            "two_star_count": reel.two_star_count or 0,
+            "three_star_count": reel.three_star_count or 0,
+            "unchanged": True,
+        }
+
     if existing:
 
         old_rating = existing.rating

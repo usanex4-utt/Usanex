@@ -1058,53 +1058,41 @@ function attachCaptionExpandEvents(card) {
 ========================================================= */
 
 function attachRatingEvents(card) {
+    const reelId = getReelId(card);
 
-    const buttons =
-        card.querySelectorAll(
-            ".rating-star"
-        );
+    if (isRealReelId(reelId)) {
+        apiRequest(`/api/reels/${encodeURIComponent(reelId)}/status`)
+            .then(data => {
+                if (!data || !data.success) return;
 
+                const savedRating = Number(data.rating);
+                if ([1, 2, 3].includes(savedRating)) {
+                    card.dataset.tapRating = String(savedRating);
+                    setRatingUI(card, savedRating);
+                } else {
+                    card.dataset.tapRating = "0";
+                    setRatingUI(card, 0);
+                }
+            })
+            .catch(error => console.warn("Rating status:", error));
+    }
+
+    const buttons = card.querySelectorAll(".rating-star");
 
     buttons.forEach(button => {
+        button.addEventListener("click", event => {
+            event.stopPropagation();
 
-        button.addEventListener(
-            "click",
-            event => {
+            const rating = Number(button.dataset.rating);
+            const previousRating = Number(card.dataset.tapRating || 0);
 
-                event.stopPropagation();
-
-                const rating =
-                    Number(
-                        button.dataset.rating
-                    );
-
-
-                animateStar(
-                    event.clientX,
-                    event.clientY,
-                    rating
-                );
-
-
-                card.dataset.tapRating =
-                    String(rating);
-
-
-                setRatingUI(
-                    card,
-                    rating
-                );
-
-
-                sendRating(
-                    card,
-                    rating
-                );
-            }
-        );
+            animateStar(event.clientX, event.clientY, rating);
+            card.dataset.tapRating = String(rating);
+            setRatingUI(card, rating);
+            sendRating(card, rating, previousRating);
+        });
     });
 }
-
 
 /* =========================================================
    VIDEO TAP RATING
@@ -1138,15 +1126,8 @@ function attachVideoRating(card) {
 
 
             lastTap = now;
-
-
-            let rating =
-                Number(
-                    card.dataset.tapRating ||
-                    0
-                );
-
-
+            const previousRating = Number(card.dataset.tapRating || 0);
+            let rating = previousRating;
             rating++;
 
 
@@ -1172,10 +1153,7 @@ function attachVideoRating(card) {
             );
 
 
-            sendRating(
-                card,
-                rating
-            );
+            sendRating(card, rating, previousRating);
         }
     );
 }
@@ -1273,39 +1251,33 @@ function setRatingUI(card, rating) {
    RATING API
 ========================================================= */
 
-async function sendRating(card, rating) {
-
-    const reelId =
-        getReelId(card);
-
-    if (!isRealReelId(reelId)) {
-        return;
-    }
+async function sendRating(card, rating, previousRating = 0) {
+    const reelId = getReelId(card);
+    if (!isRealReelId(reelId)) return false;
 
     try {
-
-        await apiRequest(
-            `/api/reels/${encodeURIComponent(
-                reelId
-            )}/rating`,
-            {
-                method: "POST",
-
-                body: {
-                    rating: rating
-                }
-            }
+        const data = await apiRequest(
+            `/api/reels/${encodeURIComponent(reelId)}/rating`,
+            { method: "POST", body: { rating } }
         );
 
+        if (!data || data.success !== true) {
+            throw new Error("Rating was not saved");
+        }
+
+        return true;
     } catch (error) {
+        card.dataset.tapRating = String(previousRating);
+        setRatingUI(card, previousRating);
+        console.warn("Rating API:", error);
 
-        console.warn(
-            "Rating API:",
-            error
-        );
+        if (typeof showToast === "function") {
+            showToast("Rating save nahi hui. Dobara try karein.");
+        }
+
+        return false;
     }
 }
-
 
 /* =========================================================
    ACTIONS

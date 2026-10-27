@@ -1764,3 +1764,28 @@ button {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+
+/* UtaNexa: Bigger, easier-to-tap reel rating stars */
+.reel-rating {
+    gap: 3px;
+}
+
+.rating-star {
+    width: 30px;
+    height: 30px;
+    font-size: 27px;
+    line-height: 1;
+    transform-origin: center;
+    transition: color 0.18s ease, transform 0.18s ease, text-shadow 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rating-star:active {
+    transform: scale(1.28);
+    color: #ffd43b;
+}
+
+.rating-star.active {
+    color: #ffd43b;
+    text-shadow: 0 0 10px rgba(255, 212, 59, 0.7);
+}
