@@ -724,7 +724,7 @@ button {
 .interest-button {
     min-height: 29px;
 
-    padding: 0 18px;
+    padding: 0 11px;
 
     border:
         1px solid
@@ -767,6 +767,18 @@ button {
         rgba(22, 131, 255, 0.65);
 
     color: #70b5ff;
+}
+/* INTEREST ICON SIZE */
+.interest-button i {
+    font-size: 22px;
+    transform: scaleY(1.3) scaleX(1.1);
+    -webkit-text-stroke: 0.5px currentColor;
+}
+
+.interest-button svg {
+    width: 22px;
+    height: 26px;
+    stroke-width: 2.5;
 }
 
 
