@@ -1582,83 +1582,76 @@ async function downloadReel(
 ========================================================= */
 
 function attachInterestEvents(card) {
+    const buttons = card.querySelectorAll(".interest-button");
+    if (!buttons.length) return;
 
-    const buttons =
-        card.querySelectorAll(
-            ".interest-button"
-        );
+    const getSelected = () =>
+        Array.from(buttons).find(b => b.classList.contains("selected"));
 
+    const setSelected = (type) => {
+        buttons.forEach(b => {
+            b.classList.toggle("selected", b.dataset.interest === type);
+        });
+    };
+
+    const reelId = getReelId(card);
+    if (isRealReelId(reelId)) {
+        apiRequest(`/api/reels/${encodeURIComponent(reelId)}/status`)
+            .then(data => {
+                if (!data || !data.success) return;
+                if (data.interested) {
+                    setSelected("interested");
+                } else if (data.not_interested) {
+                    setSelected("not_interested");
+                } else {
+                    setSelected(null);
+                }
+            })
+            .catch(error => console.warn("Interest status:", error));
+    }
 
     buttons.forEach(button => {
+        button.addEventListener("click", async event => {
+            event.stopPropagation();
 
-        button.addEventListener(
-            "click",
-            async event => {
+            const id = getReelId(card);
+            if (!isRealReelId(id) || button.dataset.saving === "true") return;
 
-                event.stopPropagation();
+            const type = button.dataset.interest;
+            const endpoint = type === "interested" ? "interested" : "not-interested";
+            const previousType = getSelected()?.dataset.interest || null;
 
-                const reelId =
-                    getReelId(card);
+            button.dataset.saving = "true";
+            buttons.forEach(b => { b.disabled = true; });
 
-
-                if (
-                    !isRealReelId(reelId)
-                ) {
-                    return;
-                }
-
-
-                const type =
-                    button.dataset.interest;
-
-
-                buttons.forEach(
-                    b =>
-                        b.classList.remove(
-                            "selected"
-                        )
+            try {
+                const data = await apiRequest(
+                    `/api/reels/${encodeURIComponent(id)}/${endpoint}`,
+                    { method: "POST" }
                 );
 
-
-                button.classList.add(
-                    "selected"
-                );
-
-
-                const endpoint =
-                    type === "interested"
-                        ? "interested"
-                        : "not-interested";
-
-
-                try {
-
-                    await apiRequest(
-                        `/api/reels/${encodeURIComponent(
-                            reelId
-                        )}/${endpoint}`,
-                        {
-                            method: "POST"
-                        }
-                    );
-
-                } catch (error) {
-
-                    console.warn(
-                        "Interest API:",
-                        error
-                    );
+                if (!data || data.success !== true) {
+                    throw new Error("Interest choice was not saved");
                 }
+
+                setSelected(type);
+            } catch (error) {
+                setSelected(previousType);
+                console.warn("Interest API:", error);
+                if (typeof showToast === "function") {
+                    showToast("Choice save nahi hui. Dobara try karein.");
+                }
+            } finally {
+                delete button.dataset.saving;
+                buttons.forEach(b => { b.disabled = false; });
             }
-        );
+        });
     });
 }
-
 
 /* =========================================================
    FOLLOW
 ========================================================= */
-
 function attachFollowEvent(card) {
     const button = card.querySelector(".follow-button");
     const row = card.querySelector(".reel-user-row");

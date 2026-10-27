@@ -2211,177 +2211,98 @@ def share_reel(
 # INTERESTED
 # =========================================================
 
-@router.post("/{reel_id}/interested")
-def mark_interested(
-
+def _set_reel_interest(
     reel_id: int,
-
-    db: Session = Depends(get_db),
-
-    current_user: User = Depends(
-        get_current_user
-    ),
+    interested_choice: bool,
+    db: Session,
+    current_user: User,
 ):
+    reel = get_reel_or_404(db, reel_id)
+    ensure_reel_access(reel, current_user)
 
-    reel = get_reel_or_404(
-        db,
-        reel_id,
-    )
-
-    ensure_reel_access(
-        reel,
-        current_user,
-    )
-
-    previous = (
+    rows = (
         db.query(ReelInteraction)
         .filter(
-            ReelInteraction.user_id
-            == current_user.id,
-
-            ReelInteraction.reel_id
-            == reel_id,
-
-            ReelInteraction.interested
-            .is_(True),
+            ReelInteraction.user_id == current_user.id,
+            ReelInteraction.reel_id == reel_id,
+            (
+                ReelInteraction.interested.is_(True)
+                | ReelInteraction.not_interested.is_(True)
+            ),
         )
-        .first()
+        .all()
     )
 
-    if previous:
+    had_interested = any(row.interested for row in rows)
+    had_not_interested = any(row.not_interested for row in rows)
 
+    if (
+        interested_choice and had_interested and not had_not_interested
+    ) or (
+        not interested_choice and had_not_interested and not had_interested
+    ):
         return {
-
             "success": True,
-
-            "interested": True,
-
-            "interested_count":
-                reel.interested_count or 0,
+            "interested": had_interested,
+            "not_interested": had_not_interested,
+            "interested_count": reel.interested_count or 0,
+            "not_interested_count": reel.not_interested_count or 0,
         }
 
-    reel.interested_count = (
-        reel.interested_count or 0
-    ) + 1
+    if had_interested:
+        reel.interested_count = max(0, (reel.interested_count or 0) - 1)
+
+    if had_not_interested:
+        reel.not_interested_count = max(
+            0, (reel.not_interested_count or 0) - 1
+        )
+
+    for row in rows:
+        row.interested = False
+        row.not_interested = False
+
+    if interested_choice:
+        reel.interested_count = (reel.interested_count or 0) + 1
+    else:
+        reel.not_interested_count = (reel.not_interested_count or 0) + 1
 
     interaction = create_interaction(
-
         db,
-
         user_id=current_user.id,
-
         reel=reel,
-
-        event_type="interested",
-
-        interested=True,
+        event_type="interested" if interested_choice else "not_interested",
+        interested=interested_choice,
+        not_interested=not interested_choice,
     )
 
     db.commit()
 
     return {
-
         "success": True,
-
-        "interested": True,
-
-        "interested_count":
-            reel.interested_count,
-
-        "interaction_id":
-            interaction.id,
+        "interested": interested_choice,
+        "not_interested": not interested_choice,
+        "interested_count": reel.interested_count or 0,
+        "not_interested_count": reel.not_interested_count or 0,
+        "interaction_id": interaction.id,
     }
 
 
-# =========================================================
-# NOT INTERESTED
-# =========================================================
+@router.post("/{reel_id}/interested")
+def mark_interested(
+    reel_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return _set_reel_interest(reel_id, True, db, current_user)
+
 
 @router.post("/{reel_id}/not-interested")
 def mark_not_interested(
-
     reel_id: int,
-
     db: Session = Depends(get_db),
-
-    current_user: User = Depends(
-        get_current_user
-    ),
+    current_user: User = Depends(get_current_user),
 ):
-
-    reel = get_reel_or_404(
-        db,
-        reel_id,
-    )
-
-    ensure_reel_access(
-        reel,
-        current_user,
-    )
-
-    previous = (
-        db.query(ReelInteraction)
-        .filter(
-            ReelInteraction.user_id
-            == current_user.id,
-
-            ReelInteraction.reel_id
-            == reel_id,
-
-            ReelInteraction.not_interested
-            .is_(True),
-        )
-        .first()
-    )
-
-    if previous:
-
-        return {
-
-            "success": True,
-
-            "not_interested": True,
-
-            "not_interested_count":
-                reel.not_interested_count or 0,
-        }
-
-    reel.not_interested_count = (
-        reel.not_interested_count or 0
-    ) + 1
-
-    interaction = create_interaction(
-
-        db,
-
-        user_id=current_user.id,
-
-        reel=reel,
-
-        event_type="not_interested",
-
-        not_interested=True,
-    )
-
-    db.commit()
-
-    return {
-
-        "success": True,
-
-        "not_interested": True,
-
-        "not_interested_count":
-            reel.not_interested_count,
-
-        "interaction_id":
-            interaction.id,
-    }
-
-
-# =========================================================
-# ADD COMMENT
-# =========================================================
+    return _set_reel_interest(reel_id, False, db, current_user)
 
 @router.post("/{reel_id}/comments")
 def add_comment(
