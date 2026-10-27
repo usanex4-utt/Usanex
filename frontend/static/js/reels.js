@@ -684,7 +684,7 @@ function createReelCard(reel, index) {
 
                 </svg>
 
-                <span>Original audio</span>
+
 
             </div>
 
