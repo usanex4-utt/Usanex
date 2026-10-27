@@ -578,21 +578,20 @@ function createReelCard(reel, index) {
 
 
         <!-- USER INFO -->
-
         <div class="reel-info">
+            ${
+                reel.caption
+                    ? `<p class="reel-caption">${escapeHTML(reel.caption)}</p>`
+                    : ""
+            }
 
             <div class="reel-user-row">
-
                 ${
                     profilePhoto
                         ? `
                             <img
                                 class="reel-avatar reel-avatar-image"
-                                src="${escapeHTML(
-                                    normalizeMediaUrl(
-                                        profilePhoto
-                                    )
-                                )}"
+                                src="${escapeHTML(normalizeMediaUrl(profilePhoto))}"
                                 alt=""
                                 loading="lazy"
                             >
@@ -600,58 +599,19 @@ function createReelCard(reel, index) {
                         : `
                             <div class="reel-avatar">
                                 ${escapeHTML(
-                                    String(
-                                        creatorName
-                                    )
-                                    .trim()
-                                    .charAt(0)
-                                    .toUpperCase() ||
-                                    "U"
+                                    String(creatorName).trim().charAt(0).toUpperCase() || "U"
                                 )}
                             </div>
                         `
                 }
 
-
                 <div class="reel-user-details">
-
-                    <strong>
-                        ${escapeHTML(
-                            creatorName
-                        )}
-                    </strong>
-
-                    <span>
-                        ${escapeHTML(
-                            username
-                        )}
-                    </span>
-
+                    <strong>${escapeHTML(creatorName)}</strong>
+                    <span>${escapeHTML(username)}</span>
                 </div>
 
-
-                <button
-                    type="button"
-                    class="follow-button"
-                >
-                    Follow
-                </button>
-
+                <button type="button" class="follow-button">Follow</button>
             </div>
-
-
-            ${
-                reel.caption
-                    ? `
-                        <p class="reel-caption">
-                            ${escapeHTML(
-                                reel.caption
-                            )}
-                        </p>
-                    `
-                    : ""
-            }
-
 
             <div class="interest-controls">
                 <button type="button" class="interest-button" data-interest="interested">
@@ -663,31 +623,6 @@ function createReelCard(reel, index) {
                     <span>Not interested</span>
                 </button>
             </div>
-
-
-            <div class="reel-audio">
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                >
-
-                    <path
-                        d="M4 9v6h4l5 4V5L8 9H4Z"
-                    ></path>
-
-                    <path
-                        d="M16 9.5a4 4 0 0 1 0 5"
-                    ></path>
-
-                </svg>
-
-
-
-            </div>
-
         </div>
     `;
 
