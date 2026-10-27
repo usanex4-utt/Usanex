@@ -623,6 +623,7 @@ function createReelCard(reel, index) {
                 <div class="reel-user-details">
                     <strong>${escapeHTML(creatorName)}</strong>
                     <span>${escapeHTML(username)}</span>
+                    <small class="reel-follower-count">Followers: —</small>
                 </div>
 
                 <button type="button" class="follow-button">Follow</button>
@@ -1659,45 +1660,88 @@ function attachInterestEvents(card) {
 ========================================================= */
 
 function attachFollowEvent(card) {
+    const button = card.querySelector(".follow-button");
+    const row = card.querySelector(".reel-user-row");
+    if (!button || !row) return;
 
-    const button =
-        card.querySelector(
-            ".follow-button"
-        );
-
-
-    if (!button) {
+    const userId = row.dataset.profileUserId;
+    if (!userId) {
+        button.hidden = true;
         return;
     }
 
+    let following = false;
+    let busy = false;
 
-    button.addEventListener(
-        "click",
-        event => {
+    const render = () => {
+        button.classList.toggle("following", following);
+        button.textContent = following ? "Following" : "Follow";
+        button.setAttribute("aria-pressed", String(following));
+    };
 
-            event.stopPropagation();
+    const refreshFollowerCount = async () => {
+        const data = await apiRequest(
+            `/api/connections/follow-counts/${encodeURIComponent(userId)}`
+        );
 
+        document.querySelectorAll(".reel-user-row").forEach(otherRow => {
+            if (otherRow.dataset.profileUserId !== userId) return;
+            const count = otherRow.querySelector(".reel-follower-count");
+            if (count) {
+                count.textContent =
+                    `Followers: ${Number(data.followers || 0).toLocaleString()}`;
+            }
+        });
+    };
 
-            const following =
-                button.classList.contains(
-                    "following"
-                );
+    button.addEventListener("click", async event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (busy) return;
 
+        busy = true;
+        button.disabled = true;
 
-            button.classList.toggle(
-                "following",
-                !following
-            );
+        try {
+            const endpoint = following ? "unfollow" : "follow";
+            await apiRequest(`/api/connections/${endpoint}`, {
+                method: "POST",
+                body: { user_id: userId }
+            });
 
+            following = !following;
+            render();
 
-            button.textContent =
-                following
-                    ? "Follow"
-                    : "Following";
+            window.dispatchEvent(new CustomEvent("utanexa:follow-changed", {
+                detail: { userId, following }
+            }));
+
+            await refreshFollowerCount();
+        } catch (error) {
+            console.warn("Follow update failed:", error);
+            if (typeof showToast === "function") {
+                showToast(error.message || "Follow update failed");
+            }
+        } finally {
+            busy = false;
+            button.disabled = false;
         }
+    });
+
+    render();
+
+    apiRequest(`/api/connections/follow-status/${encodeURIComponent(userId)}`)
+        .then(data => {
+            following = Boolean(data.is_following);
+            if (data.is_self) button.hidden = true;
+            render();
+        })
+        .catch(error => console.warn("Follow status failed:", error));
+
+    refreshFollowerCount().catch(error =>
+        console.warn("Initial follower count failed:", error)
     );
 }
-
 
 /* =========================================================
    REEL OBSERVER
