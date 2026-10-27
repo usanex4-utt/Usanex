@@ -1677,15 +1677,15 @@ button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    min-height: 42px;
-    padding: 5px 12px;
+    gap: 5px;
+    min-height: 32px;
+    padding: 3px 10px;
     line-height: 1.2;
     white-space: nowrap;
 }
 .interest-controls .interest-button .interest-icon {
     display: inline-block;
-    font-size: 32px !important;
+    font-size: 20px !important;
     line-height: 1;
     transform: none;
     margin: 0;
