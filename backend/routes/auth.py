@@ -335,6 +335,7 @@ def login(
         "success": True,
         "message": "Login successful",
         "user": serialize_user(user),
+        "session_token": session_token,
     }
 
 
