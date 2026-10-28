@@ -1402,6 +1402,8 @@ class ReelComment(Base):
         nullable=False,
     )
 
+    parent_comment_id = Column(Integer, nullable=True, index=True)
+
     content = Column(
         Text,
         nullable=False,
@@ -1433,6 +1435,19 @@ class ReelComment(Base):
             "reel_id",
             "created_at",
         ),
+    )
+
+
+class ReelCommentLike(Base):
+    __tablename__ = "reel_comment_likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    comment_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("comment_id", "user_id", name="uq_reel_comment_like_user"),
     )
 
 

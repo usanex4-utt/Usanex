@@ -2186,6 +2186,9 @@ async function openComments(reelId) {
     ReelApp.commentReelId =
         reelId;
 
+    document
+        .querySelector(".reel-card.active-reel")
+        ?.classList.add("comments-mode");
 
     overlay.classList.add(
         "open"
@@ -2241,6 +2244,10 @@ function closeComments() {
 
     ReelApp.commentReelId =
         null;
+
+    document
+        .querySelectorAll(".reel-card.comments-mode")
+        .forEach(card => card.classList.remove("comments-mode"));
 }
 
 
@@ -2354,193 +2361,104 @@ function renderComments(comments) {
 ========================================================= */
 
 function createCommentHTML(comment) {
+    const user = comment.user || {};
+    const id = comment.id ?? comment.comment_id ?? "";
+    const username = user.username ?? comment.username ?? comment.user_username ?? "@user";
+    const name = user.name ?? comment.name ?? username;
+    const photo = user.profile_photo ?? comment.profile_photo ?? "";
+    const text = comment.comment ?? comment.text ?? comment.content ?? "";
+    const likes = comment.likes_count ?? comment.like_count ?? 0;
+    const liked = Boolean(comment.liked ?? comment.is_liked);
+    const createdAt = comment.created_at ?? comment.createdAt ?? "";
 
-    const id =
-        comment.id ??
-        comment.comment_id ??
-        "";
+    let timestamp = "";
+    if (createdAt) {
+        const raw = String(createdAt);
+        const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw);
+        const date = new Date(hasTimezone ? raw : raw + "Z");
 
+        if (!Number.isNaN(date.getTime())) {
+            const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+            if (seconds < 60) timestamp = "now";
+            else if (seconds < 3600) timestamp = Math.floor(seconds / 60) + "m";
+            else if (seconds < 86400) timestamp = Math.floor(seconds / 3600) + "h";
+            else if (seconds < 604800) timestamp = Math.floor(seconds / 86400) + "d";
+            else timestamp = date.toLocaleDateString();
+        }
+    }
 
-    const username =
-        comment.username ??
-        comment.user_username ??
-        "@user";
-
-
-    const text =
-        comment.comment ??
-        comment.text ??
-        comment.content ??
-        "";
-
-
-    const likes =
-        comment.likes_count ??
-        comment.like_count ??
-        0;
-
-
-    const liked =
-        Boolean(
-            comment.liked ??
-            comment.is_liked
-        );
-
+    const safePhoto = /^(https?:\/\/|\/)/i.test(String(photo)) ? String(photo) : "";
+    const initial = String(name || username).trim().charAt(0).toUpperCase() || "U";
 
     return `
-
-        <article
-            class="comment-item"
-            data-comment-id="${escapeHTML(id)}"
-        >
-
+        <article class="comment-item" data-comment-id="${escapeHTML(id)}">
             <div class="comment-avatar">
-
-                ${escapeHTML(
-                    String(username)
-                        .replace("@", "")
-                        .charAt(0)
-                        .toUpperCase() ||
-                    "U"
-                )}
-
+                ${escapeHTML(initial)}
+                ${safePhoto ? `<img class="comment-avatar-photo" src="${escapeHTML(safePhoto)}" alt="" loading="lazy">` : ""}
             </div>
-
-
             <div class="comment-content">
-
-                <span class="comment-user">
-                    ${escapeHTML(username)}
-                </span>
-
-
-                <div class="comment-text">
-                    ${escapeHTML(text)}
+                <div class="comment-heading">
+                    <span class="comment-user">${escapeHTML(name)}</span>
+                    <span class="comment-username">${escapeHTML(username)}</span>
+                    ${timestamp ? `<span class="comment-timestamp">${escapeHTML(timestamp)}</span>` : ""}
                 </div>
-
-
+                <div class="comment-text">${escapeHTML(text)}</div>
                 <div class="comment-meta">
-
-                    <button
-                        type="button"
-                        class="comment-like ${
-                            liked
-                                ? "liked"
-                                : ""
-                        }"
-                    >
-
-                        ♥
-                        <span
-                            class="comment-like-count"
-                        >
-                            ${escapeHTML(likes)}
-                        </span>
-
+                    <button type="button" class="comment-like ${liked ? "liked" : ""}">
+                        ♥ <span class="comment-like-count">${escapeHTML(likes)}</span>
                     </button>
-
-
-                    <button
-                        type="button"
-                        class="comment-reply"
-                    >
-                        Reply
-                    </button>
-
+                    <button type="button" class="comment-reply">Reply</button>
                 </div>
-
             </div>
-
         </article>
     `;
 }
-
 
 /* =========================================================
    COMMENT LIKE
 ========================================================= */
 
 async function likeComment(button) {
+    const item = button.closest(".comment-item");
+    if (!item) return;
 
-    const item =
-        button.closest(
-            ".comment-item"
-        );
+    const commentId = item.dataset.commentId;
+    if (!commentId || button.dataset.loading === "true") return;
 
+    const count = button.querySelector(".comment-like-count");
+    const wasLiked = button.classList.contains("liked");
+    const oldCount = Number(count?.textContent || 0);
 
-    if (!item) {
-        return;
-    }
-
-
-    const commentId =
-        item.dataset.commentId;
-
-
-    if (!commentId) {
-        return;
-    }
-
-
-    const liked =
-        button.classList.contains(
-            "liked"
-        );
-
-
-    const count =
-        button.querySelector(
-            ".comment-like-count"
-        );
-
-
-    let number =
-        Number(
-            count?.textContent || 0
-        );
-
-
-    if (liked) {
-
-        number =
-            Math.max(
-                0,
-                number - 1
-            );
-
-    } else {
-
-        number++;
-    }
-
-
-    button.classList.toggle(
-        "liked",
-        !liked
-    );
-
-
-    if (count) {
-
-        count.textContent =
-            String(number);
-    }
-
+    button.dataset.loading = "true";
+    button.disabled = true;
 
     try {
-
-        await apiRequest(
-            `/api/comments/${encodeURIComponent(
-                commentId
-            )}/like`,
-            {
-                method: "POST"
-            }
+        const result = await apiRequest(
+            `/api/reels/comments/${encodeURIComponent(commentId)}/like`,
+            { method: "POST" }
         );
 
-    } catch {}
-}
+        if (result?.success !== true) {
+            throw new Error("Comment Like request failed");
+        }
 
+        button.classList.toggle("liked", Boolean(result.liked));
+        if (count) {
+            count.textContent = String(
+                Number.isFinite(Number(result.likes_count))
+                    ? Number(result.likes_count)
+                    : oldCount + (result.liked ? 1 : -1)
+            );
+        }
+    } catch (error) {
+        button.classList.toggle("liked", wasLiked);
+        if (count) count.textContent = String(oldCount);
+        console.error("Comment Like failed:", error);
+    } finally {
+        delete button.dataset.loading;
+        button.disabled = false;
+    }
+}
 
 /* =========================================================
    SUBMIT COMMENT

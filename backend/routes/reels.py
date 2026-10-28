@@ -33,6 +33,7 @@ from ..database.models import (
     UserSession,
     Reel,
     ReelComment,
+    ReelCommentLike,
     ReelReport,
     ReelSave,
     ReelDownload,
@@ -168,6 +169,11 @@ def get_current_user(
         token = request.cookies.get(
             "session_token"
         )
+
+    if not token:
+        authorization = request.headers.get("authorization", "")
+        if authorization.lower().startswith("bearer "):
+            token = authorization[7:].strip()
 
     if not token:
         raise HTTPException(
@@ -504,8 +510,7 @@ class CommentRequest(BaseModel):
         min_length=1,
         max_length=MAX_COMMENT_LENGTH,
     )
-
-
+    parent_comment_id: Optional[int] = None
 class ReportRequest(BaseModel):
 
     reason: str = Field(
@@ -2347,11 +2352,26 @@ def add_comment(
             detail="Comment cannot be empty",
         )
 
+    parent_comment_id = payload.parent_comment_id
+    if parent_comment_id is not None:
+        parent = (
+            db.query(ReelComment)
+            .filter(
+                ReelComment.id == parent_comment_id,
+                ReelComment.reel_id == reel_id,
+                ReelComment.is_deleted.is_(False),
+            )
+            .first()
+        )
+        if parent is None:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+
     comment = ReelComment(
 
         user_id=current_user.id,
 
         reel_id=reel_id,
+        parent_comment_id=parent_comment_id,
 
         content=content,
 
@@ -2483,6 +2503,20 @@ def get_comments(
             comment.user_id,
         )
 
+        likes_count = (
+            db.query(ReelCommentLike)
+            .filter(ReelCommentLike.comment_id == comment.id)
+            .count()
+        )
+        liked = (
+            db.query(ReelCommentLike.id)
+            .filter(
+                ReelCommentLike.comment_id == comment.id,
+                ReelCommentLike.user_id == current_user.id,
+            )
+            .first()
+        ) is not None
+
         response.append({
 
             "id":
@@ -2494,7 +2528,11 @@ def get_comments(
             "reel_id":
                 comment.reel_id,
 
-            "content":
+
+            "parent_comment_id": comment.parent_comment_id,
+            "likes_count": likes_count,
+            "liked": liked,
+"content":
                 comment.content,
 
             "created_at":
@@ -2525,6 +2563,66 @@ def get_comments(
 
         "offset":
             offset,
+    }
+
+
+# =========================================================
+# LIKE / UNLIKE COMMENT
+# =========================================================
+
+@router.post("/comments/{comment_id}/like")
+def toggle_comment_like(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    comment = (
+        db.query(ReelComment)
+        .filter(
+            ReelComment.id == comment_id,
+            ReelComment.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if comment is None:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    reel = get_reel_or_404(db, comment.reel_id)
+    ensure_reel_access(reel, current_user)
+
+    existing = (
+        db.query(ReelCommentLike)
+        .filter(
+            ReelCommentLike.comment_id == comment_id,
+            ReelCommentLike.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if existing:
+        db.delete(existing)
+        liked = False
+    else:
+        db.add(
+            ReelCommentLike(
+                comment_id=comment_id,
+                user_id=current_user.id,
+            )
+        )
+        liked = True
+
+    db.commit()
+
+    likes_count = (
+        db.query(ReelCommentLike)
+        .filter(ReelCommentLike.comment_id == comment_id)
+        .count()
+    )
+    return {
+        "success": True,
+        "comment_id": comment_id,
+        "liked": liked,
+        "likes_count": likes_count,
     }
 
 
