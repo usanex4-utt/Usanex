@@ -73,6 +73,10 @@ def utc_now():
 def get_current_user(request: Request, db: Session):
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
     if not session_token:
+        authorization = request.headers.get("authorization", "")
+        if authorization.lower().startswith("bearer "):
+            session_token = authorization[7:].strip()
+    if not session_token:
         raise HTTPException(status_code=401, detail="Not authenticated.")
 
     session = (
