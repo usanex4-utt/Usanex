@@ -99,6 +99,12 @@ def get_current_user_from_request(
 ):
     session_token = request.cookies.get(SESSION_COOKIE_NAME)
 
+    # Native mobile clients may not preserve Cookie headers.
+    if not session_token:
+        authorization = request.headers.get("authorization", "")
+        if authorization.lower().startswith("bearer "):
+            session_token = authorization[7:].strip()
+
     session = get_valid_session(
         db=db,
         session_token=session_token,
