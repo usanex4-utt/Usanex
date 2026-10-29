@@ -43,7 +43,7 @@ class CoupleConnectionManager:
         user_id: int,
         websocket: WebSocket,
     ) -> None:
-        await websocket.accept()
+        await websocket.accept(subprotocol="utanexa-v1")
 
         async with self._lock:
             self.connections[user_id].add(websocket)

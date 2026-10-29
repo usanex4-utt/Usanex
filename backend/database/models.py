@@ -247,6 +247,16 @@ class UserSession(Base):
     )
 
 
+class WebSocketTicket(Base):
+    __tablename__ = "websocket_tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticket = Column(String(128), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, index=True, nullable=False)
+    expires_at = Column(DateTime, index=True, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+
+
 # =========================================================
 # CONNECTION REQUEST
 # =========================================================
@@ -2156,6 +2166,8 @@ class ChatMessage(Base):
         index=True,
         nullable=False,
     )
+
+    reply_to_message_id = Column(Integer, nullable=True, index=True)
 
     receiver_id = Column(
         Integer,

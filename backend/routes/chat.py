@@ -7,10 +7,11 @@
 # Supports text/links plus validated image, video, audio and document uploads.
 # =========================================================
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import uuid
 import logging
+import secrets
 from fastapi import (
     APIRouter,
     Depends,
@@ -27,7 +28,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from ..database.database import SessionLocal
-from ..database.models import User, UserSession, UserConnection, ChatMessage
+from ..database.models import User, UserSession, UserConnection, ChatMessage, WebSocketTicket
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 SESSION_COOKIE_NAME = "usanex_session"
@@ -175,11 +176,29 @@ def serialize_user(user):
     }
 
 
-def serialize_message(message):
+def serialize_message(message, db=None):
+    reply_to = None
+    reply_id = getattr(message, "reply_to_message_id", None)
+
+    if db is not None and reply_id is not None:
+        original = db.query(ChatMessage).filter(
+            ChatMessage.id == reply_id,
+            ChatMessage.is_deleted == 0,
+        ).first()
+        if original is not None:
+            reply_to = {
+                "id": original.id,
+                "sender_id": original.sender_id,
+                "content": original.content,
+                "media_url": original.media_url,
+                "media_type": original.media_type,
+            }
+
     return {
         "id": message.id,
         "sender_id": message.sender_id,
         "receiver_id": message.receiver_id,
+        "reply_to_message_id": reply_id,
         "content": message.content,
         "message": message.content,
         "media_url": message.media_url,
@@ -188,6 +207,7 @@ def serialize_message(message):
         "is_read": bool(message.is_read),
         "is_deleted": bool(message.is_deleted),
         "created_at": message.created_at.isoformat() if message.created_at else None,
+        "reply_to": reply_to,
     }
 
 
@@ -294,6 +314,20 @@ async def save_upload(file: UploadFile):
 # HEALTH
 # =========================================================
 
+@router.post("/ws-ticket")
+def create_ws_ticket(request: Request, db: Session = Depends(get_db)):
+    current_user = get_current_user(request, db)
+    ticket_value = secrets.token_urlsafe(32)
+    ticket = WebSocketTicket(
+        ticket=ticket_value,
+        user_id=current_user.id,
+        expires_at=datetime.utcnow() + timedelta(seconds=60),
+    )
+    db.add(ticket)
+    db.commit()
+    return {"ticket": ticket_value, "expires_in": 60}
+
+
 @router.get("/health/status")
 def chat_health():
     return {
@@ -362,7 +396,7 @@ def get_chat(
         "success": True,
         "current_user": serialize_user(current_user),
         "user": serialize_user(chat_user),
-        "messages": [serialize_message(message) for message in messages],
+        "messages": [serialize_message(message, db) for message in messages],
     }
 
 
@@ -375,6 +409,7 @@ async def send_message(
     request: Request,
     receiver_id: str = Form(...),
     content: str = Form(default=""),
+    reply_to_message_id: int | None = Form(default=None),
     file: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
 ):
@@ -400,7 +435,18 @@ async def send_message(
     if not clean_content and not media_url:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
+    if reply_to_message_id is not None:
+        replied_message = db.query(ChatMessage).filter(
+            ChatMessage.id == reply_to_message_id,
+            ChatMessage.is_deleted == 0,
+            ((ChatMessage.sender_id == current_user.id) & (ChatMessage.receiver_id == receiver.id)) |
+            ((ChatMessage.sender_id == receiver.id) & (ChatMessage.receiver_id == current_user.id)),
+        ).first()
+        if replied_message is None:
+            raise HTTPException(status_code=400, detail="Reply target not found in this conversation.")
+
     message = ChatMessage(
+        reply_to_message_id=reply_to_message_id,
         sender_id=current_user.id,
         receiver_id=receiver.id,
         content=clean_content or None,
@@ -430,7 +476,7 @@ async def send_message(
                 pass
         raise HTTPException(status_code=500, detail="Message could not be saved.")
 
-    return {"success": True, "message": serialize_message(message)}
+    return {"success": True, "message": serialize_message(message, db)}
 
 # =========================================================
 # CHAT PRESENCE / TYPING
@@ -475,41 +521,34 @@ async def chat_presence_websocket(
     registered = False
 
     try:
-        # Authenticate with the existing session cookie.
-        session_token = websocket.cookies.get(SESSION_COOKIE_NAME)
-
-        if not session_token:
-            logging.warning('Chat WS auth failed: session cookie missing; partner=%s', partner_user_id)
+        # Authenticate with a short-lived, single-use WebSocket ticket.
+        protocols = websocket.scope.get("subprotocols", [])
+        ticket_value = next(
+            (item[7:] for item in protocols if item.startswith("ticket.") and len(item) > 7),
+            None,
+        )
+        if not ticket_value:
+            logging.warning("Chat WS auth failed: ticket missing")
             await websocket.close(code=4401)
             return
 
-        session = (
-            db.query(UserSession)
-            .filter(UserSession.session_token == session_token)
+        ticket_record = (
+            db.query(WebSocketTicket)
+            .filter(WebSocketTicket.ticket == ticket_value)
             .first()
         )
-
-        if session is None or not session.is_active:
-            logging.warning('Chat WS auth failed: session missing or inactive; partner=%s', partner_user_id)
+        if ticket_record is None or ticket_record.expires_at <= datetime.utcnow():
+            logging.warning("Chat WS auth failed: ticket invalid or expired")
             await websocket.close(code=4401)
             return
 
-        if session.expires_at is None:
-            await websocket.close(code=4401)
-            return
-
-        expires_at = session.expires_at
-
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-
-        if datetime.now(timezone.utc) >= expires_at:
-            await websocket.close(code=4401)
-            return
+        ticket_user_id = ticket_record.user_id
+        db.delete(ticket_record)
+        db.commit()
 
         current_user = (
             db.query(User)
-            .filter(User.id == session.user_id)
+            .filter(User.id == ticket_user_id)
             .first()
         )
 
@@ -536,13 +575,12 @@ async def chat_presence_websocket(
         partner_id = partner.id
         partner_last_seen = _last_seen_value(partner)
 
-        session.last_used_at = utc_now()
         db.commit()
 
         # Do not keep a database connection open during the socket lifetime.
         db.close()
 
-        await websocket.accept()
+        await websocket.accept(subprotocol="utanexa-v1")
 
         _chat_sockets.setdefault(current_id, set()).add(websocket)
         registered = True

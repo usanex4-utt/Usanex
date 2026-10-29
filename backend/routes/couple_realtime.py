@@ -14,7 +14,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from ..database.database import SessionLocal
-from ..database.models import User
+from ..database.models import User, WebSocketTicket
 from ..database.couple_models import CouplePresence, utcnow
 
 from ..routes.auth import SESSION_COOKIE_NAME, get_valid_session
@@ -278,25 +278,31 @@ async def couple_realtime(
         # -------------------------------------------------
         # AUTHENTICATION
         # -------------------------------------------------
-        session_token = websocket.cookies.get(
-            SESSION_COOKIE_NAME
+        protocols = websocket.scope.get("subprotocols", [])
+        ticket_value = next(
+            (item[7:] for item in protocols if item.startswith("ticket.") and len(item) > 7),
+            None,
         )
-
-        session = get_valid_session(
-            db=db,
-            session_token=session_token,
-        )
-
-        if session is None:
-            await websocket.close(
-                code=1008,
-                reason="Authentication required",
-            )
+        if not ticket_value:
+            await websocket.close(code=4401, reason="Authentication required")
             return
+
+        ticket_record = (
+            db.query(WebSocketTicket)
+            .filter(WebSocketTicket.ticket == ticket_value)
+            .first()
+        )
+        if ticket_record is None or ticket_record.expires_at <= datetime.utcnow():
+            await websocket.close(code=4401, reason="Invalid or expired ticket")
+            return
+
+        ticket_user_id = ticket_record.user_id
+        db.delete(ticket_record)
+        db.commit()
 
         current_user = get_user(
             db=db,
-            user_id=session.user_id,
+            user_id=ticket_user_id,
         )
 
         if current_user is None:
