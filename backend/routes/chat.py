@@ -10,6 +10,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import uuid
+import logging
 from fastapi import (
     APIRouter,
     Depends,
@@ -478,6 +479,7 @@ async def chat_presence_websocket(
         session_token = websocket.cookies.get(SESSION_COOKIE_NAME)
 
         if not session_token:
+            logging.warning('Chat WS auth failed: session cookie missing; partner=%s', partner_user_id)
             await websocket.close(code=4401)
             return
 
@@ -488,6 +490,7 @@ async def chat_presence_websocket(
         )
 
         if session is None or not session.is_active:
+            logging.warning('Chat WS auth failed: session missing or inactive; partner=%s', partner_user_id)
             await websocket.close(code=4401)
             return
 
@@ -517,6 +520,7 @@ async def chat_presence_websocket(
         partner = find_user(db, partner_user_id)
 
         if partner is None or not partner.is_active:
+            logging.warning("Chat WS rejected: partner missing or inactive; partner=%s", partner_user_id)
             await websocket.close(code=4404)
             return
 
@@ -524,6 +528,7 @@ async def chat_presence_websocket(
         try:
             require_connected(db, current_user.id, partner.id)
         except HTTPException:
+            logging.warning("Chat WS rejected: users are not connected; partner=%s", partner_user_id)
             await websocket.close(code=4403)
             return
 
