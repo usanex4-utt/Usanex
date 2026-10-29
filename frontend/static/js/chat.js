@@ -287,7 +287,8 @@ function formatLastSeen(value) {
       }
     });
 
-    socket.addEventListener("close", () => {
+    socket.addEventListener("close", event => {
+      console.warn("Chat presence socket closed:", event.code, event.reason, event.wasClean);
       if (state.presenceSocket !== socket) return;
 
       state.presenceConnected = false;
